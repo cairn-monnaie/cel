@@ -35,8 +35,9 @@ class SecurityListener
     protected $router;
     protected $em;
     protected $templating;
+    protected $adminUsername;
 
-    public function __construct(Router $router, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating)
+    public function __construct(Router $router, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername)
     {
         $this->router = $router;
         $this->tokenStorage = $tokenStorage;
@@ -45,6 +46,7 @@ class SecurityListener
         $this->accessPlatform = $accessPlatform;
         $this->em = $em;
         $this->templating = $templating;
+        $this->adminUsername = $adminUsername;
     }
 
 
@@ -62,9 +64,20 @@ class SecurityListener
         }
     }
 
+    /**
+     * Checks if current request matches a sensible operation or not
+     *
+     *Compares the current request with sensible routes and urls defined in Event/SecurityEvents. If a match is found, a redirection 
+     *to card security input is operated. The only case where redirection should not be done is if the admin created at installation needs
+     *a new security card : he would need his own card(which he is asking for..)  to authentificate, and he has no referent but himself.
+     *
+     */
     public function onSensibleOperations(GetResponseEvent $event)
     {
         $request = $event->getRequest();
+        $token = $this->tokenStorage->getToken();
+
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $route = $request->get('_route');
         $query = $request->query->all();
         $sensibleRoutes = SecurityEvents::SENSIBLE_ROUTES;
@@ -73,12 +86,30 @@ class SecurityListener
         $isSensibleUrl = in_array(array($route,$query),$sensibleUrls);
         $isSensibleRoute = in_array($route,$sensibleRoutes);
 
-        if($isSensibleRoute || $isSensibleUrl){
-            if(!$request->getSession()->get('has_input_card_key_valid')){
-                $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('route'=>$route,'query'=>$query));
-                $event->setResponse(new RedirectResponse($cardSecurityLayer));
+        $isExceptionCase = false;
+        //check if installed admin is asking for a new security card
+        if($token){
+            $currentUser = $token->getUser();
+            if($currentUser instanceof \Cairn\UserBundle\Entity\User){
+                if(($currentUser->getUsername() == $this->adminUsername && $route == 'cairn_user_card_generate')){
+                    //for itself ? for someone else ?
+                    $toUser = $userRepo->findOneBy(array('id'=>$query['id']));
+                    if($toUser === $currentUser){
+                        $isExceptionCase = true;
+                    }
+                }
             }
         }
+
+        if(!$isExceptionCase){
+            if($isSensibleRoute || $isSensibleUrl){
+                if(!$request->getSession()->get('has_input_card_key_valid')){
+                    $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('route'=>$route,'query'=>$query));
+                    $event->setResponse(new RedirectResponse($cardSecurityLayer));
+                }
+            }
+        }
+
     }
 
 

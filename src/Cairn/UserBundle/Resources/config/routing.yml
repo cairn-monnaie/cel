@@ -106,6 +106,7 @@ cairn_user_card_revoke:
     requirements:
         #id: \d+
 
+#if you change this route's name, change it in EventListener/SecurityListener, in the function "onSensibleOperations"
 cairn_user_card_generate:
     path:     card/generate/
     defaults: { _controller: CairnUserBundle:Card:generateCard }

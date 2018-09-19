@@ -48,6 +48,7 @@ services:
             - "@cairn_user.access_platform"
             - "@doctrine.orm.entity_manager"
             - "@templating"
+            - "%cyclos_global_admin_username%"
 
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }

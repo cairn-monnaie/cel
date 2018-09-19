@@ -12,11 +12,14 @@
 {% block body %}
     {{parent()}} 
 
+    {% set card = user.card %}
      <a href="{{path('cairn_user_card_revoke',{'id':user.id})}}"> Révoquer la carte </a>
      <a href="{{path('cairn_user_card_new',{'id':user.id})}}"> Commander une carte </a>
 
-    {% if user == app.user and not user.card.enabled %}
-        <a href="{{path('cairn_user_card_validate')}}"> Activer la carte </a>
+    {% if user == app.user and card  %}
+        {% if not card.enabled %}
+            <a href="{{path('cairn_user_card_validate')}}"> Activer la carte </a>
+        {% endif %}
     {% endif %}
 
     {% if user.hasReferent(app.user) %}
