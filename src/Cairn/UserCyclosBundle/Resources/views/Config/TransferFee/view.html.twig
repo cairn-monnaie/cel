@@ -1,0 +1,35 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/TransferFee/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Réseau du Cairn - {{ parent() }}
+{% endblock %}
+
+{% block body %}
+
+  <h2>{{ transferFee.name }}</h2>
+
+  <div class="well">
+<li>{{ transferFee.originalTransferType.name }}</li>
+<li>{{ transferFee.chargeMode }}</li>
+<li>{{ transferFee.amount }}</li>
+<li>{{ transferFee.enabled }}</li>
+<ul>
+  {% for group in transferFee.fromGroups %}
+    <li>{{ group.name }}</li>
+  {% endfor %}
+</ul>
+<ul>
+  {% for group in transferFee.toGroups %}
+    <li>{{ group.name }}</li>
+  {% endfor %}
+</ul>
+
+<li>{#transferFee.higherThanAmountValue #}</li>
+<li>{# transferFee.lowerThanAmountValue #}</li>
+
+  </div>
+
+
+{% endblock %}

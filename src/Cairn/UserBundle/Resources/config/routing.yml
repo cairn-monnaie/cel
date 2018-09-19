@@ -1,0 +1,296 @@
+cairn_user_welcome:
+    path:     / 
+    defaults: { _controller: CairnUserBundle:User:index }
+
+cairn_user_install:
+    path:     install/
+    defaults: { _controller: CairnUserBundle:Default:install }
+
+
+cairn_user_registration:
+    path:     registration/
+    defaults: { _controller: CairnUserBundle:Default:registration }
+
+cairn_user_redirect_login:
+    path:     login/redirection/{message}/
+    defaults: { _controller: CairnUserBundle:Default:redirectToLogin }
+
+
+cairn_user_password_change:
+    path:     password/new/
+    defaults: { _controller: CairnUserBundle:User:changePassword }
+
+cairn_user_card_security_layer:
+    path:     security/card/
+    defaults: { _controller: CairnUserBundle:Card:inputCardKey }
+
+cairn_user_referent_assign:
+    path:     user/referent/assign/{id}/
+    defaults: { _controller: CairnUserBundle:Admin:assignReferent }
+    requirements:
+        #id: \d+
+
+cairn_user_profile_view:
+    path:     user/profile/view/{id}/
+    defaults: { _controller: CairnUserBundle:User:viewProfile }
+    requirements:
+        #id: \d+
+
+cairn_user_beneficiaries_list:
+    path:     user/beneficiaries/
+    defaults: { _controller: CairnUserBundle:User:listBeneficiaries }
+
+cairn_user_beneficiaries_add:
+    path:     user/beneficiaries/add/
+    defaults: { _controller: CairnUserBundle:User:addBeneficiary }
+
+cairn_user_beneficiaries_edit:
+    path:     user/beneficiaries/edit/{id}/
+    defaults: { _controller: CairnUserBundle:User:editBeneficiary }
+    requirements:
+        #id: \d+
+
+cairn_user_beneficiaries_remove:
+    path:     user/beneficiaries/remove/{id}/
+    defaults: { _controller: CairnUserBundle:User:removeBeneficiary }
+    requirements:
+        #id: \d+
+
+cairn_user_users_home:
+    path:     users/home/
+    defaults: { _controller: CairnUserBundle:User:users }
+
+cairn_user_email_check_validation:
+    path:     user/email/check/delayed/
+    defaults: { _controller: CairnUserBundle:Admin:checkEmailsValidation }
+
+cairn_user_users_search:
+    path:     user/search/
+    defaults: { _controller: CairnUserBundle:User:searchUser }
+
+cairn_user_users_block:
+    path:     admin/users/block/
+    defaults: { _controller: CairnUserBundle:Admin:blockUser }
+
+cairn_user_users_activate:
+    path:     admin/users/activate/
+    defaults: { _controller: CairnUserBundle:Admin:activateUser }
+
+cairn_user_users_remove:
+    path:     user/remove/
+    defaults: { _controller: CairnUserBundle:User:confirmRemoveUser }
+
+cairn_user_card_home:
+    path:     card/home/{id}/
+    defaults: { _controller: CairnUserBundle:Card:cardOperations }
+    requirements:
+        #id: \d+
+
+cairn_user_card_check_activation:
+    path:     card/check/delayed/
+    defaults: { _controller: CairnUserBundle:Card:checkDelayedCards }
+
+cairn_user_card_new:
+    path:     card/new/{id}/
+    defaults: { _controller: CairnUserBundle:Card:newCard }
+    requirements:
+        #id: \d+
+
+cairn_user_card_validate:
+    path:     card/validate/
+    defaults: { _controller: CairnUserBundle:Card:validateCard }
+
+cairn_user_card_revoke:
+    path:     card/revoke/{id}/
+    defaults: { _controller: CairnUserBundle:Card:revokeCard }
+    requirements:
+        #id: \d+
+
+cairn_user_card_generate:
+    path:     card/generate/
+    defaults: { _controller: CairnUserBundle:Card:generateCard }
+
+cairn_user_card_download:
+    path:     card/download/{id}
+    defaults: { _controller: CairnUserBundle:Card:downloadCard }
+
+cairn_user_banking_rib_download:
+    path:     banking/download/rib/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:downloadRIB }
+    requirements:
+        #id: \d{19}
+
+cairn_user_banking_transfer_notice_download:
+    path:     banking/download/notice/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:downloadTransferNotice }
+    requirements:
+        #id: \d{19}
+
+cairn_user_banking_accounts_overview_download:
+    path:     banking/download/accounts/
+    defaults: { _controller: CairnUserBundle:Banking:downloadAccountsOverview }
+
+cairn_user_banking_operations:
+    path:     banking/operations/{type}/
+    defaults: { _controller: CairnUserBundle:Banking:bankingOperations }
+    requirements:
+        type: transaction|conversion|reconversion|deposit|withdrawal
+
+cairn_user_banking_operations_view:
+    path:     banking/view/operations/{type}/
+    defaults: { _controller: CairnUserBundle:Banking:viewOperations }
+    requirements:
+        type: transaction|conversion|reconversion|deposit|withdrawal
+
+cairn_user_banking_transaction_to:
+    path:     banking/transaction/new/to/{frequency}/
+    defaults: { _controller: CairnUserBundle:Banking:transactionTo }
+    requirements:
+        frequency: unique|recurring
+
+cairn_user_banking_transaction_request:
+    path:     banking/transaction/request/
+    defaults: { _controller: CairnUserBundle:Banking:transactionRequest }
+
+cairn_user_banking_withdrawal_request:
+    path:     banking/withdrawal/request/
+    defaults: { _controller: CairnUserBundle:Banking:withdrawalRequest }
+
+cairn_user_banking_deposit_request:
+    path:     banking/deposit/request/
+    defaults: { _controller: CairnUserBundle:Banking:depositRequest }
+
+cairn_user_banking_reconversion_request:
+    path:     banking/reconversion/request/
+    defaults: { _controller: CairnUserBundle:Banking:reconversionRequest }
+
+cairn_user_banking_conversion_request:
+    path:     banking/conversion/request/
+    defaults: { _controller: CairnUserBundle:Banking:conversionRequest }
+
+cairn_user_banking_operation_confirm:
+    path:     banking/operation/confirm/{type}/
+    defaults: { _controller: CairnUserBundle:Banking:confirmOperation }
+    requirements:
+        type: transaction|conversion|reconversion|deposit|withdrawal
+
+
+cairn_user_banking_transaction_scheduled_changestatus:
+    path:     banking/transaction/scheduled/edit/{id}.{status}/
+    defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction}
+    requirements:
+        #id: \d{19}
+        status: cancel|open|block
+
+cairn_user_banking_transaction_recurring_cancel:
+    path:     banking/transaction/recurring/cancel/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:cancelRecurringTransaction }
+    requirements:
+        #id: \d{19}
+
+
+cairn_user_banking_account_operations:
+    path:     banking/account/operations/{accountID}/
+    defaults: { _controller: CairnUserBundle:Banking:accountOperations }
+    requirements:
+        #id: \d{19}
+
+
+cairn_user_banking_transactions_recurring_view_detailed:
+    path:     banking/transactions/recurring/view/detailed/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction }
+    requirements:
+        #id: \d{19}
+
+cairn_user_banking_transfer_view:
+    path:     banking/transfer/view/{type}-{id}/
+    defaults: { _controller: CairnUserBundle:Banking:viewTransfer }
+    requirements:
+        #id: \d+
+        type: scheduled.past|scheduled.futur|recurring|simple
+
+cairn_user_banking_transaction_occurrence_execute:
+    path:     banking/transactions/recurring/occurrence/execute/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:executeOccurrence }
+    requirements:
+        #id: \d{19}
+
+cairn_user_banking_accounts_overview:
+    path:     banking/accounts/overview/{id}/
+    defaults: { _controller: CairnUserBundle:Banking:accountsOverview }
+    requirements:
+        #id: \d+
+
+
+#cairn_user_bankconnection_deposit_index:
+#    path:     deposit/index
+#    defaults: { _controller: CairnUserBundle:BankConnection:index }
+#
+#cairn_user_bankconnection_envelope_new:
+#    path:     envelope/new
+#    defaults: { _controller: CairnUserBundle:BankConnection:newEnvelope }
+#
+#cairn_user_bankconnection_deposit_new:
+#    path:     deposit/new
+#    defaults: { _controller: CairnUserBundle:BankConnection:newDeposit }
+#
+#cairn_user_bankconnection_deposit_confirm:
+#    path:     deposit/confirm
+#    defaults: { _controller: CairnUserBundle:BankConnection:confirmDeposit }
+#
+#cairn_user_bankconnection_deposit_view:
+#    path:     deposit/view/{id}
+#    defaults: { _controller: CairnUserBundle:BankConnection:viewDeposit }
+#
+#cairn_user_bankconnection_deposit_edit:
+#    path:     deposit/edit/{id}
+#    defaults: { _controller: CairnUserBundle:BankConnection:editDeposit }
+#
+#cairn_user_bankconnection_withdrawal_index:
+#    path:     withdrawal/index
+#    defaults: { _controller: CairnUserBundle:BankConnection:index }
+#
+#cairn_user_bankconnection_withdrawal_new:
+#    path:     withdrawal/new
+#    defaults: { _controller: CairnUserBundle:BankConnection:newWithdrawal }
+#
+#cairn_user_bankconnection_withdrawal_confirm:
+#    path:     withdrawal/confirm
+#    defaults: { _controller: CairnUserBundle:BankConnection:confirmWithdrawal }
+#
+#cairn_user_bankconnection_withdrawal_view:
+#    path:     withdrawal/view/{id}
+#    defaults: { _controller: CairnUserBundle:BankConnection:viewWithdrawal }
+#
+#cairn_user_bankconnection_withdrawal_edit:
+#    path:     withdrawal/edit/{id}
+#    defaults: { _controller: CairnUserBundle:BankConnection:editWithdrawal }
+#
+#cairn_user_banknotes_home:
+#    path:     banknote/home
+#    defaults: { _controller: CairnUserBundle:Banknote:index }
+#
+#cairn_user_multiform:
+#    path:    banknote/test
+#    defaults: { _controller: CairnUserBundle:Banknote:multiform }
+#
+#cairn_user_banknote_add:
+#    path:     /banknote/add
+#    defaults: { _controller: CairnUserBundle:Banknote:addBanknote }
+#
+#cairn_user_banknote_edit:
+#    path:     /banknote/edit/{id}
+#    defaults: { _controller: CairnUserBundle:Banknote:editBanknote }
+#
+#cairn_user_banknote_view:
+#    path:     /banknote/view/{id}
+#    defaults: { _controller: CairnUserBundle:Banknote:viewBanknote }
+#
+#cairn_user_banknote_search:
+#    path:     /banknote/search
+#    defaults: { _controller: CairnUserBundle:Banknote:searchBanknotes }
+#
+#cairn_user_banknote_remove:
+#    path:     /banknote/remove/{id}
+#    defaults: { _controller: CairnUserBundle:Banknote:removeBanknote }
+#

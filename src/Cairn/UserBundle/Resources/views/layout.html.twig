@@ -1,0 +1,91 @@
+{# src/Cairn/UserBundle/Resources/views/layout.html.twig #}         
+                                                                               
+{% extends "::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{% block body %}
+
+<nav>
+    {% if is_granted("ROLE_ADMIN") %}
+
+    <ul>
+        <li id="id_welcome" class="menu_depliant">
+            <a class="menu-item" href="{{path('cairn_user_welcome')}}">Accueil</a>
+        </li>
+        <li>    
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"> Situation </a>
+        </li>
+
+       {# <li>    
+            <a class="menu-item" href="{{path('cairn_user_banknotes_home')}}">Les billets</a>
+        </li>#}
+        <li>    
+            <a class="menu-item" href="{{path('cairn_user_users_home')}}">Les membres</a>
+        </li>
+
+        <li>
+            <a class="menu-item" href="#">Opérations</a>
+             <div class="menu-content">
+                <ul class="menu_list">
+                    {% if is_granted("ROLE_SUPER_ADMIN") %}
+                        <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"> Virements </a></li>
+                    {% endif %}
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}"> Conversion </a></li>
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}"> Dépôt </a></li>
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}"> Retrait </a></li>
+
+                </ul>
+            </div>
+
+        </li>
+        <li><a class="menu-item" href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"> Profil </a></li>
+        
+
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <li><a class="menu-item" href="{{path('cairn_user_cyclos_config_home')}}">Espace configuration</a></li>
+        {% endif %}
+    </ul>
+
+
+    {% elseif is_granted("ROLE_PRO") %}
+
+    <ul>
+        <li id="id_welcome" class="menu_depliant">
+            <a class="menu-item" href="{{path('cairn_user_welcome')}}"> Accueil </a>
+        </li>
+        <li>    
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"> Situation </a>
+
+        </li>
+        <li>
+            <a class="menu-item" href="#"> Opérations </a>
+             <div class="menu-content">
+                <ul class="menu_list">
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"> Virements </a></li>
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}"> Conversion </a></li>
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'reconversion'})}}"> Reconversion </a></li>
+                </ul>
+            </div>
+           
+        </li>
+        <li><a class="menu-item" href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"> Profil </a></li>
+        <li><a class="menu-item" href="#"> Etendre son réseau </a></li>
+    </ul>
+    {% endif %}
+</nav>
+<div id="flash_messages">
+   {% for key, messages in app.session.flashbag.all() %}                      
+          {% for message in messages %}                                          
+              <div class="alert alert-{{ key }}">                                
+              {{ message|trans({}, 'FOSUserBundle') }}                           
+              </div>                                                             
+          {% endfor %}                                                           
+    {% endfor %}  
+<div>
+{% endblock %}
+                                                                               
+
+{% block javascripts %}
+{% endblock %}
+

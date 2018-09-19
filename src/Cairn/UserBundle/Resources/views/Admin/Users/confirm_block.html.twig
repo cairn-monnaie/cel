@@ -1,0 +1,23 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/confirm_block.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+                                                                            
+        <div id="confirm_action"> <em>Confirmer la fermeture d'accès à la plateforme de {{user.name}} </em>         
+            {{ form_start(form) }}                                                       
+            {{ form_rest(form) }}                                                        
+            {{form_end(form) }}   
+        </div>
+
+{% endblock %}              
+
+

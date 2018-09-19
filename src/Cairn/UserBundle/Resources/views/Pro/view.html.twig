@@ -1,0 +1,65 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/view.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+    
+    {% set card = user.card %}
+    <div class="profile_wrapper">
+        <ul>
+            <li>{{ user.name }}</li>                
+            <li>{{ user.username}} </li>
+            <li>{{ user.email }}</li>
+            <li>
+                <div id="user_address">                
+                    {{ user.address.street}} </br>
+                    {{ user.address.zipCity.zipCode}} </br>
+                    {{ user.address.zipCity.city}} 
+                </div>
+            </li>
+            <li>{{ user.description}} </li>
+            <li>
+                 {% if user.image.url is defined %}
+                     <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}"> 
+                 {% else %}
+                     <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur"> 
+                 {% endif %}
+            </li>
+        </ul>
+        
+
+        {% if user.hasReferent(app.user) or user == app.user %} 
+            <a href="{{path('cairn_user_card_home',{'id': user.id})}}">Carte de sécurité Cairn</a>
+            <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}">Fermer l'espace membre</a>
+
+            <div class="accounts_tab">
+                {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
+            </div>
+
+            {% if user.hasReferent(app.user) %}
+                {% if user.enabled == true %}
+                    <a href="{{path('cairn_user_users_block',{'id': user.id})}}">Bloquer l'accès à la plateforme</a>
+                {% else %}
+                    <a href="{{path('cairn_user_users_activate',{'id': user.id})}}">Autoriser l'accès à la plateforme</a>
+                {% endif %}
+
+            {% endif %}
+ 
+            {% if user.id == app.user.id %}
+                <a href="{{path('cairn_user_password_change')}}">Modifier son mot de passe</a>
+            {% endif %}
+        {% endif %}
+
+
+    </div>
+{% endblock %}              
+
+

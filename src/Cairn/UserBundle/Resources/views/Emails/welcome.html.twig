@@ -1,0 +1,15 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/welcome.html.twig #}
+
+Bonjour {{user.name}},
+
+Bienvenue dans le réseau du Cairn.
+
+  <p>
+    <a href="http://localhost:8000/login" class="btn btn-default">
+      <i class="glyphicon glyphicon-chevron-left"></i>
+      Cliquez sur ce lien pour accéder à la plateforme.
+    </a>
+      Vous pouvez dès à présent vous connecter avec les identifiants suivants :
+      <li> identifiant  : {{user.username}} </li>
+      <li> Mot de passe : {{user.plainPassword}} </li>
+  </p>

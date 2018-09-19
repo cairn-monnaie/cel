@@ -1,0 +1,45 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/transaction.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+    <div class="well">
+      {{ form_start(form) }}
+      {{ form_rest(form) }}
+      {{ form_end(form) }}
+
+    </div>
+
+    {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':fromAccounts,'type':'debit'})}}
+    {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':toAccounts, 'type' :'credit'})}}
+
+{% endblock %}
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+    <script>
+        jQuery(function ($) {
+            $creditAccountOwner = $('[id$="toAccount_owner"]');    
+            $creditAccountId = $('[id$="toAccount_id"]');    
+           
+            $debitAccountOwner = $('[id$="fromAccount_owner"]');    
+            $debitAccountId = $('[id$="fromAccount_id"]');    
+
+            $containerAccount = $('.account'); 
+            $containerAccount.click(function (e){
+                if($(this).attr('id') == 'account_credit'){
+                    $creditAccountOwner.val($(this).children("em")[0].innerText) ;
+                    $creditAccountId.val($(this).children("span:last")[0].innerText);
+                }
+                else{
+                    $debitAccountOwner.val($(this).children("em")[0].innerText) ;
+                    $debitAccountId.val($(this).children("span:last")[0].innerText);
+                }
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/accounts_list.html.twig #}
+
+<table>
+    <tr>
+        <td>
+            <div>
+            <ul>
+                {% for account in accounts %}
+                    {% if account.unlimited == false %}
+                        <li class="account" id = "account_{{type}}"> <em class="account_owner"> 
+                             {% if account.type.nature == 'SYSTEM' %}
+                                 SYSTEM
+                             {% else %}
+                                 {{account.owner.display}} 
+                             {% endif %}
+                        </em> </br> 
+                        <span class="account_type">{{account.type.name}} </span> </br>
+                        <span class="account_balance">{{account.status.balance}} </span> </br>
+                        <span class="account_id">{{account.id}} </span></li>
+                    {% endif %}
+                {% else %}
+                    Pas encore de compte à créditer
+                {% endfor %}
+            </ul>
+            </div>
+        </td>
+    </tr>
+</table>
+

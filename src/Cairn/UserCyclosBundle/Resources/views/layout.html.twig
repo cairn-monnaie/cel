@@ -1,0 +1,24 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/layout.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block stylesheets %}
+    {{parent()}}
+{% endblock %}
+
+    {% block body %}
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            {{parent()}}
+        {% else %}
+            Access denied 
+        {% endif %}
+
+    {% endblock %}
+
+
+{% block javascripts %}
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+{% endblock %}

@@ -1,0 +1,34 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/index.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+ <h2> Espace Administrateur {{ app.user.name }}</h2>                                                  
+<h3> {{ 'now'|date('d - m -Y') }} </h3>                                                                               
+<div>                                                                          
+    <ul>
+        <li><a href="{{path('cairn_user_users_add') }}" >Ajouter un professionnel</a></li> 
+        <li><a href="{{path('cairn_user_users_search') }}" >Rechercher un professionnel</a></li>
+    </ul>
+    <div>
+        <ul>
+            {% for user in listUsers %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                Pas <em>encore</em> d'utilisateur !
+            {% endfor %}
+        <ul>
+    </div>
+</div>                                                                         
+                                                                            
+{% endblock %}              
+
+

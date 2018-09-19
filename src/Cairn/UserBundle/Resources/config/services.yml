@@ -1,0 +1,78 @@
+services:
+    #    cairn_user.example:
+    #        class: Cairn\UserBundle\Example
+    #        arguments: ["@service_id", "plain_value", "%parameter%"]
+
+    cairn_user.repository_user: 
+        class: UserRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\User] 
+
+    cairn_user.counter:
+        class: Cairn\UserBundle\Service\Counter
+
+    cairn_user.message_notificator:
+        class: Cairn\UserBundle\Service\MessageNotificator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@mailer" 
+            - "%cairn_email_technical_services%"
+            - "%cairn_email_noreply%"
+
+
+    cairn_user.access_platform:
+        class: Cairn\UserBundle\Service\AccessPlatform
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.message_notificator"
+
+    cairn_user.datetime_checker:
+        class: Cairn\UserBundle\Service\DateTimeChecker
+
+    cairn_user.registration_listener:
+        class: Cairn\UserBundle\EventListener\RegistrationListener
+        arguments: 
+            - "@service_container"
+        tags:
+            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess }
+            - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
+            - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
+
+    cairn_user.security.input_listener:
+        class: Cairn\UserBundle\EventListener\SecurityListener
+        arguments:
+            - "@router"
+            - "@security.token_storage"
+            - "@security.encoder_factory" 
+            - "@cairn_user.counter"
+            - "@cairn_user.access_platform"
+            - "@doctrine.orm.entity_manager"
+            - "@templating"
+
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }
+            - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
+            - { name: kernel.event_listener, event: cairn_user.input_password, method: onPasswordInput }
+            - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
+
+    cairn_user.technical.exception_listener:
+        class: Cairn\UserBundle\EventListener\ExceptionListener
+        arguments:
+            - "@cairn_user.message_notificator"
+            - "@cairn_user.access_platform"
+            - "@doctrine.orm.entity_manager"
+            - "@router"
+        tags:  
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
+    
+    Cairn\UserBundle\Form\CreditType:
+        arguments: ['@security.authorization_checker']
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\WithdrawalType:                              
+        arguments: ['@security.token_storage']                                 
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\DepositType:                              
+        arguments: ['@security.token_storage']                                 
+        tags: [form.type]

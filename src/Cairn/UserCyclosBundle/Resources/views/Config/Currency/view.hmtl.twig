@@ -1,0 +1,33 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/Currency/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Réseau du Cairn - {{ parent() }}
+{% endblock %}
+
+{% block fos_user_content %}
+
+  <h2>{{ currency.name }}</h2>
+
+  <div class="well">
+<li>{{ currency.name }}</li>
+<li>{{ currency.symbol }}</li>
+<li>{{ currency.precision }}</li>
+
+
+  </div>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_currency_list') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-chevron-left"></i>
+      Retour à la liste des devises
+    </a>
+     <a href="{{ path('cairn_user_cyclos_accountsconfig_currency_edit', {'id': currency.id}) }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Mettre à jour la devise
+    </a>
+
+  </p>
+
+{% endblock %}

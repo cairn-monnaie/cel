@@ -1,0 +1,21 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/submit_alert.html.twig #}
+
+Nouvelle inscription en attente de validation.
+
+  <p>
+      Voici les informations fournies à l'inscription :
+      <li> nom  : {{user.name}} </li>
+      <li> identifiant  : {{user.username}} </li>
+      <li> email  : {{user.email}} </li>
+      <li> adresse  :
+             {{user.address.street}} </li>
+             {{user.address.zipCity.zipCode}} </li>
+             {{user.address.zipCity.city}} </li>
+
+    <a href="{{ url('cairn_user_profile_view', {'id':user.id}) }}" class="btn btn-default">
+
+      <i class="glyphicon glyphicon-chevron-left"></i>
+      Cliquez sur ce lien pour voir le profil du nouvel inscrit.
+    </a>
+
+  </p>

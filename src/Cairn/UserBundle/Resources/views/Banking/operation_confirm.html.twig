@@ -1,0 +1,33 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/operation_confirm.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block stylesheets %} {{parent()}} {% endblock %}
+{% block body %}
+        {{parent()}}
+    <h1>Récapitulatif du paiement en cours </h1>
+    
+    <li>
+        {% if operationReview.from.display is defined %}
+            {{ operationReview.from.display }}
+        {% else %}
+            Association Le Cairn
+        {% endif %}
+    </li>
+    <li>
+        {% if operationReview.to.display is defined %}
+            {{ operationReview.to.display }}
+        {% else %}
+            Association Le Cairn
+        {% endif %}
+    </li>
+    <li>{{ operationReview.amount }}</li>
+    
+    <div class="well">
+      {{ form(form) }}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+
+{% endblock %}

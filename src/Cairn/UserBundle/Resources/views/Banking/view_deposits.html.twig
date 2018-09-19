@@ -1,0 +1,43 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/view_deposits.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+<div>
+    <table>
+    <caption> <span> Vos dépôts passés </span> </caption>
+    <thead>
+        <tr>
+            <th> Date d'éxecution </th>
+            <th> Compte crédité</th>
+            <th> Motif </th> 
+            <th> Montant </th>
+ 
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for transaction in processedTransactions %}
+                <tr>
+                    <td> {{transaction.date}} </td>
+                    <td>
+                        {% if transaction.relatedOwner.display is defined %}
+                            {{transaction.relatedOwner.display}}
+                        {% else %}
+                            Association Le Cairn
+                        {% endif %}
+                    </td>
+                    <td> {{transaction.description }} </td>  
+                    <td> {{transaction.amount }} </td>
+                </tr>
+    {% else %}
+        Aucun dépôt effectué 
+    {% endfor %}
+    </tbody>
+    </table>
+
+</div>
+{% endblock %}
+

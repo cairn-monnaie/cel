@@ -1,0 +1,15 @@
+{# src/Cairn/UserBundle/Resources/views/User/add_referent.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+
+{% block body %}
+    {{parent()}} 
+
+    <div class="well">
+        {{ form_start(form) }}
+        {{ form_rest(form) }}
+        {{form_end(form) }}
+    </div>
+
+{% endblock %}

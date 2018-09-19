@@ -1,0 +1,28 @@
+{# src/Cairn/UserBundle/Resources/views/Registration/index.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {% if is_granted('ROLE_ADMIN') %}
+        <h1> Qui est-il ?</h1>
+
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <li><a href="{{path('cairn_user_registration',{type:'superAdmin'} ) }}" > Administrateur </a></li>
+            <li><a href="{{path('cairn_user_registration',{type:'localGroup'} ) }}" > Groupe local </a></li>
+        {% endif %}
+        <li><a href="{{path('cairn_user_registration',{type:'pro'} ) }}" > Professionnel </a></li>
+        <li><a href="{{path('cairn_user_registration',{type:'adherent'} ) }}" > Particulier </a></li>
+
+    {% endif %}
+
+    {% if not is_granted('IS_AUTHENTICATED_REMEMBERED') %}
+        <h1> Qui êtes-vous ? </h1>
+            <div>
+                <ul>
+                    <li><a href="{{path('cairn_user_registration',{type:'pro'} ) }}" > Professionnel </a></li>
+                    <li><a href="{{path('cairn_user_registration',{type:'adherent'} ) }}" > Particulier </a></li>
+                </ul>
+            </div>
+    {% endif %}
+         
+{% endblock %}

@@ -1,0 +1,27 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/confirm_remove_beneficiary.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+    <div class="body_wrapper">
+        <div id="confirm_action"> <em>Confirmer la suppression de {{beneficiary_name}} de la liste des bénéficiaires </em> </div>
+        {{ form_start(form) }}                                                       
+         {{ form_rest(form) }}                                                        
+        {{form_end(form) }}   
+    </div>
+{% endblock %}              
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+{% endblock %}

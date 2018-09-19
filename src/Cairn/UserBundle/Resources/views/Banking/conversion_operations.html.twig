@@ -1,0 +1,29 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/conversion_operations.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+    <div class="body_wrapper>
+        <div id="conversion_action">
+            <h1> Effectuer une conversion </h1>
+           <ul>
+                {% if is_granted('ROLE_SUPER_ADMIN') %}
+                    <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'self'})}}"> Vers un compte de l'Association</a></li>
+                    <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'other'})}}"> Vers un professionnel </a></li> 
+                {% else %}
+                     <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'self'})}}"> Effectuer une conversion</a></li>
+                {% endif %}
+
+           <ul> 
+        </div>
+        <div id="conversion_management">
+            <h1> Gérer les conversions </h1>
+            <ul>
+                <li><a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'conversion'})}}"> Voir mes conversions </a></li>
+            </ul>
+        </div>
+{% endblock %}
+
+

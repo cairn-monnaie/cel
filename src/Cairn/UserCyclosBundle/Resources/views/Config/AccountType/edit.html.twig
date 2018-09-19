@@ -1,0 +1,15 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/edit.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+
+    <h2>Mise à jour du compte {{accountType.name}}</h2>
+
+    <div class="well">
+        {{ form(form) }}
+    </div>
+
+{% endblock %}

@@ -1,0 +1,106 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/view_single_transactions.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+{#<div class="well">
+  {{ form_start(form) }}
+  {{ form_rest(form) }}
+  {{form_end(form) }}
+</div>#}
+<div>
+    <table>
+    <caption> <span> Vos virements simples à venir </span> </caption>
+    <thead>
+        <tr>
+            <th> Date de demande </th>
+            <th> Date d'éxecution </th>
+            <th> Bénéficiaire</th>
+            <th> Motif </th> 
+            <th> Montant </th>
+            <th> Etat </th>
+            <th> Action </th>
+ 
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for installment in futureInstallments %}
+                <tr>
+                    <td> {{installment.scheduledPayment.date}} </td>
+                    <td> {{installment.dueDate}} </td>
+                    <td>
+                        {% if installment.scheduledPayment.relatedOwner.display is defined %}
+                            {{installment.scheduledPayment.relatedOwner.display}}
+                        {% else %}
+                            Association Le Cairn
+                        {% endif %}
+                    </td>
+                    <td> {{installment.scheduledPayment.description }} </td>  
+                    <td> {{installment.amount }} </td>
+                    <td> 
+                        {% if installment.status == 'SCHEDULED' %} 
+                            En cours
+                        {% elseif installment.status == 'BLOCKED' %}
+                            Bloqué
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{path('cairn_user_banking_transfer_view', {'type':'scheduled.futur','id' : installment.id})}}"> Voir le détail </a>
+                     |
+                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'cancel' })}}"> Annuler </a>
+                     | 
+                    {% if installment.status == 'BLOCKED' %}
+                        <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id, 'status':'open' })}}"> Débloquer </a>  </td>
+                    {% elseif  installment.status == 'SCHEDULED' %}
+                        <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id, 'status':'block' })}}"> Bloquer </a>  </td>
+                    {% endif %}
+                </tr>
+    {% else %}
+        Aucun virement en attente 
+    {% endfor %}
+    </tbody>
+    </table>
+
+    <table>
+    <caption> <span> Vos virements passés </span> </caption>
+    <thead>
+        <tr>
+            <th> Date d'éxecution </th>
+            <th> Bénéficiaire</th>
+            <th> Motif </th> 
+            <th> Montant </th>
+            <th> Action </th>
+
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for transaction in processedTransactions %}
+                <tr>
+                    <td> {{transaction.date}} </td>
+                    <td>
+                        {% if transaction.relatedOwner.display is defined %}
+                            {{transaction.relatedOwner.display}}
+                        {% else %}
+                            Association Le Cairn
+                        {% endif %}
+                    </td>
+                    <td> {{transaction.description }} </td>  
+                    <td> {{transaction.amount }} </td>
+                    {% if transaction.processedInstallments is defined %}
+                        <td> <a href="{{path('cairn_user_banking_transfer_view', {'type':'scheduled.past','id' : transaction.id})}}"> Voir le détail </a></td>
+                    {% else %}
+                        <td> <a href="{{path('cairn_user_banking_transfer_view', {'type':'simple','id' : transaction.transactionNumber})}}"> Voir le détail </a></td>
+                    {% endif %}
+                </tr>
+    {% else %}
+        Aucun virement effectué 
+    {% endfor %}
+    </tbody>
+    </table>
+
+</div>
+{% endblock %}
+

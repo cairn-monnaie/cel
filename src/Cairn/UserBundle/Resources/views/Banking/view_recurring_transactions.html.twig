@@ -1,0 +1,121 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/view_recurring_transactions.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+<div>
+    <table>
+    <caption> <span> Vos virements permanents en cours</span> </caption>
+    <thead>
+        <tr>
+            <th> Date de demande </th>
+            <th> Prochaine échéance </th>
+            <th> Bénéficiaire</th>
+            <th> Motif </th> 
+            <th> Périodicité </th>
+            <th> Montant </th>
+            <th> Action </th>
+ 
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for transaction in ongoingTransactions %}
+                <tr>
+                    <td> {{transaction.date}} </td>
+                    <td>{{transaction.nextOccurrenceDate}} </td>
+                    <td>
+                        {% if transaction.toOwner.display is defined %}
+                            {{transaction.toOwner.display }}
+                        {% else %}
+                            Association Le Cairn
+                        {% endif %}
+                    </td>
+
+                    <td> {{transaction.description }} </td>  
+                    <td>  
+                        {% if transaction.occurrenceInterval.amount == 1 %}
+                            Mensuelle
+                        {% elseif transaction.occurrenceInterval.amount == 2 %}
+                            Bimestrielle
+                        {% elseif transaction.occurrenceInterval.amount == 3 %}
+                            Trimestrielle
+                        {% elseif transaction.occurrenceInterval.amount == 6 %}
+                            Semestrielle
+                        {% elseif transaction.occurrenceInterval.amount == 12 %}
+                            Annuelle
+                        {% endif %}
+                    </td>  
+                    <td> {{transaction.currencyAmount.amount }} </td>
+                    <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> | <a href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
+                </tr>
+    {% else %}
+        Aucun virement en attente 
+    {% endfor %}
+    </tbody>
+    </table>
+
+    <table>
+    <caption> <span> Vos virements permanents achevés</span> </caption>
+    <thead>
+        <tr>
+            <th> Date de demande </th>
+            <th> Bénéficiaire</th>
+            <th> Motif </th> 
+            <th> Périodicité </th>
+            <th> Montant </th>
+            <th> Action </th>
+ 
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for transaction in processedTransactions %}
+                <tr>
+                    <td> {{transaction.date}} </td>
+                    <td>
+                        {% if transaction.toOwner.display is defined %}
+                            {{transaction.toOwner.display }}
+                        {% else %}
+                            Association Le Cairn
+                        {% endif %}
+                    </td>
+                    <td> 
+                        {% if transaction.description is not defined %}
+                            Virement Cairn
+                        {% else %}
+                            {{transaction.description}}
+                        {% endif %}
+                    </td>  
+                    <td>  
+                        {% if transaction.occurrencesCount == 1 %}
+                            Mensuelle
+                        {% elseif transaction.occurrencesCount == 2 %}
+                            Bimestrielle
+                        {% elseif transaction.occurrencesCount == 3 %}
+                            Trimestrielle
+                        {% elseif transaction.occurrencesCount == 6 %}
+                            Semestrielle
+                        {% elseif transaction.occurrencesCount == 12 %}
+                            Annuelle
+                        {% endif %}
+                    </td>  
+                    <td> {{transaction.currencyAmount.amount }} </td>
+                    <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> </td>
+                </tr>
+    {% else %}
+        Aucun virement permanent achevé 
+    {% endfor %}
+    </tbody>
+    </table>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+{% endblock %}

@@ -1,0 +1,20 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/confirm_user.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+<h3>Finalisation de l'inscription </h3>
+
+<div class="well">
+  {{ form(form) }}
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,44 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/TransferType/complete.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block fos_user_content %}
+
+<h3>Ajout d'un type de transfert</h3>
+
+<div class="well">
+
+{{ form_start(form) }}
+    {{ form_row(form.toNature) }}  
+    {{ form_row(form.toName) }} {# <select id="form_toName" ... #}
+{{ form_end(form) }}
+
+</div>
+
+<script>
+var $toNature = $('#form_toNature');
+// When beneficiary nature gets selected ...
+$toNature.change(function() {
+  // ... retrieve the corresponding form.
+  var $form = $(this).closest('form');
+  // Simulate form data, but only include the selected $toNature value.
+  var data = {};
+  data[$toNature.attr('name')] = $toNature.val();
+  // Submit data via AJAX to the form's action path.
+  $.ajax({
+    url : $form.attr('action'),
+    type: $form.attr('method'),
+    data : data,
+    success: function(html) {
+      // Replace current position field ...
+      $('#form_toName').replaceWith(
+        // ... with the returned one from the AJAX response.
+        $(html).find('#form_toName')
+      );
+      // Position field now displays the appropriate positions.
+    }
+  });
+});
+</script>))))
+{% endblock %}
+

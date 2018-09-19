@@ -1,0 +1,17 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/TransferType/edit.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+     <h2> Type de transfert </h2>
+    <div class="well">
+        <h3> {{ transferType.from.name }} -----> {{transferType.to.name}}</li>
+    </div>
+ 
+    <div class="well">
+      {{ form(form) }}
+    </div>
+{% endblock %}
+

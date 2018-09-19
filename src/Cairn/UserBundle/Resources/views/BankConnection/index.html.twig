@@ -1,0 +1,23 @@
+{# src/Cairn/UserBundle/Resources/views/BankConnection/view_deposit.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block fos_user_content %}
+
+  <ul>
+    {% set cmpt = 1 %}
+    {% for deposit in deposits %}
+      <li>
+        <a href="{{ path('cairn_user_bankconnection_deposit_view', {'id': deposit.id}) }}">
+          Dépôt {{cmpt}}        
+        </a>
+        effectué le {{ deposit.date|date('Y-m-d') }}
+      </li>
+     {% set cmpt = cmpt + 1 %}
+    {% else %}
+      <li>Pas (encore !) de dépôt effectué</li>
+
+    {% endfor %}
+  </ul>
+
+{% endblock %}

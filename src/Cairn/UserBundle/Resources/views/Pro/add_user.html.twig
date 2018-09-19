@@ -1,0 +1,91 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/add_user.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+<div>                                                                          
+        {{ form_start(form) }}            
+        {{form_end(form) }}   
+
+</div>                                                                         
+
+{% endblock %}              
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+    <script>
+        jQuery(function ($) {
+
+          var zipCities = {{zipCities|json_encode()|raw}};
+
+          var list = new Array();
+        
+          $containerCity =  $("#app_user_registration_address_zipCity_city");
+          $containerZipCode =  $("#app_user_registration_address_zipCity_zipCode");
+
+          for (var i = 0, c = zipCities.length; i < c ; i++){
+                list.push({label : zipCities[i].zipCode + " , " +  zipCities[i].city, value: zipCities[i].city }); 
+
+         }
+            
+            $("#app_user_registration_address_zipCity_city, #app_user_registration_address_zipCity_zipCode").autocomplete({
+                source: function(request,response){
+                            if($(this).attr('id') == $containerCity.attr('id')){
+                                response($.map(zipCities, function(object)
+                                {
+                                    return {
+                                            label: object.zipCode + ", " + object.city,
+                                            value: function()
+                                            {
+                                                    $containerCity.val(object.city);
+                                                    return object.zipCode;
+                                            }
+
+                                    }
+                                }));
+                            }
+                            else{
+                                response($.map(zipCities, function(object)
+                                {
+                                    return {
+                                            label: object.zipCode + ", " + object.city,
+                                            value: function()
+                                            {
+                                                    $containerZipCode.val(object.zipCode);
+                                                    return object.city;
+                                            }
+                                    }
+                                }));
+
+                            }
+                        },
+
+                minLength : 1,
+                delay: 600,
+                select: function(event,ui){
+                    if($(this).attr('id') == $containerCity.attr('id')){
+                        $containerZipCode.val(ui.item.value);
+                    }
+                    else{
+                        $containerCity.val(ui.item.value);
+                    }
+
+                },
+
+            });
+        });
+
+    </script>
+{% endblock %}
+
+

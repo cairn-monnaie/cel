@@ -1,0 +1,43 @@
+{# src/Cairn/UserBundle/Resources/views/Banknote/search.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block fos_user_content %}
+
+<h3>Recherche dynamique de billet</h3>
+
+<div class="well">
+ {{ form_start(form) }}
+
+        <div class="row">
+            <div class="col s12">
+                <div class="row">
+                    <div class="input-field col m6 s12">
+                        <i class="material-icons prefix">Number</i>
+                        {{ form_widget(form.number) }}
+                        {{ form_label(form.number) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {{ form_end(form) }}
+</div>
+{% endblock %}
+{% block javascripts %}
+    <script type="text/javascript">
+        jQuery(function ($) {
+            ('input[name="form[number]"]').autocomplete({
+                data: {
+            {% for banknote in banknotes %}
+                    "{{ banknote.number }}" 
+            {% endfor %}
+                },
+                limit: 10, // The max amount of results that can be shown at once. Default: Infinity.
+                onAutocomplete: function(val) {
+                    // Callback function when value is autcompleted.
+                },
+                minLength: 1, // The minimum length of the input for the autocomplete to start. Default: 1.
+            });
+        })
+    </script>
+{% endblock %}

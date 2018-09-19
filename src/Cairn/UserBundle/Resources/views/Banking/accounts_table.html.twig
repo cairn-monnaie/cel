@@ -1,0 +1,46 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/accounts_table.html.twig #}
+
+    <table>
+    <caption>  Les comptes  </caption>
+    <thead>
+        <tr>
+            <th> Nom du compte </th>
+            <th> Identifiant </th>
+            <th> Solde </th>
+            <th> Capacité de dépense </th> 
+            <th> Action </th> 
+
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for account in accounts %}
+            <tr>
+                <td>  
+                    <a href="{{path('cairn_user_banking_account_operations',{'accountID':account.id}) }}"> {{account.type.name}} </a>
+                </td>
+                <td> {{account.id}} </td>
+                <td> {{account.status.balance}} </td>
+                <td> 
+                    {% if account.unlimited %}
+                        infinie
+                    {% else %}
+                        {{account.status.availableBalance}} 
+                    {% endif %}
+                </td>
+                <td>
+                    {% if is_granted('ROLE_SUPER_ADMIN') %}
+                        {% if account.type.nature == 'USER' %}
+                            <a href="{{path('cairn_user_cyclos_accountsconfig_account_edit',{'id':account.id})  }}"> Modifier </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{{path('cairn_user_banking_account_operations',{'accountID':account.id})}}"> Voir </a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            Pas de compte ouvert
+        {% endfor %}
+    </tbody>
+
+    </table> 

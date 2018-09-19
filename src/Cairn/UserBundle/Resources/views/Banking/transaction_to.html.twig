@@ -1,0 +1,21 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/transaction_to.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+    <div class="body_wrapper>
+        <div id="transaction_to">
+           <ul>
+                <li><a href="{{path('cairn_user_banking_transaction_request',{'frequency': frequency, 'to':'self'})}}"> Entre vos comptes     </a></li>
+                <li><a href="{{path('cairn_user_banking_transaction_request',{'frequency':frequency,'to':'beneficiary'})}}"> Vers un bénéficiaire enregistré </a></li>
+
+                <li><a href="{{path('cairn_user_banking_transaction_request',{'frequency':frequency,'to':'new'})}}"> Vers un nouveau bénéficiaire </a></li>
+           <ul> 
+        </div>
+            </ul>
+        </div>
+{% endblock %}
+
+

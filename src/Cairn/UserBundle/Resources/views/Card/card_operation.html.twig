@@ -1,0 +1,29 @@
+{# src/Cairn/UserBundle/Resources/views/Card/card_operation.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+
+     <a href="{{path('cairn_user_card_revoke',{'id':user.id})}}"> Révoquer la carte </a>
+     <a href="{{path('cairn_user_card_new',{'id':user.id})}}"> Commander une carte </a>
+
+    {% if user == app.user and not user.card.enabled %}
+        <a href="{{path('cairn_user_card_validate')}}"> Activer la carte </a>
+    {% endif %}
+
+    {% if user.hasReferent(app.user) %}
+         <a href="{{path('cairn_user_card_generate',{'id':user.id})}}"> Générer la carte </a>
+    {% endif %}
+
+{% endblock %}              
+
+
+

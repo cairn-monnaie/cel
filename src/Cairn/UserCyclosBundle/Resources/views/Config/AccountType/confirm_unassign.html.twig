@@ -1,0 +1,26 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/confirm_unassign.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+  <h2>{{ accountType.name }}</h2>
+
+  <div class="well">
+    <div>
+        {% if assign %}
+            Attention, ce compte sera accessible par tous les professionnels.
+            <div id="confirm_action"> <em>Confirmer l'ouverture du compte </em>
+
+        {% else %}
+            Attention, ce compte est accessible par tous les professionnels. Le fermer ne le supprime pas définitivement, mais le rend invisible.
+             <div id="confirm_action"> <em>Confirmer la fermeture d'accès à ce compte </em>
+
+        {% endif %}
+             {{ form_start(form) }}                                             
+             {{ form_rest(form) }}                                              
+             {{form_end(form) }}                                                
+         </div> 
+
+{% endblock %}

@@ -1,0 +1,36 @@
+{# src/Cairn/AccountTypeCyclosBundle/Resources/views/Config/TransferFee/list.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+
+  <h2>Liste des types de frais</h2>
+
+  <ul>
+    {% for transferFee in listTransferFees %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_transferfee_view', {'id': transferFee.id}) }}">
+          {{ transferFee.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de type de frais de transfert</li>
+    {% endfor %}
+  </ul>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_view', {'id': fromAccountType.id}) }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-left"></i>
+      Retourner à la gestion du compte
+    </a>
+
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_transferfee_add') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Ajouter un type de frais de transfert
+    </a>
+
+
+  </p>
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/add_beneficiaries.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+    <div class="body_wrapper">
+        {{ form_start(form) }}                                                       
+         {{ form_rest(form) }}                                                        
+        {{form_end(form) }}   
+    </div>
+{% endblock %}              
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+    <script>
+        jQuery(function ($) {
+            var list = new Array();
+             {% for pro in pros %}
+                list.push({  value : "{{ pro.name }}", info :{name:"{{pro.name}}", email :"{{ pro.email }}"}   }); 
+            {% endfor %}
+            $containerName = $('#form_name');
+            $containerEmail = $('#form_email');
+
+            list_names=$.map(list, function(object){
+                return object.info;
+            });
+
+            console.log(list_names);
+           $containerName.autocomplete({
+                source : list,
+                minLength : 2,
+                select : function(event,ui){
+                    $containerEmail.val(ui.item.info.email);
+                }
+            }); 
+           $containerEmail.autocomplete({
+                source : list,
+                data : $.map(list, function(object){
+                            return object.info.email;
+                       }),
+                minLength : 2,
+                select : function(event,ui){
+                     $containerName.val(ui.item.info.name);
+                }
+            }); 
+
+        });
+    </script>
+{% endblock %}

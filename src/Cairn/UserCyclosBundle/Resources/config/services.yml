@@ -1,0 +1,50 @@
+services:
+
+    cairn_user_cyclos_user_info:
+        class: Cairn\UserCyclosBundle\Service\UserInfo
+
+    cairn_user_cyclos_network_info:
+        class: Cairn\UserCyclosBundle\Service\NetworkInfo
+        arguments:
+            - "%cyclos_root_prod_url%"
+            - "%cyclos_root_test_url%"
+            - "%cyclos_global_admin_username%"
+            - "%cyclos_global_admin_password%"
+            - "%kernel.environment%"
+
+    cairn_user_cyclos_group_info:
+        class: Cairn\UserCyclosBundle\Service\GroupInfo
+        arguments:
+            - "@cairn_user_cyclos_user_info"
+
+    cairn_user_cyclos_banking_info:
+        class: Cairn\UserCyclosBundle\Service\BankingInfo
+
+    cairn_user_cyclos_account_info:
+        class: Cairn\UserCyclosBundle\Service\AccountInfo
+        arguments:
+            - "@cairn_user_cyclos_accounttype_info"
+
+    cairn_user_cyclos_accounttype_info:
+        class: Cairn\UserCyclosBundle\Service\AccountTypeInfo
+
+    cairn_user_cyclos_channel_info:
+        class: Cairn\UserCyclosBundle\Service\ChannelInfo
+
+    cairn_user_cyclos_transfertype_info:
+        class: Cairn\UserCyclosBundle\Service\TransferTypeInfo
+
+    cairn_user_cyclos_product_info:
+        class: Cairn\UserCyclosBundle\Service\ProductInfo
+
+    cairn_user_cyclos_currency_info:
+        class: Cairn\UserCyclosBundle\Service\CurrencyInfo
+
+    cairn_user_cyclos_transferfee_info:
+        class: Cairn\UserCyclosBundle\Service\TransferFeeInfo
+
+    cairn_user_cyclos_accountfee_info:
+        class: Cairn\UserCyclosBundle\Service\AccountFeeInfo
+    
+    cairn_user_cyclos_errors_info:
+        class: Cairn\UserCyclosBundle\Service\ErrorInfo

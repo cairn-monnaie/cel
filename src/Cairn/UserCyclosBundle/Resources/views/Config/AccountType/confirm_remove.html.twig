@@ -1,0 +1,19 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/confirm_remove.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+  <h2>{{ accountType.name }}</h2>
+
+  <div class="well">
+            Attention, ce compte est accessible par tous les professionnels. Le fermer ne le supprime pas définitivement, mais le rend invisible.
+             <div id="confirm_action"> <em>Confirmer la fermeture d'accès à ce compte </em>
+
+             {{ form_start(form) }}                                             
+             {{ form_rest(form) }}                                              
+             {{form_end(form) }}                                                
+            </div> 
+    </div>
+{% endblock %}

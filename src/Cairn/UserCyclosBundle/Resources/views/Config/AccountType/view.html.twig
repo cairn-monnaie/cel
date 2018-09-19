@@ -1,0 +1,114 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+    
+    <h2> {{accountType.name}} </h2>
+  <div class="well">
+    <div>
+        {% if accountType.nature == 'USER' %}
+            <li> Limite basse : {{ product.defaultCreditLimit }}</li>
+            <li> Etat :
+                {% if isAssigned %}
+                      Ouvert
+                {% else %}
+                      Fermé
+                {% endif %}
+
+            </li>
+         {#   <li> href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_users', {'id' : accountType.id}) }}">Compte assigné à l'ensemble des professionnels </li> #} 
+
+        {% else %}
+            <li>{{ accountType.limitType }}</li>
+            {% if accountType.limitType == 'LIMITED' %}
+                <li>{{ accountType.creditLimit }}</li>
+            {% endif %}
+        {% endif %}
+    </div>
+
+        <h3> Types de transfert liés au compte</h3>
+            <h4> Transferts vers types de comptes professionnels </h4>
+                <table>
+                    <tr>
+                        <th>Vers le compte</th>
+                        <th>Actif</th>
+                      {#  <th>Frais de transfert</th> #}
+                        <th>Action</th>
+
+                    </tr>
+                    {% if accountType.nature == 'USER' %}
+                        {% set listTransferTypes = product.userPayments %}
+                    {% else %}
+                        {% set listTransferTypes = product.systemToUserPayments %}
+                    {% endif %}
+                    {% for transferType in listTransferTypes %}
+                        {% if transferType.from.name == accountType.name %}{# in case of system product, the list contains all system accounts , we need to display the ones related to the provided accountType#}
+
+                            <tr>
+                                <td><a href="{{path('cairn_user_cyclos_accountsconfig_accounttype_view', {'id': transferType.to.id}) }}"> {{transferType.to.name}}</a></td>
+                                <td> {{transferType.enabled}} </td>
+                              {#  <td> {{transferType.transferFee.amount}} % </td> #}
+                                <td><a href="{{path('cairn_user_cyclos_accountsconfig_transfertype_view', {'id': transferType.id}) }}">Voir</a></td>
+    
+                                </a>
+                            </tr>
+                        {% endif %}
+                    {% else %}
+                        Pas de type de transfert associé
+                    {% endfor %}
+                </table>
+
+             <h4> Transferts vers types de comptes système </h4>
+                <table>
+                    <tr>
+                        <th>Vers le compte</th>
+                        <th>Actif</th>
+                      {#  <th>Frais de transfert</th>#}
+                    </tr>
+                    {% if accountType.nature == 'USER' %}
+                        {% set listTransferTypes = product.systemPayments %}
+                    {% else %}
+                        {% set listTransferTypes = product.systemToSystemPayments %}
+                    {% endif %}
+
+                    {% for transferType in listTransferTypes %}
+                        {% if transferType.from.name == accountType.name %}{# in case of system product, the list contains all system accounts , we need to display the ones related to the provided accountType#}
+                            <tr>
+                                <td><a href="{{path('cairn_user_cyclos_accountsconfig_accounttype_view', {'id': transferType.to.id}) }}"> {{transferType.to.name}}</a></td>
+                                <td> {{transferType.enabled}} </td>
+                               {# <td>   Pas de frais                    </td>#}
+                                <td><a href="{{path('cairn_user_cyclos_accountsconfig_transfertype_view', {'id': transferType.id}) }}">Voir</a></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+
+                </table>
+  </div>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_list') }}">
+      Retour à la liste des comptes
+    </a>
+     <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_edit', {'id': accountType.id}) }}">
+      Mettre à jour le type de compte
+    </a>
+    {% if accountType.nature == 'USER' %}
+        {% if isAssigned %}
+             <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_remove_confirm', {'id': accountType.id}) }}">
+              Fermer le type de compte
+             </a>
+
+        {% else %}
+             <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_open_confirm', {'id': accountType.id}) }}">
+              Ouvrir le type de compte
+            </a>
+
+        {% endif %}
+    {% endif %}
+
+  </p>
+
+{% endblock %}

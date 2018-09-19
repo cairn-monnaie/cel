@@ -1,0 +1,17 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/index.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Accueil - {{ parent() }}
+{% endblock %}
+
+{% block fos_user_content %}
+
+  <h2>Cairn</h2>
+        <div class="well">
+          {{ form(form) }}
+        </div>
+
+
+{% endblock %}

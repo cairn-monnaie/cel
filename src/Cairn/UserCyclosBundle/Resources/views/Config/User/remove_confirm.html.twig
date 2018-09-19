@@ -1,0 +1,13 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/User/remove_confirm.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block fos_user_content %}
+
+<h3>Etes-vous sûr de vouloir poursuivre la suppression ? </h3>
+<div class="well">
+  {{ form(form) }}
+</div>
+
+{% endblock %}
+

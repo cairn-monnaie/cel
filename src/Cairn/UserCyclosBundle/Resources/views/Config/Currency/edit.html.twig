@@ -1,0 +1,17 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/Currency/edit.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Accueil - {{ parent() }}
+{% endblock %}
+
+{% block fos_user_content %}
+
+<h3>Mise à jour de la devise</h3>
+
+<div class="well">
+  {{ form(form) }}
+</div>
+
+{% endblock %}

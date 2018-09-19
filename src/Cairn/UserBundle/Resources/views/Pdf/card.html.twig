@@ -1,0 +1,35 @@
+{# src/Cairn/UserBundle/Resources/views/Pdf/card.html.twig #}         
+
+{% extends 'CairnUserBundle::layout-pdf.html.twig' %}
+
+
+{% block fos_user_content %}
+    {% set rows = fields|length %}
+    {% set cols = fields|length %}
+    <table>
+        <caption> <strong> Carte de sécurité Cairn n° {{card.number}} </strong> </br>
+                    <em> Propriétaire : {{card.user.name }} </em>
+        </caption>
+
+        <thead>
+           <tr> 
+            <th></th>
+            {% for i in 1..cols %}
+                <th><strong> {{i}}</strong></th>
+            {% endfor %}
+           </tr> 
+        </thead>
+        <tbody>
+            {% for letter in 1..rows %}
+                <tr>
+                    <td> <strong> &#{{64+letter}} </strong> </td>
+                    {% for i in 1..cols%}
+                        <td>{{fields[letter-1][i-1]}}</td>        
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    Cette carte de sécurité vous permet de réaliser les opérations considérées comme sensibles sur la plateforme de paiements du Cairn. Ne la transmettez sous aucun prétexte. En cas de perte ou de vol, révoquez-là immédiatement puis commandez-en une nouvelle.
+{% endblock %}

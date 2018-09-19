@@ -1,0 +1,14 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/add.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{ parent() }}
+    <h3>Formulaire d'ajout</h3></br>
+    <em>Attention, le nom du compte est définitif. Il ne peut être ensuite modifié </em>    
+    <div class="well">
+      {{ form(form) }}
+    </div>
+
+{% endblock %}

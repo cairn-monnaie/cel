@@ -1,0 +1,45 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/transfer_view.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+    <div>
+
+         <a href="{{path('cairn_user_banking_transfer_notice_download',{'id':transfer.id})}}"> Avis d'opération </a>
+        <h1> Détail du virement </h1>
+
+        <h2> Compte à débiter </h2>
+            <ul>
+                <li> Nom : {{transfer.from.type.name}}</li>
+                <li> ICC : {{transfer.from.id}}</li>
+                <li> Appartient à : 
+                    {% if transfer.from.owner.display is defined %}
+                        {{transfer.from.owner.display}}
+                    {% else %}
+                        Association Le Cairn
+                    {% endif %}
+                </li>
+            </ul>
+
+        <h2> Compte à créditer </h2>
+            <ul>
+                <li>Nom : {{transfer.to.type.name}}</li>
+                <li> ICC : {{transfer.to.id}}</li>
+                <li> Appartient à : 
+                    {% if transfer.to.owner.display is defined %}
+                        {{transfer.to.owner.display}}
+                    {% else %}
+                        Association Le Cairn
+                    {% endif %}
+                </li>
+
+            </ul>
+
+        <em> Date : {{transfer.date}} </em> </br>
+        <em> Montant : {{transfer.currencyAmount.amount}} </em></br>
+        <em> Devise : {{transfer.currencyAmount.currency.name}} </em></br>
+
+      {# <h3> Description : {{transfer.description}} </h3>#}
+    </div>    
+{% endblock %}

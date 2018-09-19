@@ -1,0 +1,36 @@
+{# src/Cairn/AccountTypeCyclosBundle/Resources/views/Config/TransferType/list.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+  <h2>Liste des types de transferts</h2>
+
+  <ul>
+    {% for transferType in listTransferTypes %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_transfertype_view', {'id': transferType.id}) }}">
+          {{ transferType.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de type de transfert</li>
+    {% endfor %}
+  </ul>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_list') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-left"></i>
+      Retourner à la gestion des comptes
+    </a>
+
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_transfertype_add') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Ajouter un type de transfert
+    </a>
+
+
+  </p>
+
+{% endblock %}

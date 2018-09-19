@@ -1,0 +1,28 @@
+{# src/Cairn/UserCyclosBundle/Resources/view/Network/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{ parent() }}
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+  <h2>{{ network.name }}</h2>
+
+  <div class="well">
+    {{ network.name }}
+  </div>
+    {% endif %}
+  <p>
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
+       {# <a href="{{ path('cairn_user_cyclos_sysconfig_home', {'id': network.id}) }}" >
+        Gestion du système
+        </a>#}
+
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_home') }}" >
+        Gestion des comptes
+        </a>
+
+    {% endif %}
+  </p>
+
+{% endblock %}

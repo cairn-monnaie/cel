@@ -1,0 +1,24 @@
+{# src/Cairn/UserBundle/Resources/views/Card/confirm_new_card.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+    <div>                                                                          
+        {{ form_start(form) }}            
+        {{form_end(form) }}   
+    </div>                                                                         
+
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+

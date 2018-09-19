@@ -1,0 +1,45 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/conversion.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+    {% if to == 'other' %}
+    <div class="well">
+      {{ form_start(formUser) }}
+      {{ form_rest(formUser) }}
+      {{ form_end(formUser) }}
+
+    </div>
+    {% endif %}
+
+    <div class="well">
+      {{ form_start(formConversion) }}
+      {{ form_widget(formConversion.toAccount, {'attr': {'class':'hidden-row'} }) }}
+      {{ form_rest(formConversion) }}
+      {{ form_end(formConversion) }}
+
+    </div>
+
+    {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':accounts,'type':'credit'})}}
+
+{% endblock %}
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+    <script>
+        jQuery(function ($) {
+            $formAccountOwner = $('#conversion_toAccount_owner');    
+            $formAccountId = $('#conversion_toAccount_id');    
+           
+            $containerAccount = $('.account'); 
+            $containerAccount.click(function (e){
+                $formAccountOwner.val($(this).children("em")[0].innerText) ;
+                $formAccountId.val($(this).children("span:last")[0].innerText);
+            });
+        });
+    </script>
+{% endblock %}

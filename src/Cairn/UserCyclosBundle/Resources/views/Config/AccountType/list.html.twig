@@ -1,0 +1,56 @@
+{# src/Cairn/AccountTypeCyclosBundle/Resources/views/Config/AccountType/list.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+  <h2>Liste des types de compte</h2>
+
+  <ul>
+    <h3> Comptes Système
+    {% for accounttype in systemAccountTypes %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_view', {'id': accounttype.id}) }}">
+          {{ accounttype.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de compte système </li>
+    {% endfor %}
+  </ul>
+
+   {# <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_add', {'nature' : 'SYSTEM'}) }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Ajouter un type de compte système
+    </a> #}
+
+  <ul>
+
+    <h3> Comptes Professionnels
+    {% for accounttype in userAccountTypes %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_view', {'id': accounttype.id}) }}">
+          {{ accounttype.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de compte professionnel </li>
+    {% endfor %}
+  </ul>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_add', {'nature' : 'USER'}) }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Ajouter un type de compte Pro
+    </a>
+
+  <p>
+   {# <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_home') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-left"></i>
+      Retourner à la liste des devises
+    </a>#}
+
+
+
+  </p>
+
+{% endblock %}

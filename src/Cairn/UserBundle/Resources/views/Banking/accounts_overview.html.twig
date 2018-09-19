@@ -1,0 +1,20 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/accounts_overview.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+
+    {% if user.hasRole('ROLE_SUPER_ADMIN') or user.hasRole('ROLE_PRO') %}
+    <div> <img src="{{ asset('download_mini.png') }}" alt="logo_download">
+                <a href="{{path('cairn_user_banking_accounts_overview_download') }}">Télécharger relevé de compte</a>
+    </div>
+    {% endif %}
+    <div class="body_wrapper">
+
+
+        {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
+    </div>
+
+{% endblock %}
+

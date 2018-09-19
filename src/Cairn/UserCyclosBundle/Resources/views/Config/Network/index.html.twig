@@ -1,0 +1,25 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/Network/index.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Accueil - {{ parent() }}
+{% endblock %}
+
+{% block fos_user_content %}
+
+  <h2>Liste des réseaux du Cairn</h2>
+
+  <ul>
+    {% for network in listNetworks %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_sysconfig_network_view', {'name': network.name}) }}">
+          {{ network.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de réseau</li>
+    {% endfor %}
+  </ul>
+
+{% endblock %}

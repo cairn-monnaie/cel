@@ -1,0 +1,24 @@
+{# src/Cairn/UserCyclosBundle/Resources/view/Network/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Réseau du Cairn - {{ parent() }}
+{% endblock %}
+
+{% block cairnusercyclos_body %}
+
+  <h2>{{ network.name }}</h2>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_home') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-chevron-left"></i>
+      Retour à la liste des réseaux
+    </a>
+    <a href="{{ path('cairn_user_cyclos_network_edit', {'name': network.name}) }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Mettre à jour le réseau
+    </a>
+  </p>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{# src/Cairn/UserBundle/Resources/views/Card/confirm_revoke_card.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+    
+    <h2>Révoquer votre carte de sécurité Cairn n° {{card.number}} </h2>
+    <h3> Révoquer uniquement en cas de perte </h3>
+
+    {{
+        include('CairnUserBundle:Card:warning_card_tries.html.twig',{'card':card})
+    }}      
+    <div>                                                                          
+        {{ form_start(form) }}
+        {{form_end(form) }}
+    </div>                                                                         
+
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+

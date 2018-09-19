@@ -1,0 +1,15 @@
+{# src/Cairn/UserBundle/Resources/views/Card/generate_card.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+
+{% block body %}
+    {{parent()}} 
+    <strong>Attention, générer la carte de sécurité ne peut être effectué qu'une seule fois car il s'agit d'un document sensible. Assurez-vous d'imprimer le fichier téléchargé au plus vite. Autrement, {{user.name}} devra déclarer sa nouvelle carte comme révoquée, et en commander une nouvelle. </strong>
+    <div>                                                                          
+        <a href="{{path('cairn_user_card_generate',{id:user.id})}}"> Générer la carte de sécurité de {{user.name}} maintenant</a>
+    </div>                                                                         
+
+{% endblock %}              
+
+
+

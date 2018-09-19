@@ -1,0 +1,88 @@
+{# src/Cairn/UserBundle/Resources/views/Pdf/operation_notice.html.twig #}         
+
+{% extends 'CairnUserBundle::layout-pdf.html.twig' %}
+
+{% block fos_user_content %}
+    <p>This is the PDF content.</p>
+
+
+    <figure>
+        <img src="{{ asset('purple-unknown.png') }}" alt="Logo Cairn">
+        <figcaption>A picture with an absolute URL</figcaption>
+    </figure>
+
+   <table>
+        <tbody>
+           <td> <strong> Avis d'opération de virement </strong> </td> 
+           <td> Compte-rendu de votre virement, d'ordre n°{{transfer.transactionNumber}}, enregistré le {{transfer.date}} </td>
+           <td> Imprimé le {{ 'now'|date('d - m -Y') }} <td>
+        </tbody>
+    </table> 
+
+   <table>
+        <thead>
+            <tr>
+                <th> Montant </th>
+                <th> Date d'éxecution </th>
+                <th> Etat </th>
+    
+            </tr>
+        </thead>
+    
+        <tbody>
+            <td> {{transfer.currencyAmount.amount}} {{transfer.currencyAmount.currency.suffix}} </td> 
+            <td> {{transfer.date}} </td>
+            <td> A FAIRE <td>
+        </tbody>
+    </table> 
+
+   <table>
+    <caption> Compte à débiter </caption>
+        <thead>
+            <tr>
+                <th> Compte </th>
+                <th> Description </th>
+    
+            </tr>
+        </thead>
+    
+        <tbody>
+            <td> {{transfer.from.type.name}} </br>
+                 {{transfer.from.id}} </br>
+                 {% if transfer.from.owner.display is defined %}
+                        {{transfer.from.owner.display}}
+                 {% else %}
+                        Association Le Cairn
+                 {% endif %}
+             </td> 
+            <td> {{description}} </td>
+        </tbody>
+    </table> 
+
+
+   <table>
+    <caption> Compte à créditer </caption>
+        <thead>
+            <tr>
+                <th> Compte </th>
+                <th> Description </th>
+    
+            </tr>
+        </thead>
+    
+        <tbody>
+            <td> {{transfer.to.type.name}} </br>
+                 {{transfer.to.id}} </br>
+                 {% if transfer.to.owner.display is defined %}
+                        {{transfer.to.owner.display}}
+                 {% else %}
+                        Association Le Cairn
+                 {% endif %}
+             </td> 
+            <td> {{description}} </td>
+        </tbody>
+    </table> 
+
+{% endblock %}
+
+

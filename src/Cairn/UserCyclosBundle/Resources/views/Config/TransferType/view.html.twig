@@ -1,0 +1,36 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/TransferType/view.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{ parent() }}
+    <h2> Type de transfert </h2>
+    <div class="well">
+        <h3> {{ transferType.from.name }} -----> {{transferType.to.name}}</li>
+        <li> virements automatiques autorisés : {{ transferType.allowsRecurringPayments }}</li>
+        <li> Actif : {{transferType.enabled}} </li>
+        
+      {# <h4> Frais de transfert : </h4>
+            {% if transferFee is defined %}
+    
+                <ul> 
+                    <li>Pourcentage : {{transferFee.amount}}</li>
+                    <li>Actif : {{transferFee.enabled}} </li>
+                    <li>A la charge de : {{transferFee.payer}}</li>
+                    <li>A destination de : {{transferFee.receiver}}</li>
+                    <li><a href="{{ path('cairn_user_cyclos_accountsconfig_transferfee_edit', {'id': transferFee.id}) }}">Modifier</a></li>
+    
+                </ul>
+            {% else %}
+                Aucun. <a href="{{ path('cairn_user_cyclos_accountsconfig_transferfee_add') }}"> Cliquer ici pour en créer un </a>
+            {% endif %} #}
+  </div>
+
+  <p>
+     <a href="{{ path('cairn_user_cyclos_accountsconfig_transfertype_edit', {'id': transferType.id}) }}" >
+      Mettre à jour le type de transfert
+     </a>
+  </p>
+
+{% endblock %}

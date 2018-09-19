@@ -1,0 +1,83 @@
+{# src/Cairn/UserBundle/Resources/views/User/index.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+    {% if app.user.hasRole('ROLE_PRO') %}
+         <h2> Espace Professionnel {{ app.user.name }}</h2>                                                  
+    {% elseif app.user.hasRole('ROLE_ADMIN') %}
+         <h2> Espace Groupe Local {{ app.user.name }}</h2>                                                  
+    {% else %}
+         <h2> Espace Administrateur {{ app.user.name }}</h2>                                                  
+    {% endif %}
+<h3> {{ 'now'|date('d - m -Y') }} </h3>                                                                               
+<p>                                                                          
+
+<div id="body_wrapper">
+    <div id="situation">
+        <a href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}">
+            <span role="heading" id="situation_title"> situation </span>
+        </a>
+        <ul>
+            {% for account in accounts %}
+            <li class="accounts_info">       
+                <a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">
+                    <div>
+                        {{account.type.name}} </br>
+                        {{account.id}}
+                    </div>
+                    <span> {{account.status.balance}} </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div id="operations">
+        <a href="#">
+            <span role="heading" id="operations_title"> Dernières opérations </span>
+            <ul>
+                {% for transaction in lastTransactions %}
+                <li class="transactions_info">       
+                    <div>
+                        {{transaction.date}} </br>
+                        {{transaction.description}}
+                    </div>
+                    <span> {{transaction.amount}} </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </a>
+    </div>
+    <div id="network">
+        <img src="{{asset('purple-network.png')}}" alt="Network">
+        <span role=heading" id="last_users_title"> Ils ont rejoint votre réseau </span>
+        <ul>
+            {% for user in lastUsers %}
+            <li class="users_show">       
+                <div>
+                    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}">
+                        {{user.name}} </br>
+                        {#<img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}">#}
+                    </a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+
+    </div>
+
+</div>
+
+</p>                                                                         
+                                                                            
+{% endblock %}              
+
+

@@ -1,0 +1,53 @@
+{# src/Cairn/UserBundle/Resources/views/User/list_users.html.twig #}         
+
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+<div>                                                                          
+    {% if is_granted('ROLE_ADMIN') %}
+        <ul>
+            <li><a href="{{path('cairn_user_registration') }}" >Ajouter un membre</a></li> 
+            <li><a href="{{path('cairn_user_users_search') }}" >Rechercher un professionnel</a></li>
+        </ul>
+    {% endif %}
+    <div>
+        <h2> Les professionnels </h2>
+        <ul>
+            {% for user in listPros %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                Pas <em>encore</em> de professionel inscrit !
+            {% endfor %}
+        </ul>
+
+         <h2> Les groupes locaux </h2>
+         <ul>
+            {% for user in listAdmins %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                Pas <em>encore</em> de groupe local inscrit !
+            {% endfor %}
+        </ul>
+   
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <h2> Les administrateurs </h2>
+            <ul>
+               {% for user in listSuperAdmins %}
+                  <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+               {% else %}  
+                   Pas <em>encore</em> d'administrateur inscrit !
+               {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}              
+

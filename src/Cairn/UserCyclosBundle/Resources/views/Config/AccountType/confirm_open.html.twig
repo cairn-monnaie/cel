@@ -1,0 +1,19 @@
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/AccountType/confirm_open.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+
+{% block body %}
+    {{parent()}}
+  <h2>{{ accountType.name }}</h2>
+
+  <div class="well">
+            Attention, ce compte sera accessible par tous les professionnels. 
+             <div id="confirm_action"> <em>Confirmer l'ouverture du compte </em>
+
+                 {{ form_start(form) }}
+                 {{ form_rest(form) }}                                              
+                 {{form_end(form) }}                                                
+            </div> 
+    </div>
+{% endblock %}

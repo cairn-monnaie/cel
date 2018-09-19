@@ -1,0 +1,4 @@
+from,to,type,amount,description
+SYSTEM,LaBonnePioche,debit.toUser,100,Virement Cairn test imports
+SYSTEM,DrDBrew,debit.toUser,100,Virement Cairn test imports
+SYSTEM,MaltOBar,debit.toUser,100,Virement Cairn test imports

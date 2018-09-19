@@ -1,0 +1,39 @@
+{# src/Cairn/AccountTypeCyclosBundle/Resources/views/Config/Currency/list.html.twig #}
+
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
+
+{% block title %}
+  Accueil - {{ parent() }}
+{% endblock %}
+
+{% block fos_user_content %}
+
+  <h2>Liste des devises du réseau</h2>
+
+  <ul>
+    {% for currency in listCurrencies %}
+      <li>
+        <a href="{{ path('cairn_user_cyclos_accountsconfig_currency_view', {'id': currency.id}) }}">
+          {{ currency.name }}
+        </a>
+      </li>
+    {% else %}
+      <li>Pas (encore !) de devise</li>
+    {% endfor %}
+  </ul>
+
+  <p>
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_home') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-left"></i>
+      Retourner à la configuration du réseau
+    </a>
+
+    <a href="{{ path('cairn_user_cyclos_accountsconfig_currency_add') }}" class="btn btn-default">
+      <i class="glyphicon glyphicon-edit"></i>
+      Ajouter une devise
+    </a>
+
+
+  </p>
+
+{% endblock %}
