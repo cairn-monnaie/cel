@@ -1,0 +1,1 @@
+_sf2_attributes|a:1:{s:11:"sf_redirect";a:6:{s:5:"token";s:6:"b5a14c";s:5:"route";s:24:"fos_user_security_logout";s:6:"method";s:3:"GET";s:10:"controller";s:41:"fos_user.security.controller:logoutAction";s:11:"status_code";i:302;s:11:"status_text";s:5:"Found";}}_sf2_flashes|a:0:{}_sf2_meta|a:3:{s:1:"u";i:1533747929;s:1:"c";i:1533747929;s:1:"l";s:1:"0";}
