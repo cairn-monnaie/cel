@@ -1,0 +1,39 @@
+security:
+    encoders:
+        Cairn\UserBundle\Entity\User: sha512
+
+    role_hierarchy:
+        ROLE_ADMIN:       ROLE_PRO
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+
+    providers:
+        in_memory:
+            memory:
+                users:
+                    user:  { password: userpass, roles: [ 'ROLE_PRO' ] }
+                    admin: { password: adminpass, roles: [ 'ROLE_ADMIN' ] }
+
+        main:
+            id: fos_user.user_provider.username
+
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        main:
+            pattern:   ^/
+            anonymous: true
+            provider: main
+            form_login:
+                login_path: fos_user_security_login
+                check_path: fos_user_security_check
+                default_target_path: cairn_user_welcome
+            logout:
+                path:       fos_user_security_logout
+                target:     fos_user_security_login
+            remember_me:
+                secret:     '%secret%' #defined in parameters.yml 
+    access_control:
+        - { path: ^/config, roles: ROLE_SUPER_ADMIN }

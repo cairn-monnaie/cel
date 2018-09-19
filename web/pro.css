@@ -1,0 +1,56 @@
+#body_wrapper
+{
+    display: flex;
+    justify-content: space-between;
+}
+
+#situation
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    border: 1px solid black;
+}
+
+.accounts_info
+{
+    display:flex;
+    justify-content: space-between;
+}
+
+#network
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: space-between;
+    border: 1px solid black;
+}
+
+#network img
+{
+    width: 40px;
+    height: 40px;
+}
+
+#network ul
+{
+    list-style-type: none;
+}
+
+.users_show img
+{
+    width: 50px;
+    height: 60px;
+}
+
+#operations
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: space-between;
+    border: 1px solid black;
+
+}

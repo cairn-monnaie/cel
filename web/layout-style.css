@@ -1,0 +1,129 @@
+/*web/layout-style.css */
+
+body
+{
+    background-color: white;
+    font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: purple;
+}
+
+/* Header part */
+header
+{
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid black;
+}
+
+.top-left
+{
+    display: flex;
+    justify-content: row;
+    align-items: center;
+    width: 500px;
+    height: 120px;
+    border: 1px solid black;
+}
+
+.top-left img
+{
+    width: 100px;
+    height:100px;
+}
+
+#title 
+{
+    display: flex;
+    flex-direction: column;
+}
+
+#logo_cairn
+{
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+}
+
+#logo_cairn img
+{
+    width: 100px;
+    height: 100px;
+}
+.top-right
+{
+    display: flex;
+    align_items: baseline;
+}
+.top-right img
+{
+    width: 60px;
+    height: 60px;
+}
+#logo_user
+{
+    position: relative;
+}
+
+.notifications img
+{
+    position: absolute;
+    width : 15px;
+    height : 15px;
+}
+
+#logout
+{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Navigation */
+
+body nav
+{
+    border : 1px solid black;
+}
+
+body nav ul
+{
+    list-style-type: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+body nav li a
+{
+    margin-right: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+body nav a
+{
+    font-size: 1.3em;
+    color: #60307c;
+    padding-bottom: 3px;
+    text-decoration: none;
+}
+
+body nav a img
+{
+    width: 60px;
+    height: 60px;
+}
+
+body nav a:hover
+{
+    background-color: purple;
+    color: white;
+/*    border-bottom: 3px solid #760001;*/
+}
+
+footer
+{
+
+}

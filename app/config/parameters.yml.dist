@@ -1,0 +1,51 @@
+# This file is a "template" of what your parameters.yml file should look like
+# Set parameters here that may be different on each deployment target of the app, e.g. development, staging, production.
+# https://symfony.com/doc/current/best_practices/configuration.html#infrastructure-related-configuration
+parameters:
+    database_host: 127.0.0.1
+    database_port: ~
+    database_name: symfony
+    database_test_name : symfony
+    database_user: root
+    database_password: ~
+    # You should uncomment this if you want to use pdo_sqlite
+    #database_path: '%kernel.project_dir%/var/data/data.sqlite'
+
+    mailer_transport: smtp
+    mailer_host: 127.0.0.1
+    mailer_user: cairn@cairn-monnaie.com
+    mailer_port: 1080
+    mailer_password: abcdefg
+
+    # A secret key that's used to generate certain security-related tokens
+    secret: ThisTokenIsNotSoSecretChangeIt
+
+    cairn_card_rows : 5
+    cairn_card_cols : 5
+    cairn_card_activation_delay : 10
+    cairn_email_noreply : noreply@cairn-monnaie.com
+    cairn_email_technical_services : maintenance@cairn-monnaie.com
+
+    cairn_email_activation_delay : 10
+
+    cairn_default_transaction_description : Virement Cairn
+    cairn_default_conversion_description : Conversion euros-cairns
+    cairn_default_withdrawal_description : Retrait Cairn
+    cairn_default_deposit_description :  Dépôt Cairn
+    cairn_default_reconversion_description : Reconversion cairns-euros
+
+    cyclos_group_adherents : members
+    cyclos_group_pros : Pros
+    cyclos_group_network_admins : Network administrators
+    cyclos_group_global_admins : Global administrators
+
+    cyclos_network_cairn   : Cdm
+    cyclos_root_prod_url : 'http://example-prod:1234/'
+    cyclos_root_test_url:  'http://example-test:4321/'
+    cyclos_global_admin_username : admin
+    cyclos_global_admin_password : admin
+    global_admin_email : admin@localhost.com
+
+
+    cyclos_currency_cairn : cairn
+

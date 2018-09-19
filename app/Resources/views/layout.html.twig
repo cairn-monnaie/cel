@@ -1,0 +1,69 @@
+{# app/Resources/views/layout.html.twig #}
+
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" />
+        {% endblock %}
+        <meta name="viewport" content="width=device-width" />
+        <title>{% block title %} Paye ton Cairn {% endblock %} </title>
+
+    </head>
+    <body>
+        <div id="main_wrapper">
+            <header>
+                <div class="top-left">
+                    <img src="{{asset('apple-touch-icon.png')}}" alt="Logo du Cairn">
+                    <div id="titles">
+                        <h1> Le Cairn </h1>
+                        <h2> Monnaie Locale Complémentaire </h2>
+                    </div>
+                </div>
+                <div class="top-right">
+                    <div id="logo_user">
+                        <div class="notifications">
+                            <img  src="{{asset('apple-touch-icon.png')}}" alt="Notifications">
+                        </div>
+                        {% if app.user.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}"> 
+
+                        {% else %}
+                            <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur"> 
+
+                        {% endif %}
+                    </div>
+                    <div id="logout">
+                        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+                            Connecté en tant que {{ app.user.username }}
+                            -
+                            <a href="{{ path('fos_user_security_logout') }}">
+                                <img src="{{asset('apple-touch-icon.png')}}" alt="Déconnexion"></a>
+                        {% else %}
+                            <a href="{{ path('fos_user_security_login') }}">Connexion</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </header> 
+            {% block fos_user_content %}{% endblock %}
+            {% block body %}{% endblock%}
+        </div>
+        {% block javascripts %}
+         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+            <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+        {% endblock %}
+    </body>
+    <footer>
+        <nav>
+            <ul>
+                <li><a class=menu-item href="#"> Nos permanences <img src="{{asset('apple-touch-icon.png')}}"></a></li>
+                <li><a class=menu-item href="#"> Site du Cairn <img src="{{asset('apple-touch-icon.png')}}"></a></li>
+                <li><a class=menu-item href="#"> Réseaux sociaux <img src="{{asset('apple-touch-icon.png')}}"></a></li>
+                <li><a class=menu-item href="#"> Contacts <img src="{{asset('apple-touch-icon.png')}}"></a></li>
+            </ul>
+        </nav>
+
+    </footer>
+</html>
