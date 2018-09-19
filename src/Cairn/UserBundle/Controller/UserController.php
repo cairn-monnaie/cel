@@ -484,6 +484,10 @@ class UserController extends Controller
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
+        if($user->getUsername() == $this->getParameter('cyclos_global_admin_username')){
+            $session->getFlashBag()->add('error','Le membre super administrateur ne peut être supprimé');
+            return $this->redirectToRoute('cairn_user_profile_view', array('id'=>$user->getID()));       
+        }
 
         //check that account balances are all 0 (for PRO only)
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID(),NULL);
