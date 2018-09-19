@@ -1,8 +1,0 @@
-Plusieurs couches :
-    _firewall :
-        *bundle cyclos : racine config/ protégé par firewall
-    _routes
-    _controller
-    _views
-
-déclarer des functions/attributs des Entités en private

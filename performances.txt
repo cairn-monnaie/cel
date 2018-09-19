@@ -1,9 +1,0 @@
-requêtes SQL : recherche User : ne récupérer que les champs nécessaires
-
-performances : plutôt que faire des foreach dans des foreach pour des entités : faire des jointures
-
-vues : ne pas regénérer les fichiers jquery à chaque vue qui nécessite du js : hériter
-
-toutes les recherches Cyclos avec des VO : l'id suffit. Pas besoin de recherche l entité VO complète si possible
-
-remplacer des if/elseif par des switch(applicables aus strings en php !)
