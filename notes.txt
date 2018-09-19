@@ -1,0 +1,202 @@
+
+A FAIRE PLUS TARD :
+    *supprimer les fichiers parameters.yml et parameters.yml.dist de github dans tout l'historique
+    $supprimer le fichier de routing de tout l historique de github pour eviter les failles CSRF
+    *inscription d un pro : vérificiation qu il est bien dans le réseau via un document spécifique lui appartenant et que personne d autre ne peut avoir 
+    *fichier listant l ensemble des professionnels du réseau du Cairn ?
+    *en plus de la carte, mettre un champ de formulaire vide contenant un champ CSRF pour éviter la faille : si un utilisateur est authentifié en tant que super_admin, a validé sa carte puis est attaqué, il peut, en cliquant sur un lien, mené des actions de configuration, de suppression de plateforme etc :     $form = $this->get('form.factory')->create();
+
+    *revoir Readme + init_configs.txt + install en prod
+    *à l'installation de cyclos : voir 1.3 enable SSL/HTTPS
+    *gestion des exceptions autres que cyclos dans le ExceptionListener(ou pas) : exception(page not found, access denied ...)
+    *notifier les référents en cas de : suppression pro/création pro/commande carte/
+    *bloquer la suppression du global admin
+    *réduire le temps des sessions
+    *décommenter les lignes à registration : send email to admin
+    *inscription : indiqué au pro, dans leur description, de mettre des mots clés de leur activité permettant de les retrouver après grâce à eux.
+    *mauvais mot de passe(partout où il y a InputPasswordEvent) : rappeler le nombre d essais restants 
+    *email de suppression/creation de compte : rentrer un justificatif à la main qui ira dans un email à envoyé à tous les Pros 
+    *script backup bdd cyclos et Doctrine régulièrement
+    *faire Url rewriting
+    *générer des fichiers de logs pour les erreurs
+    *factoriser code operations request (withdrawal, deposit..)
+    *valider les formulaires grâce à des custom validation constraints si ca existe
+    *abuser un peu moins des messages flashBag pour la validation de certains formulaires non liés à des entités ?
+    *limiter l'envoi d'emails au profit des notifications : impact écologique : https://www.novethic.fr/actualite/infographies/isr-rse/envoyer-un-mail-regarder-une-video-l-impact-environnemental-du-numerique-decode-145813.html
+    *si Entité Doctrine liée à une entité cyclos via un ID(e.g User), créer un service qui récupère entité cyclos à partir de entité Doctrine et inversement --> en cas d'échec, notifier les services techniques qu'une dissociation a eu lieu(base de données faussée)
+    *factoriser code javascript opérations bancaires
+
+
+
+que se passe-t-il si transfertype désactivé puis tentative de paiement : erreur technique renvoyée car transfertype inactif.
+
+
+que faire si le nouvel utilisateur n'est pas validé lors de l'email ? On a une creation_date : comme pour les cartes : checkDelayedEmails 
+    comment : if lastLogin == NULL (vient de s inscrire) + enabled = false et creationDate > 10j, rappel de validation d email xxx
+en cas d'expiration : notifier les référents pour appeler le pro
+
+
+bloquer la possibilité de rendre le compte debitAccount inactif xxx (non modifiable)
+bloquer la possibilité de fermer le compte debitAccount xxx
+impossibilité de créer un 2eme accountType system illimité xxx (pas de possibilité de créer un compte system)
+
+accéder à l'espace configuration : carte xxx
+modifier la balance d un pro : carte xxx 
+
+par défaut : tous les superAdmins sont référents de tous les Pros/groupes locaux xxx
+chaque superAdmin créé est référencé par tous les superAdmins déjà en place xxx
+un ROLE_ADMIN(groupe local) est référent de lui-même xxx
+à linscription d un pro par un ADMIN : chosir le groupe local référent xxx
+
+gestion des référents : créer une vue ajout/suppression/voir référent + empêcher duplication d'ajout
+
+onRegistrationConfirm: envoyer email au référent pour autoriser accès plateforme
+
+créer un admin par groupe local, s'il existe déjà un admin dans le groupe local(même ville pour le lieu du local), refuser ouverture xxx
+seul un referent d un pro peut réaliser les tâches suivantes :
+    _bloquer/autoriser accès à la plateforme d un pro xxx
+    _générer/revoquer/commander une nouvelle carte pour un pro xxx
+    _fermer l espace membre(en + du pro) xxx
+
+ 
+rajouter référent et RIB dans les attributs User xxx
+s'assurer que le RIB est valide ?
+
+preuve que la demande d inscription est bien celle d un pro ? un document que seuls les pros ont ?
+
+
+suppression de compte : ne peut être fait s il y a au moins une opération effectuée xxx
+on peut dissocier un groupe de son Product, mais on le fait uniquement si toutes les balances sont nulles. xxx
+
+si balances non nulles, comment les forcer à l'être ?
+    _avoir la possiblité de faire des virements à la place des pros et transferer l argent vers autres comptes
+    _communiquer pour demander aux pros d equilibrer ce solde 
+
+s'il y a des paiements en attente, que fait Cyclos ? : virements canceled xxx
+
+test : s'il y a des virements en attente, peut-on dissocier un compte de son Product ? : oui, ils sont annulés automatiquement xxx
+
+limite de taille pour la description d une opération bancaire ?
+
+à ajouter aux conversions, reconversions : compte bancaire à créditer/débiter en cas d ajout de plusieurs comptes bancaires
+pour l'instant : à part les virements, toutes les opérations bancaires se font dans l'immédiat
+
+pour les reconversions/retraits : imposer un compte positif(pour ne pas retirer de l'argent que le pro n'a pas ) xxx
+interdire des montants négatifs, des montants flottants xxx
+
+virements permanents : trouver un moyen d'avoir les autres occurrences à effectuer : pas moyen (même dans cyclos main web) xxx
+
+tester des descriptions qui portent à confusion pour le filtre Cyclos xxx 
+description insuffisante pour filtrer en cas de mot clé commun à dépôt/conversion par exemple
+filtre cyclos insensible à la casse pour l attribut description
+si sous-ensemble d un mot clé de la description : non trouvé
+possibilité : créer une entité Doctrine pour Transfer/Withdrawal/Deposit/Conversion/Reconversion avec pour attribut transactionNumber/motif/intitulé
+
+description automatique sur dépôts et retraits : Depot/Retrait Cairn + lieu xxx 
+description par défaut opération : dépôt/retrait/virement/conversion/reconversion + Cairn xxx
+
+rechercher les comptes pro : retourner message flashbag si aucun user trouver
+
+voir http://symfony.com/doc/current/routing.html partie Redirecting URLs with Trailing Slashes pour gérer les / des URL : si on les met ou pas à la fin.. : ajouter un slash tout le temps à la fin pour être sûr que les URL vont fonctionner avec/sans / de fin xxx
+
+détail des transfertype : seuls les transfertypes USER_TO_User sont visibles en config(pas user_to_self) xxx
+
+virement entre vos comptes : if admin --> remove debitAccount xxx
+                             if 0/1 account : flashbag message xxx
+
+si à un moment : un pro fait virements permanents mais n'a pas les fonds suffisants alors qu'il les avait au départ ? : cyclos script ? 
+Le code ne retournera pas d'erreur puisque c'était ok au départ. Cyclos retourne-t-il une erreur ? Comment la gérer ?
+Réponse : pas d'erreur, mais le virement est déclaré FAILED. xxx
+
+rajouter paiements/debits/credits/reconversion/conversion à la liste des evenements necessitant la carte xxx
+
+executeOccurrence : rattraper exception : si instanceof InsufficiantBalance : renvoyer message d erreur balance insuffisante xxx
+                                          si exception technqiue : exceptionListener  xxx
+
+
+gestion des erreurs cyclos : lorsqu'une exception est levée : 
+                            *récupérer message avec eventlistener kernel.exception xxx
+                                     _si problème de service ConnectionException : fermer la plateforme xxx + envoi email services techniques xxx
+                                     _si problème de service ServiceException: 
+                                              *si ENTITY_NOT_FOUND: rediriger vers page d'accueil xxx
+                                              *sinon erreur techniquemessage flashbag pour user + redirection page d'erreur + envoi email services techniques xxx
+                                *si problème venant de card : rediriger vers card_home xxx
+                                *sinon rediriger vers page d'erreur personnalisée pour exception(page not found, access denied ...)
+                            
+
+gestion du profil admin : les comptes Cyclos
+                          bloquer son propre accès à la plateforme ? xxx
+                          2 super Admin : celui de départ / le CP xxx
+                          les Super_Admin peuvent modifier la limite basse xxx 
+
+faire le filtrage pour les virements : payments overview xxx
+voir le détail des virements : compte de départ/compte d'arrivée + lien téléchargement avis d'opération xxx 
+
+envoyer un email aux utilisateurs pour leur signaler la fermeture de compte ? : prévenir que les bénéficiaires ont été supprimés xxx
+envoyer un email à l'ouverture de compte ? xxx
+
+
+erreur : nouveau bénéficiaire : l ICC ne correspond pas au nom xxx
+
+admin : vue situation comptes
+
+génerer les PDF : relevé de compte :
+                    _si pas de date indiquée : dernier mois xxx
+                  avis d'opération xxx : faire ETAT
+                  avis de reconversion
+                  avis de conversion
+                  RIB Cairn xxx
+                  carte Cairn xxx
+
+générer csv relevé de compte xxx
+
+tester filtres sur plusieurs comptes systèmes pour voir s'ils voient tous la même chose(compte mazouth global admin et plusieurs comptes network admin) xxx : ils affichent tous la même chose..
+
+
+
+faire le cas : mot de passe oublié : rentrer son identifiant --> envoi email avec un nouveau mot de passe xxx
+mettre en place le liens dans les vues
+
+et si la carte n est pas reçue par lettre : côté serveur prod --> si carte non activée dans les 10j  après la demande de nouvelle carte : révoquer carte, entre temps envoyer emails de rappels à 5,2,1 jour du délai xxx 
+
+couche de sécurité paiement : carte type CIC : serializer et deserializer a chaque fois : 
+                _numéro de carte xxx
+                _champ de tous les numéros + lettres maj xxx
+                _encodage avec le salt du User (pas avec le %secret% car on peut très bien le changer à un moment, rendant les cookies invalides) xxx
+                
+
+sécurité d une action de controller destinée à être utilisée automatiquement ? mettre une annotation ROLE_SUPER_ADMIN ? (checkEmailsValidation)
+
+
+si user is setEnabled à false, rediriger automatiquement vers le login xxx
+
+fos_user_security_logout ne prend pas en compte les messages flashbag : redirection en cas de compte bloqué ne donne aucune info donc
+
+
+
+mauvaise clé de carte : rappeler le nombre d essais restants xxx
+bloquer le compte en cas de 3 mauvais essais xxx
+
+gestion des cartes : _à utiliser pour nouveau paiement/ edit profil xxx/ ajout de bénéficiaire xxx/ edit beneficiare xxx / ouvrir plateforme xxx/ fermer plateforme xxxx/ bloquer utilisateur xxx/ activer utilisateur xxx
+                     _création d une autre carte : index = last + 1 + envoi email nouvelle carte xxx
+
+création nouvelle carte : _devient automatiquement la carte courante xxx
+                          _envoi email à utilisateur xxx
+                          _processus d'activation : champ de la carte xxx
+                          _possibilité pour admin de révoquer/générer/commander carte Pro xxx
+                          _encoder la carte en utilisant le Salt du User xxx
+
+
+si c est ADMIN qui crée l'utilisateur : mot de passe généré automatiquement xxx 
+inscription : logo non obligatoire. Si pas de logo, affiché image unknown xxx
+
+
+A fAIRE AJOURDUI : 
+_  avis d'opération xxx : faire ETAT
+_vue des comptes côté admin : 
+        *on affiche pas la table des comptes dans le profil d un groupe local xxx
+        *un groupe local peut télécharger le RIB Cairn de l'Association xxx
+        *un groupe local peut télécharger le RIB Cairn d un pro dont il est référent xxx
+        *un groupe local peut voir le détail des comptes des pros dont il est référent(solde + transactions effectuées) xxx
+        *un groupe local ne peut pas télécharger de relevé de compte(ni celui de l'Asso, ni celui d un pro) xxx
+

@@ -1,0 +1,11 @@
+_save ProductDTO : UNEXPECTED_DATA_ACCESS
+    *solution trouvée : certains TransferType (attribut userPayments) ajoutés au Product n'avaient pas comme AccountType de départ celui associé au Product 
+
+_assign ProductVO <--> userID : PERMISSION_DENIED
+    solution trouvée : charger un adminProductDTO et modifier l'attribut manageIndividualProducts --> ajouter le ProductVO individuel en cours de création puis les accountTypes
+    problème : trop de données dans un adminPRoductDTO : ordinateur pas assez puissant pour afficher
+
+_removing AccountType : CONSTRAINED_VIOLATED_ON_REMOVE
+    *possible solution : si un virement a été effectué impliquant ce AccountType, il ne peut plus être supprimé, seulement désactivé
+
+_getPaymentData : payment type is invalid
