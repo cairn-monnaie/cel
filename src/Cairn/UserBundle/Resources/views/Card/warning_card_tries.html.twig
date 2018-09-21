@@ -1,6 +1,6 @@
 {# src/Cairn/UserBundle/Resources/views/Card/warning_card_tries.html.twig #}         
 
-    {% set alreadyTried = card.user.cardKeyTries %} 
+    {% set alreadyTried = app.user.cardKeyTries %} 
     {% if alreadyTried != 0 %}
         {% set remaining = 3 - alreadyTried %}
         <strong>Attention : </strong> Il vous reste {{remaining}} tentative(s) possible(s). Votre compte sera ensuite bloqué en cas d'échec.</br>
