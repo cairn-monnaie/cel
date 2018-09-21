@@ -304,18 +304,16 @@ class BankingController extends Controller
      *      _a time data : depends if frequency is set to 'unique' or 'recurring'
      *
      */
-    public function transactionRequestAction(Request $request)
+    public function transactionRequestAction(Request $request, $to, $frequency)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
-        $to = $request->query->get('to');
-        $frequency = $request->query->get('frequency');
 
         if(!$this->isValidFrequency($frequency)){
-            return $this->redirectToRoute('cairn_user_banking_transaction_request',array('frequency'=>'unique'));
+            return $this->redirectToRoute('cairn_user_banking_transaction_request',array('to'=>$to,'frequency'=>'unique'));
         }
 
         $session->set('frequency',$frequency);

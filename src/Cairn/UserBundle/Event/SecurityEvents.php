@@ -32,8 +32,6 @@ final class SecurityEvents
         'cairn_user_banking_conversion_request',
         'fos_user_profile_edit',
         'cairn_user_beneficiaries_add',
-        'cairn_user_users_block_all',
-        'cairn_user_users_activate_all',
         'cairn_user_users_block',
         'cairn_user_users_activate',
         'cairn_user_users_remove',
@@ -43,11 +41,29 @@ final class SecurityEvents
 
     /**
      *List of Urls considered as sensible. An input card key will be required before accessing them. The difference is that the route is
-     *not enough to tell if the action is sensible or not, but depends on a parameter in the query.
+     *not enough to tell if the action is sensible or not, but depends on some route parameters.
+     *WARNING : mention ONLY decisive parameters
      *
      */
     const SENSIBLE_URLS = [
-        array('cairn_user_banking_transaction_request',array('frequency'=>'recurring','to'=>'new')),
-        array('cairn_user_banking_transaction_request',array('frequency'=>'unique','to'=>'new'))
+        array('cairn_user_banking_transaction_request',array('to'=>'new'))
     ];
+
+    static function isSensibleURL($route, $parameters)
+    {
+        $sensibleUrls = $self::SENSIBLE_URLS;
+
+        $cardinal = count($sensibleUrls);
+        
+        $cmpt = 0; 
+        while($route != $sensibleUrls[$cmpt] || $cmpt < $cardinal){
+            $cmpt++;
+        }
+        if($cmpt != $cardinal){//if a route matches, check parameters
+            return in_array($sensibleUrls[$cmpt], $parameters);
+        }
+
+        return false;
+    }
+
 }

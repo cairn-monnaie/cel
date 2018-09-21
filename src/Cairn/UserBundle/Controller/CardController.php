@@ -78,14 +78,9 @@ class CardController extends Controller
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
-        $route = $request->query->get('route');
-        $query = $request->query->get('query');
 
+        $url = $request->query->get('url');
         $currentUser = $this->getUser();
-
-        if(!$query){
-            $query = array();
-        }
 
         $card = $currentUser->getCard();
 
@@ -122,11 +117,11 @@ class CardController extends Controller
 
                 $nbTries = $currentUser->getCardKeyTries();
                 if($nbTries == 0){
-                    return $this->redirectToRoute($route,$query);
+                    return new RedirectResponse($url);
                 }
                 else{
                     $session->getFlashBag()->add('error','Clé invalide. Veuillez réessayer');
-                    return $this->redirectToRoute('cairn_user_card_security_layer',array('route'=>$route,'query'=>$query));
+                    return $this->redirectToRoute('cairn_user_card_security_layer',array('url'=>$url));
                 }
 
             }
@@ -147,6 +142,8 @@ class CardController extends Controller
     {
         $currentUser = $this->getUser();
 
+        var_dump($request->attributes->all()['_route_params']);
+        return new Response('ok');
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }

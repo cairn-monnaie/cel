@@ -21,10 +21,10 @@ services:
 
     cairn_user.bridge_symfony:
         class: Cairn\UserBundle\Service\BridgeToSymfony
+        arguments:
             - "@cairn_user.repository_user"
             - "@cairn_user.message_notificator"
             - "@cairn_user_cyclos_user_info"
-
 
     cairn_user.access_platform:
         class: Cairn\UserBundle\Service\AccessPlatform

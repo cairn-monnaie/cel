@@ -79,11 +79,13 @@ class SecurityListener
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $route = $request->get('_route');
-        $query = $request->query->all();
+        $parameters = $request->attributes->all()['_route_params'];
         $sensibleRoutes = SecurityEvents::SENSIBLE_ROUTES;
         $sensibleUrls = SecurityEvents::SENSIBLE_URLS;
 
-        $isSensibleUrl = in_array(array($route,$query),$sensibleUrls);
+        $isSensibleUrl = SecurityEvents::isSensibleURL($route,$parameters);
+
+//        $isSensibleUrl = in_array(array($route,$parameters), $sensibleUrls);
         $isSensibleRoute = in_array($route,$sensibleRoutes);
 
         $isExceptionCase = false;
@@ -104,7 +106,7 @@ class SecurityListener
         if(!$isExceptionCase){
             if($isSensibleRoute || $isSensibleUrl){
                 if(!$request->getSession()->get('has_input_card_key_valid')){
-                    $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('route'=>$route,'query'=>$query));
+                    $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('url'=>$request->getRequestURI()));
                     $event->setResponse(new RedirectResponse($cardSecurityLayer));
                 }
             }
