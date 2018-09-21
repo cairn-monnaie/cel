@@ -74,9 +74,6 @@ class UserController extends Controller
 
         $checker = $this->get('security.authorization_checker');
 
-//        $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_test_db.groovy',false));
-//        var_dump($scriptResult);
-//        return new Response('ok');
         //last users registered
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
         $qb = $userRepo->createQueryBuilder('u')
@@ -87,7 +84,8 @@ class UserController extends Controller
         $users =  $qb->getQuery()->getResult();
 
         //accounts of current user
-        $ownerVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($this->getUser()->getCyclosID());
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($this->getUser());
+
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         //last operations
@@ -199,7 +197,8 @@ class UserController extends Controller
     {                                                                          
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID());
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user,'accounts'=>$accounts));
     }                      
@@ -230,7 +229,9 @@ class UserController extends Controller
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
         $toReturn = new \stdClass();
 
-        $toReturn->account = $this->get('cairn_user_cyclos_account_info')->hasAccount($user->getCyclosID(),$ICC);
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+
+        $toReturn->account = $this->get('cairn_user_cyclos_account_info')->hasAccount($ownerVO->id,$ICC);
 
         $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$user,'ICC'=>$ICC));
 
@@ -490,7 +491,8 @@ class UserController extends Controller
         }
 
         //check that account balances are all 0 (for PRO only)
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID(),NULL);
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id,NULL);
 
         if($user->hasRole('ROLE_PRO')){
             foreach($accounts as $account){
@@ -558,7 +560,8 @@ class UserController extends Controller
 
         $params = new \stdClass();
         $params->status = 'REMOVED';
-        $params->user = $user->getCyclosID();
+        $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+
         $this->userManager->changeStatusUser($params);
         $emailTo = $user->getEmail();
 

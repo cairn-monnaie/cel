@@ -92,6 +92,9 @@ class DefaultController extends Controller
             $card = new Card($new_admin,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'));
             $new_admin->setCard($card);
 
+            //set auto-referent
+            $new_admin->addReferent($new_admin);
+
             $em = $this->getDoctrine()->getManager();
 
             $card->generateCard($this->getParameter('kernel.environment'));

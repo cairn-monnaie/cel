@@ -237,7 +237,7 @@ class AdminController extends Controller
 
                         $params = new \stdClass();                                             
                         $params->status = 'REMOVED';                                           
-                        $params->user = $user->getCyclosID();                                               
+                        $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
                         $this->userManager->changeStatusUser($params);
                         $saveEmail = $user->getEmail();
                         $em->remove($user);

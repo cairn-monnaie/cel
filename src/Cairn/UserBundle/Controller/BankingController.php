@@ -77,8 +77,8 @@ class BankingController extends Controller
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $cyclosID = $user->getCyclosID();
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($cyclosID);
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts));
     }
@@ -116,7 +116,7 @@ class BankingController extends Controller
             }
         }
         else{
-            $user = $userRepo->findOneBy(array('cyclosID'=>$account->owner->id));
+            $user = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($account->owner->id);
         }
 
         //to see the content, check that currentUser is owner or currentUser is referent
@@ -437,7 +437,8 @@ class BankingController extends Controller
         $currentUser = $this->getUser();
         $type = 'reconversion';
 
-        $selfAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($currentUser->getCyclosID());
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $selfAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
         $debitAccount = $accountService->getDebitAccount();
 
         $debitAccount = $accountService->getDebitAccount();
@@ -454,7 +455,7 @@ class BankingController extends Controller
                 //                $dataTime = $dataForm['date'];
                 $dataTime = new \Datetime(date('Y-m-d'));
 
-                if(!$accountService->hasAccount($currentUser->getCyclosID(),$dataForm['fromAccount']['id'])){
+                if(!$accountService->hasAccount($ownerVO->id,$dataForm['fromAccount']['id'])){
                     $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                     return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
                 }
@@ -515,14 +516,17 @@ class BankingController extends Controller
         if($currentUser->hasRole('ROLE_PRO')){
             $direction = 'SYSTEM_TO_USER';
             $userToCredit = $currentUser;
-            $involvedAccounts = $accountService->getAccountsSummary($userToCredit->getCyclosID());
+
+            $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
+            $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
         }
 
         if(($currentUser->hasRole('ROLE_SUPER_ADMIN')) || ($currentUser->hasRole('ROLE_ADMIN'))){
             if($to == 'self'){
                 $direction = 'SYSTEM_TO_SYSTEM';
                 $userToCredit = $currentUser;
-                $involvedAccounts = $accountService->getAccountsSummary($userToCredit->getCyclosID());
+                $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
+                $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
             }
             elseif($to == 'other'){
                 $direction = 'SYSTEM_TO_USER';
@@ -534,7 +538,8 @@ class BankingController extends Controller
                         $session->getFlashBag()->add('error','Aucun professionnel trouvé');
                         return $this->redirectToRoute('cairn_user_banking_conversion_request',array('to'=>$to));
                     }
-                    $involvedAccounts = $accountService->getAccountsSummary($userToCredit->getCyclosID());
+                    $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
+                    $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
                     return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts,'to'=>$to));
 
                 }
@@ -550,7 +555,9 @@ class BankingController extends Controller
             $dataTime = new \Datetime(date('Y-m-d'));
             $fromAccount = $debitAccount; 
 
-            if(($userToCredit===$currentUser) && !$accountService->hasAccount($currentUser->getCyclosID(),$dataForm['toAccount']['id'])){
+            $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+
+            if(($userToCredit===$currentUser) && !$accountService->hasAccount($currentUserVO->id,$dataForm['toAccount']['id'])){
                 $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                 return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
             }
@@ -599,7 +606,7 @@ class BankingController extends Controller
 
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
-
+  
         $formUser = $this->createFormBuilder()
             ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
@@ -615,7 +622,9 @@ class BankingController extends Controller
                 $session->getFlashBag()->add('error','Aucun professionnel trouvé');
                 return $this->redirectToRoute('cairn_user_banking_deposit_request');
             }
-            $involvedAccounts = $accountService->getAccountsSummary($userToCredit->getCyclosID());
+            $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
+
+            $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
             return $this->render('CairnUserBundle:Banking:deposit.html.twig',array('formUser'=>$formUser->createView(),'formDeposit'=>$formDeposit->createView(),'accounts'=>$involvedAccounts));
 
         }
@@ -689,7 +698,9 @@ class BankingController extends Controller
                 $session->getFlashBag()->add('error','Aucun professionnel trouvé');
                 return $this->redirectToRoute('cairn_user_banking_withdrawal_request');
             }
-            $involvedAccounts = $accountService->getAccountsSummary($userToDebit->getCyclosID());
+            $userToDebitVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToDebit);
+
+            $involvedAccounts = $accountService->getAccountsSummary($userToDebitVO->id);
             return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array('formUser'=>$formUser->createView(),'formWithdrawal'=>$formWithdrawal->createView(),'accounts'=>$involvedAccounts));
 
         }
@@ -971,8 +982,9 @@ class BankingController extends Controller
 
         $debitAccount = $accountService->getDebitAccount();
         $user = $this->getUser();
-        $userVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($user->getCyclosID());
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID());
+        $userVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($userVO->id);
         $accountTypesVO = array();
 
         foreach($accounts as $account){
@@ -1164,9 +1176,9 @@ class BankingController extends Controller
         $session = $request->getSession();
 
         $user = $this->getUser();
-        $cyclosID = $user->getCyclosID();
-        $userVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($cyclosID);
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($cyclosID);
+        $userVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($userVO->id);
         $accountTypesVO = array();
 
         foreach($accounts as $account){
@@ -1252,7 +1264,8 @@ class BankingController extends Controller
         }
         else{//check that owner exists, o.w maintenance must be warned(an account with owner without Doctrine association 
             //should not happen
-            $owner = $userRepo->findOneBy(array('cyclosID'=>$account->owner->id));
+            $owner = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($account->owner->id);
+
             if(!$owner){
                 $session->getFlashBag()->add('error','Donnée introuvable');
                 return $this->redirectToRoute('cairn_user_welcome');
@@ -1303,7 +1316,9 @@ class BankingController extends Controller
 
         $accountTypesVO = array();
 
-        $accounts = $accountService->getAccountsSummary($currentUser->getCyclosID());
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+
+        $accounts = $accountService->getAccountsSummary($ownerVO->id);
 
         $form = $this->createFormBuilder()
             ->add('format',ChoiceType::class,array(

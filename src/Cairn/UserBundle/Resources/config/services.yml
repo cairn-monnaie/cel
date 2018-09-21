@@ -19,6 +19,12 @@ services:
             - "%cairn_email_technical_services%"
             - "%cairn_email_noreply%"
 
+    cairn_user.bridge_symfony:
+        class: Cairn\UserBundle\Service\BridgeToSymfony
+            - "@cairn_user.repository_user"
+            - "@cairn_user.message_notificator"
+            - "@cairn_user_cyclos_user_info"
+
 
     cairn_user.access_platform:
         class: Cairn\UserBundle\Service\AccessPlatform
