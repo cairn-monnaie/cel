@@ -4,6 +4,9 @@
 namespace Cairn\UserBundle\Service;                                      
 
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserCyclosBundle\Service\UserInfo;
+
 /**
  * This class is a bridge between Symfony entities and their equivalences in other databases to ensure consistency
  *
@@ -78,7 +81,7 @@ class BridgeToSymfony
 
     }
 
-    public function fromSymfonyToCyclosReconversion()
+    public function fromCyclosToSymfonyReconversion()
     {
 
     }
