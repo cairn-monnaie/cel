@@ -11,6 +11,11 @@
 {% endblock %}
 {% block body %}
     {{parent()}} 
+
+    {{
+        include('CairnUserBundle:Default:warning_password_tries.html.twig')
+    }}      
+
     <div>                                                                          
         {{ form_start(form) }}            
         {{form_end(form) }}   

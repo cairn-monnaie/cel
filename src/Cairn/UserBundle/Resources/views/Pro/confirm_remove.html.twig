@@ -12,6 +12,10 @@
 {% block body %}
     {{parent()}} 
 
+    {{
+        include('CairnUserBundle:Default:warning_password_tries.html.twig')
+    }}      
+
     <div class="body_wrapper">
         <div id="confirm_action"> <em>Confirmer la suppression de l'espace membre {{user.name}} </em> </div>
         Attention, cette opération est définitive. Toutes les données associées au compte seront perdues.
