@@ -12,20 +12,21 @@
 {% block body %}
     {{parent()}} 
 
-    {% set card = user.card %}
-     <a href="{{path('cairn_user_card_revoke',{'id':user.id})}}"> Révoquer la carte </a>
-     <a href="{{path('cairn_user_card_new',{'id':user.id})}}"> Commander une carte </a>
-
-    {% if user == app.user and card  %}
-        {% if not card.enabled %}
-            <a href="{{path('cairn_user_card_validate')}}"> Activer la carte </a>
+    <ul class="list_card_operations">
+        {% set card = user.card %}
+        <li> <a class="operation_link" href="{{path('cairn_user_card_revoke',{'id':user.id})}}"> Révoquer la carte </a> </li>
+        <li> <a class="operation_link" href="{{path('cairn_user_card_new',{'id':user.id})}}"> Commander une carte </a> </li>
+    
+        {% if user == app.user and card  %}
+            {% if not card.enabled %}
+               <li> <a class="operation_link" href="{{path('cairn_user_card_validate')}}"> Activer la carte </a> </li>
+            {% endif %}
         {% endif %}
-    {% endif %}
-
-    {% if user.hasReferent(app.user) %}
-         <a href="{{path('cairn_user_card_generate',{'id':user.id})}}"> Générer la carte </a>
-    {% endif %}
-
+    
+        {% if user.hasReferent(app.user) %}
+            <li> <a class="operation_link" href="{{path('cairn_user_card_generate',{'id':user.id})}}"> Générer la carte </a></li>
+        {% endif %}
+    </ul>
 {% endblock %}              
 
 
