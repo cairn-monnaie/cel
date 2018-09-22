@@ -462,8 +462,10 @@ class UserController extends Controller
      * A user can remove its own member area, or an admin can do it if he is a referent.
      *
      * If the user to remove is a ROLE_USER, we ensure that all his accounts have a balance to zero
+     *
+     * @Method("GET")
      */
-    public function confirmRemoveUserAction(Request $request)
+    public function confirmRemoveUserAction(Request $request, User $user)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -476,12 +478,6 @@ class UserController extends Controller
 
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
-        $id = $request->query->get('id');
-        $user = $userRepo->findOneBy(array('id'=>$id));
-
-        if(!$user){
-            throw new NotFoundHttpException('Aucun espace membre ne correspond à l\'identifiant ' . $id);
-        }
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }

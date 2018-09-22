@@ -41,26 +41,38 @@ final class SecurityEvents
 
     /**
      *List of Urls considered as sensible. An input card key will be required before accessing them. The difference is that the route is
-     *not enough to tell if the action is sensible or not, but depends on some route parameters.
-     *WARNING : mention ONLY decisive parameters
+     *not enough to tell if the action is sensible or not, but depends on some route decisive parameters to be mentioned.
      *
      */
     const SENSIBLE_URLS = [
         array('cairn_user_banking_transaction_request',array('to'=>'new'))
     ];
 
+    /**
+     *Returns true if the URL matches a sensible operation in SENSIBLE_URLS, false otherwise
+     *
+     *This function first finds if the operation corresponds to a sensible route in SENSIBLE_URLS, then analyzes the different route 
+     *parameters provided, and returns true if at least one route parameter belongs to the list of decisive parameters defining a 
+     *sensible operation.
+     */
     static function isSensibleURL($route, $parameters)
     {
-        $sensibleUrls = $self::SENSIBLE_URLS;
+        $sensibleUrls = self::SENSIBLE_URLS;
 
         $cardinal = count($sensibleUrls);
         
         $cmpt = 0; 
-        while($route != $sensibleUrls[$cmpt] || $cmpt < $cardinal){
-            $cmpt++;
+        while($cmpt < $cardinal){
+            if($route == $sensibleUrls[$cmpt][0]){
+                break;
+            }
+            else{
+                $cmpt = $cmpt + 1;
+            }
         }
+
         if($cmpt != $cardinal){//if a route matches, check parameters
-            return in_array($sensibleUrls[$cmpt], $parameters);
+            return (count(array_intersect_assoc($sensibleUrls[$cmpt][1], $parameters)) >0) ;
         }
 
         return false;

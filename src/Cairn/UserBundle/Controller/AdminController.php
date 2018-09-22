@@ -68,19 +68,16 @@ class AdminController extends Controller
      *
      * @throws  NotFoundHttpException ID in query does not match any user in Doctrine
      * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
+     * @Method("GET")
      */ 
-    public function blockUserAction(Request $request)
+    public function blockUserAction(Request $request, User $user)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
-        $id = $request->query->get('id');
-        $user = $userRepo->findOneBy(array('id'=>$id));
         $currentUser = $this->getUser();
-        if(!$user){
-            throw new NotFoundHttpException('Cet espace membre n\'existe pas');
-        }
+
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
@@ -106,20 +103,16 @@ class AdminController extends Controller
      *
      * @throws  NotFoundHttpException ID in query does not match any user in Doctrine
      * @throws  AccessDeniedException Current user trying to activate access is not a referent of the user being involved
+     * @Method("GET")
      */ 
-    public function activateUserAction(Request $request)
+    public function activateUserAction(Request $request, User $user)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
-        $id = $request->query->get('id');
-        $user = $userRepo->findOneBy(array('id'=>$id));
         $currentUser = $this->getUser();
 
-        if(!$user){
-            throw new NotFoundHttpException('Aucun espace membre ne correspond à l\'identifiant ' . $id);
-        }
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }

@@ -386,20 +386,15 @@ class CardController extends Controller
      * The card is encoded in database using user's salt attribute to add a security layer in database.
      *
      *@Security("is_granted('ROLE_ADMIN')")
+     *@Method("GET")
      */
-    public function generateCardAction(Request $request)
+    public function generateCardAction(Request $request, User $user)
     {
         $session = $request->getSession();
-
         $em = $this->getDoctrine()->getManager();
-        $id = $request->query->get('id');
-        $user = $em->getRepository('CairnUserBundle:User')->findOneBy(array('id'=>$id));
+
         $currentUser = $this->getUser();
 
-        if(!$user){
-            $session->getFlashBag()->add('error','Aucun utilisateur trouvé');
-            return $this->redirectToRoute('cairn_user_welcome');
-        }
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }

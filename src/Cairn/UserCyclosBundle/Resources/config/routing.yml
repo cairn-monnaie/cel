@@ -78,9 +78,10 @@ cairn_user_cyclos_accountsconfig_currency_edit:
     defaults: { _controller: CairnUserCyclosBundle:Currency:editCurrency }
 
 cairn_user_cyclos_accountsconfig_account_edit:
-    path:     /accounts/account/edit/
+    path:     /accounts/account/edit/{id}
     defaults: { _controller: CairnUserCyclosBundle:Account:editAccount }
-
+    requirements:
+        #        id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_home:
     path:     /accounts/accounttype/

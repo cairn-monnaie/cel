@@ -55,12 +55,11 @@ class AccountController extends Controller
      * The credit limit can be changed, go back to the default value(set to all accounts of the same type) and a description can be added
      * It can be done only for User accounts(not system accounts)
      */
-    public function editAccountAction(Request $request)
+    public function editAccountAction(Request $request, $id)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
-        $id = $request->query->get('id');
 
         $accountVO = $this->get('cairn_user_cyclos_account_info')->getAccountByID($id);
         $accountTypeVO = $accountVO->type;

@@ -28,13 +28,13 @@ cairn_user_referent_assign:
     path:     user/referent/assign/{id}/
     defaults: { _controller: CairnUserBundle:Admin:assignReferent }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_profile_view:
     path:     user/profile/view/{id}/
     defaults: { _controller: CairnUserBundle:User:viewProfile }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_beneficiaries_list:
     path:     user/beneficiaries/
@@ -48,13 +48,13 @@ cairn_user_beneficiaries_edit:
     path:     user/beneficiaries/edit/{id}/
     defaults: { _controller: CairnUserBundle:User:editBeneficiary }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{id}/
     defaults: { _controller: CairnUserBundle:User:removeBeneficiary }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_users_home:
     path:     users/home/
@@ -69,22 +69,28 @@ cairn_user_users_search:
     defaults: { _controller: CairnUserBundle:User:searchUser }
 
 cairn_user_users_block:
-    path:     admin/users/block/
+    path:     admin/users/block/{id}/
     defaults: { _controller: CairnUserBundle:Admin:blockUser }
+    requirements:
+        id: \d+
 
 cairn_user_users_activate:
-    path:     admin/users/activate/
+    path:     admin/users/activate/{id}/
     defaults: { _controller: CairnUserBundle:Admin:activateUser }
+    requirements:
+        id: \d+
 
 cairn_user_users_remove:
-    path:     user/remove/
+    path:     user/remove/{id}/
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser }
+    requirements:
+        id: \d+
 
 cairn_user_card_home:
     path:     card/home/{id}/
     defaults: { _controller: CairnUserBundle:Card:cardOperations }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_card_check_activation:
     path:     card/check/delayed/
@@ -94,7 +100,7 @@ cairn_user_card_new:
     path:     card/new/{id}/
     defaults: { _controller: CairnUserBundle:Card:newCard }
     requirements:
-        #id: \d+
+        id: \d+
 
 cairn_user_card_validate:
     path:     card/validate/
@@ -104,12 +110,14 @@ cairn_user_card_revoke:
     path:     card/revoke/{id}/
     defaults: { _controller: CairnUserBundle:Card:revokeCard }
     requirements:
-        #id: \d+
+        id: \d+
 
 #if you change this route's name, change it in EventListener/SecurityListener, in the function "onSensibleOperations"
 cairn_user_card_generate:
-    path:     card/generate/
+    path:     card/generate/{id}/
     defaults: { _controller: CairnUserBundle:Card:generateCard }
+    requirements:
+        id: \d+
 
 cairn_user_card_download:
     path:     card/download/{id}
