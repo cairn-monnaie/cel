@@ -1055,12 +1055,13 @@ class BankingController extends Controller
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
+        $session->set('recurringID',$id);
 
         //an instance of RecurringPaymentData contains an attribute occurrences which
         //contains instances of RecurringPaymentOccurrenceVO. Beware, although the documentation mentiones it, The transferDate 
         //attribute is not specified
         $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($id);
-//        var_dump($recurringPaymentData);
+        var_dump($recurringPaymentData);
 //        return new Response('ok');
         return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array('data'=>$recurringPaymentData));
     }
@@ -1091,6 +1092,7 @@ class BankingController extends Controller
         case 'scheduled.past':
             $data = $bankingService->getTransactionDataByID($id);
             $transfer = $bankingService->getTransferByID($data->transaction->installments[0]->transferId);
+            $transfer->dueDate = $data->transaction->installments[0]->dueDate;
             break;
         case 'scheduled.futur':
 //            var_dump($id);
@@ -1130,17 +1132,17 @@ class BankingController extends Controller
             break;
         case 'recurring':
             $transfer = $bankingService->getTransferByID($id);
+            $transfer->dueDate = $transfer->date;
             break;
         case 'simple':
             $transfer = $bankingService->getTransferByTransactionNumber($id);
+            $transfer->dueDate = $transfer->date;
             break;
         default:
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(
                 'type'=>'transaction','frequency'=>$session->get('frequency')));
         }
 
-//        var_dump($transfer);
-//        return new Response('ok');
         if($transfer){
             return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
                 'transfer'=>$transfer));
