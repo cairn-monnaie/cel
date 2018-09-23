@@ -38,7 +38,7 @@
 
         {% if user.hasReferent(app.user) or user == app.user %} 
             <a href="{{path('cairn_user_card_home',{'id': user.id})}}">Carte de sécurité Cairn</a>
-            <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}">Fermer l'espace membre</a>
+            <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}">Supprimer le membre</a>
 
             <div class="accounts_tab">
                 {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
