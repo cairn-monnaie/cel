@@ -81,7 +81,7 @@ cairn_user_cyclos_accountsconfig_account_edit:
     path:     /accounts/account/edit/{id}
     defaults: { _controller: CairnUserCyclosBundle:Account:editAccount }
     requirements:
-        #        id: \d{19}
+        #        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_home:
     path:     /accounts/accounttype/
@@ -91,7 +91,7 @@ cairn_user_cyclos_accountsconfig_accounttype_view:
     path:     /accounts/accounttype/view/{id}/
     defaults: { _controller: CairnUserCyclosBundle:AccountType:viewAccountType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_list:
     path:     /accounts/accounttype/list/
@@ -107,25 +107,25 @@ cairn_user_cyclos_accountsconfig_accounttype_edit:
     path:     /accounts/accounttype/edit/{id}/
     defaults: { _controller: CairnUserCyclosBundle:AccountType:editAccountType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_remove_confirm:
     path:     /accounts/accounttype/remove/confirm/{id}/
     defaults: { _controller: CairnUserCyclosBundle:AccountType:confirmRemoveAccountType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_remove:
     path:     /accounts/accounttype/remove/{id}/
     defaults: { _controller: CairnUserCyclosBundle:AccountType:removeAccountType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accounttype_open_confirm:
     path:     /accounts/accounttype/open/confirm/{id}/
     defaults: { _controller: CairnUserCyclosBundle:AccountType:assignAccountType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_accountfee_add:
     path:     /accounts/accountfee/add/
@@ -151,7 +151,7 @@ cairn_user_cyclos_accountsconfig_transfertype_view:
     path:     /accounts/transfertype/view/{id}/
     defaults: { _controller: CairnUserCyclosBundle:TransferType:viewTransferType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_transfertype_add:
     path:     /accounts/transfertype/add/
@@ -165,7 +165,7 @@ cairn_user_cyclos_accountsconfig_transfertype_edit:
     path:     /accounts/transfertype/edit/{id}/
     defaults: { _controller: CairnUserCyclosBundle:TransferType:editTransferType }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_transfertype_remove:
     path:     /accounts/transfertype/remove/{name}/
@@ -187,7 +187,7 @@ cairn_user_cyclos_accountsconfig_transferfee_edit:
     path:     /accounts/transferfee/edit/{id}/
     defaults: { _controller: CairnUserCyclosBundle:TransferFee:editTransferFee }
     requirements:                                                              
-        id: \d{19}
+        #id: \d{19}
 
 cairn_user_cyclos_accountsconfig_transferfee_remove:
     path:     /accounts/transferfee/remove/

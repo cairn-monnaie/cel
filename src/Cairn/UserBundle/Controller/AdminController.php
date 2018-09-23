@@ -82,15 +82,22 @@ class AdminController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
-        $subject = 'Votre espace membre Cairn a été désactivé';
-        $body = 'Votre espace membre a été bloqué par le groupe local ' .$this->getUser()->getCity();
+        $form = $this->createForm(ConfirmationType::class);
 
-        $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
-        $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
-        $em->flush();
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+            $subject = 'Votre espace membre Cairn a été désactivé';
+            $body = 'Votre espace membre a été bloqué par le groupe local ' .$this->getUser()->getCity();
 
-        return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
+            $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
+            $em->flush();
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
 
+        return $this->render('CairnUserBundle:User:block.html.twig', array(
+            'user' => $user,
+            'form'   => $form->createView(),
+        ));
     }
 
 
@@ -117,17 +124,28 @@ class AdminController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
-        $this->get('cairn_user.access_platform')->enable(array($user));
-        $em->flush();
+        $form = $this->createForm(ConfirmationType::class);
 
-        $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut à nouveau accéder à la plateforme.');
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
 
-        //if first activation : ask if generate card now
-        if($user->getLastLogin() == NULL){
-            return $this->render('CairnUserBundle:Card:generate_card.html.twig',array('user'=>$user,'card'=>$user->getCard()));
+            $this->get('cairn_user.access_platform')->enable(array($user));
+            $em->flush();
+
+            $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut à nouveau accéder à la plateforme.');
+
+            //if first activation : ask if generate card now
+            if($user->getLastLogin() == NULL){
+                return $this->render('CairnUserBundle:Card:generate_card.html.twig',array('user'=>$user,'card'=>$user->getCard()));
+            }
+
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
-        return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        return $this->render('CairnUserBundle:User:activate.html.twig', array(
+            'user' => $user,
+            'form'   => $form->createView(),
+        ));
+
     }
 
 

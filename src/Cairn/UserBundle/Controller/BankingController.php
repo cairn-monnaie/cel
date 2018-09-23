@@ -1095,14 +1095,10 @@ class BankingController extends Controller
             $transfer->dueDate = $data->transaction->installments[0]->dueDate;
             break;
         case 'scheduled.futur':
-//            var_dump($id);
-//            return new Response('ok');
             //the transfer is not done yet, so there is no real object "transferVO" related to the provided id, but all information can 
             //be gathered and put in an object
             $data = $bankingService->getInstallmentData($id);
             $transaction = $data->transaction;
-//            var_dump($data->transaction);
-//            return new Response('ok');
 
             $debitorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->fromOwner->id);
             $creditorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->toOwner->id);
@@ -1127,8 +1123,6 @@ class BankingController extends Controller
             $transfer->dueDate = $transaction->installments[0]->dueDate;
             $transfer->currencyAmount = $transaction->dueAmount;
 
-//            $transfer = $bankingService->getTransferByID($data->transaction->installments[0]->transferId);
-//            $transfer = $bankingService->getTransferByTransactionNumber($id);//ID($id);
             break;
         case 'recurring':
             $transfer = $bankingService->getTransferByID($id);

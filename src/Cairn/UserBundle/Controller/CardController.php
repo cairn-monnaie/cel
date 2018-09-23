@@ -409,12 +409,23 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }
 
-        $card->generateCard($this->getParameter('kernel.environment'));
-        $em->flush();
+        $form = $this->createForm(ConfirmationType::class);
 
-        $session->getFlashBag()->add('success','Pensez à supprimer le fichier de votre ordinateur dès que la carte a été imprimée !');
-        
-        return $this->redirectToRoute('cairn_user_card_download', array('id'=>$card->getID()));
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+
+            $card->generateCard($this->getParameter('kernel.environment'));
+            $em->flush();
+
+            $session->getFlashBag()->add('success','Pensez à supprimer le fichier de votre ordinateur dès que la carte a été imprimée !');
+
+            return $this->redirectToRoute('cairn_user_card_download', array('id'=>$card->getID()));
+
+        }
+        return $this->render('CairnUserBundle:Card:generate.html.twig', array(
+            'user' => $user,
+            'form'   => $form->createView(),
+        ));
+
     }
 
     /*
@@ -460,7 +471,7 @@ class CardController extends Controller
         $filename = sprintf('carte-sécurité-cairn-'.$card->getNumber().'-%s.pdf',$user->getUserName());
 
 
-//        return $this->redirectToRoute('cairn_user_welcome');
+        //        return $this->redirectToRoute('cairn_user_welcome');
         return new Response(
             $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
             200,
