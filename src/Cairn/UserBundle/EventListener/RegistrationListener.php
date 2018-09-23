@@ -61,7 +61,9 @@ class RegistrationListener
         if($user->hasRole('ROLE_PRO')){
             $localGroup = $userRepo->findAdminWithCity($user->getCity());
             if($localGroup){
-                $user->addReferent($localGroup);
+                if(!$user->hasReferent($localGroup)){
+                    $user->addReferent($localGroup);
+                }
             }
         }
 
