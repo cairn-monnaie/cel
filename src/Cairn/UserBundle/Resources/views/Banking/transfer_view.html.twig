@@ -6,7 +6,9 @@
     {{parent()}}
     <div>
 
-         <a href="{{path('cairn_user_banking_transfer_notice_download',{'id':transfer.id})}}"> Avis d'opération </a>
+        {% if transfer.id is defined %}
+            <a href="{{path('cairn_user_banking_transfer_notice_download',{'id':transfer.id})}}"> Avis d'opération </a>
+        {% endif %}
         <h1> Détail du virement </h1>
 
         <h2> Compte à débiter </h2>
@@ -24,7 +26,9 @@
 
         <h2> Compte à créditer </h2>
             <ul>
-                <li>Nom : {{transfer.to.type.name}}</li>
+                {% if transfer.from.owner.id == transfer.to.owner.id %}
+                    <li>Nom : {{transfer.to.type.name}}</li>
+                {% endif %}
                 <li> ICC : {{transfer.to.id}}</li>
                 <li> Appartient à : 
                     {% if transfer.to.owner.display is defined %}

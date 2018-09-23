@@ -1060,6 +1060,8 @@ class BankingController extends Controller
         //contains instances of RecurringPaymentOccurrenceVO. Beware, although the documentation mentiones it, The transferDate 
         //attribute is not specified
         $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($id);
+//        var_dump($recurringPaymentData);
+//        return new Response('ok');
         return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array('data'=>$recurringPaymentData));
     }
 
@@ -1067,14 +1069,14 @@ class BankingController extends Controller
      * Get details of a specific transfer
      *
      * One shoud not be confused about typologies : transfer|transaction are different entities in Cyclos
-     * The way to get a transfer depends if ScheduledPayment or Payment as the data available on Cyclos-side differ : 
+     * The way to get a transfer depends if it is a ScheduledPayment or a Payment as the data available on Cyclos-side differ : 
      * either the transfer number is available or the transfer ID
      *These identifiers are accessible from TransactionEntryVO subclasses (paymentEntryVO, RecurringEntryVO,...) :
      *  _scheduled payment with status SCHEDULED : installment.id works
      *  _scheduled payment with status PROCESSED : id works
      *  _simple payment : transactionNumber works, id does not
      *  _recurring payment : occurrence.id works 
-     *
+     *In the view, if the transfer involves two different people, the account type of the receiver is not mentioned
      *@param string $type Type of transaction the transfer belongs to
      *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
      */
@@ -1091,7 +1093,40 @@ class BankingController extends Controller
             $transfer = $bankingService->getTransferByID($data->transaction->installments[0]->transferId);
             break;
         case 'scheduled.futur':
-            $transfer = $bankingService->getTransferByID($id);
+//            var_dump($id);
+//            return new Response('ok');
+            //the transfer is not done yet, so there is no real object "transferVO" related to the provided id, but all information can 
+            //be gathered and put in an object
+            $data = $bankingService->getInstallmentData($id);
+            $transaction = $data->transaction;
+//            var_dump($data->transaction);
+//            return new Response('ok');
+
+            $debitorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->fromOwner->id);
+            $creditorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->toOwner->id);
+
+            foreach($debitorAccounts as $account){
+                if($account->type->id == $transaction->type->from->id){
+                    $fromAccount = $account;
+                }
+            }
+            foreach($creditorAccounts as $account){
+                if($account->type->id == $transaction->type->to->id){
+                    $toAccount = $account;
+                }
+            }
+
+            $transfer = new \stdClass();
+            $transfer->from = $fromAccount; 
+            $transfer->to = $toAccount;
+            $transfer->description = $transaction->description;
+            $transfer->status = $transaction->installments[0]->status;
+            $transfer->date = $transaction->date;
+            $transfer->dueDate = $transaction->installments[0]->dueDate;
+            $transfer->currencyAmount = $transaction->dueAmount;
+
+//            $transfer = $bankingService->getTransferByID($data->transaction->installments[0]->transferId);
+//            $transfer = $bankingService->getTransferByTransactionNumber($id);//ID($id);
             break;
         case 'recurring':
             $transfer = $bankingService->getTransferByID($id);
@@ -1276,7 +1311,7 @@ class BankingController extends Controller
         $html = $this->renderView('CairnUserBundle:Pdf:rib_cairn.html.twig',array(
             'downloader'=>$currentUser,'owner'=>$owner,'account'=>$account));
 
-        $filename = sprintf('rib-cairn-%s.pdf',$account->type->name);
+        $filename = sprintf('rib-cairn-%s.pdf',$account->type->name.'-'.$owner->getUsername());
         return new Response(
             $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
             200,

@@ -47,7 +47,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{{path('cairn_user_banking_transfer_view', {'type':'scheduled.futur','id' : installment.id})}}"> Voir le détail </a>
+                        <a href="{{path('cairn_user_banking_transfer_view', {'type':'scheduled.futur','id' : installment.scheduledPayment.id})}}"> Voir le détail </a>
                      |
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'cancel' })}}"> Annuler </a>
                      | 
