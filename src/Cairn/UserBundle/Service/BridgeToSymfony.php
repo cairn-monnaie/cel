@@ -74,6 +74,7 @@ class BridgeToSymfony
             $body = 'Entité Doctrine inexistante. cyclosID valide '.$id. ' correspondant au membre de login ' .$cyclosUser->shortDisplay.' ayant un rôle '.$cyclosUser->role.
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
         }
+        return $symfonyUser;
     }
 
     public function fromSymfonyToCyclosReconversion()
