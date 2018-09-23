@@ -118,10 +118,18 @@ class UserController extends Controller
      */
     public function usersAction(Request $request)
     {
-        $em = $this->getDoctrine()->getManager();                              
-        $listPros = $em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_PRO'));
-        $listAdmins = $em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_ADMIN'));
-        $listSuperAdmins = $em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_SUPER_ADMIN'));
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $ub = $userRepo->createQueryBuilder('u');
+
+        $userRepo->whereRole($ub,'ROLE_PRO');
+        $listPros = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
+
+        $userRepo->whereRole($ub,'ROLE_ADMIN');
+        $listAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
+
+        $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
+        $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
 
         return $this->render('CairnUserBundle:User:list_users.html.twig',array('listPros' => $listPros,'listAdmins' => $listAdmins,'listSuperAdmins' => $listSuperAdmins));
     }
