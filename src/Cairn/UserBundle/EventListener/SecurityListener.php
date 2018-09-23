@@ -79,13 +79,16 @@ class SecurityListener
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $route = $request->get('_route');
-        $parameters = $request->attributes->all()['_route_params'];
+
+        $attributes = $request->attributes->all();
+
+        $parameters = key_exists('_route_params', $attributes) ? $attributes['_route_params'] : array();
+
         $sensibleRoutes = SecurityEvents::SENSIBLE_ROUTES;
         $sensibleUrls = SecurityEvents::SENSIBLE_URLS;
 
         $isSensibleUrl = SecurityEvents::isSensibleURL($route,$parameters);
 
-//        $isSensibleUrl = in_array(array($route,$parameters), $sensibleUrls);
         $isSensibleRoute = in_array($route,$sensibleRoutes);
 
         $isExceptionCase = false;
@@ -95,7 +98,7 @@ class SecurityListener
             if($currentUser instanceof \Cairn\UserBundle\Entity\User){
                 if(($currentUser->getUsername() == $this->adminUsername && $route == 'cairn_user_card_generate')){
                     //for itself ? for someone else ?
-                    $toUser = $userRepo->findOneBy(array('id'=>$query['id']));
+                    $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
                     if($toUser === $currentUser){
                         $isExceptionCase = true;
                     }
