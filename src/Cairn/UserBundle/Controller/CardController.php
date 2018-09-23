@@ -142,8 +142,6 @@ class CardController extends Controller
     {
         $currentUser = $this->getUser();
 
-        var_dump($request->attributes->all()['_route_params']);
-        return new Response('ok');
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
