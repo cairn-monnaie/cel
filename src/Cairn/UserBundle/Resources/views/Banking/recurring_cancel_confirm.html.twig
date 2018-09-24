@@ -1,0 +1,15 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/recurring_cancel_confirm.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}} </br>
+    <em> L'annulation entraîne une suppression définitive de toutes les occurrences à venir. Voulez-vous continuer ? </em>
+    <div class="well">
+      {{ form_start(form) }}
+      {{ form_rest(form) }}
+      {{ form_end(form) }}
+    </div>
+<div>
+
+{% endblock %}

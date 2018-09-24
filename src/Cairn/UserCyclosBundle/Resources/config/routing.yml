@@ -12,70 +12,70 @@ cairn_user_cyclos_sysconfig_home:
 #    path:     /sys/network/list/
 #    defaults: { _controller: CairnUserCyclosBundle:Network:listNetworks }
 
-cairn_user_cyclos_sysconfig_network_add:
-    path:     /sys/network/add/
-    defaults: { _controller: CairnUserCyclosBundle:Network:addNetwork }
-
-cairn_user_cyclos_sysconfig_network_edit:
-    path:     /sys/network/edit/{name}/
-    defaults: { _controller: CairnUserCyclosBundle:Network:editNetwork }
-
-cairn_user_cyclos_sysconfig_network_remove:
-    path:     /sys/network/remove/{name}/
-    defaults: { _controller: CairnUserCyclosBundle:Network:removeNetwork }
+#cairn_user_cyclos_sysconfig_network_add:
+#    path:     /sys/network/add/
+#    defaults: { _controller: CairnUserCyclosBundle:Network:addNetwork }
+#
+#cairn_user_cyclos_sysconfig_network_edit:
+#    path:     /sys/network/edit/{name}/
+#    defaults: { _controller: CairnUserCyclosBundle:Network:editNetwork }
+#
+#cairn_user_cyclos_sysconfig_network_remove:
+#    path:     /sys/network/remove/{name}/
+#    defaults: { _controller: CairnUserCyclosBundle:Network:removeNetwork }
 
 cairn_user_cyclos_sysconfig_network_view:
     path:     /sys/network/view/
     defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork }
 
-cairn_user_cyclos_sysconfig_group_add:
-    path:     /sys/group/add/{groupType}/
-    defaults: { _controller: CairnUserCyclosBundle:Group:addGroup }
+#cairn_user_cyclos_sysconfig_group_add:
+#    path:     /sys/group/add/{groupType}/
+#    defaults: { _controller: CairnUserCyclosBundle:Group:addGroup }
+#
+#cairn_user_cyclos_sysconfig_group_edit:
+#    path:     /sys/group/edit/{name}/
+#    defaults: { _controller: CairnUserCyclosBundle:Group:editGroup }
+#
+#cairn_user_cyclos_sysconfig_group_remove:
+#    path:     /sys/group/remove/{name}/
+#    defaults: { _controller: CairnUserCyclosBundle:Group:removeGroup }
+#
+#cairn_user_cyclos_sysconfig_product_add:
+#    path:     /sys/product/add/
+#    defaults: { _controller: CairnUserCyclosBundle:Product:addProduct }
 
-cairn_user_cyclos_sysconfig_group_edit:
-    path:     /sys/group/edit/{name}/
-    defaults: { _controller: CairnUserCyclosBundle:Group:editGroup }
-
-cairn_user_cyclos_sysconfig_group_remove:
-    path:     /sys/group/remove/{name}/
-    defaults: { _controller: CairnUserCyclosBundle:Group:removeGroup }
-
-cairn_user_cyclos_sysconfig_product_add:
-    path:     /sys/product/add/
-    defaults: { _controller: CairnUserCyclosBundle:Product:addProduct }
-
-cairn_user_cyclos_sysconfig_product_edit:
-    path:     /sys/product/edit/
-    defaults: { _controller: CairnUserCyclosBundle:Product:editProduct }
-
-cairn_user_cyclos_sysconfig_product_remove:
-    path:     /sys/product/remove/
-    defaults: { _controller: CairnUserCyclosBundle:Product:removeProduct }
-
+#cairn_user_cyclos_sysconfig_product_edit:
+#    path:     /sys/product/edit/
+#    defaults: { _controller: CairnUserCyclosBundle:Product:editProduct }
+#
+#cairn_user_cyclos_sysconfig_product_remove:
+#    path:     /sys/product/remove/
+#    defaults: { _controller: CairnUserCyclosBundle:Product:removeProduct }
+#
 
 cairn_user_cyclos_accountsconfig_home:
     path:     /accounts/home/
     defaults: { _controller: CairnUserCyclosBundle:Account:index }
 
-cairn_user_cyclos_accountsconfig_currency_list:
-    path:     /accounts/currency/list/
-    defaults: { _controller: CairnUserCyclosBundle:Currency:listCurrencies }
-
-cairn_user_cyclos_accountsconfig_currency_view:
-    path:     /accounts/currency/view/
-    defaults: { _controller: CairnUserCyclosBundle:Currency:viewCurrency }
-
-cairn_user_cyclos_accountsconfig_currency_add:
-    path:     /accounts/currency/add/
-    defaults: { _controller: CairnUserCyclosBundle:Currency:addCurrency }
-
-cairn_user_cyclos_accountsconfig_currency_remove:
-    path:     /accounts/currency/remove/
-    defaults: { _controller: CairnUserCyclosBundle:Currency:removeCurrency }
-
-cairn_user_cyclos_accountsconfig_currency_edit:
-    path:     /accounts/currency/edit/
-    defaults: { _controller: CairnUserCyclosBundle:Currency:editCurrency }
+#cairn_user_cyclos_accountsconfig_currency_list:
+#    path:     /accounts/currency/list/
+#    defaults: { _controller: CairnUserCyclosBundle:Currency:listCurrencies }
+#
+#cairn_user_cyclos_accountsconfig_currency_view:
+#    path:     /accounts/currency/view/
+#    defaults: { _controller: CairnUserCyclosBundle:Currency:viewCurrency }
+#
+#cairn_user_cyclos_accountsconfig_currency_add:
+#    path:     /accounts/currency/add/
+#    defaults: { _controller: CairnUserCyclosBundle:Currency:addCurrency }
+#
+#cairn_user_cyclos_accountsconfig_currency_remove:
+#    path:     /accounts/currency/remove/
+#    defaults: { _controller: CairnUserCyclosBundle:Currency:removeCurrency }
+#
+#cairn_user_cyclos_accountsconfig_currency_edit:
+#    path:     /accounts/currency/edit/
+#    defaults: { _controller: CairnUserCyclosBundle:Currency:editCurrency }
 
 cairn_user_cyclos_accountsconfig_account_edit:
     path:     /accounts/account/edit/{id}
@@ -127,17 +127,17 @@ cairn_user_cyclos_accountsconfig_accounttype_open_confirm:
     requirements:                                                              
         #id: \d{19}
 
-cairn_user_cyclos_accountsconfig_accountfee_add:
-    path:     /accounts/accountfee/add/
-    defaults: { _controller: CairnUserCyclosBundle:AccountFee:addAccountFee }
-
-cairn_user_cyclos_accountsconfig_accountfee_edit:
-    path:     /accounts/accountfee/edit/
-    defaults: { _controller: CairnUserCyclosBundle:AccountFee:editAccountFee }
-
-cairn_user_cyclos_accountsconfig_accountfee_remove:
-    path:     /accounts/accountfee/remove/
-    defaults: { _controller: CairnUserCyclosBundle:AccountFee:removeAccountFee }
+        #cairn_user_cyclos_accountsconfig_accountfee_add:
+        #    path:     /accounts/accountfee/add/
+        #    defaults: { _controller: CairnUserCyclosBundle:AccountFee:addAccountFee }
+        #
+        #cairn_user_cyclos_accountsconfig_accountfee_edit:
+        #    path:     /accounts/accountfee/edit/
+        #    defaults: { _controller: CairnUserCyclosBundle:AccountFee:editAccountFee }
+        #
+        #cairn_user_cyclos_accountsconfig_accountfee_remove:
+        #    path:     /accounts/accountfee/remove/
+        #    defaults: { _controller: CairnUserCyclosBundle:AccountFee:removeAccountFee }
 
 cairn_user_cyclos_accountsconfig_transfertype_home:
     path:     /accounts/transfertype/
@@ -153,44 +153,44 @@ cairn_user_cyclos_accountsconfig_transfertype_view:
     requirements:                                                              
         #id: \d{19}
 
-cairn_user_cyclos_accountsconfig_transfertype_add:
-    path:     /accounts/transfertype/add/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:addTransferType }
-
-cairn_user_cyclos_accountsconfig_transfertype_complete:
-    path:     /accounts/transfertype/addFields/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:fillTransferType }
-
+        #cairn_user_cyclos_accountsconfig_transfertype_add:
+        #    path:     /accounts/transfertype/add/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:addTransferType }
+        #
+        #cairn_user_cyclos_accountsconfig_transfertype_complete:
+        #    path:     /accounts/transfertype/addFields/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:fillTransferType }
+        #
 cairn_user_cyclos_accountsconfig_transfertype_edit:
     path:     /accounts/transfertype/edit/{id}/
     defaults: { _controller: CairnUserCyclosBundle:TransferType:editTransferType }
     requirements:                                                              
         #id: \d{19}
-
-cairn_user_cyclos_accountsconfig_transfertype_remove:
-    path:     /accounts/transfertype/remove/{name}/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:removeTransferType }
-
-cairn_user_cyclos_accountsconfig_transferfee_list:
-    path:     /accounts/transferfee/list/
-    defaults: { _controller: CairnUserCyclosBundle:TransferFee:listTransferFees }
-
-cairn_user_cyclos_accountsconfig_transferfee_view:
-    path:     /accounts/transferfee/view/
-    defaults: { _controller: CairnUserCyclosBundle:TransferFee:viewTransferFee }
-
-cairn_user_cyclos_accountsconfig_transferfee_add:
-    path:     /accounts/transferfee/add/
-    defaults: { _controller: CairnUserCyclosBundle:TransferFee:addTransferFee }
-
-cairn_user_cyclos_accountsconfig_transferfee_edit:
-    path:     /accounts/transferfee/edit/{id}/
-    defaults: { _controller: CairnUserCyclosBundle:TransferFee:editTransferFee }
-    requirements:                                                              
-        #id: \d{19}
-
-cairn_user_cyclos_accountsconfig_transferfee_remove:
-    path:     /accounts/transferfee/remove/
-    defaults: { _controller: CairnUserCyclosBundle:TransferFee:removeTransferFee }
-
-
+        
+        #cairn_user_cyclos_accountsconfig_transfertype_remove:
+        #    path:     /accounts/transfertype/remove/{name}/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:removeTransferType }
+        #
+        #cairn_user_cyclos_accountsconfig_transferfee_list:
+        #    path:     /accounts/transferfee/list/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferFee:listTransferFees }
+        #
+        #cairn_user_cyclos_accountsconfig_transferfee_view:
+        #    path:     /accounts/transferfee/view/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferFee:viewTransferFee }
+        #
+        #cairn_user_cyclos_accountsconfig_transferfee_add:
+        #    path:     /accounts/transferfee/add/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferFee:addTransferFee }
+        #
+        #cairn_user_cyclos_accountsconfig_transferfee_edit:
+        #    path:     /accounts/transferfee/edit/{id}/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferFee:editTransferFee }
+        #    requirements:                                                              
+        #        #id: \d{19}
+        #
+        #cairn_user_cyclos_accountsconfig_transferfee_remove:
+        #    path:     /accounts/transferfee/remove/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferFee:removeTransferFee }
+        #
+        #

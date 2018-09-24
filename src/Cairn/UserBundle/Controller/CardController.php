@@ -412,6 +412,9 @@ class CardController extends Controller
         $form = $this->createForm(ConfirmationType::class);
 
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+            if($form->get('cancel')->isClicked()){
+                return $this->redirectToRoute('cairn_user_card_home', array('id'=>$user->getID()));
+            }
 
             $card->generateCard($this->getParameter('kernel.environment'));
             $em->flush();
