@@ -21,11 +21,7 @@ class TransferType extends AbstractType
     {
 
         $builder
-            ->add('amount',   NumberType::class, array(
-                'label'=>'Montant',
-                'constraints'=> new Assert\Range(array('min'=>0.01,
-                                                       'minMessage'=>'Le montant doit valoir au moins 0.01 cairn'))
-                ))    
+            ->add('amount',   NumberType::class, array('label'=>'Montant'))    
             ->add('date',     DateType::class          , array('label'=> 'Date d\'éxecution'))
             ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter'))
             ->add('toAccount',       AccountType::class, array('label'=>'Compte à créditer'))

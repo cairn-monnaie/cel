@@ -9,8 +9,8 @@ use Cyclos;
 //manage Controllers & Entities
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
-use Cairn\UserBundle\Entity\Payment;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Transaction;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -176,7 +176,7 @@ class BankingController extends Controller
                 $orderBy = $dataForm['orderBy'];
                 $begin = $dataForm['begin'];
                 $end = $dataForm['end'];
-                $minAmount = $dataForm['minAmount'];
+                $minAmount = trim($dataForm['minAmount']);
                 $maxAmount = $dataForm['maxAmount'];
                 $keywords = $dataForm['keywords'];
 
@@ -311,6 +311,10 @@ class BankingController extends Controller
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
+        $transaction = new Transaction();
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
 
         if(!$this->isValidFrequency($frequency)){
             return $this->redirectToRoute('cairn_user_banking_transaction_request',array('to'=>$to,'frequency'=>'unique'));
@@ -362,7 +366,7 @@ class BankingController extends Controller
         }
 
         if($frequency == 'unique'){
-            $form = $this->createForm(TransferType::class);
+            $form = $this->createForm(TransferType::class, $transaction);
         }else{
             $form = $this->createForm(RecurringTransferType::class);
         }
@@ -383,34 +387,50 @@ class BankingController extends Controller
                     $dataTime = $dataForm['date'];
                 }
 
-                //check that the current users owns the debit account
-                if(!$accountService->hasAccount($currentUser->getCyclosID(),$dataForm['fromAccount']['id'])){
+                //check that the current user owns the debited account
+                $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+
+                if(!$accountService->hasAccount($debitorVO->id,$dataForm['fromAccount']['id'])){
                     $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
-                $toAccount = $accountService->getAccountByID($dataForm['toAccount']['id']);
 
-                if(!$fromAccount){
-                    $session->getFlashBag()->add('error','Compte débiteur inconnu');
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                $toAccount = $dataForm['toAccount'];
+                if(property_exists($toAccount,'id')){
+                    try{
+                        $toAccount = $accountService->getAccountByID($toAccount['id']);
+                    }catch(\ServiceException $e){
+                        if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                            throw $e;
+                        }
+                    }
+                }elseif(property_exists($toAccount,'email')){
+                    $creditor = $userRepo->findOneBy(array('email'=>$toAccount->email));
+                    if(!$creditor){
+                        ;
+                    }
+                    $creditorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditor);
+                    $toAccount = $accountService->getDefaultAccount($creditorVO->id);
                 }
 
-                if(($to != 'self') && ($accountService->hasAccount($currentUser->getCyclosID(),$dataForm['toAccount']['id']))){
+
+
+                if(($to != 'self') && ($accountService->hasAccount($debitorVO->id,$toAccount->id))){
                     $session->getFlashBag()->add('error','Ce compte vous appartient. Ce n\'est pas un nouveau bénéficiaire. Sélectionnez "Entre vos comptes".' );
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
                 if(!$toAccount){
                     $session->getFlashBag()->add('error','Compte créditeur inconnu');
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
 
                 }
 
-                $review = $this->processCyclosTransfer($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description);
+                $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $session->set('paymentReview',$review);
@@ -470,7 +490,7 @@ class BankingController extends Controller
                     return $this->redirectToRoute($request->get('_route'));
                 }
 
-                $review = $this->processCyclosTransfer($type,$fromAccount,$toAccount,'USER_TO_SYSTEM',$amount,'unique',$dataTime,$description);
+                $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,'USER_TO_SYSTEM',$amount,'unique',$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);
                     return $this->redirectToRoute($request->get('_route'));
@@ -571,7 +591,7 @@ class BankingController extends Controller
                 return $this->redirectToRoute($request->get('_route'));
             }
 
-            $review = $this->processCyclosTransfer($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
+            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
                 return $this->redirectToRoute($request->get('_route'));
@@ -648,7 +668,7 @@ class BankingController extends Controller
                 $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
                 return $this->redirectToRoute($request->get('_route'));
             }
-            $review = $this->processCyclosTransfer($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
+            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
@@ -724,7 +744,7 @@ class BankingController extends Controller
                 return $this->redirectToRoute($request->get('_route'));
             }
 
-            $review = $this->processCyclosTransfer($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
+            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
@@ -758,7 +778,7 @@ class BankingController extends Controller
      *@throws Exception The data provided does not allow to get an unique transferTypeVO 
      *@throws Exception The TransferTypeVO is unique but inactive
      */
-    public function processCyclosTransfer($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description)
+    public function processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
