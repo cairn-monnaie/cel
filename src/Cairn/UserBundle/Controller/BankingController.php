@@ -341,10 +341,15 @@ class BankingController extends Controller
                 return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
+            $beneficiaries = $currentUser->getBeneficiaries();
+            if(count($beneficiaries) == 0){
+                $session->getFlashBag()->add('info','Vous n\'avez aucun bénéficiaire enregistré');
+                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
+            }
+
             $direction = $directionPrefix.'_TO_USER';
 
             $toAccounts = array();
-            $beneficiaries = $currentUser->getBeneficiaries();
             foreach($beneficiaries as $beneficiary){
                 $toAccount = $accountService->getAccountByID($beneficiary->getICC());
                 if($toAccount){
