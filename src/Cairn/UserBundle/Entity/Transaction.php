@@ -46,6 +46,8 @@ class Transaction
     /**
      * @var \stdClass
      *
+     * @Assert\Valid(traverse = true)
+     *      
      */
     private $toAccount;
 
@@ -75,7 +77,7 @@ class Transaction
                 ->addViolation();
         }
 
-        if(! $this->getToAccount()['email']){
+        if(! ($this->getToAccount()['id'] || $this->getToAccount()['email'])){
             $context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
                 ->atPath('toAccount')
                 ->addViolation();

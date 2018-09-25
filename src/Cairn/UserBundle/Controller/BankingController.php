@@ -25,6 +25,7 @@ use Cairn\UserBundle\Form\ReconversionType;
 use Cairn\UserBundle\Form\DepositType;
 use Cairn\UserBundle\Form\WithdrawalType;
 use Cairn\UserBundle\Form\TransferType;
+use Cairn\UserBundle\Form\TransactionType;
 use Cairn\UserBundle\Form\RecurringTransferType;
 use Cairn\UserBundle\Form\ConfirmationType;
 
@@ -326,7 +327,8 @@ class BankingController extends Controller
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $type = 'transaction';
 
-        $selfAccounts = $accountService->getAccountsSummary($currentUser->getCyclosID());
+        $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
 
         if($currentUser->hasRole('ROLE_PRO')){
             $directionPrefix = 'USER';
@@ -366,67 +368,73 @@ class BankingController extends Controller
         }
 
         if($frequency == 'unique'){
-            $form = $this->createForm(TransferType::class, $transaction);
+            $form = $this->createForm(TransactionType::class, $transaction);
         }else{
             $form = $this->createForm(RecurringTransferType::class);
         }
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $dataForm = $form->getData();
-                $amount = $dataForm['amount'];
-                $toAccount = $dataForm['toAccount'];
-                $fromAccount = $dataForm['fromAccount'];
-                $description = $this->editDescription($type,$dataForm['description']);
+//                $dataForm = $form->getData();
+//                $amount = $dataForm['amount'];
+//                $toAccount = $dataForm['toAccount'];
+//                $fromAccount = $dataForm['fromAccount'];
+//                $description = $this->editDescription($type,$dataForm['description']);
+                $transaction->setDescription($this->editDescription($type, $transaction->getDescription()));
                 if($frequency == 'recurring'){
                     $dataTime = new \stdClass();
                     $dataTime->periodicity = $dataForm['periodicity'];
                     $dataTime->firstOccurrenceDate = $dataForm['firstOccurrenceDate'];
                     $dataTime->lastOccurrenceDate = $dataForm['lastOccurrenceDate'];
                 }else{
-                    $dataTime = $dataForm['date'];
+//                    $dataTime = $dataForm['date'];
+                    $dataTime = $transaction->getDate();
                 }
 
                 //check that the current user owns the debited account
-                $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+//                if(!$accountService->hasAccount($debitorVO->id,$dataForm['fromAccount']['id'])){
 
-                if(!$accountService->hasAccount($debitorVO->id,$dataForm['fromAccount']['id'])){
+                if(!$accountService->hasAccount($debitorVO->id,$transaction->getFromAccount()['id'])){
                     $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-                $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
+//                $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
+                $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
+                if(!$accountService->hasAccount($debitorVO->id,$fromAccount->id)){
+                         $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
+                         return new RedirectResponse($request->getRequestUri());
+                }
 
-                $toAccount = $dataForm['toAccount'];
-                if(property_exists($toAccount,'id')){
+//                $toAccount = $dataForm['toAccount'];
+                $toAccount = $transaction->getToAccount();
+                if($toAccount['id']){
                     try{
                         $toAccount = $accountService->getAccountByID($toAccount['id']);
                     }catch(\ServiceException $e){
-                        if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                        if(!$e->errorCode == 'ENTITY_NOT_FOUND'){
+                            throw $e;
+                        }else{
                             throw $e;
                         }
                     }
-                }elseif(property_exists($toAccount,'email')){
-                    $creditor = $userRepo->findOneBy(array('email'=>$toAccount->email));
+                }else{//if id not mentioned, then email is necessarily(see Entity Transaction validation)
+                    $creditor = $userRepo->findOneBy(array('email'=>$toAccount['email']));
                     if(!$creditor){
-                        ;
+                        $session->getFlashBag()->add('error','Bénéficiaire introuvable.');
+                        return new RedirectResponse($request->getRequestUri());
                     }
                     $creditorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditor);
                     $toAccount = $accountService->getDefaultAccount($creditorVO->id);
                 }
 
-
-
                 if(($to != 'self') && ($accountService->hasAccount($debitorVO->id,$toAccount->id))){
                     $session->getFlashBag()->add('error','Ce compte vous appartient. Ce n\'est pas un nouveau bénéficiaire. Sélectionnez "Entre vos comptes".' );
                     return new RedirectResponse($request->getRequestUri());
                 }
-                if(!$toAccount){
-                    $session->getFlashBag()->add('error','Compte créditeur inconnu');
-                    return new RedirectResponse($request->getRequestUri());
 
-                }
-
+                $amount = $transaction->getAmount();
+                $description = $transaction->getDescription();
                 $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);

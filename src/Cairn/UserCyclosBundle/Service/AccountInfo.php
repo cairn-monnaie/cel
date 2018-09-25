@@ -168,4 +168,22 @@ class AccountInfo
     {
         return $this->accountService->getAccountWithStatus($accountID,NULL,NULL);
     }
+
+    /**
+     *Returns the default account for a given user.
+     *
+     *@todo : define default account if several accounts exist
+     *@param int $userID ID of the user who owns the account $accountID
+     *@return stdClass representing Java type: org.cyclos.model.banking.accounts.AccountWithStatusVO 
+     */
+    public function getDefaultAccount($userID)
+    {
+        $accounts = $this->getAccountsSummary($userID,NULL);
+        if(count($accounts) == 1){
+            return $accounts[0];
+        }else{
+            return $accounts[0];
+        }
+    }
+
 }
