@@ -13,23 +13,12 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  */
 class Transaction
 {
-    /**
-     * @var int
-     *
-     */
-    private $id;
 
     /**
      * @var string
      *
      */
     private $amount;
-
-    /**
-     * @var \DateTime
-     *
-     */
-    private $date;
 
     /**
      * @var string
@@ -64,13 +53,6 @@ class Transaction
                 ->addViolation();
         }
 
-        $today = new \Datetime('today');
-        if($today->diff($this->getDate())->invert == 1){
-            $context->buildViolation('La date d\'exécution ne peut être antérieure à la date du jour')
-                ->atPath('date')
-                ->addViolation();
-        }
-
         if(!$this->getFromAccount()['id']){
             $context->buildViolation('Le compte débiteur n\'a pas été sélectionné')
                 ->atPath('fromAccount')
@@ -84,16 +66,6 @@ class Transaction
         }
 
 
-    }
-
-    /**
-     * Get id
-     *
-     * @return int
-     */
-    public function getId()
-    {
-        return $this->id;
     }
 
     /**
@@ -120,29 +92,6 @@ class Transaction
         return $this->amount;
     }
 
-    /**
-     * Set date
-     *
-     * @param \DateTime $date
-     *
-     * @return Transaction
-     */
-    public function setDate($date)
-    {
-        $this->date = $date;
-
-        return $this;
-    }
-
-    /**
-     * Get date
-     *
-     * @return \DateTime
-     */
-    public function getDate()
-    {
-        return $this->date;
-    }
 
     /**
      * Set description

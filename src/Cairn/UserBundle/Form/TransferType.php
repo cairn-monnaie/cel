@@ -23,7 +23,8 @@ class TransferType extends AbstractType
         $builder
             ->add('amount',   NumberType::class, array('label'=>'Montant'))    
             ->add('date',     DateType::class          , array('label'=> 'Date d\'éxecution'))
-            ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter'))
+            ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter',
+                                                           'error_bubbling'=>true))
             ->add('toAccount',       AccountType::class, array('label'=>'Compte à créditer'))
             ->add('description'  , TextareaType::class       ,array('label' => 'motif', 'required' => false))
             ->add('save'   , SubmitType::class,         array('label' => 'Suivant'));

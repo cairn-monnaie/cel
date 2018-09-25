@@ -3,7 +3,6 @@
 namespace Cairn\UserBundle\Form;
 
 use Cairn\UserBundle\Form\AccountType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -22,7 +21,6 @@ class TransactionType extends AbstractType
 
         $builder
             ->add('amount',   NumberType::class, array('label'=>'Montant'))    
-            ->add('date',     DateType::class          , array('label'=> 'Date d\'éxecution'))
             ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter',
                                                            'error_bubbling'=>true))
             ->add('toAccount',       AccountType::class, array('label'=>'Compte à créditer'))

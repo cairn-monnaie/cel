@@ -55,6 +55,9 @@ class BankingManager
     {
         $parameters = $this->hydrateParameters($paymentData,$amount,$description,$transferType);
 
+        $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
+        $monthsDiff = $interval->m;
+
         $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
 
         if($parameters->firstOccurrenceDate == date('Y-m-d')){
@@ -64,28 +67,15 @@ class BankingManager
         $parameters->occurrenceInterval = new \stdClass();
         $parameters->occurrenceInterval->field = 'MONTHS';
         $parameters->occurrenceInterval->amount = $timeData->periodicity;
-        
-        $amount = $parameters->occurrenceInterval->amount;
 
-        $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
-        $diff = $interval->m;
-        if($interval->invert == 0){
-            $nbOccurrences = intdiv($diff, $parameters->occurrenceInterval->amount) + 1;
-            if($nbOccurrences <= 1){
-                throw new \Exception('La période entre les 2 dates n\'est pas assez importante : ' .$nbOccurrences. ' occurrence calculée.');
-            }
-        }
-        else{//managed by controller but backup 
-            throw new \Exception('La date de dernière échéance ne peut être antérieure à la date de première échéance.');
-        }
-         $parameters->occurrencesCount = $nbOccurrences;
+        $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
 
 //        //for testing, monthly payments are not very appropriated, so settle daily payments in commented lines
         $parameters->firstOccurrenceDateIsNow = true;
         $parameters->occurrenceInterval = new \stdClass();
         $parameters->occurrenceInterval->field = 'MINUTES';
         $parameters->occurrenceInterval->amount = 1;
-         $parameters->occurrencesCount = 3;
+        $parameters->occurrencesCount = 3;
     
         return $this->recurringPaymentService->preview($parameters);
 

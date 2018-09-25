@@ -10,7 +10,8 @@ use Cyclos;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
-use Cairn\UserBundle\Entity\Transaction;
+use Cairn\UserBundle\Entity\SimpleTransaction;
+use Cairn\UserBundle\Entity\RecurringTransaction;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +26,8 @@ use Cairn\UserBundle\Form\ReconversionType;
 use Cairn\UserBundle\Form\DepositType;
 use Cairn\UserBundle\Form\WithdrawalType;
 use Cairn\UserBundle\Form\TransferType;
-use Cairn\UserBundle\Form\TransactionType;
+use Cairn\UserBundle\Form\SimpleTransactionType;
+use Cairn\UserBundle\Form\RecurringTransactionType;
 use Cairn\UserBundle\Form\RecurringTransferType;
 use Cairn\UserBundle\Form\ConfirmationType;
 
@@ -312,7 +314,6 @@ class BankingController extends Controller
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
-        $transaction = new Transaction();
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -368,9 +369,11 @@ class BankingController extends Controller
         }
 
         if($frequency == 'unique'){
-            $form = $this->createForm(TransactionType::class, $transaction);
+            $transaction = new SimpleTransaction();
+            $form = $this->createForm(SimpleTransactionType::class, $transaction);
         }else{
-            $form = $this->createForm(RecurringTransferType::class);
+            $transaction = new RecurringTransaction();
+            $form = $this->createForm(RecurringTransactionType::class, $transaction);
         }
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -383,24 +386,21 @@ class BankingController extends Controller
                 $transaction->setDescription($this->editDescription($type, $transaction->getDescription()));
                 if($frequency == 'recurring'){
                     $dataTime = new \stdClass();
-                    $dataTime->periodicity = $dataForm['periodicity'];
-                    $dataTime->firstOccurrenceDate = $dataForm['firstOccurrenceDate'];
-                    $dataTime->lastOccurrenceDate = $dataForm['lastOccurrenceDate'];
+                    $dataTime->periodicity =         $transaction->getPeriodicity();
+                    $dataTime->firstOccurrenceDate = $transaction->getFirstOccurrenceDate();
+                    $dataTime->lastOccurrenceDate =  $transaction->getLastOccurrenceDate();
                 }else{
 //                    $dataTime = $dataForm['date'];
                     $dataTime = $transaction->getDate();
                 }
 
+
                 //check that the current user owns the debited account
 //                if(!$accountService->hasAccount($debitorVO->id,$dataForm['fromAccount']['id'])){
 
-                if(!$accountService->hasAccount($debitorVO->id,$transaction->getFromAccount()['id'])){
-                    $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                    return new RedirectResponse($request->getRequestUri());
-                }
-
 //                $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
                 $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
+
                 if(!$accountService->hasAccount($debitorVO->id,$fromAccount->id)){
                          $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                          return new RedirectResponse($request->getRequestUri());
@@ -855,19 +855,6 @@ class BankingController extends Controller
         $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toAccount->owner,$transferTypes[0]);
 
         if($frequency == 'recurring'){
-            $today = new \Datetime('today');
-            $diff = $today->diff($dataTime->firstOccurrenceDate);
-            if($diff->invert == 1){
-                $message = 'La date de première échéance indiquée ne peut être antérieure à la date du jour.';
-                $review->error = $message;
-                return $review;
-            }
-
-            if($dataTime->firstOccurrenceDate->diff($dataTime->lastOccurrenceDate)->invert == 1){
-                $message = 'La date de dernière échéance ne peut être antérieure à la date de première échéance.';
-                $review->error = $message;
-                return $review;
-            }
             try{
                 $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
                 $review = $res->recurringPayment;
@@ -879,15 +866,8 @@ class BankingController extends Controller
                     return $review;
                 }
             }
-
         }
         elseif($frequency == 'unique'){
-            if($dataTime->format('Y-m-d') < date('Y-m-d')){
-                $message = 'La date indiquée ne peut être antérieure à la date du jour.';
-                $review->error = $message;
-                return $review;
-            }
-
             $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
 
             if(property_exists($res,'installments')){//specific attribute to a scheduled payment
@@ -895,12 +875,6 @@ class BankingController extends Controller
             }else{
                 $review = $res->payment;
             }
-        }
-        else{
-
-            $message = 'Fréquence de l\'opération non reconnue';
-            $review->error = $message;
-            return $review;
         }
 
         return $review;
