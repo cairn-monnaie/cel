@@ -2,26 +2,25 @@
 
 namespace Cairn\UserBundle\Form;
 
-use Cairn\UserBundle\Form\TransferType;
+use Cairn\UserBundle\Form\TransactionType;
 
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\AbstractType;
 
 
-class WithdrawalType extends TransferType
+class WithdrawalType extends AbstractType
 {
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder->remove('toAccount')
-            ->remove('description')
-            ->remove('date');
-
+            ->remove('description');
     }
 
     public function getParent()
     {
-        return TransferType::class;
+        return TransactionType::class;
     }       
 
 }

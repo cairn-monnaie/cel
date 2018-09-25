@@ -411,7 +411,7 @@ class BankingController extends Controller
                 if($toAccount['id']){
                     try{
                         $toAccount = $accountService->getAccountByID($toAccount['id']);
-                    }catch(\ServiceException $e){
+                    }catch(\Exception $e){
                         if(!$e->errorCode == 'ENTITY_NOT_FOUND'){
                             throw $e;
                         }
@@ -674,10 +674,12 @@ class BankingController extends Controller
             $toAccount = $transaction->getToAccount();
             try{
                 $toAccount = $accountService->getAccountByID($toAccount['id']);
-            }catch(\ServiceException $e){
+            }catch(\Exception $e){
                 if($e->errorCode == 'ENTITY_NOT_FOUND'){
                     $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
                     return new RedirectResponse($request->getRequestUri());
+                }else{
+                    throw $e;
                 }
             }
 
@@ -719,12 +721,16 @@ class BankingController extends Controller
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
 
+        $transaction = new SimpleTransaction();
+        $transaction->setDate(new \Datetime());
+        $transaction->setToAccount(json_decode(json_encode($debitAccount),true));
+
         $formUser = $this->createFormBuilder()
             ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $formWithdrawal = $this->createForm(WithdrawalType::class);
+        $formWithdrawal = $this->createForm(WithdrawalType::class, $transaction);
 
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
@@ -743,26 +749,32 @@ class BankingController extends Controller
 
         $formWithdrawal->handleRequest($request);
         if($formWithdrawal->isSubmitted() && $formWithdrawal->isValid()){
-            $dataForm = $formWithdrawal->getData();
-            $amount = $dataForm['amount'];
+            $amount = $transaction->getAmount();
             $description = $currentUser->getName() . ' ' . $currentUser->getCity();
             $description = $this->editDescription($type,$description);
-            //                $dataTime = $dataForm['date'];
-            $dataTime = new \Datetime(date('Y-m-d'));
+
+            $dataTime = $transaction->getDate();
             $toAccount = $debitAccount; 
 
-            $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
-            if(!$fromAccount){
-                $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                return $this->redirectToRoute($request->get('_route'));
+            $fromAccount = $transaction->getFromAccount();
+            try{
+                $fromAccount = $accountService->getAccountByID($fromAccount['id']);
+            }catch(\Exception $e){
+                if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                    $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
+                    return new RedirectResponse($request->getRequestUri());
+                }else{
+                    throw $e;
+                }
             }
 
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
-                return $this->redirectToRoute($request->get('_route'));
+                return new RedirectResponse($request->getRequestUri());
             }
+
             $session->set('paymentReview',$review);
             return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('type'=>$type));
 
