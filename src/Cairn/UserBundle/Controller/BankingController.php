@@ -414,8 +414,6 @@ class BankingController extends Controller
                     }catch(\ServiceException $e){
                         if(!$e->errorCode == 'ENTITY_NOT_FOUND'){
                             throw $e;
-                        }else{
-                            throw $e;
                         }
                     }
                 }else{//if id not mentioned, then email is necessarily(see Entity Transaction validation)
@@ -488,7 +486,7 @@ class BankingController extends Controller
 
                 if(!$accountService->hasAccount($ownerVO->id,$dataForm['fromAccount']['id'])){
                     $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                    return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
@@ -590,7 +588,7 @@ class BankingController extends Controller
 
             if(($userToCredit===$currentUser) && !$accountService->hasAccount($currentUserVO->id,$dataForm['toAccount']['id'])){
                 $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                return new RedirectResponse($request->getSchemeAndHttpHost() . $request->getRequestUri());
+                return new RedirectResponse($request->getRequestUri());
             }
 
             $toAccount = $accountService->getAccountByID($dataForm['toAccount']['id']);
@@ -638,12 +636,16 @@ class BankingController extends Controller
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
 
+        $transaction = new SimpleTransaction();
+        $transaction->setDate(new \Datetime());
+        $transaction->setFromAccount(json_decode(json_encode($debitAccount),true));
+
         $formUser = $this->createFormBuilder()
             ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $formDeposit = $this->createForm(DepositType::class);
+        $formDeposit = $this->createForm(DepositType::class, $transaction);
 
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
@@ -662,25 +664,28 @@ class BankingController extends Controller
 
         $formDeposit->handleRequest($request);
         if($formDeposit->isSubmitted() && $formDeposit->isValid()){
-            $dataForm = $formDeposit->getData();
-            $amount = $dataForm['amount'];
+            $amount = $transaction->getAmount();
             $description = $currentUser->getName() .' ' . $currentUser->getCity();
             $description = $this->editDescription($type,$description);
 
-            //                $dataTime = $dataForm['date'];
-            $dataTime = new \Datetime(date('Y-m-d'));
+            $dataTime = $transaction->getDate();
             $fromAccount = $debitAccount; 
 
-            $toAccount = $accountService->getAccountByID($dataForm['toAccount']['id']);
-            if(!$toAccount){
-                $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                return $this->redirectToRoute($request->get('_route'));
+            $toAccount = $transaction->getToAccount();
+            try{
+                $toAccount = $accountService->getAccountByID($toAccount['id']);
+            }catch(\ServiceException $e){
+                if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                    $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
+                    return new RedirectResponse($request->getRequestUri());
+                }
             }
+
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
-                return $this->redirectToRoute($request->get('_route'));
+                return new RedirectResponse($request->getRequestUri());
             }
 
             $session->set('paymentReview',$review);
