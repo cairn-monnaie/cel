@@ -329,7 +329,7 @@ class UserController extends Controller
                         }
                         else{ 
                             if($currentUser->hasBeneficiary($existingBeneficiary)){
-                                $session->getFlashBag()->add('error','Ce compte fait déjà partie de vos bénéficiaires.');
+                                $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
                                 return $this->redirectToRoute('cairn_user_beneficiaries_list');
                             }
                             $beneficiary = $existingBeneficiary;
@@ -340,7 +340,7 @@ class UserController extends Controller
                         $em->persist($beneficiary);                    
                         $em->persist($currentUser);
                         $em->flush();
-                        $session->getFlashBag()->add('info','Nouveau bénéficiaire ajouté avec succès');
+                        $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                         return $this->redirectToRoute('cairn_user_beneficiaries_list');
                     }
                 }
@@ -391,7 +391,7 @@ class UserController extends Controller
                     return $this->redirectToRoute('cairn_user_beneficiaries_edit',array('id'=>$beneficiary->getID()));
                 }
                 if($validity->hasBeneficiary){
-                    $session->getFlashBag()->add('error','Ce compte fait déjà partie de vos bénéficiaires.');
+                    $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
                     return $this->redirectToRoute('cairn_user_beneficiaries_list');
                 }
 
@@ -412,7 +412,7 @@ class UserController extends Controller
                 $em->persist($newBeneficiary);
                 $em->persist($currentUser);
                 $em->flush();
-                $session->getFlashBag()->add('info','Modification effectuée avec succès');
+                $session->getFlashBag()->add('success','Modification effectuée avec succès');
                 return $this->redirectToRoute('cairn_user_beneficiaries_list');
             }                                                              
         }                                                                  
@@ -447,7 +447,7 @@ class UserController extends Controller
                     }
 
                     $em->flush();
-                    $session->getFlashBag()->add('info','Suppression effectuée avec succès');
+                    $session->getFlashBag()->add('success','Suppression effectuée avec succès');
 
                     //TODO here
                 }                                                              
@@ -490,7 +490,7 @@ class UserController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
         if($user->getUsername() == $this->getParameter('cyclos_global_admin_username')){
-            $session->getFlashBag()->add('error','Le membre super administrateur ne peut être supprimé');
+            $session->getFlashBag()->add('info','Le membre super administrateur ne peut être supprimé');
             return $this->redirectToRoute('cairn_user_profile_view', array('id'=>$user->getID()));       
         }
 
@@ -535,7 +535,7 @@ class UserController extends Controller
                     }
 
                     $this->removeUser($user);
-                    $session->getFlashBag()->add('info','Espace membre supprimé avec succès');
+                    $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                     return $this->redirectToRoute($redirection);
                 }
                 else{

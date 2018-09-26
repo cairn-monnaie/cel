@@ -141,7 +141,7 @@ class DefaultController extends Controller
 
         }else{
             $session = $request->getSession();
-            $session->getFlashBag()->add('error','admin user already exists, please login');
+            $session->getFlashBag()->add('info','admin user already exists, please login');
         }
         return $this->redirectToRoute('cairn_user_welcome');
     }

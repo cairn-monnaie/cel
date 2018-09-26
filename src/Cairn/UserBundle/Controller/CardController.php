@@ -85,11 +85,11 @@ class CardController extends Controller
         $card = $currentUser->getCard();
 
         if(!$card){
-            $session->getFlashBag()->add('error','Vous n\'avez pas de carte de sécurité Cairn. Votre opération ne peut être poursuivie. Commandez-en une');
+            $session->getFlashBag()->add('info','Vous n\'avez pas de carte de sécurité Cairn. Votre opération ne peut être poursuivie. Commandez-en une');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$currentUser->getID()));
         }
         if(!$card->isEnabled()){
-            $session->getFlashBag()->add('error','Votre carte courante n\'est pas active. Votre opération ne peut être poursuivie. Activez-la.');
+            $session->getFlashBag()->add('info','Votre carte courante n\'est pas active. Votre opération ne peut être poursuivie. Activez-la.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$currentUser->getID()));
         }
 
@@ -173,9 +173,9 @@ class CardController extends Controller
         $card = $user->getCard();
         if($card){
             if($card->isEnabled()){
-                $session->getFlashBag()->add('error','La carte courante est active. Vous ne pouvez commander une autre carte qu\'en cas de perte de la carte courante. Veuillez la révoquer d\'abord.');
+                $session->getFlashBag()->add('info','La carte courante est active. Vous ne pouvez commander une autre carte qu\'en cas de perte de la carte courante. Veuillez la révoquer d\'abord.');
             }else{
-                $session->getFlashBag()->add('error','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
+                $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
             }
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }
@@ -210,7 +210,7 @@ class CardController extends Controller
                         $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('by'=>$currentUser,'user'=>$user));
 
                         $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-                        $session->getFlashBag()->add('info','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
+                        $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
                     }
                     else{
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
@@ -252,7 +252,7 @@ class CardController extends Controller
 
         $card = $user->getCard();
         if(!$card){
-            $session->getFlashBag()->add('error','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
+            $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }else{
             if(!$card->getFields()){
@@ -324,11 +324,11 @@ class CardController extends Controller
         $em = $this->getDoctrine()->getManager();
 
         if(!$card){
-            $session->getFlashBag()->add('error','Votre carte de sécurité Cairn a été révoquée. Commandez-en une nouvelle.');
+            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn a été révoquée. Commandez-en une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }
         if($card->isEnabled()){
-            $session->getFlashBag()->add('error','Votre carte de sécurité Cairn est déjà active.');
+            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn est déjà active.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }
 
@@ -360,7 +360,7 @@ class CardController extends Controller
                     $card->setEnabled(true);
                     $em->flush();
 
-                    $session->getFlashBag()->add('info','Votre carte a été activée avec succès.');
+                    $session->getFlashBag()->add('success','Votre carte a été activée avec succès.');
                     return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
 
                 }
@@ -400,12 +400,12 @@ class CardController extends Controller
         $card = $user->getCard();
 
         if(!$card){
-            $session->getFlashBag()->add('error',$user->getName() . ' n\'a pas de carte de sécurité à générer. Commandez-en une nouvelle.');
+            $session->getFlashBag()->add('info',$user->getName() . ' n\'a pas de carte de sécurité à générer. Commandez-en une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
 
         }
         if($card->isGenerated()){
-            $session->getFlashBag()->add('error','La carte de sécurité a déjà été générée.');
+            $session->getFlashBag()->add('info','La carte de sécurité a déjà été générée.');
             return $this->redirectToRoute('cairn_user_card_home',array('id'=>$user->getID()));
         }
 

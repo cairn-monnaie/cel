@@ -91,7 +91,7 @@ class AdminController extends Controller
                 $body = 'Votre espace membre a été bloqué par le groupe local ' .$this->getUser()->getCity();
 
                 $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
-                $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
+                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
                 $em->flush();
             }
 
@@ -136,7 +136,7 @@ class AdminController extends Controller
                 $this->get('cairn_user.access_platform')->enable(array($user));
                 $em->flush();
 
-                $session->getFlashBag()->add('info','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut à nouveau accéder à la plateforme.');
+                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut à nouveau accéder à la plateforme.');
 
                 //if first activation : ask if generate card now
                 if($user->getLastLogin() == NULL){

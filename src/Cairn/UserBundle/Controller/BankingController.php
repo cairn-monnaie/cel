@@ -344,7 +344,7 @@ class BankingController extends Controller
             $direction = $directionPrefix.'_TO_SELF';
             $toAccounts = $selfAccounts;
             if(count($toAccounts) == 1){
-                $session->getFlashBag()->add('error','Vous n\'avez qu\'un compte.'); 
+                $session->getFlashBag()->add('info','Vous n\'avez qu\'un compte.'); 
                 return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
@@ -427,7 +427,7 @@ class BankingController extends Controller
                 }
 
                 if(($to != 'self') && ($accountService->hasAccount($debitorVO->id,$toAccount->id))){
-                    $session->getFlashBag()->add('error','Ce compte vous appartient. Ce n\'est pas un nouveau bénéficiaire. Sélectionnez "Entre vos comptes".' );
+                    $session->getFlashBag()->add('info','Ce compte vous appartient. Ce n\'est pas un nouveau bénéficiaire. Sélectionnez "Entre vos comptes".' );
                     return new RedirectResponse($request->getRequestUri());
                 }
 
@@ -936,7 +936,7 @@ class BankingController extends Controller
                     else{
                         $paymentVO = $this->bankingManager->makePayment( $paymentReview);
                     }
-                    $session->getFlashBag()->add('info','Votre opération a été enregistrée.');
+                    $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                 }
                 else{//cancel button clicked
@@ -973,7 +973,7 @@ class BankingController extends Controller
 
             try{
                 $occurrenceID = $this->bankingManager->processOccurrence($DTO);
-                $session->getFlashBag()->add('info','Le virement a été effectué avec succès.');
+                $session->getFlashBag()->add('success','Le virement a été effectué avec succès.');
 
             }catch(\Exception $e){
                 if($e instanceof Cyclos\ServiceException){
@@ -1117,6 +1117,12 @@ class BankingController extends Controller
      *  _simple payment : transactionNumber works, id does not
      *  _recurring payment : occurrence.id works 
      *In the view, if the transfer involves two different people, the account type of the receiver is not mentioned
+     *The attribute "date" has not the same meaning for all types :
+     *  _scheduled payment with status SCHEDULED : date is submission date
+     *  _scheduled payment with status PROCESSED : date is execution date
+     *  _simple payment :                          date is execution date
+     *  _recurring payment :                       date is execution date
+
      *@param string $type Type of transaction the transfer belongs to
      *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
      */
@@ -1135,7 +1141,8 @@ class BankingController extends Controller
             break;
         case 'scheduled.futur':
             //the transfer is not done yet, so there is no real object "transferVO" related to the provided id, but all information can 
-            //be gathered and put in an object
+            //be gathered and put in an object. The fact that there is no id is the indicator(in the view) to know that it's not a real 
+            //transfer 
             $data = $bankingService->getInstallmentData($id);
             $transaction = $data->transaction;
 
@@ -1165,6 +1172,7 @@ class BankingController extends Controller
             break;
         case 'recurring':
             $transfer = $bankingService->getTransferByID($id);
+
             $transfer->dueDate = $transfer->date;
             break;
         case 'simple':
@@ -1203,6 +1211,7 @@ class BankingController extends Controller
 
         $installmentDTO = new \stdClass();
         $installmentDTO->scheduledPayment = $installmentData->transaction;
+        $installmentDTO->installment = $installmentData->transaction->installments[0]->id;
 
         $form = $this->createForm(ConfirmationType::class);
 
@@ -1258,7 +1267,7 @@ class BankingController extends Controller
     
                 $this->bankingManager->cancelRecurringPayment($recurringPaymentDTO);
     
-                $session->getFlashBag()->add('info','Le virement permanent a été annulé avec succès');
+                $session->getFlashBag()->add('success','Le virement permanent a été annulé avec succès');
             }
 
             return $this->redirectToRoute('cairn_user_banking_operations_view',array('frequency'=>'recurring','type'=>'transaction'));
