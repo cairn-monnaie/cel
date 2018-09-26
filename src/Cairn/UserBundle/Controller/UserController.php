@@ -290,7 +290,7 @@ class UserController extends Controller
                 $dataForm = $form->getData();
                 $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
                 $re_name ='#^[a-z]+$#' ;
-                $re_ICC = '#^[0-9]+$#';
+                $re_ICC = '#^[-]?[0-9]+$#';
                 preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
                 preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
                 preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
