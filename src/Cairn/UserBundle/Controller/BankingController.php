@@ -139,11 +139,13 @@ class BankingController extends Controller
 
         //        var_dump($history->transactions[0]->relatedAccount->owner);
         $futureTransactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions(
-            $user->getCyclosID(),$accountTypeVO,array('RECURRING_PAYMENT','SCHEDULED_PAYMENT'),array(NULL,'OPEN','OPEN'),NULL);
+            $account->owner,$accountTypeVO,array('RECURRING_PAYMENT','SCHEDULED_PAYMENT'),array(NULL,'OPEN','OPEN'),NULL);
 
         $totalAmount = 0;
         foreach($futureTransactions as  $futureTransaction){
-            $totalAmount += $futureTransaction->amount;
+            if($futureTransaction->amount < 0){
+                $totalAmount += $futureTransaction->amount;
+            }
         }
 
         $form = $this->createFormBuilder()
@@ -873,7 +875,8 @@ class BankingController extends Controller
 
         if($frequency == 'recurring'){
             try{
-                $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
+                $environment = $this->getParameter('kernel.environment');
+                $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferTypes[0],$dataTime,$environment);
                 $review = $res->recurringPayment;
             }catch(\Exception $e){
                 if($e instanceof Cyclos\ServiceException){
