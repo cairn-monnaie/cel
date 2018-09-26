@@ -40,7 +40,12 @@
 
             </ul>
 
-        <em> Date : {{transfer.dueDate}} </em> </br>
+        <em> Date d'exécution demandée : {{transfer.dueDate}} </em> </br>
+        {% if transfer.id is defined %} {# id not defined for future transfer because there is no transfer entity in Cyclos yet #}
+            <em> Date d'exécution effective : {{transfer.date}} </em> </br>
+        {% else %}
+             <em> Date de soumission : {{transfer.date}} </em> </br>
+        {% endif %}
         <em> Montant : {{transfer.currencyAmount.amount}} </em></br>
         <em> Devise : {{transfer.currencyAmount.currency.name}} </em></br>
 
