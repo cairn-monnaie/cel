@@ -192,7 +192,7 @@ cairn_user_banking_transaction_scheduled_changestatus:
     defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction}
     requirements:
         #id: \d{19}
-        status: cancel|open|block
+        status: cancel|open|block|execute
 
 cairn_user_banking_transaction_recurring_cancel:
     path:     banking/transaction/recurring/cancel/{id}/

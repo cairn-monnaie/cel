@@ -71,12 +71,12 @@ class BankingManager
         $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
 
 //        //for testing, monthly payments are not very appropriated, so settle daily payments in commented lines
-        $parameters->firstOccurrenceDateIsNow = true;
-        $parameters->occurrenceInterval = new \stdClass();
-        $parameters->occurrenceInterval->field = 'MINUTES';
-        $parameters->occurrenceInterval->amount = 1;
-        $parameters->occurrencesCount = 3;
-    
+//        $parameters->firstOccurrenceDateIsNow = true;
+//        $parameters->occurrenceInterval = new \stdClass();
+//        $parameters->occurrenceInterval->field = 'MINUTES';
+//        $parameters->occurrenceInterval->amount = 1;
+//        $parameters->occurrencesCount = 3;
+//    
         return $this->recurringPaymentService->preview($parameters);
 
     }
@@ -118,7 +118,9 @@ class BankingManager
         }elseif($status == 'cancel'){
              $this->scheduledPaymentService->cancel($DTO);
              $res->validStatus = true;
-
+        }elseif($status == 'execute'){
+             $this->scheduledPaymentService->processInstallment($DTO);
+             $res->validStatus = true;
         }else{
             $res->validStatus = false;
             $res->message = 'Le statut du paiement en attente indiqué ne correspond à aucune action possible.';

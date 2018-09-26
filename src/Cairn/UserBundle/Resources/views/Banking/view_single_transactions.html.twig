@@ -51,6 +51,8 @@
                      |
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'cancel' })}}"> Annuler </a>
                      | 
+                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'execute' })}}"> Exécuter maintenant </a>
+                     |
                     {% if installment.status == 'BLOCKED' %}
                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id, 'status':'open' })}}"> Débloquer </a>  </td>
                     {% elseif  installment.status == 'SCHEDULED' %}
