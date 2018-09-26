@@ -20,7 +20,7 @@
         <tbody>
         {% for occurrence in data.occurrences %}
                     <tr>
-                        <td> {{occurrence.number}} </td>
+                        <td> {{occurrence.number}}/{{data.transaction.occurrencesCount}} </td>
                         <td>{{occurrence.currencyAmount.amount}} </td>
                         <td> {{occurrence.date }} </td>  
                         <td> {{occurrence.status }} </td>
@@ -38,4 +38,12 @@
         </tbody>
         </table>
     </div>    
+    
+    <h3> Informations sur le compte </h3>
+    <ul>
+        <li> Nom du compte : {{fromAccount.type.name }} </li>
+        <li> ICC : {{fromAccount.id}} </li>
+        <li> Solde : {{fromAccount.status.balance}} </li>
+        <li> Capacité totale de dépense : {{fromAccount.status.availableBalance}} </li>
+    </ul>
 {% endblock %}

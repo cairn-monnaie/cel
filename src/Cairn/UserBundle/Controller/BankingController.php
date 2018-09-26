@@ -1052,6 +1052,8 @@ class BankingController extends Controller
 
                 $ongoingTransactions = $bankingService->getRecurringTransactionsDataBy(
                     $userVO,$accountTypesVO,array('OPEN'),$description);
+//                var_dump($ongoingTransactions[0]);
+//                return new Response('ok');
 
                 return $this->render('CairnUserBundle:Banking:view_recurring_transactions.html.twig', 
                     array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
@@ -1105,7 +1107,9 @@ class BankingController extends Controller
         //contains instances of RecurringPaymentOccurrenceVO. Beware, although the documentation mentiones it, The transferDate 
         //attribute is not specified
         $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($id);
-        return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array('data'=>$recurringPaymentData));
+        $transaction = $recurringPaymentData->transaction;
+        $account = $this->get('cairn_user_cyclos_account_info')->getUserAccountWithType($transaction->fromOwner->id,$transaction->type->from->id);
+        return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array('data'=>$recurringPaymentData,'fromAccount'=>$account));
     }
 
     /**

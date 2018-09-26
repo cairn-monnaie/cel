@@ -170,10 +170,28 @@ class AccountInfo
     }
 
     /**
+     *Returns the user account of type with ID $accountTypeID
+     *
+     *@param int $userID ID of accounts' owner
+     *@param int $accountTypeID ID of account type
+     *@return stdClass representing Java type: org.cyclos.model.banking.accounts.AccountWithStatusVO 
+     */
+    public function getUserAccountWithType($userID, $accountTypeID)
+    {
+        $accounts = $this->getAccountsSummary($userID,NULL);
+        foreach($accounts as $account){
+            if($account->type->id == $accountTypeID){
+                return $account;
+            }
+        }   
+        return NULL;
+    }
+
+    /**
      *Returns the default account for a given user.
      *
      *@todo : define default account if several accounts exist
-     *@param int $userID ID of the user who owns the account $accountID
+     *@param int $userID ID of accounts' owner
      *@return stdClass representing Java type: org.cyclos.model.banking.accounts.AccountWithStatusVO 
      */
     public function getDefaultAccount($userID)

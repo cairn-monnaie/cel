@@ -51,32 +51,33 @@ class BankingManager
         return $this->scheduledPaymentService->preview($parameters);
     }
 
-    public function makeRecurringPreview($paymentData,$amount,$description,$transferType,$timeData)
+    public function makeRecurringPreview($paymentData,$amount,$description,$transferType,$timeData,$environment)
     {
         $parameters = $this->hydrateParameters($paymentData,$amount,$description,$transferType);
 
-        $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
-        $monthsDiff = $interval->m;
+        if($environment == 'test'){
+            $parameters->firstOccurrenceDateIsNow = true;
+            $parameters->occurrenceInterval = new \stdClass();
+            $parameters->occurrenceInterval->field = 'MINUTES';
+            $parameters->occurrenceInterval->amount = 1;
+            $parameters->occurrencesCount = 3;
+        }else{
+            $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
+            $monthsDiff = $interval->m;
 
-        $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
+            $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
 
-        if($parameters->firstOccurrenceDate == date('Y-m-d')){
-            $parameters->firstOccurrenceIsNow = true;
+            if($parameters->firstOccurrenceDate == date('Y-m-d')){
+                $parameters->firstOccurrenceIsNow = true;
+            }
+
+            $parameters->occurrenceInterval = new \stdClass();
+            $parameters->occurrenceInterval->field = 'MONTHS';
+            $parameters->occurrenceInterval->amount = $timeData->periodicity;
+
+            $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
         }
 
-        $parameters->occurrenceInterval = new \stdClass();
-        $parameters->occurrenceInterval->field = 'MONTHS';
-        $parameters->occurrenceInterval->amount = $timeData->periodicity;
-
-        $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
-
-//        //for testing, monthly payments are not very appropriated, so settle daily payments in commented lines
-//        $parameters->firstOccurrenceDateIsNow = true;
-//        $parameters->occurrenceInterval = new \stdClass();
-//        $parameters->occurrenceInterval->field = 'MINUTES';
-//        $parameters->occurrenceInterval->amount = 1;
-//        $parameters->occurrencesCount = 3;
-//    
         return $this->recurringPaymentService->preview($parameters);
 
     }
@@ -112,15 +113,15 @@ class BankingManager
             $this->scheduledPaymentService->block($DTO);
             $res->validStatus = true;
         }elseif($status == 'open'){
-             $this->scheduledPaymentService->unblock($DTO);
+            $this->scheduledPaymentService->unblock($DTO);
             $res->validStatus = true;
 
         }elseif($status == 'cancel'){
-             $this->scheduledPaymentService->cancel($DTO);
-             $res->validStatus = true;
+            $this->scheduledPaymentService->cancel($DTO);
+            $res->validStatus = true;
         }elseif($status == 'execute'){
-             $this->scheduledPaymentService->processInstallment($DTO);
-             $res->validStatus = true;
+            $this->scheduledPaymentService->processInstallment($DTO);
+            $res->validStatus = true;
         }else{
             $res->validStatus = false;
             $res->message = 'Le statut du paiement en attente indiqué ne correspond à aucune action possible.';
