@@ -20,7 +20,8 @@ class TransactionType extends AbstractType
     {
 
         $builder
-            ->add('amount',   NumberType::class, array('label'=>'Montant'))    
+            ->add('amount',   NumberType::class, array('label'=>'Montant',
+                                                       'scale'=>2))    
             ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter',
                                                            'error_bubbling'=>true))
             ->add('toAccount',       AccountType::class, array('label'=>'Compte à créditer'))
