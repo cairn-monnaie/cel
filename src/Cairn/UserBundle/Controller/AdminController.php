@@ -165,11 +165,18 @@ class AdminController extends Controller
      */
     public function assignReferentAction(Request $request, User $user)
     {
+        if(!$user->hasRole('ROLE_PRO')){
+            throw new AccessDeniedException('Seuls les professionnels doivent avoir des référents assignés manuellement.');
+        }
+
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
         $choices = $userRepo->myFindByRole(array('ROLE_ADMIN'));
+
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+        $from = $messageNotificator->getNoReplyEmail();
 
         $form = $this->createFormBuilder()
             ->add('singleReferent', EntityType::class, array(
@@ -199,9 +206,19 @@ class AdminController extends Controller
                     }else{
                         $currentAdminReferent = $user->getLocalGroupReferent();
                         if($currentAdminReferent){
-                            $user->remove($currentAdminReferent);
+                            $to = $currentAdminReferent->getEmail();
+                            $subject = 'Référencement Pro';
+                            $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
+                            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                            $user->removeReferent($currentAdminReferent);
                         }
+
                         $user->addReferent($referent);
+
+                        $to = $referent->getEmail();
+                        $subject = 'Référencement Pro';
+                        $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                         $em->flush();
                         $session->getFlashBag()->add('success',

@@ -35,7 +35,7 @@
             </li>
         </ul>
         
-        {% if is_granted('ROLE_ADMIN') %}
+        {% if is_granted('ROLE_ADMIN') and user.hasRole('ROLE_PRO') %}
             <div> 
                 <strong> Le groupe local référent de {{user.name}} </strong>
                 {% set adminReferent = user.getLocalGroupReferent() %}
