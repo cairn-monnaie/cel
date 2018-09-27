@@ -15,7 +15,6 @@ cairn_user_redirect_login:
     path:     login/redirection/{message}/
     defaults: { _controller: CairnUserBundle:Default:redirectToLogin }
 
-
 cairn_user_password_change:
     path:     password/new/
     defaults: { _controller: CairnUserBundle:User:changePassword }
@@ -24,8 +23,9 @@ cairn_user_card_security_layer:
     path:     security/card/
     defaults: { _controller: CairnUserBundle:Card:inputCardKey }
 
-cairn_user_referent_assign:
-    path:     user/referent/assign/{id}/
+
+cairn_user_referents_assign:
+    path:     user/referents/assign/{id}/
     defaults: { _controller: CairnUserBundle:Admin:assignReferent }
     requirements:
         id: \d+

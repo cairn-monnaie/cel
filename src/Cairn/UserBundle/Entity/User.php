@@ -42,7 +42,7 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
-     * @Assert\Length(min=19,max=19, exactMessage="Contient exactement {{ limit }} chiffres")
+     * @Assert\Length(min=19, minMessage="Contient exactement {{ limit }} chiffres")
      */
     private $cyclosID; 
 
@@ -591,5 +591,23 @@ class User extends BaseUser
     public function getReferents()
     {
         return $this->referents;
+    }
+
+    /**
+     * Add referent
+     *
+     * @param \Cairn\UserBundle\Entity\User $referent
+     *
+     * @return User
+     */
+    public function getLocalGroupReferent()
+    {
+        $referents = $this->getReferents();
+        foreach($referents as $referent){
+            if($referent->hasRole('ROLE_ADMIN')){
+                return $referent;
+            }
+        }
+        return NULL;
     }
 }

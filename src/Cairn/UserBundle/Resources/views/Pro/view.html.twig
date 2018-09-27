@@ -35,6 +35,23 @@
             </li>
         </ul>
         
+        {% if is_granted('ROLE_ADMIN') %}
+            <div> 
+                <strong> Le groupe local référent de {{user.name}} </strong>
+                {% set adminReferent = user.getLocalGroupReferent() %}
+
+                {% if adminReferent is null %}
+                    <em> Aucun groupe local référent ! </em>
+                    <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
+                {% else %}
+                    <em> {{adminReferent.name}} </em>
+                    <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
+                {% endif %}    
+                </br>
+                
+
+            </div>
+        {% endif %}
 
         {% if user.hasReferent(app.user) or user == app.user %} 
             <a href="{{path('cairn_user_card_home',{'id': user.id})}}">Carte de sécurité Cairn</a>

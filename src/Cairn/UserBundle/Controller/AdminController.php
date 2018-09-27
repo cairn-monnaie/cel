@@ -11,6 +11,7 @@ use Cairn\UserCyclosBundle\Entity\UserManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
@@ -177,26 +178,41 @@ class AdminController extends Controller
                     new Assert\NotNull()                           
                 ),
                 'choice_label'=>'name',
+                'data'=> $user->getLocalGroupReferent(),
                 'choices'=>$choices,
-                'expanded'=>true
+                'expanded'=>true,
+                'required'=>false
             ))
+            ->add('cancel', SubmitType::class, array('label'=>'Annuler'))
             ->add('save', SubmitType::class, array('label'=>'Assigner'))
             ->getForm();
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $referent = $form->get('singleReferent')->getData();
-                $user->addReferent($referent);
+                if($form->get('save')->isClicked()){
+                    $referent = $form->get('singleReferent')->getData();
+                    if($user->hasReferent($referent)){
+                        $session->getFlashBag()->add('info',
+                            $referent->getName() . ' est déjà le groupe local référent de '.$user->getName());
+                        return new RedirectResponse($request->getRequestUri());
+                    }else{
+                        $currentAdminReferent = $user->getLocalGroupReferent();
+                        if($currentAdminReferent){
+                            $user->remove($currentAdminReferent);
+                        }
+                        $user->addReferent($referent);
 
-                $em->flush();
-                $session->getFlashBag()->add('success',
-                    $referent->getUsername() . ' est désormais référent de '.$user->getUsername());
-
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                        $em->flush();
+                        $session->getFlashBag()->add('success',
+                            $referent->getName() . ' est désormais référent de '.$user->getName());
+                        return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                    }
+                }else{
+                    return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                }
             }
         }
-
         return $this->render('CairnUserBundle:User:add_referent.html.twig',array('form'=>$form->createView(),'user'=>$user));
     }   
 
