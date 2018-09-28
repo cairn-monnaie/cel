@@ -36,4 +36,8 @@ security:
             remember_me:
                 secret:     '%secret%' #defined in parameters.yml 
     access_control:
-        - { path: ^/config, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/config, roles: ROLE_SUPER_ADMIN , requires_channel: https, host: moncompte.cairn-monnaie\.com$}
+        - { path: ^/, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: https, host: moncompte.cairn-monnaie\.com$ }
+        - { path: ^/config, roles: ROLE_SUPER_ADMIN , requires_channel: http, host: localhost$}
+        - { path: ^/, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: http, host: localhost$ }
+

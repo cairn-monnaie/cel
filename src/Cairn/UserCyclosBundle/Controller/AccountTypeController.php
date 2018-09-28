@@ -32,6 +32,7 @@ use Symfony\Component\Form\FormEvents;
 
 /**
  * Simple CRUD related to Account Types on cyclos side
+ *@Security("has_role('ROLE_SUPER_ADMIN')") 
  *
  */
 class AccountTypeController extends Controller
@@ -468,7 +469,7 @@ class AccountTypeController extends Controller
                 }
                 else{//if SYSTEM, modify accountType directly.
                     $accountTypeDTO = (object) $dataForm;
-//                    $accountTypeDTO->internalName = preg_replace('/\s\s+/', '', $accountTypeDTO->name); 
+                    //                    $accountTypeDTO->internalName = preg_replace('/\s\s+/', '', $accountTypeDTO->name); 
 
                     $accountTypeID = $this->accountTypeManager->editAccountType($accountTypeDTO);
                     return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id' => $accountTypeID));
@@ -532,9 +533,9 @@ class AccountTypeController extends Controller
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-               if($form->get('save')->isClicked()){
-                   $changeAssignation = $this->changeAssignationAccountType($id,true);
-                   $session->getFlashBag()->add('info','Un compte a été assigné à chaque professionnel.');
+                if($form->get('save')->isClicked()){
+                    $changeAssignation = $this->changeAssignationAccountType($id,true);
+                    $session->getFlashBag()->add('info','Un compte a été assigné à chaque professionnel.');
                 }
                 return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$id));
             }

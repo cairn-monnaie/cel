@@ -28,6 +28,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 /**
  * Simple CRUD related to Account Types on cyclos side
  *
+ *@Security("has_role('ROLE_SUPER_ADMIN')") 
  */
 class NetworkController extends Controller
 {   
@@ -38,12 +39,6 @@ class NetworkController extends Controller
         $this->networkManager = new NetworkManager();
     }
 
-    /**
-     *@TODO: If Role_Exoff : get the network it belongs to, and set the global parameter(cyclos_network) to this network 
-     *
-     *
-     *@Security("has_role('ROLE_SUPER_ADMIN')") 
-     */
     public function indexAction(Request $request)//, $admin)
     {
         if($this->getParameter('kernel.environment' == 'test')){
@@ -55,8 +50,8 @@ class NetworkController extends Controller
             Cyclos\Configuration::setRootUrl($this->getParameter('cyclos_root_prod_url'));
             Cyclos\Configuration::setAuthentication($this->getParameter(),$this->getParameter()); 
         }
-       $listNetworks = $this->get('cairn_user_cyclos_network_info')->getListNetworks(true);
-       return $this->render('CairnUserCyclosBundle:Config/Network:index.html.twig',array('listNetworks' => $listNetworks));
+        $listNetworks = $this->get('cairn_user_cyclos_network_info')->getListNetworks(true);
+        return $this->render('CairnUserCyclosBundle:Config/Network:index.html.twig',array('listNetworks' => $listNetworks));
     }
 
     //    public function listNetworksAction()

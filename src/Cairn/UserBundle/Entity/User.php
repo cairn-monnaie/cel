@@ -19,11 +19,8 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
  * @UniqueEntity(fields = {"name"},message="Ce nom est déjà utilisé") 
- * @UniqueEntity(fields = {"username"},message="Ce pseudo est déjà utilisé") 
- * @UniqueEntity(fields = {"email"},message="Cette adresse email est déjà utilisée") 
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
  */
-
 class User extends BaseUser
 {
     public static $_counter= 0;
@@ -36,7 +33,7 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="name", type="string", unique=true, nullable=true)
-     * @Assert\Length(min=4,minMessage="{{ limit }} caractères minimum")
+     * @Assert\Length(min=3, minMessage="Contient {{ limit }} caractères minimum")
      */
     private $name; 
 
@@ -55,7 +52,7 @@ class User extends BaseUser
     /**
      * @ORM\Column(name="description", type="text", unique=false)
      * @Assert\NotBlank(message="Entrez une description de votre activité.")
-     * @Assert\Length(min=20, minMessage="Description un peu courte. {{ limit }} caractères minimum")
+     * @Assert\Length(min=5, minMessage="Description un peu courte. {{ limit }} caractères minimum")
      */
     private $description; 
 

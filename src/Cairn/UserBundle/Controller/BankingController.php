@@ -313,22 +313,15 @@ class BankingController extends Controller
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+        $type = 'transaction';
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
-
-        if(!$this->isValidFrequency($frequency)){
-            return $this->redirectToRoute('cairn_user_banking_transaction_request',array('to'=>$to,'frequency'=>'unique'));
-        }
-
         $session->set('frequency',$frequency);
-
-        $currentUser = $this->getUser();
-        $accountService = $this->get('cairn_user_cyclos_account_info');
-        $type = 'transaction';
 
         $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
         $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
@@ -472,8 +465,6 @@ class BankingController extends Controller
         $selfAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
         $debitAccount = $accountService->getDebitAccount();
 
-        $debitAccount = $accountService->getDebitAccount();
-
         $form = $this->createForm(ReconversionType::class);
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -495,13 +486,13 @@ class BankingController extends Controller
 
                 if(!$fromAccount){
                     $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                    return $this->redirectToRoute($request->get('_route'));
+                    return $this->redirectToRoute($request->getRequestUri());
                 }
 
                 $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,'USER_TO_SYSTEM',$amount,'unique',$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);
-                    return $this->redirectToRoute($request->get('_route'));
+                    return $this->redirectToRoute($request->getRequestUri());
                 }
 
                 $session->set('paymentReview',$review);
@@ -596,13 +587,13 @@ class BankingController extends Controller
             $toAccount = $accountService->getAccountByID($dataForm['toAccount']['id']);
             if(!$toAccount){
                 $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                return $this->redirectToRoute($request->get('_route'));
+                return new RedirectResponse($request->getRequestUri());
             }
 
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                 $session->getFlashBag()->add('error',$review->error);
-                return $this->redirectToRoute($request->get('_route'));
+                return new RedirectResponse($request->getRequestUri());
             }
 
             $session->set('paymentReview',$review);
@@ -1052,8 +1043,6 @@ class BankingController extends Controller
 
                 $ongoingTransactions = $bankingService->getRecurringTransactionsDataBy(
                     $userVO,$accountTypesVO,array('OPEN'),$description);
-//                var_dump($ongoingTransactions[0]);
-//                return new Response('ok');
 
                 return $this->render('CairnUserBundle:Banking:view_recurring_transactions.html.twig', 
                     array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
