@@ -124,25 +124,26 @@ Digital Cairn
      * Internal name : xxx
      * Click save
      * Click Permissions(top-right tab on group screen)
-     * General / My profile fields : enabled/registration/visible/editable : check for full name / login name / email
-     * General / Manage my channels access : check
-     *System Accounts : 
+     * General :
+        * My profile fields : enabled/registration/visible/editable : check for full name / login name / email
+        * Manage my channels access : check
+     * System Accounts : 
         * system accounts : check all
         * system to system payments : check all
         * system to user payments : check all
         * system recurring payments : check view + cancel
         * system scheduled payments : check view + cancel + block + unblock + process installment + settle installment
-     * User management / user registration : check
-     * User management / login users via web services : check
-     * User management / User channels access : select "manage"
-
-     *User Accounts : 
-         * access user accounts : check all
-         * payments as user to user : check all
-         * payments as user to system : check all
-         * recurring payments : check view + cancel
-         * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
-         * Accounts balance limits : select "manage"
+     * User management :
+        * user registration : check
+        * login users via web services : check
+        * user channels access : select "manage"
+     * User Accounts : 
+        * access user accounts : check all
+        * payments as user to user : check all
+        * payments as user to system : check all
+        * recurring payments : check view + cancel
+        * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
+        * Accounts balance limits : select "manage"
      * Click save
 
  20. **Configure a transfer type from an existing account type**
@@ -175,15 +176,17 @@ Digital Cairn
      * Click on the only product (Members)
      * Name : fill with **_$user-account_** name
      * Internal name : fil with **_$user-account_** internal name
-     * Accounts / User account : must contain **_$user-account_**
-     * Accounts / Default negative balance limit :  refill with 0 (sign "-" must be visible)
-     * Accounts / system payments : check all
-     * Accounts / user payments : check all
-     * Accounts / recurring payments : check view + cancel
-     * Accounts / scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
+     * Accounts 
+        * User account : must contain **_$user-account_**
+        * Default negative balance limit :  refill with 0 (sign "-" must be visible)
+        * system payments : check all
+        * user payments : check all
+        * recurring payments : check view + cancel
+        * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
      * Click save
 
  25. **Check product's assignation to Member group**
+
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * click on  **_$network-group-members_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
@@ -214,8 +217,7 @@ Digital Cairn
  29. **Save the configuration into a backup file**
 
      As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
-     * To do so, type the following command :
-     `docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql` 
+     * `docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql` 
 
      This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
 
@@ -223,7 +225,8 @@ Digital Cairn
  * `composer install`
 
  * **Provide global parameters**
-     During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
+
+   During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
 
    `sudo php $PATH/composer.phar update`
 
