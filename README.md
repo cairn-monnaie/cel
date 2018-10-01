@@ -1,19 +1,19 @@
 Digital Cairn
 =======
 
-# requirements
+# Requirements
  * composer https://getcomposer.org/download/
  * git
  * docker
 # Install
 ## Download Sources
- > git clone https://github.com/cairn-monnaie/CairnB2B.git
+  git clone https://github.com/cairn-monnaie/CairnB2B.git
 ## Get a Cyclos license  
- * Register at cyclos license server here [https://license.cyclos.org/app/guest/register]
+ * Register at cyclos license server [here](https://license.cyclos.org/app/guest/register)
  * note login and password (noted $license-login and $license-password respectively)
- * more details here [https://license.cyclos.org/]
+ * more details [here](https://license.cyclos.org/)
 ## Install Cyclos on a Debian based system 
- * use docker [https://hub.docker.com/r/cyclos/cyclos/]
+ * use docker https://hub.docker.com/r/cyclos/cyclos/
  > sudo docker network create cyclos-net
  
  > sudo docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db
@@ -24,10 +24,10 @@ Digital Cairn
 ## Configure Cyclos instance
  From now on, some symbols will be used and need to be defined :
 
-   * xxx : fill with whatever you want and will not be needed later on 
-   * $variable : fill it with whatever you want, and will be reused later on
+   * xxx : fill with whatever you want, it will not be needed later on 
+   * $variable : fill it with whatever you want, it will be reused later on
 
- 1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
+ 1. Reach your cyclos instance at example.com:1234 (the first time, it can take several minutes to start)
  2. **Cyclos license server authentication**
 
      * Login name : **_$license-login_**(provided while registering a cyclos license)
@@ -145,7 +145,7 @@ Digital Cairn
     .Access : System(top tab) / Account configuration(bold in left menu) / Account types
      * Click on $user_account(defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
-     * Click on the first transfer type (from $user_account to ***_$debit-account_**)
+     * Click on the first transfer type (from $user_account to **_$debit-account_**)
      * Enabled : check
      * Channels : check main web + web services + Mobile app
      * Allow recurring payments : check
