@@ -106,7 +106,7 @@ Digital Cairn
 
      * Enabled : make sure it is checked
      * Click "switch to this network"
- 18. Configure the currency to suit the application
+ 18. Configure the currency to suit the application 
     .Access : System(top tab) / Account Configuration(bold in left menu) / Currencies
      * Click on the currency( created at step 8) 
      * Decimal places : 2
