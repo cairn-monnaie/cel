@@ -30,8 +30,8 @@ Digital Cairn
  1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
  2. Cyclos license server authentication
 
-     * Login name : $license_login(provided while registering a cyclos license)
-     * Password : $license_password(provided while registering a cyclos license)
+     * Login name : **$license_login**(provided while registering a cyclos license)
+     * Password : **$license_password**(provided while registering a cyclos license)
      * Click next
  3. Basic configuration
 
