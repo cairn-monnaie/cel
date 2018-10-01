@@ -36,11 +36,11 @@ Digital Cairn
  3. Basic configuration
 
      * Application name (name of your cyclos instance)
-     * ...
+     * localization : xxx
      * Click next
  4. System administrator 
 
-     These are the profile fields and credentials of the main administrator of the application (on both Cyclos/Symfony sides), so fill them
+     These are the profile fields and credentials of the main administrator of the application, so fill them
      carefully.
      * Name : xxx
      * Login name : $admin_login
@@ -74,27 +74,27 @@ Digital Cairn
      * System account : $system_account
      * Additional system account : uncheck
      * Click next
- 10. User account
+ 10. User account 
 
      * User account : $user_account
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
- 11.  Brokers
+ 11.  Brokers 
 
      * Setup brokers : uncheck
      * Click next
- 12. Profile fields
+ 12. Profile fields 
 
-     * leave all fields unchecked
+     * Leave all fields unchecked
      * Click next 
  13.  References 
 
-     * check "not used"
+     * Check "not used"
      * Click next 
  14.  Records
 
-     * leave all fields unchecked
+     * Leave all fields unchecked
      * Click next 
  15. Message categories
      * Click next 
