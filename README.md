@@ -15,6 +15,7 @@ Digital Cairn
  * more details [here](https://license.cyclos.org/)
 ## Install Cyclos on a Debian based system 
  * use docker https://hub.docker.com/r/cyclos/cyclos/
+
   `docker network create cyclos-net`
  
   `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db`
@@ -210,12 +211,12 @@ Digital Cairn
     This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
 
 ## Install symfony project
- > composer install
+ `composer install`
 
  * creer un utilisateur symfony dédié
  During this step, you will provide some global parameters that the application needs.
  Be careful, you will need data provided during cyclos installation steps
- > sudo php $PATH/composer.phar update
+ `sudo php $PATH/composer.phar update`
      * cyclos_group_pros: **_$network-group-members_** (step 23)
      * cyclos_group_network_admins: **_$network-group-admins_** (step 19) 
      * cyclos_group_global_admins: **_$global-group-admins_** (step 28)
