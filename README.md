@@ -224,6 +224,11 @@ Digital Cairn
 ## Install symfony project
  * `composer install`
 
+ * **Create Symfony database**
+    `sudo php bin/console doctrine:database:create`
+    `sudo php bin/console doctrine:schema:update --force`
+    `php bin/console doctrine:database:import web/zipcities.sql`
+
  * **Provide global parameters**
 
    During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
