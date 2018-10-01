@@ -225,9 +225,9 @@ Digital Cairn
  * `composer install`
 
  * **Create Symfony database**
-    `sudo php bin/console doctrine:database:create`
-    `sudo php bin/console doctrine:schema:update --force`
-    `php bin/console doctrine:database:import web/zipcities.sql`
+    * `sudo php bin/console doctrine:database:create`
+    * `sudo php bin/console doctrine:schema:update --force`
+    * `php bin/console doctrine:database:import web/zipcities.sql`
 
  * **Provide global parameters**
 
