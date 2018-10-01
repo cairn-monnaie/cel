@@ -35,7 +35,7 @@ Digital Cairn
      * Click next
  3. Basic configuration
 
-     * Application name (name of your cyclos instance)
+     * Application name (name of your cyclos instance) : xxx
      * localization : xxx
      * Click next
  4. System administrator 
@@ -43,14 +43,14 @@ Digital Cairn
      These are the profile fields and credentials of the main administrator of the application, so fill them
      carefully.
      * Name : xxx
-     * Login name : $admin_login
-     * E-Mail : $admin_email
-     * Password : $admin_password
-     * Confirm password : $admin_password
+     * Login name : **$admin_login**
+     * E-Mail : **$admin_email**
+     * Password : **$admin_password**
+     * Confirm password : **$admin_password**
      * Click finish
  5. Basic network information
 
-     * Name : $network_name
+     * Name : **$network_name**
      * Internal name : xxx
      * Description : xxx
      * Click next
@@ -64,19 +64,19 @@ Digital Cairn
      * click next
  8. Currency
 
-     * Currency name : $currency_name
+     * Currency name : **$currency_name**
      * Currency symbol : xxx
      * Currency symbol : xxx
      * click next 
  9. System accounts
 
-     * Unlimited account : check and $debit_account
-     * System account : $system_account
+     * Unlimited account : check and **$debit_account**
+     * System account : **$system_account**
      * Additional system account : uncheck
      * Click next
  10. User account 
 
-     * User account : $user_account
+     * User account : **$user_account**
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
