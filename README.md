@@ -224,6 +224,7 @@ Digital Cairn
 
  * **Provide global parameters**
  During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
+
  `sudo php $PATH/composer.phar update`
      * cyclos_group_pros: **_$network-group-members_** (step 23)
      * cyclos_group_network_admins: **_$network-group-admins_** (step 19) 
@@ -241,6 +242,6 @@ Digital Cairn
      
  * **Access application with admin credentials**
      * visit "example.com/login"
-     * login with installed admin credientials **_$admin-login_** and **_$admin-password** and start browsing !  
+     * login with installed admin credientials **_$admin-login_** and **_$admin-password_** and start browsing !  
 
 ## Testing ##
