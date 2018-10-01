@@ -8,7 +8,7 @@ Digital Cairn
 # Install
 ## Download Sources
 
-    git clone https://github.com/cairn-monnaie/CairnB2B.git
+   `git clone https://github.com/cairn-monnaie/CairnB2B.git`
 ## Get a Cyclos license  
  * Register at cyclos license server [here](https://license.cyclos.org/app/guest/register)
  * note login and password (noted $license-login and $license-password respectively)
@@ -16,11 +16,11 @@ Digital Cairn
 ## Install Cyclos on a Debian based system 
  * use docker https://hub.docker.com/r/cyclos/cyclos/
 
-    docker network create cyclos-net
+    `docker network create cyclos-net`
  
-    docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db
+    `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db`
 
-    docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos
+    `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos`
 
 
 ## Configure Cyclos instance
