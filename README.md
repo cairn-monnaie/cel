@@ -28,17 +28,17 @@ Digital Cairn
    * $variable : fill it with whatever you want, and will be reused later on
 
  1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
- 2. **_Cyclos license server authentication_**
+ 2. **Cyclos license server authentication**
 
-     * Login name : **$license_login**(provided while registering a cyclos license)
-     * Password : **$license_password**(provided while registering a cyclos license)
+     * Login name : **_$license_login_**(provided while registering a cyclos license)
+     * Password : **_$license_password_**(provided while registering a cyclos license)
      * Click next
- 3. Basic configuration
+ 3. **Basic configuration**
 
      * Application name (name of your cyclos instance) : xxx
      * localization : xxx
      * Click next
- 4. System administrator 
+ 4. **System administrator** 
 
      These are the profile fields and credentials of the main administrator of the application, so fill them
      carefully.
@@ -48,65 +48,65 @@ Digital Cairn
      * Password : **$admin_password**
      * Confirm password : **$admin_password**
      * Click finish
- 5. Basic network information
+ 5. **Basic network information**
 
      * Name : **$network_name**
      * Internal name : xxx
      * Description : xxx
      * Click next
- 6. Localization
+ 6. **Localization**
 
      * Customize localization : leave it unchecked if you want to use default ones (defined at step 3)
      * Click next
- 7. Administrator 
+ 7. **Administrator** 
 
      * create a network administrator : uncheck
      * click next
- 8. Currency
+ 8. **Currency**
 
      * Currency name : **$currency_name**
      * Currency symbol : xxx
      * Currency symbol : xxx
      * click next 
- 9. System accounts
+ 9. **System accounts**
 
      * Unlimited account : check and **$debit_account**
      * System account : **$system_account**
      * Additional system account : uncheck
      * Click next
- 10. User account 
+ 10. **User account** 
 
      * User account : **$user_account**
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
- 11. Brokers 
+ 11. **Brokers** 
 
      * Setup brokers : uncheck
      * Click next
- 12. Profile fields 
+ 12. **Profile fields** 
 
      * Leave all fields unchecked
      * Click next 
- 13. References 
+ 13. **References** 
 
      * Check "not used"
      * Click next 
- 14. Records
+ 14. **Records**
 
      * Leave all fields unchecked
      * Click next 
- 15. Message categories
+ 15. **Message categories**
 
      * Click next 
- 16. Advertisments
+ 16. **Advertisments**
 
      * Click Finish 
- 17. Network details 
+ 17. **Network details** 
 
      * Enabled : make sure it is checked
      * Click "switch to this network"
- 18. Configure the currency to suit the application 
+ 18. **Configure the currency to suit the application** 
      __Access : System(top tab) / Account Configuration(bold in left menu) / Currencies__
      * Click on the currency( created at step 8) 
      * Decimal places : 2
@@ -114,7 +114,7 @@ Digital Cairn
      * Transfer number identifier length : 8
      * WARNING : NO prefix/suffix !
      * Click save
- 19. Configure permissions of network administrators' group
+ 19. **Configure permissions of network administrators' group**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators 
      * Name : $network_group_admins (by default Network administrators)
      * Internal name : xxx
@@ -141,7 +141,7 @@ Digital Cairn
          * Accounts balance limits : select "manage"
      * Click save
 
- 20. Configure a transfer type from an existing account type
+ 20. **Configure a transfer type from an existing account type**
     .Access : System(top tab) / Account configuration(bold in left menu) / Account types
      * Click on $user_account(defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
@@ -153,17 +153,17 @@ Digital Cairn
      * Max installments on scheduled payments : 1
      * Click save
  
- 21. Repeat step 20 for all transfer types in $user_account account type
- 22. Repeat step 20 and 21 for all account types ($debit_account / $system_account)
+ 21. **Repeat step 20 for all transfer types in $user_account account type**
+ 22. **Repeat step 20 and 21 for all account types ($debit_account / $system_account)**
 
- 23. Configure group of members
+ 23. **Configure group of members**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups
      * Click on group "Users"(unique member group)
      * Enabled : check
      * Name : $network_group_members (by default Users)
      * Click save
 
- 24. Configure the Product associated with user Account Type $user_account
+ 24. **Configure the Product associated with user Account Type $user\_account**
     .Access : System(top tab) / User Configuration(bold in left menu) / Products
      * Click on the only product (Members)
      * Name : fill with $user_account name
@@ -176,13 +176,13 @@ Digital Cairn
      * Accounts / scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
      * Click save
 
- 25. Check product's assignation to Member group
+ 25. **Check product's assignation to Member group**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups
      * click on  $network_group_members (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
- 26. Configure Global Administration's channels 
+ 26. **Configure Global Administration's channels** 
     .Access : Switch to Global administration (top-side on the screen)
     .Access : System (top tab) / System Configurations(bold in left menu) / Configurations
      * Click on "Global default" configuration
@@ -191,17 +191,17 @@ Digital Cairn
      * Enabled : check
      * User access : select "Enforced enabled"
      * session timeout : xxx
- 27. Change password type configuration
+ 27. **Change password type configuration**
     .Access : System (top tab) / User Configuration(bold in left menu) / Password types
      * Click on login password
      * password length :  8 to 25 
- 28. Configure group of global administrators
+ 28. **Configure group of global administrators**
     .Access : System (top tab) / User Configuration(bold in left menu) / Groups
      * Click on "Global administrators"
      * Name : $global_group_admins 
      * Click save
 
- 29. Save the configuration into a backup file
+ 29. **Save the configuration into a backup file**
     As you experienced, configuring a Cyclos instance is really a long process, and there are much more functionalities that are not even dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is really useful.
      * To do so, type the following command :
      > sudo docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql   
