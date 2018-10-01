@@ -7,7 +7,8 @@ Digital Cairn
  * docker
 # Install
 ## Download Sources
-  git clone https://github.com/cairn-monnaie/CairnB2B.git
+
+    git clone https://github.com/cairn-monnaie/CairnB2B.git
 ## Get a Cyclos license  
  * Register at cyclos license server [here](https://license.cyclos.org/app/guest/register)
  * note login and password (noted $license-login and $license-password respectively)
