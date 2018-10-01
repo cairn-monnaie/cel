@@ -110,7 +110,7 @@ Digital Cairn
      * Click "switch to this network"
  18. **Configure the currency to suit the application** 
 
-     __Access : System(top tab) / Account Configuration(bold in left menu) / Currencies__
+     _Access : System(top tab) / Account Configuration(bold in left menu) / Currencies_
      * Click on the currency( created at step 8) 
      * Decimal places : 2
      * Enable transfer number : check
