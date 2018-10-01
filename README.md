@@ -71,13 +71,13 @@ Digital Cairn
      * click next 
  9. System accounts
 
-     * Unlimited account : check and xxx
-     * System account : xxx
+     * Unlimited account : check and $debit_account
+     * System account : $system_account
      * Additional system account : uncheck
      * Click next
  10. User account
 
-     * User account : xxx
+     * User account : $user_account
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
@@ -93,19 +93,121 @@ Digital Cairn
 
      * check "not used"
      * Click next 
-
  14.  Records
 
      * leave all fields unchecked
      * Click next 
-
  15. Message categories
      * Click next 
 
-12) Advertisments
-    *click next 
+ 16. Advertisments
+     * Click Finish 
 
+ 17. Network details 
+     * Enabled : make sure it is checked
+     * Click "switch to this network"
+
+ 18. Configure the currency to suit the application
+    .Access : System(top tab) / Account Configuration(bold in left menu) / Currencies
+     * Click on the currency( created at step 8) 
+     * Decimal places : 2
+     * Enable transfer number : check
+     * Transfer number identifier length : 8
+     * WARNING : NO prefix/suffix !
+     * Click save
+
+ 19. Configure permissions of network administrators' group
+    .Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators 
+     * Name : $network_group_admins (by default Network administrators)
+     * Internal name : xxx
+     * Click save
+     * Click Permissions(top-right tab on group screen)
+     * General / My profile fields : enabled/registration/visible/editable : check for full name / login name / email
+     * General / Manage my channels access : check
+     *System Accounts : 
+        * system accounts : check all
+        * system to system payments : check all
+        * system to user payments : check all
+        * system recurring payments : check view + cancel
+        * system scheduled payments : check view + cancel + block + unblock + process installment + settle installment
+     * User management / user registration : check
+     * User management / login users via web services : check
+     * User management / User channels access : select "manage"
+
+     *User Accounts : 
+         * access user accounts : check all
+         * payments as user to user : check all
+         * payments as user to system : check all
+         * recurring payments : check view + cancel
+         * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
+         * Accounts balance limits : select "manage"
+     * Click save
+
+ 20. Configure a transfer type from an existing account type
+    .Access : System(top tab) / Account configuration(bold in left menu) / Account types
+     * Click on $user_account(defined in step 10)
+     * Click on "Transfer types" (top-right tab on account type screen)
+     * Click on the first transfer type (from $user_account to $debit_account)
+     * Enabled : check
+     * Channels : check main web + web services + Mobile app
+     * Allow recurring payments : check
+     * Allow scheduled payments : check
+     * Max installments on scheduled payments : 1
+     * Click save
  
+ 21. Repeat step 20 for all transfer types in $user_account account type
+ 22. Repeat step 20 and 21 for all account types ($debit_account / $system_account)
+
+ 23. Configure group of members
+    .Access : System(top tab) / User configuration(bold in left menu) / Groups
+     * Click on group "Users"(unique member group)
+     * Enabled : check
+     * Name : $network_group_members (by default Users)
+     * Click save
+
+ 24. Configure the Product associated with user Account Type $user_account
+    .Access : System(top tab) / User Configuration(bold in left menu) / Products
+     * Click on the only product (Members)
+     * Name : fill with $user_account name
+     * Internal name : fille with $user_account internal name
+     * Accounts / User account : must contain $user_account
+     * Accounts / Default negative balance limit :  refill with 0 (sign "-" must be visible)
+     * Accounts / system payments : check all
+     * Accounts / user payments : check all
+     * Accounts / recurring payments : check view + cancel
+     * Accounts / scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
+     * Click save
+
+ 25. Check product's assignation to Member group
+    .Access : System(top tab) / User configuration(bold in left menu) / Groups
+     * click on  $network_group_members (defined in step 23)
+     * click on Products (top-right tab of the group screen)
+     * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
+
+ 26. Configure Global Administration's channels 
+    .Access : Switch to Global administration (top-side on the screen)
+    .Access : System (top tab) / System Configurations(bold in left menu) / Configurations
+     * Click on "Global default" configuration
+     * Click on channels (top-right of configuration screen) 
+     * Click on web services
+     * Enabled : check
+     * User access : select "Enforced enabled"
+     * session timeout : xxx
+ 27. Change password type configuration
+    .Access : System (top tab) / User Configuration(bold in left menu) / Password types
+     * Click on login password
+     * password length :  8 to 25 
+
+ 28. Save the configuration into a backup file
+    As you experienced, configuring a Cyclos instance is really a long process, and there are much more functionalities that are not even dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is really useful.
+     * To do so, type the following command :
+     > sudo docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql   
+    This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
+
+
+
+
+
 ## Install symfony project
  > composer install
  > sudo php $pathto/composer.phar update
