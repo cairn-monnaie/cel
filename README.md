@@ -80,22 +80,25 @@ Digital Cairn
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
- 11.  Brokers 
+ 11. Brokers 
+
      * Setup brokers : uncheck
      * Click next
  12. Profile fields 
+
      * Leave all fields unchecked
      * Click next 
- 13.  References 
+ 13. References 
+
      * Check "not used"
      * Click next 
- 14.  Records
+ 14. Records
 
      * Leave all fields unchecked
      * Click next 
  15. Message categories
-     * Click next 
 
+     * Click next 
  16. Advertisments
 
      * Click Finish 
