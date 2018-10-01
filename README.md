@@ -27,7 +27,7 @@ Digital Cairn
  1. Reach your cyclos instance at $domain:1234/ (the first time, it can take several minutes to start)
  2. Cyclos license server authentication
 
- ... ok
+     ok
  
 ## Install symfony project
  > composer install
