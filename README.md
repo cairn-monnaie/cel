@@ -212,18 +212,18 @@ Digital Cairn
      * Click save
 
  29. **Save the configuration into a backup file**
+
      As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
      * To do so, type the following command :
-     > sudo docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql   
+     `docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql` 
 
-    This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
+     This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
 
 ## Install symfony project
- `composer install`
+ * `composer install`
 
- * creer un utilisateur symfony dédié
- During this step, you will provide some global parameters that the application needs.
- Be careful, you will need data provided during cyclos installation steps
+ * **Provide global parameters** 
+  During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
  `sudo php $PATH/composer.phar update`
      * cyclos_group_pros: **_$network-group-members_** (step 23)
      * cyclos_group_network_admins: **_$network-group-admins_** (step 19) 
@@ -235,9 +235,12 @@ Digital Cairn
      * cyclos_global_admin_email: **_$admin-email_** (step 4)
      * cyclos_root_prod_url: 'www.example.com:1234/'
 
- Create initial administrator
-     *request url with URI "/install". This creates a user on Doctrine's side with profile fields of cyclos global administrator
+ * **Create initial administrator**
+     * visit "example.com/install". 
+       This creates a user on Doctrine's side with profile fields of cyclos global administrator
      
- Access application with admin credentials via "login" URI.  
+ * **Access application with admin credentials**
+     * visit "example.com/login"
+     * login with installed admin credientials **_$admin-login_** and **_$admin-password**  
 
 ## Testing ##
