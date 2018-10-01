@@ -28,7 +28,7 @@ Digital Cairn
    * $variable : fill it with whatever you want, and will be reused later on
 
  1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
- 2. **__Cyclos license server authentication__**
+ 2. **_Cyclos license server authentication_**
 
      * Login name : **$license_login**(provided while registering a cyclos license)
      * Password : **$license_password**(provided while registering a cyclos license)
