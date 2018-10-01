@@ -225,8 +225,12 @@ Digital Cairn
  * `composer install`
 
  * **Create Symfony database**
+    
+    Initialize the database with entities
     * `sudo php bin/console doctrine:database:create`
     * `sudo php bin/console doctrine:schema:update --force`
+
+    Import cities with respective zipcodes in Isère (French department). Change entries according to your localization
     * `php bin/console doctrine:database:import web/zipcities.sql`
 
  * **Provide global parameters**
