@@ -38,7 +38,8 @@ Digital Cairn
      * Application name (name of your cyclos instance)
      * ...
      * Click next
- 4. System administrator
+ 4. System administrator 
+
      These are the profile fields and credentials of the main administrator of the application (on both Cyclos/Symfony sides), so fill them
      carefully.
      * Name : xxx
