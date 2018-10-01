@@ -28,7 +28,7 @@ Digital Cairn
    * $variable : fill it with whatever you want, and will be reused later on
 
  1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
- 2. Cyclos license server authentication
+ 2. **__Cyclos license server authentication__**
 
      * Login name : **$license_login**(provided while registering a cyclos license)
      * Password : **$license_password**(provided while registering a cyclos license)
@@ -107,7 +107,7 @@ Digital Cairn
      * Enabled : make sure it is checked
      * Click "switch to this network"
  18. Configure the currency to suit the application 
-    .Access : System(top tab) / Account Configuration(bold in left menu) / Currencies
+     __Access : System(top tab) / Account Configuration(bold in left menu) / Currencies__
      * Click on the currency( created at step 8) 
      * Decimal places : 2
      * Enable transfer number : check
