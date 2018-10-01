@@ -162,6 +162,7 @@ Digital Cairn
  22. **Repeat step 20 and 21 for all account types (_$debit-account_ / _$system-account_)**
 
  23. **Configure group of members**
+
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * Click on group "Users"(unique member group)
      * Enabled : check
@@ -169,7 +170,8 @@ Digital Cairn
      * Click save
 
  24. **Configure the Product associated with user Account Type $user\_account**
-    _Access : System(top tab) / User Configuration(bold in left menu) / Products_
+
+     _Access : System(top tab) / User Configuration(bold in left menu) / Products_
      * Click on the only product (Members)
      * Name : fill with **_$user-account_** name
      * Internal name : fil with **_$user-account_** internal name
@@ -182,15 +184,15 @@ Digital Cairn
      * Click save
 
  25. **Check product's assignation to Member group**
-    _Access : System(top tab) / User configuration(bold in left menu) / Groups_
+     _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * click on  **_$network-group-members_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
  26. **Configure Global Administration's channels** 
 
-    _Access : Switch to Global administration (top-side on the screen)_
-    _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+     _Access : Switch to Global administration (top-side on the screen)_
+     _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
      * Click on "Global default" configuration
      * Click on channels (top-right of configuration screen) 
      * Click on web services
@@ -199,12 +201,12 @@ Digital Cairn
      * session timeout : xxx
  27. **Change password type configuration**
 
-    _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
+     _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
      * Click on login password
      * password length :  8 to 25 
  28. **Configure group of global administrators**
 
-    _Access : System (top tab) / User Configuration(bold in left menu) / Groups_
+     _Access : System (top tab) / User Configuration(bold in left menu) / Groups_
      * Click on "Global administrators"
      * Name : **_$global-group-admins_** 
      * Click save
