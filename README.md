@@ -119,7 +119,7 @@ Digital Cairn
      * Click save
  19. **Configure permissions of network administrators' group**
 
-    _Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators_
+     _Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators_
      * Name : **_$network-group-admins_** (by default Network administrators)
      * Internal name : xxx
      * Click save
@@ -147,7 +147,7 @@ Digital Cairn
 
  20. **Configure a transfer type from an existing account type**
 
-    _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
+     _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
      * Click on $user_account(defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
      * Click on the first transfer type (from $user_account to **_$debit-account_**)
@@ -162,7 +162,7 @@ Digital Cairn
  22. **Repeat step 20 and 21 for all account types (_$debit-account_ / _$system-account_)**
 
  23. **Configure group of members**
-    _Access : System(top tab) / User configuration(bold in left menu) / Groups_
+     _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * Click on group "Users"(unique member group)
      * Enabled : check
      * Name : **_$network-group-members_** (by default Users)
