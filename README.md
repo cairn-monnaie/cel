@@ -223,6 +223,7 @@ Digital Cairn
  * `composer install`
 
  * **Provide global parameters**
+
  During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
 
  `sudo php $PATH/composer.phar update`
