@@ -45,7 +45,7 @@ Digital Cairn
      carefully.
      * Name : xxx
      * Login name : $admin_login
-     * E-Mail : xxx
+     * E-Mail : $admin_email
      * Password : $admin_password
      * Confirm password : $admin_password
      * Click finish
@@ -197,24 +197,39 @@ Digital Cairn
     .Access : System (top tab) / User Configuration(bold in left menu) / Password types
      * Click on login password
      * password length :  8 to 25 
+ 28. Configure group of global administrators
+    .Access : System (top tab) / User Configuration(bold in left menu) / Groups
+     * Click on "Global administrators"
+     * Name : $global_group_admins 
+     * Click save
 
- 28. Save the configuration into a backup file
+ 29. Save the configuration into a backup file
     As you experienced, configuring a Cyclos instance is really a long process, and there are much more functionalities that are not even dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is really useful.
      * To do so, type the following command :
      > sudo docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql   
+
     This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
-
-
-
-
 
 ## Install symfony project
  > composer install
- > sudo php $pathto/composer.phar update
-    *cyclos_network_cairn : $network
-    *cyclos_currency_cairn : $currency
-    *cyclos_global_admin_username : $login
-    *cyclos_global_admin_password : $password
-    *cyclos_group_pros : $group_pros
-    *cyclos_group_adhrents : $group_adherents
 
+ During this step, you will provide some global parameters that the application needs.
+ Be careful, you will need data provided during cyclos installation steps
+ > sudo php $pathto/composer.phar update
+     * cyclos_group_pros: $network_group_members (step 23)
+     * cyclos_group_network_admins: $network_group_admins (step 19) 
+     * cyclos_group_global_admins: $global_group_admins (step 28)
+     * cyclos_network_cairn: $network_name (step 5)
+     * cyclos_currency_cairn: $currency_name (step 8)
+     * cyclos_global_admin_username: $admin_login (step 4)
+     * cyclos_global_admin_password: $admin_password (step 4)
+     * cyclos_global_admin_email: $admin_email (step 4)
+
+     * cyclos_root_prod_url: '$domain:1234/'
+
+ Create initial administrator
+     *request url with URI "/install". This creates a user on Doctrine's side with profile fields of cyclos global administrator
+
+ Access application with admin credentials via "login" URI.  
+
+## Testing ##
