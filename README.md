@@ -10,7 +10,7 @@ Digital Cairn
  > git clone https://github.com/cairn-monnaie/CairnB2B.git
 ## Get a Cyclos license  
  * Register at cyclos license server here [https://license.cyclos.org/app/guest/register]
- * note login and password (noted $license_login and $license_password respectively)
+ * note login and password (noted $license-login and $license-password respectively)
  * more details here [https://license.cyclos.org/]
 ## Install Cyclos on a Debian based system 
  * use docker [https://hub.docker.com/r/cyclos/cyclos/]
@@ -30,8 +30,8 @@ Digital Cairn
  1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
  2. **Cyclos license server authentication**
 
-     * Login name : **_$license_login_**(provided while registering a cyclos license)
-     * Password : **_$license_password_**(provided while registering a cyclos license)
+     * Login name : **_$license-login_**(provided while registering a cyclos license)
+     * Password : **_$license-password_**(provided while registering a cyclos license)
      * Click next
  3. **Basic configuration**
 
@@ -43,14 +43,14 @@ Digital Cairn
      These are the profile fields and credentials of the main administrator of the application, so fill them
      carefully.
      * Name : xxx
-     * Login name : **$admin_login**
-     * E-Mail : **$admin_email**
-     * Password : **$admin_password**
-     * Confirm password : **$admin_password**
+     * Login name : **_$admin-login_**
+     * E-Mail : **_$admin-email_**
+     * Password : **_$admin-password_**
+     * Confirm password : **_$admin-password_**
      * Click finish
  5. **Basic network information**
 
-     * Name : **$network_name**
+     * Name : **_$network-name_**
      * Internal name : xxx
      * Description : xxx
      * Click next
@@ -64,19 +64,19 @@ Digital Cairn
      * click next
  8. **Currency**
 
-     * Currency name : **$currency_name**
+     * Currency name : **_$currency-name_**
      * Currency symbol : xxx
      * Currency symbol : xxx
      * click next 
  9. **System accounts**
 
-     * Unlimited account : check and **$debit_account**
-     * System account : **$system_account**
+     * Unlimited account : check and **_$debit-account_**
+     * System account : **_$system-account_**
      * Additional system account : uncheck
      * Click next
  10. **User account** 
 
-     * User account : **$user_account**
+     * User account : **_$user-account_**
      * Default negative balance limit : even if filled with 0, refill it with 0(sign "-" visible)
      * Initial credit : xxx
      * Click next
@@ -116,7 +116,7 @@ Digital Cairn
      * Click save
  19. **Configure permissions of network administrators' group**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators 
-     * Name : $network_group_admins (by default Network administrators)
+     * Name : **_$network-group-admins_** (by default Network administrators)
      * Internal name : xxx
      * Click save
      * Click Permissions(top-right tab on group screen)
@@ -145,7 +145,7 @@ Digital Cairn
     .Access : System(top tab) / Account configuration(bold in left menu) / Account types
      * Click on $user_account(defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
-     * Click on the first transfer type (from $user_account to $debit_account)
+     * Click on the first transfer type (from $user_account to ***_$debit-account_**)
      * Enabled : check
      * Channels : check main web + web services + Mobile app
      * Allow recurring payments : check
@@ -153,22 +153,22 @@ Digital Cairn
      * Max installments on scheduled payments : 1
      * Click save
  
- 21. **Repeat step 20 for all transfer types in $user_account account type**
- 22. **Repeat step 20 and 21 for all account types ($debit_account / $system_account)**
+ 21. **Repeat step 20 for all transfer types in _$user-account_ account type**
+ 22. **Repeat step 20 and 21 for all account types (_$debit-account_ / _$system-account_)**
 
  23. **Configure group of members**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups
      * Click on group "Users"(unique member group)
      * Enabled : check
-     * Name : $network_group_members (by default Users)
+     * Name : **_$network-group-members_** (by default Users)
      * Click save
 
  24. **Configure the Product associated with user Account Type $user\_account**
     .Access : System(top tab) / User Configuration(bold in left menu) / Products
      * Click on the only product (Members)
-     * Name : fill with $user_account name
-     * Internal name : fille with $user_account internal name
-     * Accounts / User account : must contain $user_account
+     * Name : fill with **_$user-account_** name
+     * Internal name : fil with **_$user-account_** internal name
+     * Accounts / User account : must contain **_$user-account_**
      * Accounts / Default negative balance limit :  refill with 0 (sign "-" must be visible)
      * Accounts / system payments : check all
      * Accounts / user payments : check all
@@ -178,7 +178,7 @@ Digital Cairn
 
  25. **Check product's assignation to Member group**
     .Access : System(top tab) / User configuration(bold in left menu) / Groups
-     * click on  $network_group_members (defined in step 23)
+     * click on  **_$network-group-members_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
@@ -198,7 +198,7 @@ Digital Cairn
  28. **Configure group of global administrators**
     .Access : System (top tab) / User Configuration(bold in left menu) / Groups
      * Click on "Global administrators"
-     * Name : $global_group_admins 
+     * Name : **_$global-group-admins_** 
      * Click save
 
  29. **Save the configuration into a backup file**
@@ -215,14 +215,14 @@ Digital Cairn
  During this step, you will provide some global parameters that the application needs.
  Be careful, you will need data provided during cyclos installation steps
  > sudo php $PATH/composer.phar update
-     * cyclos_group_pros: $network_group_members (step 23)
-     * cyclos_group_network_admins: $network_group_admins (step 19) 
-     * cyclos_group_global_admins: $global_group_admins (step 28)
-     * cyclos_network_cairn: $network_name (step 5)
-     * cyclos_currency_cairn: $currency_name (step 8)
-     * cyclos_global_admin_username: $admin_login (step 4)
-     * cyclos_global_admin_password: $admin_password (step 4)
-     * cyclos_global_admin_email: $admin_email (step 4)
+     * cyclos_group_pros: **_$network-group-members_** (step 23)
+     * cyclos_group_network_admins: **_$network-group-admins_** (step 19) 
+     * cyclos_group_global_admins: **_$global-group-admins_** (step 28)
+     * cyclos_network_cairn: **_$network-name_** (step 5)
+     * cyclos_currency_cairn: **_$currency-name_** (step 8)
+     * cyclos_global_admin_username: **_$admin-login_** (step 4)
+     * cyclos_global_admin_password: **_$admin-password_** (step 4)
+     * cyclos_global_admin_email: **_$admin-email_** (step 4)
      * cyclos_root_prod_url: 'www.example.com:1234/'
 
  Create initial administrator
