@@ -81,15 +81,12 @@ Digital Cairn
      * Initial credit : xxx
      * Click next
  11.  Brokers 
-
      * Setup brokers : uncheck
      * Click next
  12. Profile fields 
-
      * Leave all fields unchecked
      * Click next 
  13.  References 
-
      * Check "not used"
      * Click next 
  14.  Records
