@@ -23,11 +23,11 @@ Digital Cairn
   `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos`
 
 
-## Configure Cyclos instance
- From now on, some symbols will be used and need to be defined :
+## Configure a Cyclos instance
+ From now on, some notations will be used and need to be defined :
 
    * xxx : fill with whatever you want, it will not be needed later on 
-   * $variable : fill it with whatever you want, it will be reused later on
+   * **_$variable_** : fill it with whatever you want, it will be reused later on
 
  1. Reach your cyclos instance at example.com:1234 (the first time, it can take several minutes to start)
  2. **Cyclos license server authentication**
@@ -109,6 +109,7 @@ Digital Cairn
      * Enabled : make sure it is checked
      * Click "switch to this network"
  18. **Configure the currency to suit the application** 
+
      __Access : System(top tab) / Account Configuration(bold in left menu) / Currencies__
      * Click on the currency( created at step 8) 
      * Decimal places : 2
