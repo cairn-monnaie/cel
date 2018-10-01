@@ -118,7 +118,8 @@ Digital Cairn
      * WARNING : NO prefix/suffix !
      * Click save
  19. **Configure permissions of network administrators' group**
-    .Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators 
+
+    _Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators_
      * Name : **_$network-group-admins_** (by default Network administrators)
      * Internal name : xxx
      * Click save
@@ -145,7 +146,8 @@ Digital Cairn
      * Click save
 
  20. **Configure a transfer type from an existing account type**
-    .Access : System(top tab) / Account configuration(bold in left menu) / Account types
+
+    _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
      * Click on $user_account(defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
      * Click on the first transfer type (from $user_account to **_$debit-account_**)
@@ -160,14 +162,14 @@ Digital Cairn
  22. **Repeat step 20 and 21 for all account types (_$debit-account_ / _$system-account_)**
 
  23. **Configure group of members**
-    .Access : System(top tab) / User configuration(bold in left menu) / Groups
+    _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * Click on group "Users"(unique member group)
      * Enabled : check
      * Name : **_$network-group-members_** (by default Users)
      * Click save
 
  24. **Configure the Product associated with user Account Type $user\_account**
-    .Access : System(top tab) / User Configuration(bold in left menu) / Products
+    _Access : System(top tab) / User Configuration(bold in left menu) / Products_
      * Click on the only product (Members)
      * Name : fill with **_$user-account_** name
      * Internal name : fil with **_$user-account_** internal name
@@ -180,14 +182,15 @@ Digital Cairn
      * Click save
 
  25. **Check product's assignation to Member group**
-    .Access : System(top tab) / User configuration(bold in left menu) / Groups
+    _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * click on  **_$network-group-members_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
  26. **Configure Global Administration's channels** 
-    .Access : Switch to Global administration (top-side on the screen)
-    .Access : System (top tab) / System Configurations(bold in left menu) / Configurations
+
+    _Access : Switch to Global administration (top-side on the screen)_
+    _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
      * Click on "Global default" configuration
      * Click on channels (top-right of configuration screen) 
      * Click on web services
@@ -195,17 +198,19 @@ Digital Cairn
      * User access : select "Enforced enabled"
      * session timeout : xxx
  27. **Change password type configuration**
-    .Access : System (top tab) / User Configuration(bold in left menu) / Password types
+
+    _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
      * Click on login password
      * password length :  8 to 25 
  28. **Configure group of global administrators**
-    .Access : System (top tab) / User Configuration(bold in left menu) / Groups
+
+    _Access : System (top tab) / User Configuration(bold in left menu) / Groups_
      * Click on "Global administrators"
      * Name : **_$global-group-admins_** 
      * Click save
 
  29. **Save the configuration into a backup file**
-    As you experienced, configuring a Cyclos instance is really a long process, and there are much more functionalities that are not even dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is really useful.
+     As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
      * To do so, type the following command :
      > sudo docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql   
 
