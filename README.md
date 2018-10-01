@@ -1,18 +1,18 @@
 Digital Cairn
 =======
 
-# requirement
+# requirements
  * composer https://getcomposer.org/download/
  * git
  * docker
-# install
+# Install
 ## Download Sources
- > git clone https://github.com/mazda91/CairnB2B.git
-## Get a Cyclos license 
- * access Cyclos license server [https://license.cyclos.org/]
- * follow step 1 to register at license server (remember login $license_login and password $license_password)
- * follow steps 2 and 3
-## Install Cyclos on a Debian based system (step 4)
+ > git clone https://github.com/cairn-monnaie/CairnB2B.git
+## Get a Cyclos license  
+ * Register at cyclos license server here [https://license.cyclos.org/app/guest/register]
+ * note login and password (noted $license_login and $license_password respectively)
+ * more details here [https://license.cyclos.org/]
+## Install Cyclos on a Debian based system 
  * use docker [https://hub.docker.com/r/cyclos/cyclos/]
  > sudo docker network create cyclos-net
  
@@ -20,20 +20,18 @@ Digital Cairn
 
  > docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos
 
- > docker cp tests/test_users.csv cyclos-app:/usr/local/cyclos/
- > docker cp tests/test_simple_payments.csv cyclos-app:/usr/local/cyclos/
 
 ## Configure Cyclos instance
  From now on, some symbols will be used and need to be defined :
 
-   * xxx : fill with whatever you want, does not really matter for compatibilty with symfony
+   * xxx : fill with whatever you want and will not be needed later on 
    * $variable : fill it with whatever you want, and will be reused later on
 
- 1. Reach your cyclos instance at $domain:1234/ (the first time, it can take several minutes to start)
+ 1. Reach your cyclos instance at www.example.com:1234/ (the first time, it can take several minutes to start)
  2. Cyclos license server authentication
 
-     * Login name : $license_login
-     * Password : $license_password
+     * Login name : $license_login(provided while registering a cyclos license)
+     * Password : $license_password(provided while registering a cyclos license)
      * Click next
  3. Basic configuration
 
@@ -101,12 +99,12 @@ Digital Cairn
      * Click next 
 
  16. Advertisments
-     * Click Finish 
 
+     * Click Finish 
  17. Network details 
+
      * Enabled : make sure it is checked
      * Click "switch to this network"
-
  18. Configure the currency to suit the application
     .Access : System(top tab) / Account Configuration(bold in left menu) / Currencies
      * Click on the currency( created at step 8) 
@@ -115,7 +113,6 @@ Digital Cairn
      * Transfer number identifier length : 8
      * WARNING : NO prefix/suffix !
      * Click save
-
  19. Configure permissions of network administrators' group
     .Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators 
      * Name : $network_group_admins (by default Network administrators)
@@ -213,9 +210,10 @@ Digital Cairn
 ## Install symfony project
  > composer install
 
+ * creer un utilisateur symfony dédié
  During this step, you will provide some global parameters that the application needs.
  Be careful, you will need data provided during cyclos installation steps
- > sudo php $pathto/composer.phar update
+ > sudo php $PATH/composer.phar update
      * cyclos_group_pros: $network_group_members (step 23)
      * cyclos_group_network_admins: $network_group_admins (step 19) 
      * cyclos_group_global_admins: $global_group_admins (step 28)
@@ -224,12 +222,11 @@ Digital Cairn
      * cyclos_global_admin_username: $admin_login (step 4)
      * cyclos_global_admin_password: $admin_password (step 4)
      * cyclos_global_admin_email: $admin_email (step 4)
-
-     * cyclos_root_prod_url: '$domain:1234/'
+     * cyclos_root_prod_url: 'www.example.com:1234/'
 
  Create initial administrator
      *request url with URI "/install". This creates a user on Doctrine's side with profile fields of cyclos global administrator
-
+     
  Access application with admin credentials via "login" URI.  
 
 ## Testing ##
