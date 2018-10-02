@@ -21,9 +21,9 @@ use Cairn\UserCyclosBundle\Entity\ScriptManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 //manage Forms
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\RegistrationType;
@@ -116,14 +116,52 @@ class UserController extends Controller
      *Get the list of all users grouped by roles
      *
      */
-    public function usersAction(Request $request)
+    public function usersAction(Request $request, $_format)
     {
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $ub = $userRepo->createQueryBuilder('u');
 
+        $validatedPros = new \stdClass();
+         $ub = $userRepo->createQueryBuilder('u');
+       $userRepo->whereRole($ub,'ROLE_PRO');
+        $listEnabledPros = $ub->andWhere('u.confirmationToken is NULL')
+                       ->andWhere('u.enabled = true')->getQuery()->getResult(); 
+
+        $ub = $userRepo->createQueryBuilder('u');
         $userRepo->whereRole($ub,'ROLE_PRO');
-        $listPros = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
+        $listBlockedPros = $ub->andWhere('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = false')
+            ->andWhere('u.lastLogin is not NULL')
+            ->join('u.referents','r')
+            ->andWhere('r.id = :id')
+            ->setParameter('id',$this->getUser()->getID())
+            ->getQuery()->getResult(); 
+
+        $validatedPros->enabledPros = $listEnabledPros;
+        $validatedPros->blockedPros = $listBlockedPros;
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereRole($ub,'ROLE_PRO');
+        $pendingPros = $ub->andWhere('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = false')
+            ->andWhere('u.lastLogin is NULL')
+            ->join('u.referents','r')
+            ->andWhere('r.id = :id')
+            ->setParameter('id',$this->getUser()->getID())
+            ->getQuery()->getResult(); 
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $pendingCards = $ub
+            ->where('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = true')
+            ->join('u.card','c')
+            ->andWhere('c.fields is NULL')
+            ->join('u.referents','r')
+            ->andWhere('r.id = :id')
+            ->setParameter('id',$this->getUser()->getID())
+            //>addSelect('c')
+            ->getQuery()->getResult(); 
 
         $userRepo->whereRole($ub,'ROLE_ADMIN');
         $listAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
@@ -131,7 +169,18 @@ class UserController extends Controller
         $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
         $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
 
-        return $this->render('CairnUserBundle:User:list_users.html.twig',array('listPros' => $listPros,'listAdmins' => $listAdmins,'listSuperAdmins' => $listSuperAdmins));
+        $allUsers = array(
+            'validPros'=>$validatedPros, 
+            'pendingPros'=>$pendingPros,
+            'pendingCards'=>$pendingCards,
+            'listAdmins'=>$listAdmins,
+            'listSuperAdmins'=>$listSuperAdmins
+            );
+
+        if($_format == 'json'){
+            return $this->json($allUsers);
+        }
+        return $this->render('CairnUserBundle:User:list_users.html.twig',$allUsers);
     }
 
 
@@ -201,13 +250,16 @@ class UserController extends Controller
      * @param User $user User with profile to view
      * @Method("GET")
      */
-    public function viewProfileAction(Request $request , User $user)                           
+    public function viewProfileAction(Request $request , User $user, $_format)                           
     {                                                                          
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
+        if($_format == 'json'){
+            return $this->json(array('user'=>$user,'accounts'=>$accounts));
+        }
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user,'accounts'=>$accounts));
     }                      
 
@@ -215,9 +267,13 @@ class UserController extends Controller
      * Get the list of beneficiaries for current User
      *
      */
-    public function listBeneficiariesAction(Request $request)
+    public function listBeneficiariesAction(Request $request, $_format)
     {
         $beneficiaries = $this->getUser()->getBeneficiaries();
+
+        if($_format == 'json'){
+            return $this->json(array('beneficiaries'=>$beneficiaries));
+        }
         return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('beneficiaries'=>$beneficiaries));
     }
 
@@ -265,7 +321,7 @@ class UserController extends Controller
      * As the User and Beneficiary class have a ManyToMany bidirectional relationship, adding it the two directions must be done
      *
      */
-    public function addBeneficiaryAction(Request $request)
+    public function addBeneficiaryAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -301,14 +357,14 @@ class UserController extends Controller
                         $user = $userRepo->findOneBy(array('name'=>$matches_name[0][0]));
                         if(!$user){
                             $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
-                            $this->redirectToRoute('cairn_user_beneficiaries_add');
+                            $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
                         }
                     }
                     else{
                         if($user->getID() == $currentUser->getID())
                         {
                             $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                            return $this->redirectToRoute('cairn_user_beneficiaries_add');
+                            return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
                         }
                         $ICC = $matches_ICC[0][0];
                         //check that ICC exists and corresponds to this user
@@ -316,7 +372,7 @@ class UserController extends Controller
                         $validity = $this->isValidBeneficiary($user,$ICC);
                         if(!$validity->account){
                             $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                            return $this->redirectToRoute('cairn_user_beneficiaries_add');
+                            return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
                         }
 
                         //check that beneficiary is not already in database, o.w create new one
@@ -330,7 +386,7 @@ class UserController extends Controller
                         else{ 
                             if($currentUser->hasBeneficiary($existingBeneficiary)){
                                 $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                                return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
                             }
                             $beneficiary = $existingBeneficiary;
                         }
@@ -341,15 +397,19 @@ class UserController extends Controller
                         $em->persist($currentUser);
                         $em->flush();
                         $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                        return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                        return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
                     }
                 }
                 else{
                     $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_add');
+                    return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
                 }       
 
             }
+        }
+
+        if($_format == 'json'){
+            return $this->json(array('form'=>$form->createView(),'pros'=>$possibleUsers));
         }
         return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'pros'=>$possibleUsers));
     }
@@ -363,7 +423,7 @@ class UserController extends Controller
      *@param Beneficiary $beneficiary Beneficiary with a given ICC is edited
      *@Method("GET")
      */
-    public function editBeneficiaryAction(Request $request, Beneficiary $beneficiary)
+    public function editBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -388,11 +448,11 @@ class UserController extends Controller
                 $validity = $this->isValidBeneficiary($newBeneficiary->getUser(),$newBeneficiary->getICC());
                 if(!$validity->account){
                     $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$newBeneficiary->getUser()->getName());
-                    return $this->redirectToRoute('cairn_user_beneficiaries_edit',array('id'=>$beneficiary->getID()));
+                    return $this->redirectToRoute('cairn_user_beneficiaries_edit',array('id'=>$beneficiary->getID(),'_format'=>$_format));
                 }
                 if($validity->hasBeneficiary){
                     $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
                 }
 
                 $existingBeneficiary = $validity->existingBeneficiary;
@@ -413,9 +473,13 @@ class UserController extends Controller
                 $em->persist($currentUser);
                 $em->flush();
                 $session->getFlashBag()->add('success','Modification effectuée avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
             }                                                              
         }                                                                  
+
+        if($_format == 'json'){
+            return $this->json(array('form'=>$form->createView()));
+        }
         return $this->render('CairnUserBundle:Pro:confirm_edit_beneficiary.html.twig',array('form'=>$form->createView()));
     }
 
@@ -428,7 +492,7 @@ class UserController extends Controller
      * @param Beneficiary $beneficiary Beneficiary to remove
      * @Method("GET")
      */
-    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary)
+    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
     {
         $session = new Session();
         $em = $this->getDoctrine()->getManager();
@@ -454,10 +518,18 @@ class UserController extends Controller
                 else{
                     $session->getFlashBag()->add('info','Suppression annulée');
                 }
-                return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
             }                                                                  
         }        
-        return $this->render('CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',array('form'=>$form->createView(),'beneficiary_name'=>$beneficiary->getUser()->getName()));
+        if($_format == 'json'){
+            return $this->json(array('form'=>$form->createView(),'beneficiary_name'=>$beneficiary->getUser()->getName()));
+        }
+
+        return $this->render('CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',
+            array(
+                'form'=>$form->createView(),
+                'beneficiary_name'=>$beneficiary->getUser()->getName()
+            ));
     }
 
 
@@ -473,7 +545,7 @@ class UserController extends Controller
      *
      * @Method("GET")
      */
-    public function confirmRemoveUserAction(Request $request, User $user)
+    public function confirmRemoveUserAction(Request $request, User $user, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -491,7 +563,7 @@ class UserController extends Controller
         }
         if($user->getUsername() == $this->getParameter('cyclos_global_admin_username')){
             $session->getFlashBag()->add('info','Le membre super administrateur ne peut être supprimé');
-            return $this->redirectToRoute('cairn_user_profile_view', array('id'=>$user->getID()));       
+            return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format, 'id'=>$user->getID()));       
         }
 
         //check that account balances are all 0 (for PRO only)
@@ -502,7 +574,7 @@ class UserController extends Controller
             foreach($accounts as $account){
                 if($account->status->balance != 0){
                     $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La suppression ne peut aboutir.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id' => $user->getID()));
                 }
             }
         }
@@ -526,7 +598,7 @@ class UserController extends Controller
         
                     if($currentUser->getPasswordTries() != 0) {
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return $this->redirectToRoute('cairn_user_profile_view',array('id'=> $user->getID()));
+                        return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
                     } 
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
@@ -536,19 +608,23 @@ class UserController extends Controller
 
                     $this->removeUser($user);
                     $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
-                    return $this->redirectToRoute($redirection);
+                    return $this->redirectToRoute($redirection, array('_format'=>$_format));
                 }
                 else{
                     $session->getFlashBag()->add('info','La suppression a été annulée avec succès.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id'=> $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
                 }
             }
+        }
+
+        if($_format == 'json'){
+            return $this->json(array('form'=>$form->createView(),'user'=>$user));
         }
         return $this->render('CairnUserBundle:Pro:confirm_remove.html.twig',array('form'=>$form->createView(),'user'=>$user));
     }
 
     /**
-     *Does remove the user on both the Cyclos and Doctrine sides and sends email to removed user
+     *Does remove the user on both the Cyclos and Doctrine sides and sends email to removed user and their referents
      *
      * It removes the user from Doctrine and all related Beneficiary entities with it.
      *@param User $user User to be removed
@@ -559,6 +635,8 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
         $messageNotificator = $this->get('cairn_user.message_notificator');
+
+        $referents = $user->getReferents();
 
         $saveName = $user->getName();
 
@@ -583,6 +661,13 @@ class UserController extends Controller
         $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig');
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+        $subject = 'Un professionnel a été supprimé de la plateforme';
+        $body = $saveName .' a été supprimé de la plateforme.';
+        foreach($referents as $referent){
+            $to = $referent->getEmail();
+            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+        }
     }
 
 }

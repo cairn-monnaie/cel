@@ -69,7 +69,7 @@ class AdminController extends Controller
      * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
      * @Method("GET")
      */ 
-    public function blockUserAction(Request $request, User $user)
+    public function blockUserAction(Request $request, User $user, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -94,13 +94,16 @@ class AdminController extends Controller
                 $em->flush();
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
 
         }
-        return $this->render('CairnUserBundle:User:block.html.twig', array(
-            'user' => $user,
-            'form'   => $form->createView(),
-        ));
+
+        $responseArray = array('user' => $user,'form'=> $form->createView());
+
+        if($_format == 'json'){
+            return $this->json($responseArray);
+        }
+        return $this->render('CairnUserBundle:User:block.html.twig', $responseArray);
     }
 
 
@@ -114,7 +117,7 @@ class AdminController extends Controller
      * @throws  AccessDeniedException Current user trying to activate access is not a referent of the user being involved
      * @Method("GET")
      */ 
-    public function activateUserAction(Request $request, User $user)
+    public function activateUserAction(Request $request, User $user, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -138,20 +141,24 @@ class AdminController extends Controller
 
                 //if first activation : ask if generate card now
                 if($user->getLastLogin() == NULL){
+                    if($_format == 'json'){
+                        return $this->json(array('user'=>$user,'card'=>$user->getCard()));
+                    }
                     return $this->render('CairnUserBundle:Card:generate_card.html.twig',array('user'=>$user,'card'=>$user->getCard()));
                 }
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }
 
-        return $this->render('CairnUserBundle:User:activate.html.twig', array(
-            'user' => $user,
-            'form'   => $form->createView(),
-        ));
+        $responseArray = array('user' => $user,'form'=> $form->createView());
+
+        if($_format == 'json'){
+            return $this->json($responseArray);
+        }
+        return $this->render('CairnUserBundle:User:activate.html.twig', $responseArray);
 
     }
-
 
     /**
      * Assign a unique local group (ROLE_ADMIN) as a referent of @param

@@ -15,6 +15,7 @@ use Cairn\UserBundle\Entity\RecurringTransaction;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -96,7 +97,7 @@ class BankingController extends Controller
      * @param integer $accountID Cyclos ID of the involved account
      * @throws Cyclos\ServiceException
      */  
-    public function accountOperationsAction(Request $request, $accountID)
+    public function accountOperationsAction(Request $request, $accountID, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -189,7 +190,7 @@ class BankingController extends Controller
                     if($begin && $end){
                         if($begin->diff($end)->invert == 1){                                   
                             $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
-                            return $this->redirectToRoute('cairn_user_banking_account_operations',array('accountID'=>$accountID));
+                            return new RedirectResponse($request->getRequestUri());
                         }    
                         //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
                         $period = array(
@@ -201,7 +202,7 @@ class BankingController extends Controller
 
                 }else{
                     $session->getFlashBag()->add('error','Les deux dates doivent être spécifiées.');
-                    return $this->redirectToRoute('cairn_user_banking_account_operations',array('accountID'=>$accountID));
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $history = $accountService->getAccountHistory($account->id,$period,$minAmount,$maxAmount,$keywords,NULL,NULL);
@@ -209,6 +210,14 @@ class BankingController extends Controller
             }
         }
 
+        if($_format == 'json'){
+            return $this->json(array(
+                'form' => $form->createView(),
+                'transactions'=>$history->transactions,
+                'futureAmount' => $totalAmount,
+                'account'=>$account
+            ));
+        }
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
             array('form' => $form->createView(),
             'transactions'=>$history->transactions,'futureAmount' => $totalAmount,'account'=>$account));
@@ -220,9 +229,13 @@ class BankingController extends Controller
      *
      * @param string $type Type of operation requested. Possible types restricted in routing.yml
      */  
-    public function bankingOperationsAction(Request $request, $type)
+    public function bankingOperationsAction(Request $request, $type, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        if($_format == 'json'){
+            return $this->json(array('type'=>$type));
+        }
         return $this->render('CairnUserBundle:Banking:'.$type.'_operations.html.twig');
     }
 
@@ -233,8 +246,11 @@ class BankingController extends Controller
      * @param string $frequency Possibles frequencies restricted in routing.yml : unique/recurring
      *
      */
-    public function transactionToAction(Request $request, $frequency)
+    public function transactionToAction(Request $request, $frequency, $_format)
     {
+        if($_format == 'json'){
+            return $this->json(array('frequency'=>$frequency));
+        }
         return $this->render('CairnUserBundle:Banking:transaction_to.html.twig',array('frequency'=>$frequency));
     }
 
@@ -309,7 +325,7 @@ class BankingController extends Controller
      *      _a time data : depends if frequency is set to 'unique' or 'recurring'
      *
      */
-    public function transactionRequestAction(Request $request, $to, $frequency)
+    public function transactionRequestAction(Request $request, $to, $frequency, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -340,13 +356,13 @@ class BankingController extends Controller
             $toAccounts = $selfAccounts;
             if(count($toAccounts) == 1){
                 $session->getFlashBag()->add('info','Vous n\'avez qu\'un compte.'); 
-                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
+                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
             $beneficiaries = $currentUser->getBeneficiaries();
             if(count($beneficiaries) == 0){
                 $session->getFlashBag()->add('info','Vous n\'avez aucun bénéficiaire enregistré');
-                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
+                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
             }
 
             $direction = $directionPrefix.'_TO_USER';
@@ -360,7 +376,7 @@ class BankingController extends Controller
             }
         }else{
             $session->getFlashBag()->add('error','Type de destinataire non reconnu');
-            return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
+            return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
         }
 
         if($frequency == 'unique'){
@@ -435,12 +451,18 @@ class BankingController extends Controller
                 }
 
                 $session->set('paymentReview',$review);
-                return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('type'=>$type));
+                return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
 
             }
         }
 
-        return $this->render('CairnUserBundle:Banking:transaction.html.twig',array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
+        if($_format == 'json'){
+            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
+        }
+        return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
+            'form'=>$form->createView(),
+            'fromAccounts'=>$selfAccounts,
+            'toAccounts'=>$toAccounts));
 
     }
 
@@ -452,7 +474,7 @@ class BankingController extends Controller
      * Any credit/debit on an account in Cyclos must be compensated by the opposite operation on another one.
      * @Security("has_role('ROLE_PRO')")
      */
-    public function reconversionRequestAction(Request $request)
+    public function reconversionRequestAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -615,7 +637,7 @@ class BankingController extends Controller
      * The operation must be done by an admin : a pro comes with banknotes, and admin credits account
      * @Security("has_role('ROLE_ADMIN')")
      */
-    public function depositRequestAction(Request $request)
+    public function depositRequestAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -700,7 +722,7 @@ class BankingController extends Controller
      * The operation must be done by an admin : a pro comes with banknotes, and admin debits account
      * @Security("has_role('ROLE_ADMIN')")
      */
-    public function withdrawalRequestAction(Request $request)
+    public function withdrawalRequestAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -731,12 +753,16 @@ class BankingController extends Controller
             $userToDebit = $userRepo->findOneBy(array('name'=>$data['name']));
             if(!$userToDebit){
                 $session->getFlashBag()->add('error','Aucun professionnel trouvé');
-                return $this->redirectToRoute('cairn_user_banking_withdrawal_request');
+                return new RedirectResponse($request->getRequestUri());
             }
             $userToDebitVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToDebit);
 
             $involvedAccounts = $accountService->getAccountsSummary($userToDebitVO->id);
-            return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array('formUser'=>$formUser->createView(),'formWithdrawal'=>$formWithdrawal->createView(),'accounts'=>$involvedAccounts));
+            return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array(
+                'formUser'=>$formUser->createView(),
+                'formWithdrawal'=>$formWithdrawal->createView(),
+                'accounts'=>$involvedAccounts
+            ));
 
         }
 
@@ -902,7 +928,7 @@ class BankingController extends Controller
      * clearingBankingAccount must be done regularly to clear the guarantee funds(numeric and banknotes)
      * @param string $type type of operation occurring : transaction|conversion|reconversion|deposit|withdrawal 
      */
-    public function confirmOperationAction(Request $request, $type)
+    public function confirmOperationAction(Request $request, $type, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -996,7 +1022,7 @@ class BankingController extends Controller
      *
      * @param string $type type of operation occurring : transaction|conversion|reconversion|deposit|withdrawal 
      */
-    public function viewOperationsAction(Request $request, $type)
+    public function viewOperationsAction(Request $request, $type, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -1004,11 +1030,14 @@ class BankingController extends Controller
         $frequency = $request->get('frequency');
 
         if(!$this->isValidFrequency($frequency)){
-            return $this->redirectToRoute('cairn_user_banking_operations_view',array('type'=>$type,'frequency'=>'unique'));
+            return $this->redirectToRoute('cairn_user_banking_operations_view',array(
+                'format'=>$_format,
+                'type'=>$type,
+                'frequency'=>'unique'
+            ));
         }
 
         $session->set('frequency',$frequency);
-
 
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $accountService = $this->get('cairn_user_cyclos_account_info');
@@ -1034,15 +1063,27 @@ class BankingController extends Controller
                 $futureInstallments = $bankingService->getInstallments($userVO,$accountTypesVO,array('BLOCKED','SCHEDULED'),$description);
                 //                var_dump($futureInstallments[0]);
                 //                return new Response('ok');
+                if($_format == 'json'){
+                    return $this->json(array(
+                        'processedTransactions'=>$processedTransactions ,
+                        'futureInstallments'=> $futureInstallments));
+                }
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
-                    array('processedTransactions'=>$processedTransactions ,'futureInstallments'=> $futureInstallments));
-
+                    array('processedTransactions'=>$processedTransactions ,
+                    'futureInstallments'=> $futureInstallments));
+            
             }else{
                 $processedTransactions = $bankingService->getRecurringTransactionsDataBy(
                     $userVO,$accountTypesVO,array('CLOSED','CANCELED'),$description);
 
                 $ongoingTransactions = $bankingService->getRecurringTransactionsDataBy(
                     $userVO,$accountTypesVO,array('OPEN'),$description);
+
+                if($_format == 'json'){
+                    return $this->json(array(
+                        'processedTransactions'=>$processedTransactions ,
+                        'ongoingTransactions'=> $ongoingTransactions));
+                }
 
                 return $this->render('CairnUserBundle:Banking:view_recurring_transactions.html.twig', 
                     array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
@@ -1053,6 +1094,9 @@ class BankingController extends Controller
             $processedTransactions = $bankingService->getTransactions(
                 $userVO,$accountTypesVO,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
 
+            if($_format == 'json'){
+                return $this->json(array('processedTransactions'=>$processedTransactions));
+            }
             return $this->render('CairnUserBundle:Banking:view_reconversions.html.twig',
                 array('processedTransactions'=>$processedTransactions));
 
@@ -1063,19 +1107,36 @@ class BankingController extends Controller
 
             //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
             $ongoingTransactions = array();
-            return $this->render('CairnUserBundle:Banking:view_conversions.html.twig', array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
+
+            if($_format == 'json'){
+                return $this->json(array(
+                    'processedTransactions'=>$processedTransactions,
+                    'ongoingTransactions' => $ongoingTransactions));
+            }
+            return $this->render('CairnUserBundle:Banking:view_conversions.html.twig', array(
+                'processedTransactions'=>$processedTransactions,
+                'ongoingTransactions' => $ongoingTransactions));
 
         }elseif($type == 'withdrawal'){
             $description = $this->getParameter('cairn_default_withdrawal_description');
             $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
-            return $this->render('CairnUserBundle:Banking:view_withdrawals.html.twig', array('processedTransactions'=>$processedTransactions));
+
+            if($_format == 'json'){
+                return $this->json(array('processedTransactions'=>$processedTransactions));
+            }
+            return $this->render('CairnUserBundle:Banking:view_withdrawals.html.twig', 
+                array('processedTransactions'=>$processedTransactions));
 
         }elseif($type == 'deposit'){
             $description = $this->getParameter('cairn_default_deposit_description');
             $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
+
+            if($_format == 'json'){
+                return $this->json(array('processedTransactions'=>$processedTransactions));
+            }
             return $this->render('CairnUserBundle:Banking:view_deposits.html.twig', array('processedTransactions'=>$processedTransactions));
         }else{
-            return $this->redirectToRoute('cairn_user_welcome');
+            return $this->redirectToRoute('cairn_user_welcome', array('_format'=>$_format));
         }
     }
 
@@ -1321,7 +1382,7 @@ class BankingController extends Controller
      * @throws AccessDeniedException A non admin granted user requests for a SYSTEM account
      * @throws AccessDeniedException The current user is not referent of account's owner
      */
-    public function downloadRIBAction(Request $request, $id)
+    public function downloadRIBAction(Request $request, $id, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
         $session = $request->getSession();
@@ -1348,7 +1409,7 @@ class BankingController extends Controller
 
             if(!$owner){
                 $session->getFlashBag()->add('error','Donnée introuvable');
-                return $this->redirectToRoute('cairn_user_welcome');
+                return $this->redirectToRoute('cairn_user_welcome',array('_format'=>$_format));
             }
             if(! ($owner->hasReferent($currentUser) || $owner === $currentUser)){
                 throw new AccessDeniedException('Vous n\'êtes pas référent du propriétaire du compte : ' .$owner->getName());
@@ -1359,6 +1420,18 @@ class BankingController extends Controller
             'downloader'=>$currentUser,'owner'=>$owner,'account'=>$account));
 
         $filename = sprintf('rib-cairn-%s.pdf',$account->type->name.'-'.$owner->getUsername());
+
+        if($format == 'json'){
+            return new JsonResponse(
+                $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
+                200,
+                [
+                    'Content-Type'        => 'application/pdf',
+                    'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
+                ]
+            );
+
+        }
         return new Response(
             $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
             200,
