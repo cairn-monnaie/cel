@@ -192,7 +192,7 @@ Digital Cairn
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
  26. **Configure Global Administration's channels** 
 
-     **main web channel**
+     * **main web channel**
 
        _Access : Switch to Global administration (top-side on the screen)_
 
@@ -203,7 +203,7 @@ Digital Cairn
        * session timeout : xxx
        * Click save
 
-     **web services channel**
+     * **web services channel**
 
        _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
        * Click on "Global default" configuration
