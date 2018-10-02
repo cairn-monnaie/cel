@@ -29,10 +29,11 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormEvent;                                          
 use Symfony\Component\Form\FormEvents;
 
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 
 /**
  * Simple CRUD related to Account Types on cyclos side
- *@Security("has_role('ROLE_SUPER_ADMIN')") 
+ * @Security("has_role('ROLE_SUPER_ADMIN')") 
  *
  */
 class AccountTypeController extends Controller
@@ -66,7 +67,7 @@ class AccountTypeController extends Controller
      * For now, redirects to the network defined as a global parameter
      *@todo : possibility to change the network : but this is a whole other story
      */
-    public function indexAction(Request $request)
+    public function indexAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -87,7 +88,7 @@ class AccountTypeController extends Controller
         //            if($form->isValid()){
         //                $currency = $form->get('currency')->getData();
         //                $session->set('currency',$currency);
-        return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_list', array('currency' => $this->getParameter('cyclos_currency_cairn')));
+        return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_list', array('_format'=>$_format,'currency' => $this->getParameter('cyclos_currency_cairn')));
 
         //            }
         //        }
@@ -100,7 +101,7 @@ class AccountTypeController extends Controller
      * List all account types, whether it is SYSTEM or USER, associated to the currency defined as a global parameter
      *
      */
-    public function listAccountTypesAction(Request $request)
+    public function listAccountTypesAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->getParameter('cyclos_network_cairn'));
 
@@ -109,8 +110,14 @@ class AccountTypeController extends Controller
         $listUserAccountTypes = $this->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($currency,'USER');
         $listSystemAccountTypes = $this->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($currency,'SYSTEM');
 
-        return $this->render('CairnUserCyclosBundle:Config/AccountType:list.html.twig',array('userAccountTypes' => $listUserAccountTypes, 'systemAccountTypes' => $listSystemAccountTypes));
-
+        if($_format == 'json'){
+            return $this->json(array(
+                'userAccountTypes' => $listUserAccountTypes, 
+                'systemAccountTypes' => $listSystemAccountTypes));
+        }
+        return $this->render('CairnUserCyclosBundle:Config/AccountType:list.html.twig',array(
+            'userAccountTypes' => $listUserAccountTypes, 
+            'systemAccountTypes' => $listSystemAccountTypes));
     }
 
     /**
@@ -123,7 +130,7 @@ class AccountTypeController extends Controller
      *
      * @param int $id Account Type ID
      */
-    public function viewAccountTypeAction(Request $request, $id)
+    public function viewAccountTypeAction(Request $request, $id, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -156,7 +163,12 @@ class AccountTypeController extends Controller
         $session->set('productID', $productDTO->id);
         $session->set('accountTypeID', $accountTypeDTO->id);
 
-        return $this->render('CairnUserCyclosBundle:Config/AccountType:view.html.twig', array('accountType' => $accountTypeDTO,'product' => $productDTO,'isAssigned'=>$isAssigned));
+        if($_format == 'json'){
+            return $this->json(array(
+                'accountType' => $accountTypeDTO,'product' => $productDTO,'isAssigned'=>$isAssigned));
+        }
+        return $this->render('CairnUserCyclosBundle:Config/AccountType:view.html.twig', array(
+            'accountType' => $accountTypeDTO,'product' => $productDTO,'isAssigned'=>$isAssigned));
     }
 
 

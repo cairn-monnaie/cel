@@ -38,13 +38,6 @@ class AccountController extends Controller
         $this->bankingManager = new BankingManager();
     }
 
-    public function indexAction()
-    {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        return $this->render('CairnUserCyclosBundle:Config/Account:index.html.twig');
-    }
-
 
     /**
      *Edits a specific account
@@ -55,7 +48,7 @@ class AccountController extends Controller
      * The credit limit can be changed, go back to the default value(set to all accounts of the same type) and a description can be added
      * It can be done only for User accounts(not system accounts)
      */
-    public function editAccountAction(Request $request, $id)
+    public function editAccountAction(Request $request, $id, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 

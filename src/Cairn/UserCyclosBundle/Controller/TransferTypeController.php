@@ -68,10 +68,8 @@ class TransferTypeController extends Controller
 
     }
 
-    public function viewTransferTypeAction(Request $request, $id)
+    public function viewTransferTypeAction(Request $request, $id, $_format)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $transferTypeDTO = $this->get('cairn_user_cyclos_transfertype_info')->getTransferTypeDTOByID($id);       
@@ -87,7 +85,11 @@ class TransferTypeController extends Controller
 //        else{
 //            $transferFeeDTO = NULL;
 //        }
-        return $this->render('CairnUserCyclosBundle:Config/TransferType:view.html.twig', array('transferType' => $transferTypeDTO));//,'transferFee'=>$transferFeeDTO)); 
+        
+        if($_format == 'json'){
+            return $this->json(array('transferType' => $transferTypeDTO));
+        }
+        return $this->render('CairnUserCyclosBundle:Config/TransferType:view.html.twig', array('transferType' => $transferTypeDTO));
 
     }
 

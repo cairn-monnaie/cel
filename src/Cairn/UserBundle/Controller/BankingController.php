@@ -77,13 +77,16 @@ class BankingController extends Controller
      * @throws Cyclos\ServiceException
      * @Method("GET")
      */  
-    public function accountsOverviewAction(Request $request, User $user)
+    public function accountsOverviewAction(Request $request, User $user, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
+        if($_format == 'json'){
+            return $this->json(array('user'=>$user,'accounts'=> $accounts));
+        }
         return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts));
     }
 
@@ -1146,7 +1149,7 @@ class BankingController extends Controller
      *
      * @param int $id Identifier of the recurring transaction
      */
-    public function viewDetailedRecurringTransactionAction(Request $request, $id)
+    public function viewDetailedRecurringTransactionAction(Request $request, $id, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -1159,7 +1162,13 @@ class BankingController extends Controller
         $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($id);
         $transaction = $recurringPaymentData->transaction;
         $account = $this->get('cairn_user_cyclos_account_info')->getUserAccountWithType($transaction->fromOwner->id,$transaction->type->from->id);
-        return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array('data'=>$recurringPaymentData,'fromAccount'=>$account));
+
+        if($_format == 'json'){
+            return $this->json(array('data'=>$recurringPaymentData,'fromAccount'=>$account));
+        }
+        return $this->render('CairnUserBundle:Banking:view_detailed_recurring_transactions.html.twig',array(
+            'data'=>$recurringPaymentData,
+            'fromAccount'=>$account));
     }
 
     /**
@@ -1183,7 +1192,7 @@ class BankingController extends Controller
      *@param string $type Type of transaction the transfer belongs to
      *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
      */
-    public function viewTransferAction(Request $request, $type,$id)
+    public function viewTransferAction(Request $request, $type,$id, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -1238,16 +1247,21 @@ class BankingController extends Controller
             break;
         default:
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(
-                'type'=>'transaction','frequency'=>$session->get('frequency')));
+                '_format'=>$_format, 'type'=>'transaction','frequency'=>$session->get('frequency')));
         }
 
         if($transfer){
+            if($_format == 'json'){
+                return $this->json(array('transfer'=>$transfer));
+            }
             return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
                 'transfer'=>$transfer));
         }else{
             $session->getFlashBag()->add('error','Impossible de trouver le transfert recherché');
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(
-                'type'=>'transaction','frequency'=>$session->get('frequency')));
+                '_format'=>$_format, 
+                'type'=>'transaction',
+                'frequency'=>$session->get('frequency')));
         }
     }
 

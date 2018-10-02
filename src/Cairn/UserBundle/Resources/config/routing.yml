@@ -248,16 +248,18 @@ cairn_user_banking_account_operations:
         _format: html|json
 
 cairn_user_banking_transactions_recurring_view_detailed:
-    path:     banking/transactions/recurring/view/detailed/{id}/
-    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction }
+    path:     banking/transactions/recurring/view/detailed/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction, _format: html }
     requirements:
         id: "[-]?[0-9]{19,}"
+        _format: html|json
 
 cairn_user_banking_transfer_view:
-    path:     banking/transfer/view/{type}-{id}/
-    defaults: { _controller: CairnUserBundle:Banking:viewTransfer }
+    path:     banking/transfer/view/{type}-{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:viewTransfer, _format: html }
     requirements:
         type: scheduled.past|scheduled.futur|recurring|simple
+        _format: html|json
 
 cairn_user_banking_transaction_occurrence_execute:
     path:     banking/transactions/recurring/occurrence/execute/{id}/
@@ -266,10 +268,11 @@ cairn_user_banking_transaction_occurrence_execute:
         id: "[-]?[0-9]{19,}"
 
 cairn_user_banking_accounts_overview:
-    path:     banking/accounts/overview/{id}/
-    defaults: { _controller: CairnUserBundle:Banking:accountsOverview }
+    path:     banking/accounts/overview/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:accountsOverview, _format: html  }
     requirements:
         id: \d+
+        _format: html|json
 
 
 #cairn_user_bankconnection_deposit_index:

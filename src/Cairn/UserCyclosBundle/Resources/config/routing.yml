@@ -1,8 +1,10 @@
 # src/Cairn/UserCyclosBundle/Resources/routing.yml
 
 cairn_user_cyclos_config_home:
-    path: /home/
-    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork }
+    path:     /index.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_cyclos_sysconfig_home:
     path:     /sys/
@@ -24,9 +26,9 @@ cairn_user_cyclos_sysconfig_home:
 #    path:     /sys/network/remove/{name}/
 #    defaults: { _controller: CairnUserCyclosBundle:Network:removeNetwork }
 
-cairn_user_cyclos_sysconfig_network_view:
-    path:     /sys/network/view/
-    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork }
+#cairn_user_cyclos_sysconfig_network_view:
+#    path:     /sys/network/view/
+#    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork }
 
 #cairn_user_cyclos_sysconfig_group_add:
 #    path:     /sys/group/add/{groupType}/
@@ -53,10 +55,6 @@ cairn_user_cyclos_sysconfig_network_view:
 #    defaults: { _controller: CairnUserCyclosBundle:Product:removeProduct }
 #
 
-cairn_user_cyclos_accountsconfig_home:
-    path:     /accounts/home/
-    defaults: { _controller: CairnUserCyclosBundle:Account:index }
-
 #cairn_user_cyclos_accountsconfig_currency_list:
 #    path:     /accounts/currency/list/
 #    defaults: { _controller: CairnUserCyclosBundle:Currency:listCurrencies }
@@ -78,24 +76,30 @@ cairn_user_cyclos_accountsconfig_home:
 #    defaults: { _controller: CairnUserCyclosBundle:Currency:editCurrency }
 
 cairn_user_cyclos_accountsconfig_account_edit:
-    path:     /accounts/account/edit/{id}
-    defaults: { _controller: CairnUserCyclosBundle:Account:editAccount }
+    path:     /accounts/account/edit/{id}.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:Account:editAccount, _format: html }
     requirements:
         id: "[-]?[0-9]{19,}"
+        _format: html|json
 
 cairn_user_cyclos_accountsconfig_accounttype_home:
-    path:     /accounts/accounttype/
-    defaults: { _controller: CairnUserCyclosBundle:AccountType:index }
+    path:     /accounts/accounttype.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:AccountType:index, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_cyclos_accountsconfig_accounttype_view:
-    path:     /accounts/accounttype/view/{id}/
-    defaults: { _controller: CairnUserCyclosBundle:AccountType:viewAccountType }
+    path:     /accounts/accounttype/view/{id}.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:AccountType:viewAccountType, _format: html }
     requirements:                                                              
         id: "[-]?[0-9]{19,}"
+        _format: html|json
 
 cairn_user_cyclos_accountsconfig_accounttype_list:
-    path:     /accounts/accounttype/list/
-    defaults: { _controller: CairnUserCyclosBundle:AccountType:listAccountTypes }
+    path:     /accounts/accounttype/list.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:AccountType:listAccountTypes, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_cyclos_accountsconfig_accounttype_add:
     path:     /accounts/accounttype/add/{nature}/
@@ -139,19 +143,20 @@ cairn_user_cyclos_accountsconfig_accounttype_open_confirm:
         #    path:     /accounts/accountfee/remove/
         #    defaults: { _controller: CairnUserCyclosBundle:AccountFee:removeAccountFee }
 
-cairn_user_cyclos_accountsconfig_transfertype_home:
-    path:     /accounts/transfertype/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:index }
-
-cairn_user_cyclos_accountsconfig_transfertype_list:
-    path:     /accounts/transfertype/list/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:listTransferTypes }
+        #cairn_user_cyclos_accountsconfig_transfertype_home:
+        #    path:     /accounts/transfertype/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:index }
+        #
+        #cairn_user_cyclos_accountsconfig_transfertype_list:
+        #    path:     /accounts/transfertype/list
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:listTransferTypes }
 
 cairn_user_cyclos_accountsconfig_transfertype_view:
-    path:     /accounts/transfertype/view/{id}/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:viewTransferType }
+    path:     /accounts/transfertype/view/{id}.{_format}
+    defaults: { _controller: CairnUserCyclosBundle:TransferType:viewTransferType, _format: html }
     requirements:                                                              
         id: "[-]?[0-9]{19,}"
+        _format: html|json
 
         #cairn_user_cyclos_accountsconfig_transfertype_add:
         #    path:     /accounts/transfertype/add/
@@ -161,6 +166,7 @@ cairn_user_cyclos_accountsconfig_transfertype_view:
         #    path:     /accounts/transfertype/addFields/
         #    defaults: { _controller: CairnUserCyclosBundle:TransferType:fillTransferType }
         #
+
 cairn_user_cyclos_accountsconfig_transfertype_edit:
     path:     /accounts/transfertype/edit/{id}/
     defaults: { _controller: CairnUserCyclosBundle:TransferType:editTransferType }
