@@ -22,7 +22,7 @@ parameters:
 
     cairn_card_rows : 5
     cairn_card_cols : 5
-    cairn_card_activation_delay : 10
+    card_activation_delay : 10
     cairn_email_noreply : noreply@cairn-monnaie.com
     cairn_email_technical_services : maintenance@cairn-monnaie.com
 
@@ -34,7 +34,6 @@ parameters:
     cairn_default_deposit_description :  Dépôt Cairn
     cairn_default_reconversion_description : Reconversion cairns-euros
 
-    cyclos_group_adherents : members
     cyclos_group_pros : Pros
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
@@ -44,7 +43,7 @@ parameters:
     cyclos_root_test_url:  'http://example-test:4321/'
     cyclos_global_admin_username : admin
     cyclos_global_admin_password : admin
-    global_admin_email : admin@localhost.com
+    cyclos_global_admin_email : admin@localhost.com
 
 
     cyclos_currency_cairn : cairn

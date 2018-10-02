@@ -197,7 +197,6 @@ class CardController extends Controller
                         return $this->redirectToRoute('fos_user_security_logout');
                     }
 
-
                     if($currentUser->getPasswordTries() == 0) {
                         $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols') );
                         $user->setCard($card);
@@ -208,8 +207,8 @@ class CardController extends Controller
                         $from = $this->getParameter('cairn_email_noreply');
                         $to = $user->getEmail();
                         $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('by'=>$currentUser,'user'=>$user));
-
                         $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
+
                         $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
                     }
                     else{
@@ -503,7 +502,7 @@ class CardController extends Controller
         $cb->join('c.user','u')
             ->where('c.enabled = false')
             ->andWhere('c.creationDate >= :date')
-            ->setParameter('date',strtotime('-' .$this->getParameter('cairn_card_activation_delay').' days'))
+            ->setParameter('date',strtotime('-' .$this->getParameter('card_activation_delay').' days'))
             ->addSelect('u');
         $cards = $cb->getQuery()->getResult();
 
@@ -513,10 +512,10 @@ class CardController extends Controller
         $today = new \Datetime(date('Y-m-d H:i:s'));
         foreach($cards as $card){
             $creationDate = $card->getCreationDate();
-            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->getParameter('cairn_card_activation_delay').' days');
+            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->getParameter('card_activation_delay').' days');
             $interval = $today->diff($expirationDate);
             $diff = $interval->days;
-            $nbMonths = intdiv($this->getParameter('cairn_card_activation_delay'),30);
+            $nbMonths = intdiv($this->getParameter('card_activation_delay'),30);
             if( ($interval->invert == 0) && ($diff != 0)){
                 if($interval->m == $nbMonths){
                     if(($diff == 5) || ($diff == 2) || ($diff == 1)){

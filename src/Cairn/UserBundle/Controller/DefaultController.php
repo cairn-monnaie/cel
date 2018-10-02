@@ -77,7 +77,7 @@ class DefaultController extends Controller
             $new_admin->setName('main admin');
             $new_admin->setPlainPassword($adminPassword);
             $new_admin->setEnabled(true);
-            $new_admin->setEmail($this->getParameter('global_admin_email'));
+            $new_admin->setEmail($this->getParameter('cyclos_global_admin_email'));
 
             $new_admin->addRole('ROLE_SUPER_ADMIN');
 

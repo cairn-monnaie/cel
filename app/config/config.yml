@@ -40,7 +40,7 @@ twig:
     debug: '%kernel.debug%'
     strict_variables: '%kernel.debug%'
     globals:
-        cairn_card_activation_delay: '%cairn_card_activation_delay%'
+        card_activation_delay: '%card_activation_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
 
 # Doctrine Configuration

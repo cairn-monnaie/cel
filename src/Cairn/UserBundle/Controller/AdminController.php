@@ -36,7 +36,6 @@ use Cyclos;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 
@@ -67,7 +66,6 @@ class AdminController extends Controller
      * in Cairn/UserBundle/CardController/InputCardKey, which needs explicitely all the query parameters in the query array
      * An email is sent to the user being (re)activated
      *
-     * @throws  NotFoundHttpException ID in query does not match any user in Doctrine
      * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
      * @Method("GET")
      */ 
@@ -113,7 +111,6 @@ class AdminController extends Controller
      * in Cairn/UserBundle/CardController/InputCardKey, which needs explicitely all the query parameters in the query array
      * An email is sent to the user being (re)activated
      *
-     * @throws  NotFoundHttpException ID in query does not match any user in Doctrine
      * @throws  AccessDeniedException Current user trying to activate access is not a referent of the user being involved
      * @Method("GET")
      */ 

@@ -131,7 +131,6 @@ class User extends BaseUser
     }
 
 
-
     /**
      *
      *@Assert\Callback() 
@@ -157,13 +156,22 @@ class User extends BaseUser
             $context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
                 ->atPath('username')
                 ->addViolation();
-
         }
         if(preg_match('#'.$this->getUsername().'#',$this->getPlainPassword())){
             $context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
                 ->atPath('plainPassword')
                 ->addViolation();
 
+        }
+        if(strlen($this->getPlainPassword()) > 25){
+            $context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
+                ->atPath('plainPassword')
+                ->addViolation();
+        }
+        if(strlen($this->getPlainPassword()) < 8){
+            $context->buildViolation('Le mot de passe doit contenir plus de 8 caractères.')
+                ->atPath('plainPassword')
+                ->addViolation();
         }
         if( preg_match('#^[a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ]+$#',$this->getPlainPassword())){
             $context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
@@ -178,13 +186,6 @@ class User extends BaseUser
 
     }
 
-    /*
-     *@ORM\PostRemove
-     */
-    private static function decreaseCounter()
-    {
-        self::$_counter--;
-    }
     /**
      * Set cyclosID
      *
