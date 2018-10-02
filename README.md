@@ -184,36 +184,49 @@ Digital Cairn
         * recurring payments : check view + cancel
         * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
      * Click save
-
  25. **Check product's assignation to Member group**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * click on  **_$network-group-members_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
-
  26. **Configure Global Administration's channels** 
 
-     _Access : Switch to Global administration (top-side on the screen)_
-     _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
-     * Click on "Global default" configuration
-     * Click on channels (top-right of configuration screen) 
-     * Click on web services
-     * Enabled : check
-     * User access : select "Enforced enabled"
-     * session timeout : xxx
+     **main web channel**
+
+       _Access : Switch to Global administration (top-side on the screen)_
+
+       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+       * Click on "Global default" configuration
+       * Click on channels (top-right of configuration screen) 
+       * Click on "main web"
+       * session timeout : xxx
+       * Click save
+
+     **web services channel**
+
+       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+       * Click on "Global default" configuration
+       * Click on channels (top-right of configuration screen) 
+       * Click on "web services"
+       * Enabled : check
+       * User access : select "Enforced enabled"
+       * session timeout : xxx
+       * Click save
  27. **Change password type configuration**
 
      _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
      * Click on login password
      * password length :  8 to 25 
+     * Disallow obvious password :  check
+     * Avoid repeated passwords : check
+     * Click save
  28. **Configure group of global administrators**
 
      _Access : System (top tab) / User Configuration(bold in left menu) / Groups_
      * Click on "Global administrators"
      * Name : **_$global-group-admins_** 
      * Click save
-
  29. **Save the configuration into a backup file**
 
      As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
