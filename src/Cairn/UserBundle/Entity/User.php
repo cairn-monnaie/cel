@@ -132,61 +132,6 @@ class User extends BaseUser
 
 
     /**
-     *
-     *@Assert\Callback() 
-     */
-    public function isUserValid(ExecutionContextInterface $context)
-    {
-
-        //check length for example
-        if(strlen($this->getUsername()) < 5){
-            $context->buildViolation('Login trop court ! 5 caractères minimum')
-                ->atPath('username')
-                ->addViolation();
-        }
-
-        if(preg_match('#[^\w\.]#',$this->getUsername())){
-            $context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
-                ->atPath('username')
-                ->addViolation();
-
-        }
-
-        if(strlen($this->getUsername()) > 16){
-            $context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
-                ->atPath('username')
-                ->addViolation();
-        }
-        if(preg_match('#'.$this->getUsername().'#',$this->getPlainPassword())){
-            $context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
-                ->atPath('plainPassword')
-                ->addViolation();
-
-        }
-        if(strlen($this->getPlainPassword()) > 25){
-            $context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-        if(strlen($this->getPlainPassword()) < 8){
-            $context->buildViolation('Le mot de passe doit contenir plus de 8 caractères.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-        if( preg_match('#^[a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ]+$#',$this->getPlainPassword())){
-            $context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,3}$#',$this->getEmail())){
-            $context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 3 lettres.")
-                ->atPath('email')
-                ->addViolation();
-        }
-
-    }
-
-    /**
      * Set cyclosID
      *
      * @param integer $cyclosID

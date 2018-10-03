@@ -40,6 +40,8 @@ services:
         arguments: 
             - "@service_container"
         tags:
+            - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
+            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
 
     cairn_user.security.input_listener:
@@ -70,8 +72,8 @@ services:
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
     
-    cairn_user.validator.password:
-        class: Cairn\UserBundle\Validator\PasswordValidator
+    cairn_user.validator:
+        class: Cairn\UserBundle\Validator\UserValidator
         arguments:
             - "%cyclos_network_cairn%"
             - "%cyclos_group_pros%"
@@ -79,7 +81,7 @@ services:
             - "@cairn_user_cyclos_group_info"
             - "@cairn_user_cyclos_network_info"
         tags:
-            - { name: validator.constraint_validator, alias: cairn_user_password }
+            - { name: validator.constraint_validator, alias: cairn_user_validator }
 
     Cairn\UserBundle\Form\CreditType:
         arguments: ['@security.authorization_checker']
