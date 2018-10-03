@@ -11,10 +11,6 @@ cairn_user_registration:
     path:     registration/
     defaults: { _controller: CairnUserBundle:Default:registration }
 
-cairn_user_register:
-    path:     register/informations/{type}/
-    defaults: { _controller: CairnUserBundle:Registration:register}
-
 cairn_user_redirect_login:
     path:     login/redirection/{message}/
     defaults: { _controller: CairnUserBundle:Default:redirectToLogin }
