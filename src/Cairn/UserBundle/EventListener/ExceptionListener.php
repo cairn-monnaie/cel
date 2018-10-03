@@ -64,20 +64,20 @@ class ExceptionListener
         $exceptionMessage = 'Message d\'erreur : '. $exception->getMessage();
 
         $traceMessage = 'Trace : '. $exception->getTraceAsString();
+        $fileMessage = 'Dans le fichier : ' . $exception->getFile();
         $lineMessage =  'A la ligne : ' .$exception->getLine();
         $routesMessage = $currentRoute . "\n" .$currentUrl ."\n". $fromUrl;
 
-        $body = $routesMessage ."\n". $exceptionMessage . "\n" . $traceMessage;
+        $body = $routesMessage ."\n". $fileMessage ."\n". $lineMessage . "\n". $exceptionMessage . "\n" . $traceMessage;
 
         //this condition avoids circular exceptions thrown if the redirection page (login / homepage) contains an error
-        if(strpos($request->headers->get('referer'), $request->getRequestUri())){
+        if(strpos($request->headers->get('referer'), $request->getRequestUri()) && !$request->isMethod('POST')){
             $subject = 'Erreur circulaire';
             $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
             $event->setResponse(new RedirectResponse($logoutUrl));
         }else{
             if($exception instanceof Cyclos\ServiceException){
                 $subject = 'Erreur Cyclos';
-
                 if($exception->errorCode == 'ENTITY_NOT_FOUND'){
                     $session->getFlashBag()->add('error','Donnée introuvable');
                     $event->setResponse(new RedirectResponse($welcomeUrl));
@@ -106,17 +106,20 @@ class ExceptionListener
                 //will redirect to maintenance page
                 $event->setResponse(new RedirectResponse($welcomeUrl));
             }
-            else{//not cyclos error, instance of \Exception
-                $subject = 'Erreur technique Symfony';
+//            else{//not cyclos error, instance of \Exception
+//                $subject = 'Erreur technique Symfony';
+            //    $codeMessage = 'Erreur code statut : ' .$exception->getCode();
+            //    $body = $codeMessage. "\n" . $body;
 
-                if($exception instanceof ContextErrorException){
-                    $context = ' Contexte : ' . json_encode($exception->getContext());
-                    $body = $body . "\n". $context;
-                }
-                $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
-                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                $event->setResponse(new RedirectResponse($welcomeUrl));
-            }
+//
+//                if($exception instanceof ContextErrorException){
+//                    $context = ' Contexte : ' . json_encode($exception->getContext());
+//                    $body = $body . "\n". $context;
+//                }
+//                $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
+//                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+//                $event->setResponse(new RedirectResponse($welcomeUrl));
+//            }
         }
 
 
