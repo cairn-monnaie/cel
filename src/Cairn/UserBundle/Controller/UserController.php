@@ -59,12 +59,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 class UserController extends Controller
 {
     private $userManager;
-//    private $scriptManager;
+    //    private $scriptManager;
 
     public function __construct()
     {
         $this->userManager = new UserManager();
-//        $this->scriptManager = new ScriptManager();
+        //        $this->scriptManager = new ScriptManager();
 
     }
 
@@ -118,64 +118,82 @@ class UserController extends Controller
      */
     public function usersAction(Request $request, $_format)
     {
+        $currentUserID = $this->getUser()->getID();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $ub = $userRepo->createQueryBuilder('u');
 
+        //validated pros who the current user is referent of 
         $validatedPros = new \stdClass();
-         $ub = $userRepo->createQueryBuilder('u');
-       $userRepo->whereRole($ub,'ROLE_PRO');
-        $listEnabledPros = $ub->andWhere('u.confirmationToken is NULL')
-                       ->andWhere('u.enabled = true')->getQuery()->getResult(); 
-
         $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO');
+        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
+
+        $listEnabledPros = $ub->andWhere('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = true')
+            ->orderBy('u.name','ASC')
+            ->getQuery()->getResult(); 
+
+        //blocked pros who the current user is referent of 
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
         $listBlockedPros = $ub->andWhere('u.confirmationToken is NULL')
             ->andWhere('u.enabled = false')
             ->andWhere('u.lastLogin is not NULL')
-            ->join('u.referents','r')
-            ->andWhere('r.id = :id')
-            ->setParameter('id',$this->getUser()->getID())
+            ->orderBy('u.name','ASC')
             ->getQuery()->getResult(); 
 
         $validatedPros->enabledPros = $listEnabledPros;
         $validatedPros->blockedPros = $listBlockedPros;
 
+        //never validated pros who the current user is referent of 
+        $pendingUsers = new \stdClass();
         $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO');
-        $pendingPros = $ub->andWhere('u.confirmationToken is NULL')
+        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
+        $pendingUsers->pros = $ub->andWhere('u.confirmationToken is NULL')
             ->andWhere('u.enabled = false')
             ->andWhere('u.lastLogin is NULL')
-            ->join('u.referents','r')
-            ->andWhere('r.id = :id')
-            ->setParameter('id',$this->getUser()->getID())
+            ->orderBy('u.name','ASC')
             ->getQuery()->getResult(); 
 
+        //blocked admins who the current user is referent of 
         $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereRole($ub,'ROLE_ADMIN')->whereReferent($ub, $currentUserID);
+        $pendingUsers->admins = $ub->andWhere('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = false')
+            ->orderBy('u.name','ASC')
+            ->getQuery()->getResult(); 
+
+        //all members waiting for a card who the current user is referent of 
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereReferent($ub, $currentUserID);
         $pendingCards = $ub
-            ->where('u.confirmationToken is NULL')
+            ->andWhere('u.confirmationToken is NULL')
             ->andWhere('u.enabled = true')
             ->join('u.card','c')
             ->andWhere('c.fields is NULL')
-            ->join('u.referents','r')
-            ->andWhere('r.id = :id')
-            ->setParameter('id',$this->getUser()->getID())
-            //>addSelect('c')
+            ->orderBy('u.name','ASC')
             ->getQuery()->getResult(); 
 
+        //all ROLE_ADMIN
         $userRepo->whereRole($ub,'ROLE_ADMIN');
-        $listAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
+        $listAdmins = $ub->andWhere('u.confirmationToken is NULL')
+            ->andWhere('u.enabled = true')
+            ->orderBy('u.name','ASC')
+            ->getQuery()->getResult(); 
 
+        //all ROLE_SUPER_ADMIN
         $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
-        $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')->getQuery()->getResult(); 
+        $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')
+            ->orderBy('u.name','ASC')
+            ->getQuery()->getResult(); 
 
         $allUsers = array(
             'validPros'=>$validatedPros, 
-            'pendingPros'=>$pendingPros,
+            'pendingUsers'=>$pendingUsers,
             'pendingCards'=>$pendingCards,
             'listAdmins'=>$listAdmins,
             'listSuperAdmins'=>$listSuperAdmins
-            );
+        );
 
         if($_format == 'json'){
             return $this->json($allUsers);
@@ -595,7 +613,7 @@ class UserController extends Controller
                         $session->getFlashBag()->add('error','Votre compte a été bloqué');
                         return $this->redirectToRoute('fos_user_security_logout');
                     }
-        
+
                     if($currentUser->getPasswordTries() != 0) {
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
                         return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
