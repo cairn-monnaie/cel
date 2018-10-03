@@ -67,7 +67,9 @@ class UserValidator extends ConstraintValidator
                 ->atPath('plainPassword')
                 ->addViolation();
         }
-        if(preg_match('#'.$user->getPlainPassword().'#', $user->getUsername())){
+
+        //we use tildes and not hashes because hashes can be used to generate a random password
+        if(preg_match('~'.$user->getPlainPassword().'~', $user->getUsername())){
             $this->context->buildViolation('Le mot de passe ne peut pas être contenu dans le pseudo.')
                 ->atPath('plainPassword')
                 ->addViolation();
