@@ -1,0 +1,7 @@
+# src/Cairn/UserBundle/Resources/config/validation.yml
+
+Cairn\UserBundle\Entity\User:
+    properties:
+        plainPassword:
+            - Cairn\UserBundle\Validator\Password: ~
+
