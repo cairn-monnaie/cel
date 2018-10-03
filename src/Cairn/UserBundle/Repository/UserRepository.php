@@ -24,9 +24,9 @@ class UserRepository extends EntityRepository
             ->setMaxResults(1);
 
         $result = $qb->getQuery()->getOneOrNullResult();
-//        if(!$result){
-//            $result = $this->findAdminWithCity('Grenoble');
-//        }
+        //        if(!$result){
+        //            $result = $this->findAdminWithCity('Grenoble');
+        //        }
         return $result;
     }
 
@@ -43,9 +43,20 @@ class UserRepository extends EntityRepository
         return $qb->getQuery()->getResult();                                   
     }                                                                          
 
+    public function whereReferent(QueryBuilder $qb, $userID)
+    {
+        $qb->join('u.referents','r')
+            ->andWhere('r.id = :id')                                           
+            ->setParameter('id',$userID);
+        return $this;
+
+    }
+
+
     public function whereRole(QueryBuilder $qb, $role)
     {
         $qb->andWhere('u.roles LIKE :roles') 
             ->setParameter('roles','%"'.$role.'"%');
+        return $this;
     }
 }

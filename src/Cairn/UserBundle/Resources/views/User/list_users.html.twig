@@ -19,16 +19,53 @@
         </ul>
     {% endif %}
     <div>
-        <h2> Les professionnels </h2>
+
+        <h2> les membres en attente de carte </h2>
         <ul>
-            {% for user in listPros %}
+            {% for user in pendingCards %}
                <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
             {% else %}  
-                Pas <em>encore</em> de professionel inscrit !
+                pas <em>encore</em> de membre en attente de carte !
             {% endfor %}
         </ul>
 
-         <h2> Les groupes locaux </h2>
+        <h2> les professionnels validés</h2>
+        <ul>
+            {% for user in validPros.enabledPros %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                pas <em>encore</em> de professionel inscrit !
+            {% endfor %}
+        </ul>
+
+        <h2> les professionnels bloqués</h2>
+        <ul>
+            {% for user in validPros.blockedPros %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                pas  de professionel bloqué !
+            {% endfor %}
+        </ul>
+
+        <h2> les membres en attente de validation</h2>
+            <h3> Les professionnels </h3>
+            <ul>
+                {% for user in pendingUsers.pros %}
+                   <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+                {% else %}  
+                    pas <em>encore</em> de professionel en attente !
+                {% endfor %}
+            </ul>
+            <h3> Les groupes locaux </h3>
+            <ul>
+                {% for user in pendingUsers.admins %}
+                   <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+                {% else %}  
+                    pas <em>encore</em> de groupe local en attente !
+                {% endfor %}
+            </ul>
+
+         <h2> Les groupes locaux valides </h2>
          <ul>
             {% for user in listAdmins %}
                <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
