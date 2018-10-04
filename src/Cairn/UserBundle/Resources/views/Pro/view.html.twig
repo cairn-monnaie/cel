@@ -40,16 +40,15 @@
                 <strong> Le groupe local référent de {{user.name}} </strong>
                 {% set adminReferent = user.getLocalGroupReferent() %}
 
-                {% if adminReferent is null %}
-                    <em> Aucun groupe local référent ! </em>
-                    <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
-                {% else %}
-                    <em> {{adminReferent.name}} </em>
-                    <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
-                {% endif %}    
-                </br>
-                
-
+                {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
+                    {% if adminReferent is null %}
+                        <em> Aucun groupe local référent ! </em>
+                        <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
+                    {% else %}
+                        <em> {{adminReferent.name}} </em>
+                        <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
+                    {% endif %}    
+                {% endif %}
             </div>
         {% endif %}
 
