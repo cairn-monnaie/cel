@@ -6,6 +6,13 @@ Digital Cairn
  * git
  * docker
 # Install
+
+ Throughout this document, some notations will be used and need to be defined :
+
+   * xxx : fill with whatever you want, it will not be needed later on 
+   * **_$variable_** : line that you need to enter or customize,  it will be reused later on
+   * **_%variable%_** : line already entered previously in the tutorial
+
 ## Download Sources
 
    `git clone https://github.com/cairn-monnaie/CairnB2B.git`
@@ -24,17 +31,12 @@ Digital Cairn
 
 
 ## Configure a Cyclos instance
- From now on, some notations will be used and need to be defined :
-
-   * xxx : fill with whatever you want, it will not be needed later on 
-   * **_$variable_** : line that you need to enter or customize,  it will be reused later on
-   * **_%variable%_** : corresponds to a line already entered previously in the tutorial
 
  1. Reach your cyclos instance at example.com:1234 (the first time, it can take several minutes to start)
  2. **Cyclos license server authentication**
 
-     * Login name : **_$license-login_**(provided while registering a cyclos license)
-     * Password : **_$license-password_**(provided while registering a cyclos license)
+     * Login name : **_%license-login%_**(provided while registering a cyclos license)
+     * Password : **_%license-password%_**(provided while registering a cyclos license)
      * Click next
  3. **Basic configuration**
 
@@ -150,9 +152,9 @@ Digital Cairn
  20. **Configure a transfer type from an existing account type**
 
      _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
-     * Click on $user_account(defined in step 10)
+     * Click on **_%user-account%_** (defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
-     * Click on the first transfer type (from $user_account to **_$debit-account_**)
+     * Click on the first transfer type (from **_%user-account%_** to **_%debit-account%_**)
      * Enabled : check
      * Channels : check main web + web services + Mobile app
      * Allow recurring payments : check
@@ -160,8 +162,8 @@ Digital Cairn
      * Max installments on scheduled payments : 1
      * Click save
  
- 21. **Repeat step 20 for all transfer types in _$user-account_ account type**
- 22. **Repeat step 20 and 21 for all account types (_$debit-account_ / _$system-account_)**
+ 21. **Repeat step 20 for all transfer types in _%user-account%_ account type**
+ 22. **Repeat step 20 and 21 for all account types (_%debit-account%_ / _%system-account%_)**
 
  23. **Configure group of members**
 
@@ -171,14 +173,14 @@ Digital Cairn
      * Name : **_$network-group-members_** (by default Users)
      * Click save
 
- 24. **Configure the Product associated with user Account Type $user\_account**
+ 24. **Configure the Product associated with user Account Type %_user-account%_**
 
-     _Access : System(top tab) / User Configuration(bold in left menu) / Products_
+     _Access : System(top tab) / User Configuration(bold in left menu) / Products
      * Click on the only product (Members)
-     * Name : fill with **_$user-account_** name
-     * Internal name : fil with **_$user-account_** internal name
+     * Name : fill with **_%user-account%_** name
+     * Internal name : fil with **_%user-account%_** internal name
      * Accounts 
-        * User account : must contain **_$user-account_**
+        * User account : must contain **_%user-account%_**
         * Default negative balance limit :  refill with 0 (sign "-" must be visible)
         * system payments : check all
         * user payments : check all
@@ -188,7 +190,7 @@ Digital Cairn
  25. **Check product's assignation to Member group**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
-     * click on  **_$network-group-members_** (defined in step 23)
+     * click on  **_%network-group-members%_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
  26. **Configure Global Administration's channels** 
@@ -238,6 +240,29 @@ Digital Cairn
 ## Install symfony project
  * `composer install`
 
+ * **Provide global parameters**
+
+   During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
+
+   `sudo php $PATH/composer.phar update`
+
+     * cyclos_group_pros: **_%network-group-members%_** (step 23)
+     * cyclos_group_network_admins: **_%network-group-admins%_** (step 19) 
+     * cyclos_group_global_admins: **_%global-group-admins%_** (step 28)
+     * cyclos_network_cairn: **_%network-name%_** (step 5)
+     * cyclos_currency_cairn: **_%currency-name%_** (step 8)
+     * cyclos_global_admin_username: **_%admin-login%_** (step 4)
+     * cyclos_global_admin_password: **_%admin-password%_** (step 4)
+     * cyclos_global_admin_email: **_%admin-email%_** (step 4)
+     * cyclos_root_prod_url: 'www.example.com:1234/'
+
+ * **Create SQL User and grant permissions**
+    The created user will have access merely to the database **_%database-name%_**
+    * `mysql -u root -p`
+    * `CREATE USER '%sql-username%'@'localhost' IDENTIFIED BY '%sql-password%';`
+    * `GRANT ALL PRIVILEGES ON **_%database-name%_** . * TO '%sql-username%'@'localhost';`
+    * `FLUSH PRIVILEGES;`
+
  * **Create Symfony database**
     
     Initialize the database with entities
@@ -247,21 +272,6 @@ Digital Cairn
     Import cities with respective zipcodes in Isère (French department). Change entries according to your localization
     * `php bin/console doctrine:database:import web/zipcities.sql`
 
- * **Provide global parameters**
-
-   During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
-
-   `sudo php $PATH/composer.phar update`
-
-     * cyclos_group_pros: **_$network-group-members_** (step 23)
-     * cyclos_group_network_admins: **_$network-group-admins_** (step 19) 
-     * cyclos_group_global_admins: **_$global-group-admins_** (step 28)
-     * cyclos_network_cairn: **_$network-name_** (step 5)
-     * cyclos_currency_cairn: **_$currency-name_** (step 8)
-     * cyclos_global_admin_username: **_$admin-login_** (step 4)
-     * cyclos_global_admin_password: **_$admin-password_** (step 4)
-     * cyclos_global_admin_email: **_$admin-email_** (step 4)
-     * cyclos_root_prod_url: 'www.example.com:1234/'
 
  * **Create initial administrator**
      * visit "example.com/install". 
@@ -269,6 +279,6 @@ Digital Cairn
      
  * **Access application with admin credentials**
      * visit "example.com/login"
-     * login with installed admin credientials **_$admin-login_** and **_$admin-password_** and start browsing !  
+     * login with installed admin credientials **_%admin-login%_** and **_%admin-password%_** and start browsing !  
 
 ## Testing ##
