@@ -25,9 +25,16 @@ class Address
     /**
      * @var string
      *
-     * @ORM\Column(name="street", type="string", length=255)
+     * @ORM\Column(name="street1", type="string", length=255)
      */
-    private $street;
+    private $street1;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="street2", type="string", length=255, nullable = true)
+     */
+    private $street2;
 
     /**
      * @var Cairn\UserBundle\Entity\ZipCity
@@ -54,15 +61,15 @@ class Address
     }
 
     /**
-     * Set street
+     * Set street1
      *
      * @param string $street
      *
      * @return Address
      */
-    public function setStreet($street)
+    public function setStreet1($street)
     {
-        $this->street = $street;
+        $this->street1 = $street;
 
         return $this;
     }
@@ -72,11 +79,35 @@ class Address
      *
      * @return string
      */
-    public function getStreet()
+    public function getStreet1()
     {
-        return $this->street;
+        return $this->street1;
     }
 
+
+    /**
+     * Set street2
+     *
+     * @param string $street
+     *
+     * @return Address
+     */
+    public function setStreet2($street)
+    {
+        $this->street2 = $street;
+
+        return $this;
+    }
+
+    /**
+     * Get street
+     *
+     * @return string
+     */
+    public function getStreet2()
+    {
+        return $this->street2;
+    }
 
     /**
      * Set user

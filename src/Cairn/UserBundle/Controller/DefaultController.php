@@ -85,7 +85,7 @@ class DefaultController extends Controller
             $zip = $em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('zipCode'=>'38000','city'=>'Grenoble'));
             $address = new Address();
             $address->setZipCity($zip);
-            $address->setStreet('7 rue Très Cloître');
+            $address->setStreet1('7 rue Très Cloître');
 
             $new_admin->setAddress($address);
             $new_admin->setDescription('main user admin for app');

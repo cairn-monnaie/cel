@@ -22,7 +22,9 @@ class AddressType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('street', TextType::class)
+        $builder
+            ->add('street1', TextType::class)
+            ->add('street2', TextType::class)
             ->add('zipCity', EntityType::class, array(
                                                      'class'=>ZipCity::class,
                                                      'query_builder' => function (EntityRepository $er) {
