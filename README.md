@@ -244,21 +244,21 @@ Digital Cairn
 
    During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
 
-   `sudo php $PATH/composer.phar update`
+   `php $PATH/composer.phar update`
 
      * database_host: 127.0.0.1
      * database_port: null
-     * database_name: %database-name%
-     * database_test_name: $database-test-name
-     * database_user: %sql-username%
-     * database_password: %sql-password%
+     * database_name: **_%database-name%_**
+     * database_test_name: **_$database-test-name_**
+     * database_user: **_%sql-username%_**
+     * database_password: **_%sql-password%_**
      * mailer_transport: smtp
      * mailer_host: 127.0.0.1
      * mailer_user: xxx (e.g admin@localhost.fr)
      * mailer_port: xxx
      * mailer_password: xxx
      * secret: ThisTokenIsNotSoSecretChangeIt
-     * cairn_email_noreply: xxx
+     * cairn_email_noreply: xxx (e.g noreply@localhost.fr)
      * cyclos_group_pros: **_%network-group-members%_** (step 23)
      * cyclos_group_network_admins: **_%network-group-admins%_** (step 19) 
      * cyclos_group_global_admins: **_%global-group-admins%_** (step 28)
@@ -292,8 +292,8 @@ Digital Cairn
  * **Create Symfony database**
     
     Initialize the database with entities
-    * `sudo php bin/console doctrine:database:create`
-    * `sudo php bin/console doctrine:schema:update --force`
+    * `php bin/console doctrine:database:create`
+    * `php bin/console doctrine:schema:update --force`
 
     Import cities with respective zipcodes in Isère (French department). Change entries according to your localization
     * `php bin/console doctrine:database:import web/zipcities.sql`
