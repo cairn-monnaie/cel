@@ -68,12 +68,12 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        //we use tildes and not hashes because hashes can be used to generate a random password
-        if(preg_match('~'.$user->getPlainPassword().'~', $user->getUsername())){
-            $this->context->buildViolation('Le mot de passe ne peut pas être contenu dans le pseudo.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
+//        //we use tildes and not hashes because hashes can be used to generate a random password
+//        if(preg_match('~'.$user->getPlainPassword().'~', $user->getUsername())){
+//            $this->context->buildViolation('Le mot de passe ne peut pas être contenu dans le pseudo.')
+//                ->atPath('plainPassword')
+//                ->addViolation();
+//        }
         if(strlen($user->getPlainPassword()) > 25){
             $this->context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
                 ->atPath('plainPassword')
