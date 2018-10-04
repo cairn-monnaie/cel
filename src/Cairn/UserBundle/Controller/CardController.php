@@ -218,7 +218,7 @@ class CardController extends Controller
                     }
                     else{
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return $this->redirectToRoute('cairn_user_card_new',array('_format'=>$_format,'id'=>$user->getID()));
+                        return new RedirectResponse($request->getRequestUri());
                     }
                 }
                 else{
@@ -302,7 +302,7 @@ class CardController extends Controller
                     }
                     else{
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return $this->redirectToRoute('cairn_user_card_revoke',array('_format'=>$_format,'id'=>$user->getID()));
+                        return new RedirectResponse($request->getRequestUri()); 
                     }
                 }
                 else{
@@ -376,7 +376,7 @@ class CardController extends Controller
                 }
                 else{
                     $session->getFlashBag()->add('error','Clé invalide. Veuillez réessayer');
-                    return $this->redirectToRoute('cairn_user_card_validate',array('_format'=>$_format));
+                    return new RedirectResponse($request->getRequestUri());
                 }
             }
         }

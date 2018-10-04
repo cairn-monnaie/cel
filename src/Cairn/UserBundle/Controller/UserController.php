@@ -21,6 +21,7 @@ use Cairn\UserCyclosBundle\Entity\ScriptManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -231,7 +232,7 @@ class UserController extends Controller
 
             if($currentUser->getPasswordTries() != 0) {
                 $session->getFlashBag()->add('error','Mot de passe invalide. Attention, au bout de 3 essais, le compte sera bloqué');
-                return $this->redirectToRoute('cairn_user_password_change');
+                return new RedirectResponse($request->getRequestUri());
             } 
 
             if($form->isValid()){
@@ -243,7 +244,8 @@ class UserController extends Controller
                     foreach($listErrors as $error){
                         $session->getFlashBag()->add('error',$error->getMessage());
                     }
-                    return $this->redirectToRoute('cairn_user_password_change');
+                    return new RedirectResponse($request->getRequestUri());
+
                 }
 
                 $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
@@ -375,14 +377,15 @@ class UserController extends Controller
                         $user = $userRepo->findOneBy(array('name'=>$matches_name[0][0]));
                         if(!$user){
                             $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
-                            $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
+                            return new RedirectResponse($request->getRequestUri());
+
                         }
                     }
                     else{
                         if($user->getID() == $currentUser->getID())
                         {
                             $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                            return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
+                            return new RedirectResponse($request->getRequestUri());
                         }
                         $ICC = $matches_ICC[0][0];
                         //check that ICC exists and corresponds to this user
@@ -390,7 +393,8 @@ class UserController extends Controller
                         $validity = $this->isValidBeneficiary($user,$ICC);
                         if(!$validity->account){
                             $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                            return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
+                            return new RedirectResponse($request->getRequestUri());
+
                         }
 
                         //check that beneficiary is not already in database, o.w create new one
@@ -420,7 +424,7 @@ class UserController extends Controller
                 }
                 else{
                     $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_add', array('_format'=>$_format));
+                    return new RedirectResponse($request->getRequestUri());
                 }       
 
             }
@@ -466,7 +470,7 @@ class UserController extends Controller
                 $validity = $this->isValidBeneficiary($newBeneficiary->getUser(),$newBeneficiary->getICC());
                 if(!$validity->account){
                     $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$newBeneficiary->getUser()->getName());
-                    return $this->redirectToRoute('cairn_user_beneficiaries_edit',array('id'=>$beneficiary->getID(),'_format'=>$_format));
+                    return new RedirectResponse($request->getRequestUri());
                 }
                 if($validity->hasBeneficiary){
                     $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');

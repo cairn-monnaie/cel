@@ -17,6 +17,7 @@ use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\RegistrationType;
 
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 

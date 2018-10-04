@@ -512,13 +512,13 @@ class BankingController extends Controller
 
                 if(!$fromAccount){
                     $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                    return $this->redirectToRoute($request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,'USER_TO_SYSTEM',$amount,'unique',$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);
-                    return $this->redirectToRoute($request->getRequestUri());
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 $session->set('paymentReview',$review);
@@ -1544,8 +1544,7 @@ class BankingController extends Controller
                     $this->get('cairn_user.datetime_checker')->isValidInterval($begin,$end);
                 }catch(\Exception $e){
                     $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
-                    return $this->redirectToRoute('cairn_user_banking_accounts_overview_download',array('format'=>$format));
-
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
                 if($begin){
