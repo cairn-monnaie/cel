@@ -37,6 +37,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;                     
 use Symfony\Component\Form\Extension\Core\Type\NumberType;                     
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -554,7 +555,8 @@ class BankingController extends Controller
         $involvedAccounts = array();
 
         $formUser = $this->createFormBuilder()
-            ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
+            ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
+            ->add('email', TextType::class,array('label'=>'Email','required'=>false))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
@@ -566,27 +568,32 @@ class BankingController extends Controller
 
             $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
             $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
-        }
-
-        if(($currentUser->hasRole('ROLE_SUPER_ADMIN')) || ($currentUser->hasRole('ROLE_ADMIN'))){
+            $session->set('userToCredit',$userToCreditVO);
+        }else{
             if($to == 'self'){
                 $direction = 'SYSTEM_TO_SYSTEM';
                 $userToCredit = $currentUser;
                 $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
                 $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
+                $session->set('userToCredit',$userToCreditVO);
             }
             elseif($to == 'other'){
                 $direction = 'SYSTEM_TO_USER';
                 $formUser->handleRequest($request);
                 if($formUser->isSubmitted() && $formUser->isValid()){
                     $data = $formUser->getData();
-                    $userToCredit = $userRepo->findOneBy(array('name'=>$data['name']));
+                    $userToCredit = $userRepo->findOneBy(array('email'=>$data['email']));
                     if(!$userToCredit){
-                        $session->getFlashBag()->add('error','Aucun professionnel trouvé');
-                        return $this->redirectToRoute('cairn_user_banking_conversion_request',array('to'=>$to));
+                        $userToCredit = $userRepo->findOneBy(array('username'=>$data['username']));
+                        if(!$userToCredit){
+                            $session->getFlashBag()->add('error','Aucun professionnel trouvé');
+                            return new RedirectResponse($request->getRequestUri());
+                        }
                     }
                     $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
                     $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
+                    $session->set('userToCredit',$userToCreditVO);
+
                     return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts,'to'=>$to));
 
                 }
@@ -603,8 +610,15 @@ class BankingController extends Controller
             $fromAccount = $debitAccount; 
 
             $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+            $userToCreditVO = $session->get('userToCredit');
+            if(!$userToCreditVO){
+                $session->getFlashBag()->add('error','Passez par le formulaire de sélection du membre');
+                return new RedirectResponse($request->getRequestUri());
+            }
 
-            if(($userToCredit===$currentUser) && !$accountService->hasAccount($currentUserVO->id,$dataForm['toAccount']['id'])){
+            if(($userToCreditVO->id === $currentUser->getCyclosID()) && 
+                !$accountService->hasAccount($currentUserVO->id,$dataForm['toAccount']['id'])){
+
                 $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                 return new RedirectResponse($request->getRequestUri());
             }
@@ -659,7 +673,8 @@ class BankingController extends Controller
         $transaction->setFromAccount(json_decode(json_encode($debitAccount),true));
 
         $formUser = $this->createFormBuilder()
-            ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
+            ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
+            ->add('email', EmailType::class,array('label'=>'Email','required'=>false))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
@@ -668,16 +683,18 @@ class BankingController extends Controller
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
             $data = $formUser->getData();
-            $userToCredit = $userRepo->findOneBy(array('name'=>$data['name']));
+            $userToCredit = $userRepo->findOneBy(array('email'=>$data['email']));
             if(!$userToCredit){
-                $session->getFlashBag()->add('error','Aucun professionnel trouvé');
-                return $this->redirectToRoute('cairn_user_banking_deposit_request');
+                $userToCredit = $userRepo->findOneBy(array('username'=>$data['username']));
+                if(!$userToCredit){
+                    $session->getFlashBag()->add('error','Aucun professionnel trouvé');
+                    return new RedirectResponse($request->getRequestUri());
+                }
             }
             $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
 
             $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
             return $this->render('CairnUserBundle:Banking:deposit.html.twig',array('formUser'=>$formUser->createView(),'formDeposit'=>$formDeposit->createView(),'accounts'=>$involvedAccounts));
-
         }
 
         $formDeposit->handleRequest($request);
@@ -744,7 +761,8 @@ class BankingController extends Controller
         $transaction->setToAccount(json_decode(json_encode($debitAccount),true));
 
         $formUser = $this->createFormBuilder()
-            ->add('name', TextType::class,array('label'=>'Nom du professionnel'))
+            ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
+            ->add('email', EmailType::class,array('label'=>'Email','required'=>false))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
@@ -753,10 +771,13 @@ class BankingController extends Controller
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
             $data = $formUser->getData();
-            $userToDebit = $userRepo->findOneBy(array('name'=>$data['name']));
+            $userToDebit = $userRepo->findOneBy(array('email'=>$data['email']));
             if(!$userToDebit){
-                $session->getFlashBag()->add('error','Aucun professionnel trouvé');
-                return new RedirectResponse($request->getRequestUri());
+                $userToDebit = $userRepo->findOneBy(array('username'=>$data['username']));
+                if(!$userToDebit){
+                    $session->getFlashBag()->add('error','Aucun professionnel trouvé');
+                    return new RedirectResponse($request->getRequestUri());
+                }
             }
             $userToDebitVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToDebit);
 
