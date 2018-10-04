@@ -27,7 +27,8 @@ Digital Cairn
  From now on, some notations will be used and need to be defined :
 
    * xxx : fill with whatever you want, it will not be needed later on 
-   * **_$variable_** : fill it with whatever you want, it will be reused later on
+   * **_$variable_** : line that you need to enter or customize,  it will be reused later on
+   * **_%variable%_** : corresponds to a line already entered previously in the tutorial
 
  1. Reach your cyclos instance at example.com:1234 (the first time, it can take several minutes to start)
  2. **Cyclos license server authentication**
