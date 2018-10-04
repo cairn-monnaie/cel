@@ -246,6 +246,19 @@ Digital Cairn
 
    `sudo php $PATH/composer.phar update`
 
+     * database_host: 127.0.0.1
+     * database_port: null
+     * database_name: %database-name%
+     * database_test_name: $database-test-name
+     * database_user: %sql-username%
+     * database_password: %sql-password%
+     * mailer_transport: smtp
+     * mailer_host: 127.0.0.1
+     * mailer_user: xxx (e.g admin@localhost.fr)
+     * mailer_port: xxx
+     * mailer_password: xxx
+     * secret: ThisTokenIsNotSoSecretChangeIt
+     * cairn_email_noreply: xxx
      * cyclos_group_pros: **_%network-group-members%_** (step 23)
      * cyclos_group_network_admins: **_%network-group-admins%_** (step 19) 
      * cyclos_group_global_admins: **_%global-group-admins%_** (step 28)
@@ -254,13 +267,26 @@ Digital Cairn
      * cyclos_global_admin_username: **_%admin-login%_** (step 4)
      * cyclos_global_admin_password: **_%admin-password%_** (step 4)
      * cyclos_global_admin_email: **_%admin-email%_** (step 4)
-     * cyclos_root_prod_url: 'www.example.com:1234/'
+     * cairn_card_rows: xxx (e.g 5)
+     * cairn_card_cols: xxx (e.g 5)
+     * cairn_email_technical_services: xxx (e.g services@localhost.fr)
+     * cyclos_root_prod_url: 'http://example.com:1234/'
+     * cyclos_root_test_url: 'http://example.com:1235/'
+     * card_activation_delay: xxx (e.g 10)
+     * cairn_default_conversion_description: xxx (e.g 'Conversion euros-cairns')
+     * cairn_default_withdrawal_description: xxx (e.g 'Withdrawal cairns')
+     * cairn_default_deposit_description: xxx  (e.g 'Deposit cairns')
+     * cairn_default_reconversion_description: xxx (e.g 'Reconversion cairns-euros')
+     * cairn_default_transaction_description: xxx (e.g 'Virement Cairn')
+     * cairn_email_activation_delay: xxx (e.g 10)
+
 
  * **Create SQL User and grant permissions**
     The created user will have access merely to the database **_%database-name%_**
     * `mysql -u root -p`
     * `CREATE USER '%sql-username%'@'localhost' IDENTIFIED BY '%sql-password%';`
-    * `GRANT ALL PRIVILEGES ON **_%database-name%_** . * TO '%sql-username%'@'localhost';`
+    * `GRANT ALL PRIVILEGES ON '%database-name%' . * TO '%sql-username%'@'localhost';`
+    * `GRANT ALL PRIVILEGES ON '%database-test-name%' . * TO '%sql-username%'@'localhost';`
     * `FLUSH PRIVILEGES;`
 
  * **Create Symfony database**
@@ -271,7 +297,6 @@ Digital Cairn
 
     Import cities with respective zipcodes in Isère (French department). Change entries according to your localization
     * `php bin/console doctrine:database:import web/zipcities.sql`
-
 
  * **Create initial administrator**
      * visit "example.com/install". 
