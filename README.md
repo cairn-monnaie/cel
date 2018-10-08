@@ -223,6 +223,7 @@ Digital Cairn
      * password length :  8 to 25 
      * Disallow obvious password :  check
      * Avoid repeated passwords : check
+     * Expires after : 100 years (we don't deal with password expiration)
      * Click save
  28. **Configure group of global administrators**
 
