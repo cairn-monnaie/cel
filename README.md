@@ -241,6 +241,14 @@ Digital Cairn
 ## Install symfony project
  * `composer install`
 
+ * **Create SQL User and grant permissions on prod-dev/test databases**
+    The created user will have access merely to the application databases
+    * `mysql -u root -p`
+    * `CREATE USER '$sql-username'@'localhost' IDENTIFIED BY '$sql-password';`
+    * `GRANT ALL PRIVILEGES ON '$database-name' . * TO '%sql-username%'@'localhost';`
+    * `GRANT ALL PRIVILEGES ON '$database-test-name' . * TO '%sql-username%'@'localhost';`
+    * `FLUSH PRIVILEGES;`
+
  * **Provide global parameters**
 
    During this step, you will provide some global parameters that the application needs. Be careful, you will need data provided during cyclos installation steps
@@ -250,7 +258,7 @@ Digital Cairn
      * database_host: 127.0.0.1
      * database_port: null
      * database_name: **_%database-name%_**
-     * database_test_name: **_$database-test-name_**
+     * database_test_name: **_%database-test-name%_**
      * database_user: **_%sql-username%_**
      * database_password: **_%sql-password%_**
      * mailer_transport: smtp
@@ -281,14 +289,6 @@ Digital Cairn
      * cairn_default_transaction_description: xxx (e.g 'Virement Cairn')
      * cairn_email_activation_delay: xxx (e.g 10)
 
-
- * **Create SQL User and grant permissions**
-    The created user will have access merely to the database **_%database-name%_**
-    * `mysql -u root -p`
-    * `CREATE USER '%sql-username%'@'localhost' IDENTIFIED BY '%sql-password%';`
-    * `GRANT ALL PRIVILEGES ON '%database-name%' . * TO '%sql-username%'@'localhost';`
-    * `GRANT ALL PRIVILEGES ON '%database-test-name%' . * TO '%sql-username%'@'localhost';`
-    * `FLUSH PRIVILEGES;`
 
  * **Create Symfony database**
     
