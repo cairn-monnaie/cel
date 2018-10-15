@@ -23,7 +23,7 @@ DTO_members.setGroup(res_members[0]) ;
 DTO_members.setProcessAutomatically(true);
 DTO_members.setFileName('./test_members.csv'); 
 
-return importService.upload(DTO_members,stream_members);
+importService.upload(DTO_members,stream_members);
 
 //import admins : does not work
 //for now(cyclos 4.10.3) we can only import users in MEMBER_GROUP nature groups
@@ -41,10 +41,10 @@ return importService.upload(DTO_members,stream_members);
 //importService.upload(DTO_admins,stream_admins);
 
 //import simple payments
-File file_payments = new File('./test_simple_payments.csv'); 
-SerializableInputStream stream_payments = new SerializableInputStream(file_payments);
-
-PaymentImportedFileDTO DTO_payments = new PaymentImportedFileDTO() ;
-
-DTO_payments.setFileName('./test_simple_payments.csv'); 
-importService.upload(DTO_payments, stream_payments) ;
+//File file_payments = new File('./test_simple_payments.csv'); 
+//SerializableInputStream stream_payments = new SerializableInputStream(file_payments);
+//
+//PaymentImportedFileDTO DTO_payments = new PaymentImportedFileDTO() ;
+//
+//DTO_payments.setFileName('./test_simple_payments.csv'); 
+//importService.upload(DTO_payments, stream_payments) ;

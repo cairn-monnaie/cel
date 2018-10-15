@@ -5,9 +5,11 @@ namespace Tests\UserBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
 use Cairn\UserCyclosBundle\Entity\UserManager;
+use Cairn\UserCyclosBundle\Entity\ProductManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Address;
+
 
 use Cyclos;
 
@@ -17,56 +19,61 @@ class BaseControllerTest extends WebTestCase
     protected $container;
     protected $scriptManager;
     protected $userManager;
+    protected $productManager;
 
     protected $em;
 
     public function __construct()
     {
-        $this->client = static::createClient();
-        $this->container = $this->client->getContainer();
-        $this->scriptManager = new ScriptManager();
-        $this->userManager = new UserManager();
+      parent::__construct();
+      $this->client = static::createClient();
+//        $this->client->catchExceptions(false);
+      $this->container = $this->client->getContainer();
+      $this->scriptManager = new ScriptManager();
+      $this->userManager = new UserManager();
+      $this->productManager = new ProductManager();
 
-        $crawler = $this->client->request('GET','/install/');
-
+      $crawler = $this->client->request('GET','/install/');
+        $this->login('mazouthm','admin');
 
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         //generate doctrine users or not
         $this->em = $this->container->get('doctrine')->getManager();                          
-
+        
         $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
 
         if(!$user){
+            $memberGroupName = $this->container->getParameter('cyclos_group_pros');
+            $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
+
             $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_test_db.groovy',false));
 
             $nb = 0;
             while($nb != 5){ //delay between running script and database update
-                $memberGroupName = $this->container->getParameter('cyclos_group_pros');
-                $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
 
-                $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
-                $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
+              $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
+              $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
 
-                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
-                $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
+              $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+              $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
 
-                $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
-                $nb = count($cyclosUsers);
-            }
+              $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
+              $nb = count($cyclosUsers);
+          }
 
             foreach($cyclosAdmins as $cyclosAdmin){
                 $this->createUser($cyclosAdmin);
             }
 
-            $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
-            foreach($cyclosMembers as $cyclosMember){
-                $this->createUser($cyclosMember,$superAdmin);
-            }
+          $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
+          foreach($cyclosMembers as $cyclosMember){
+              $this->createUser($cyclosMember,$superAdmin);
+          }
 
             $this->em->flush();
 
-        }
+      }
     }
 
     public function createUser($cyclosUser, $superAdmin)
@@ -94,7 +101,7 @@ class BaseControllerTest extends WebTestCase
         $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('city'=>$cyclosAddress->city));
         $address = new Address();                                          
         $address->setZipCity($zip);                                        
-        $address->setStreet('10 rue de la Ciotat');
+        $address->setStreet1('10 rue de la Ciotat');
 
         $doctrineUser->setAddress($address);                                  
         $doctrineUser->setDescription('Test user blablablabla');             
@@ -140,12 +147,5 @@ class BaseControllerTest extends WebTestCase
         $crawler = $this->client->submit($form);
     }
 
-//    public function provideUsers()
-//    {
-//        return array(
-//            array('glGrenoble','@@bbccdd'),
-//            array('MaltOBar','@@bbccdd')
-//        );
-//    }
 
 }
