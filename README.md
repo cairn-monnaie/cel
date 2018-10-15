@@ -307,4 +307,23 @@ Digital Cairn
      * visit "example.com/login"
      * login with installed admin credientials **_%admin-login%_** and **_%admin-password%_** and start browsing !  
 
-## Testing ##
+# Testing #
+## Install ##
+ * **Install docker images**
+    * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclos cyclos/db`
+    * `docker run -d --name=cyclos-test-app -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclos cyclos/cyclos`
+
+ * **Install Symfony test database**
+    * `php bin/console doctrine:database:create --env=test`
+    * `php bin/console doctrine:schema:update --env=test --force`
+    * `php bin/console doctrine:database:import --env=test web/zipcities.sql`
+
+ * **Inject into docker data that to be imported in Cyclos database**
+    * `docker cp tests/test_members.csv cyclos-test-app:/usr/local/cyclos/`
+    * `docker cp tests/test_simple_payment.csv cyclos-test-app:/usr/local/cyclos/`
+
+ * **Restore the database from the backup dump file**
+    * `docker exec -u postgres -i cyclos-db-test psql --user cyclos cyclos < ./tests/cyclos-dump.sql`
+
+## Launch ##
+    * `./make-test.sh`
