@@ -17,11 +17,11 @@ php bin/console doctrine:database:import --env=test web/zipcities.sql
 #docker run -d --name=cyclos-test-app -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclos cyclos/cyclos                                                    
 #
 echo "$(tput setaf 3)Copy CSV file with members into docker container$(tput sgr 0)"
-docker cp tests/test_members.csv cyclos-test-app:/usr/local/cyclos/            
+docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/            
 echo "$(tput setaf 2)CSV file copied"
 ###docker cp tests/test_admins.csv cyclos-test-app:/usr/local/cyclos/            
 echo "$(tput setaf 3)Copy CSV file with payments into docker container$(tput sgr 0)"
-docker cp tests/test_simple_payments.csv cyclos-test-app:/usr/local/cyclos/    
+docker cp tests/test_simple_payments.csv cyclos-app-test:/usr/local/cyclos/    
 echo "$(tput setaf 2)CSV file copied"
 ##
 #docker restart cyclos-db-test cyclos-test-app                                    
@@ -32,7 +32,7 @@ echo "$(tput setaf 2)CSV file copied"
 #sleep 20                                                                      
 
 echo "$(tput setaf 3)Start testing$(tput sgr 0)"
-./vendor/bin/simple-phpunit --filter=testNada                                  
+./vendor/bin/simple-phpunit                                   
 
 #                                                                              
 #sudo docker stop cyclos-db-test cyclos-test-app                                  

@@ -1,6 +1,7 @@
 begin;
 create table del_users as select id from users where user_group_id in (select id from groups where subclass <> 'ADMIN_GROUP');
 update users set registered_by_id = null where registered_by_id in (select id from del_users);
+update transactions set transfer_id = null, original_transfer_id = null, last_occurrence_success_id = null, last_occurrence_failure_id = null, feedback_id = null, access_client_id = null;
 delete from amount_reservations;
 delete from vouchers;
 delete from voucher_packs;
@@ -22,6 +23,7 @@ delete from closed_account_balances where account_id in (select id from accounts
 delete from account_limit_logs where account_id in (select id from accounts where subclass='USER');
 update accounts set account_rates_id = null where subclass='USER';
 delete from account_rates where account_id in (select id from accounts where subclass='USER');
+delete from account_balance_counters where account_id in (select id from accounts where subclass='USER');
 delete from accounts where subclass='USER';
 delete from webshop_ads_delivery_methods;
 delete from ad_delivery_methods;

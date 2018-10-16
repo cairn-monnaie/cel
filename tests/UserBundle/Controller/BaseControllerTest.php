@@ -34,7 +34,7 @@ class BaseControllerTest extends WebTestCase
       $this->productManager = new ProductManager();
 
       $crawler = $this->client->request('GET','/install/');
-        $this->login('mazouthm','admin');
+      $this->login('mazouthm','admin');
 
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -50,7 +50,7 @@ class BaseControllerTest extends WebTestCase
             $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_test_db.groovy',false));
 
             $nb = 0;
-            while($nb != 5){ //delay between running script and database update
+//            while($nb != 5){ //delay between running script and database update
 
               $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
               $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
@@ -60,13 +60,14 @@ class BaseControllerTest extends WebTestCase
 
               $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
               $nb = count($cyclosUsers);
-          }
-
-            foreach($cyclosAdmins as $cyclosAdmin){
-                $this->createUser($cyclosAdmin);
-            }
+//          }
 
           $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
+
+//            foreach($cyclosAdmins as $cyclosAdmin){
+//                $this->createUser($cyclosAdmin, $superAdmin);
+//            }
+
           foreach($cyclosMembers as $cyclosMember){
               $this->createUser($cyclosMember,$superAdmin);
           }

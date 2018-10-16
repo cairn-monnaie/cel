@@ -27,7 +27,8 @@ Digital Cairn
  
   `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db`
 
-  `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos`
+  The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version.
+  `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos:4.8.2`
 
 
 ## Configure a Cyclos instance
@@ -311,7 +312,9 @@ Digital Cairn
 ## Install ##
  * **Install docker images**
     * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclos cyclos/db`
-    * `docker run -d --name=cyclos-test-app -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclos cyclos/cyclos`
+    
+    The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version.
+    * `docker run -d --name=cyclos-app-test -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclos cyclos/cyclos:4.8.2`
 
  * **Install Symfony test database**
     * `php bin/console doctrine:database:create --env=test`
@@ -319,11 +322,12 @@ Digital Cairn
     * `php bin/console doctrine:database:import --env=test web/zipcities.sql`
 
  * **Inject into docker data that to be imported in Cyclos database**
-    * `docker cp tests/test_members.csv cyclos-test-app:/usr/local/cyclos/`
-    * `docker cp tests/test_simple_payment.csv cyclos-test-app:/usr/local/cyclos/`
+    * `docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/`
+    * `docker cp tests/test_simple_payment.csv cyclos-app-test:/usr/local/cyclos/`
 
- * **Restore the database from the backup dump file**
+ * **Restore the test database with the backup dump file**
+    * `docker restart cyclos-db-test cyclos-app-test`
     * `docker exec -u postgres -i cyclos-db-test psql --user cyclos cyclos < ./tests/cyclos-dump.sql`
 
 ## Launch ##
-    * `./make-test.sh`
+ * `./make-test.sh`
