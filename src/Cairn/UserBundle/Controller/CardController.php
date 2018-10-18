@@ -108,7 +108,7 @@ class CardController extends Controller
                 $position = $session->get('position');
                 $cardKey =  $form->get('field')->getData();
 
-                $event = new InputCardKeyEvent($currentUser,$cardKey,$position);
+                $event = new InputCardKeyEvent($currentUser,$cardKey,$position, $session);
                 $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
 
                 if($event->getRedirect()){
@@ -185,7 +185,7 @@ class CardController extends Controller
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe'));
+        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -322,7 +322,6 @@ class CardController extends Controller
     /**
      * Validates new user's card
      *
-     * This action is considered as a sensible operation.
      * To ensure security, the user is asked to input its card key. In case of failure, user's attribute 'cardKeyTries' is incremented. 
      * 3 failures leads to disable the user.
      */
@@ -335,6 +334,10 @@ class CardController extends Controller
 
         if(!$card){
             $session->getFlashBag()->add('info','Votre carte de sécurité Cairn a été révoquée. Commandez-en une nouvelle.');
+            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
+        }
+        elseif(!$card->isGenerated()){
+            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn ne vous a pas été envoyé. Validation impossible');
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         if($card->isEnabled()){
@@ -356,7 +359,7 @@ class CardController extends Controller
                 $position = $session->get('position');
                 $cardKey =  $form->get('field')->getData();
 
-                $event = new InputCardKeyEvent($card->getUser(),$cardKey,$position);
+                $event = new InputCardKeyEvent($card->getUser(),$cardKey,$position, $session);
                 $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
 
                 if($event->getRedirect()){
@@ -394,7 +397,8 @@ class CardController extends Controller
      * Generates a new card entity, print it in PDF format then encode it in database
      *
      * This action is considered as a sensible operation.
-     * Card generation can be done by an admin for himself, or an admin for user under its responsibility.
+     * Card generation can be done by an admin for user under its responsibility. An exception case is installed SUPER_ADMIN who can 
+     * generate a card for himself
      *
      * The card is encoded in database using user's salt attribute to add a security layer in database.
      *
@@ -408,7 +412,7 @@ class CardController extends Controller
 
         $currentUser = $this->getUser();
 
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+        if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
@@ -417,7 +421,6 @@ class CardController extends Controller
         if(!$card){
             $session->getFlashBag()->add('info',$user->getName() . ' n\'a pas de carte de sécurité à générer. Commandez-en une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
-
         }
         if($card->isGenerated()){
             $session->getFlashBag()->add('info','La carte de sécurité a déjà été générée.');

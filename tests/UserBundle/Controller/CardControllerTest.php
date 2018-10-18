@@ -11,66 +11,276 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Address;
 
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Cyclos;
 
 class CardControllerTest extends BaseControllerTest
 {
 
-    function __construct(){
-        parent::__construct();
+    function __construct($name = NULL, array $data = array(), $dataName = ''){
+        parent::__construct($name, $data, $dataName);
     }
 
 
     /**
-     *_$currentUser wants card action for itself :
+     *_$referent wants card action for itself :
      *                          .installed superadmin : revoke / order / activate / generate
      *                          .otherwise : revoke / order / activate
-     *_$currentUser wants card action for $toUser :
-     *                          .isGranted ROLE_LOCAL_GROUP : 
-     *                              *if $currentUser is referent of $toUser : revoke / order / generate
+     *_$referent wants card action for $target :
+     *                          .isGranted ROLE_ADMIN : 
+     *                              *if $referent is referent of $target : revoke / order / generate
      *                              *otherwise : nothing(should not even see card_operations) 
-     *
+     * @dataProvider provideReferentsAndTargets
      */
-    public function testCardOperations($couple)
+    public function testCardOperations($referent,$target)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-        $this->client->followRedirects();
-        $this->client->catchExceptions(false);
-        //logged as installed super admin
-        $crawler = $this->login($couple[0][0], $couple[0][1]);
 
+        $crawler = $this->login($referent[0], $referent[1]);
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $targetOption1 = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'DrDBrew'));
-        $targetOption2 = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'cafeEurope'));
-
-        //action for itself
         $crawler = $this->client->request('GET','/card/home/'.$currentUser->getID());
-        if($currentUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username')){
-            $this->assertSame(4,$crawler->filter('a.operation_link')->count());
-        }else{
-            $this->assertSame(3,$crawler->filter('a.operation_link')->count());
+
+        if($currentUser === $targetUser){//user for himself
+            if($currentUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username')){
+                $this->assertSame(4,$crawler->filter('a.operation_link')->count());
+            }else{
+                $this->assertSame(3,$crawler->filter('a.operation_link')->count());
+            }
+        }else{ //user for someone else
+            $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
+
+            if($targetUser->hasReferent($currentUser)){
+                $this->assertSame(3,$crawler->filter('a.operation_link')->count());
+            }
+            else{
+                var_dump($this->client->getResponse());
+                $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            }
         }
 
-        //action for someone else
-        if($targetOption2->hasReferent($currentUser)){
-            $crawler = $this->client->request('GET','/card/home/'.$targetOption1->getID());
-            $this->assertSame(3,$crawler->filter('a.operation_link')->count());
+    }
+
+    public function inputCardKey($crawler, $key)
+    {
+        $form = $crawler->selectButton('card_save')->form();
+        $form['card[field]']->setValue($key);
+        return $this->client->submit($form);
+    }
+
+    /**
+     *Tests the card validation using a key
+     *@dataProvider provideUsers
+     */
+    public function testValidateCard($login,$password)
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->login($login, $password);
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+        $crawler = $this->client->request('GET', '/card/validate');
+
+        $card = $currentUser->getCard();
+        if(!$card || !$card->isGenerated() || $card->isEnabled()){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
+        }else{
+            //wrong key
+            $crawler = $this->inputCardKey($crawler,'5555');
+            $this->assertTrue($this->client->getResponse()->isRedirect('/card/validate'));
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("Clé invalide")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("Attention")')->count());
+
+            //valid key
+            $crawler = $this->inputCardKey($crawler,'1111');
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(0,$crawler->filter('html:contains("Activer la carte")')->count());
         }
-        else{
-            $this->expectException(AccessDeniedException::class);
-            $crawler = $this->client->request('GET','/card/home/'.$targetOption2->getID());
-            $this->assertSame(1,$crawler->filter('html:contains("pas référent")')->count());
+
+
+    }
+
+    /**
+     *Tests if card intermediate step is reached for a  sensible operation
+     *@depends testValidateCard
+     *@dataProvider provideUsers
+     */
+    public function testCardSecurityLayer($login,$password)
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->login($login, $password);
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+
+        //any sensible operation (see Cairn/UserBundle/Event/SecurityEvents.php)
+        $url = '/user/beneficiaries/add';
+        $crawler = $this->client->request('GET', $url);
+        $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+
+        $crawler = $this->client->followRedirect();
+
+        $card = $currentUser->getCard();
+        if(!$card || !$card->isEnabled()){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
+        }else{
+            //valid key
+            $crawler = $this->inputCardKey($crawler,'1111');
+            $this->assertTrue($this->client->getResponse()->isRedirect($url));
         }
     }
 
-    public function provideReferentsAndUsers()
+    /**
+     * if $referent is installed super admin : can generate a card for himself
+     * if $referent is referent of $target : can generate card
+     * if $referent is not referent of $target : code 403
+     * if $referent does not have active card : redirection
+     * if $target has a generated card : redirection
+     *
+     *@depends testCardSecurityLayer
+     *@dataProvider provideReferentsAndTargets
+     */
+    public function testGenerateCard($referent, $target)
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->login($referent[0], $referent[1]);
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        //sensible operation
+        $crawler = $this->client->request('GET','/card/generate/'.$targetUser->getID());
+        $crawler = $this->client->followRedirect();
+
+        $card = $targetUser->getCard();
+
+        if(! ($targetUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username') 
+            && $targetUser === $currentUser)){
+                $crawler = $this->inputCardKey($crawler, '1111');
+                $crawler = $this->client->followRedirect();
+        }
+
+        if(!$targetUser->hasReferent($currentUser)){
+            //access denied exception
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+
+        }else{
+            $card = $targetUser->getCard();
+            if(!$card || $card->isGenerated()){
+                $this->assertTrue($this->client->getResponse()->isRedirect());
+            }else{
+                $form = $crawler->selectButton('confirmation_save')->form();
+                $crawler =  $this->client->submit($form);
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/download/'.$card->getID()));
+            }
+        }
+    }
+
+    /**
+     * $target wants to revoke his card
+     *_$referent = $target || $referent is referent of $target
+     *                          . no card || card revoked : redirection to card home page
+     *                          . card not revoked : password confirmation
+     *                                                      . success password : session message with key "success" + card exists
+     *                                                      . wrong password : try again
+     *@depends testGenerateCard
+     */
+    public function testRevokeCard()
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $targetName = 'MaltOBar';
+        $crawler = $this->login($targetName, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$targetName));
+        //        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+        //
+        //        //action of user for itself
+        $crawler = $this->client->request('GET','/card/revoke/'.$currentUser->getID());
+        $this->assertSame(1,$crawler->filter('html:contains("été créée")')->count());
+
+        if(!$currentUser->getCard()){
+            $this->assertTrue($this->client->getResponse()->isRedirect());
+        }
+
+
+        //        //wrong password
+        //        $form = $crawler->selectButton('card_save')->form();
+        //        $form['card[field]']->setValue('1111');
+        //        $crawler = $this->client->submit($form);
+        //
+        //        //valid password
+        //        $form = $crawler->selectButton('confirmation_save')->form();
+        //        $form['confirmation[password]']->setValue('@@bbccdd');
+        //        $crawler = $this->client->submit($form);
+        //        $this->assertTrue($this->client->getResponse()->isRedirect('/card/revoke/'.$currentUser->getID()));
+        //
+        //
+        //        $card = $currentUser->getCard();
+        //        $this->assertTrue($card);
+    }
+
+    //    /**
+    //     * $target wants a new card
+    //     *_$referent = $target || $referent is referent of $target
+    //     *                          . card not revoked : redirection to card home page
+    //     *                          . card revoked : password confirmation
+    //     *                                                      . success password : session message with key "success" + card exists
+    //     *                                                      . wrong password : try again
+    //     * @dataProvider provideReferentsAndTargets
+    //     * @depends testRevokeCard
+    //     */
+    //    public function testNewCard($referent,$target)
+    //    {
+    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+    //        $this->client->followRedirects();
+    //
+    //        $crawler = $this->login($referent[0], $referent[1]);
+    //
+    //        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+    //        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+    //
+    //        //action of user for itself
+    //        $crawler = $this->client->request('GET','/card/new/'.$currentUser->getID());
+    //        if($currentUser->getCard()){
+    //            $this->assertTrue($this->client->getResponse()->isRedirect());
+    //        }
+    //
+    //        //wrong password
+    //        $form = $crawler->selectButton('confirmation_save')->form();
+    //        $form['confirmation[password]']->setValue('@bbccdd');
+    //        $crawler = $this->client->submit($form);
+    //        $this->assertSame(1,$crawler->filter('html:contains("invalide")')->count());
+    //        $this->assertTrue($this->client->getResponse()->isRedirect('/card/new'.$currentUser->getID()));
+    //
+    //        //valid password
+    //        $form = $crawler->selectButton('confirmation_save')->form();
+    //        $form['confirmation[password]']->setValue('@@bbccdd');
+    //        $crawler = $this->client->submit($form);
+    //
+    //        $card = $currentUser->getCard();
+    //        $this->assertTrue($card);
+    //    }
+
+    public function provideReferentsAndTargets()
     {
         return array(
-            array(array('mazouthm','admin'),'DrDBrew'),
+//            array(array('mazouthm','admin'),'mazouthm'),
+//            array(array('mazouthm','admin'),'DrDBrew'),
+//            array(array('mazouthm','admin'),'MaltOBar'),
             array(array('mazouthm','admin'),'cafeEurope')
+        );
+    }
+
+    public function provideUsers()
+    {
+        return array(
+            array('mazouthm','admin'),
+            array('DrDBrew','@@bbccdd')
         );
     }
 

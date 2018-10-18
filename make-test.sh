@@ -32,7 +32,7 @@ echo "$(tput setaf 2)CSV file copied"
 #sleep 20                                                                      
 
 echo "$(tput setaf 3)Start testing$(tput sgr 0)"
-./vendor/bin/simple-phpunit                                   
+./vendor/bin/simple-phpunit --filter=CardControllerTest                          
 
 #                                                                              
 #sudo docker stop cyclos-db-test cyclos-test-app                                  

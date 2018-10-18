@@ -47,7 +47,6 @@ class AdminControllerTest extends BaseControllerTest
 
        $crawler = $this->client->request('GET', '/admin/users/block/?id='.$targetOption2->getID());
 //         $this->assertSame(1,$crawler->filter('html:contains("pas référent de")')->count());
-         $this->expectException(AccessDeniedException::class);
          $this->client->followRedirect();   
 
     }

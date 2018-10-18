@@ -8,6 +8,7 @@ use Cyclos;
 use Symfony\Component\HttpFoundation\RedirectResponse; // N'oubliez pas ce use
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Config\Definition\Exception\Exception;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
@@ -71,7 +72,9 @@ class ExceptionListener
         $body = $routesMessage ."\n". $fileMessage ."\n". $lineMessage . "\n". $exceptionMessage . "\n" . $traceMessage;
 
         //this condition avoids circular exceptions thrown if the redirection page (login / homepage) contains an error
-        if(strpos($request->headers->get('referer'), $request->getRequestUri()) && !$request->isMethod('POST')){
+        //PROBLEME DE PRIORITE DANS LES EXCPTIONS LISTENER !!
+        if(strpos($request->headers->get('referer'), $request->getRequestUri()) && 
+                                                    !$request->isMethod('POST')){
             $subject = 'Erreur circulaire';
             $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
             $event->setResponse(new RedirectResponse($logoutUrl));
@@ -98,7 +101,7 @@ class ExceptionListener
                 $subject = 'Maintenance automatique : ConnectionException Cyclos';
 
                 //maintenance state 
-                file_put_contents("../maintenance.txt", '');
+               file_put_contents("../maintenance.txt", '');
 
                 $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);

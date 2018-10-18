@@ -23,9 +23,9 @@ class BaseControllerTest extends WebTestCase
 
     protected $em;
 
-    public function __construct()
+    public function __construct($name = NULL, array $data = array(), $dataName = '')
     {
-      parent::__construct();
+      parent::__construct($name, $data, $dataName);
       $this->client = static::createClient();
 //        $this->client->catchExceptions(false);
       $this->container = $this->client->getContainer();
@@ -122,7 +122,6 @@ class BaseControllerTest extends WebTestCase
     public function login($username,$password)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-        $this->client->followRedirects();
 
         $crawler = $this->client->request('GET','/logout');
         $crawler = $this->client->request('GET','/login');
@@ -132,14 +131,15 @@ class BaseControllerTest extends WebTestCase
         $form['_username']->setValue($username);
         $form['_password']->setValue($password);
         $crawler = $this->client->submit($form);
-
-        return $crawler;
+        
+        return $this->client->followRedirect();
 
     }
 
     public function testNada(){
         $this->assertSame(0,0);
     }
+
 
     public function cardKeyInput($crawler,$key)
     {
