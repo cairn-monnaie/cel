@@ -602,7 +602,7 @@ class UserController extends Controller
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('plainPassword', PasswordType::class,array('label'=>'Mot de passe'));
+        $form->add('plainPassword', PasswordType::class,array('label'=>'Mot de passe','required'=>false));
         if($request->isMethod('POST')){ //form filled and submitted
 
             $form->handleRequest($request);    

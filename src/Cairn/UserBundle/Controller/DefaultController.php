@@ -76,6 +76,10 @@ class DefaultController extends Controller
             $new_admin->setCyclosID($id);
             $new_admin->setUsername($adminUsername);
             $new_admin->setName('main admin');
+
+            if($this->getParameter('kernel.environment') == 'test'){
+                $adminPassword = '@@bbccdd';
+            }
             $new_admin->setPlainPassword($adminPassword);
             $new_admin->setEnabled(true);
             $new_admin->setEmail($this->getParameter('cyclos_global_admin_email'));

@@ -238,8 +238,8 @@ class CardController extends Controller
     /**
      * Requests for a card revocation
      *
-     * To request for a card revocation, the current card of $user must exist. This request can be done by the user itself, or 
-     * by one of its referents. To ensure security, the user doing the request is asked to input its password. In case of failure,
+     * To request for a card revocation, the current card of $user must exist. This request can be done by the user himself, or 
+     * by one of his referents. To ensure security, the user doing the request is asked to input his password. In case of failure,
      * user's attribute 'passwordTries' is incremented. 3 failures leads to disable the user.
      *
      *@param User $user User whose card will be revoked
@@ -261,17 +261,15 @@ class CardController extends Controller
         if(!$card){
             $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
-        }else{
-            if(!$card->getFields()){
+        }
+        if(!$card->getFields()){
                 $session->getFlashBag()->add('error',
                     'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
                 return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
-
-            }
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe'));
+        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -287,7 +285,6 @@ class CardController extends Controller
                     }
 
                     if($currentUser->getPasswordTries() == 0){
-
                         $subject = 'Révocation de votre carte de sécurité Cairn';
                         $from = $this->getParameter('cairn_email_noreply');
                         $to = $user->getEmail();
@@ -528,7 +525,7 @@ class CardController extends Controller
      *
      * @Security("has_role('ROLE_SUPER_ADMIN')")
      */
-    public function checkDelayedCardsAction(Request $request)
+    public function checkCardsExpirationAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
         $cardRepo = $em->getRepository('CairnUserBundle:Card');
@@ -538,6 +535,7 @@ class CardController extends Controller
             ->where('c.enabled = false')
             ->andWhere('c.creationDate >= :date')
             ->setParameter('date',strtotime('-' .$this->getParameter('card_activation_delay').' days'))
+            ->andWhere('c.generated = true')
             ->addSelect('u');
         $cards = $cb->getQuery()->getResult();
 

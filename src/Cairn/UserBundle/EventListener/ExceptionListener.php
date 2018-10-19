@@ -11,9 +11,12 @@ use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use Cairn\UserBundle\Event\SecurityEvents;
+use Cairn\UserBundle\EventListener\SecurityListener;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Service\AccessPlatform;
+use Cairn\UserBundle\Service\Security;
+
 use Doctrine\ORM\EntityManager;
 
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -29,13 +32,15 @@ class ExceptionListener
     protected $accessPlatform;
     protected $em;
     protected $router;
+    protected $security;
 
-    public function __construct(MessageNotificator $messageNotificator, AccessPlatform $accessPlatform, EntityManager $em, Router $router)
+    public function __construct(MessageNotificator $messageNotificator, AccessPlatform $accessPlatform, EntityManager $em, Router $router, Security $security)
     {
         $this->messageNotificator = $messageNotificator;
         $this->accessPlatform = $accessPlatform;
         $this->em = $em;
         $this->router = $router;
+        $this->security = $security;
     }
 
     /**
@@ -51,6 +56,9 @@ class ExceptionListener
         $exception = $event->getException();
         $request = $event->getRequest();
         $session = $request->getSession();
+
+        $attributes = $request->attributes->all();                             
+        $parameters = key_exists('_route_params', $attributes) ? $attributes['_route_params'] : array();
 
         $welcomeUrl = $this->router->generate('cairn_user_welcome');
         $logoutUrl = $this->router->generate('fos_user_security_logout');
@@ -74,7 +82,10 @@ class ExceptionListener
         //this condition avoids circular exceptions thrown if the redirection page (login / homepage) contains an error
         //PROBLEME DE PRIORITE DANS LES EXCPTIONS LISTENER !!
         if(strpos($request->headers->get('referer'), $request->getRequestUri()) && 
-                                                    !$request->isMethod('POST')){
+                                                     !$request->isMethod('POST') && 
+                                                     !$this->security->isSensibleOperation($request->get('_route'),$parameters)
+                                                 )
+        {
             $subject = 'Erreur circulaire';
             $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
             $event->setResponse(new RedirectResponse($logoutUrl));

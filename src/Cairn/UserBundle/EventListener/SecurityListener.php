@@ -15,10 +15,10 @@ use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Cairn\UserBundle\Service\Counter;
 use Cairn\UserBundle\Service\AccessPlatform;
+use Cairn\UserBundle\Service\Security;
 use Doctrine\ORM\EntityManager;
 
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
 use Symfony\Bundle\TwigBundle\TwigEngine;
 
@@ -36,17 +36,18 @@ class SecurityListener
     protected $em;
     protected $templating;
     protected $adminUsername;
+    protected $security;
 
-    public function __construct(Router $router, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername)
+    public function __construct(Router $router, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername, Security $security)
     {
         $this->router = $router;
-        $this->tokenStorage = $tokenStorage;
         $this->encoderFactory = $encoderFactory;
         $this->counter = $counter;
         $this->accessPlatform = $accessPlatform;
         $this->em = $em;
         $this->templating = $templating;
         $this->adminUsername = $adminUsername;
+        $this->security = $security;
     }
 
 
@@ -75,39 +76,29 @@ class SecurityListener
     public function onSensibleOperations(GetResponseEvent $event)
     {
         $request = $event->getRequest();
-        $token = $this->tokenStorage->getToken();
+
+        $currentUser = $this->security->getCurrentUser();
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $route = $request->get('_route');
 
         $attributes = $request->attributes->all();
-
         $parameters = key_exists('_route_params', $attributes) ? $attributes['_route_params'] : array();
-
-        $sensibleRoutes = SecurityEvents::SENSIBLE_ROUTES;
-        $sensibleUrls = SecurityEvents::SENSIBLE_URLS;
-
-        $isSensibleUrl = SecurityEvents::isSensibleURL($route,$parameters);
-
-        $isSensibleRoute = in_array($route,$sensibleRoutes);
 
         $isExceptionCase = false;
         //check if installed admin is asking for a new security card
-        if($token){
-            $currentUser = $token->getUser();
-            if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-                if(($currentUser->getUsername() == $this->adminUsername && $route == 'cairn_user_card_generate')){
-                    //for itself ? for someone else ?
-                    $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
-                    if($toUser === $currentUser){
-                        $isExceptionCase = true;
-                    }
+        if($currentUser instanceof \Cairn\UserBundle\Entity\User){
+            if(($currentUser->getUsername() == $this->adminUsername && $route == 'cairn_user_card_generate')){
+                //for itself ? for someone else ?
+                $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
+                if($toUser === $currentUser){
+                    $isExceptionCase = true;
                 }
             }
         }
 
         if(!$isExceptionCase){
-            if($isSensibleRoute || $isSensibleUrl){
+            if($this->security->isSensibleOperation($route, $parameters)){
                 if(!$request->getSession()->get('has_input_card_key_valid')){
                     $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('url'=>$request->getRequestURI()));
                     $event->setResponse(new RedirectResponse($cardSecurityLayer));

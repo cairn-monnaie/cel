@@ -48,34 +48,4 @@ final class SecurityEvents
         array('cairn_user_banking_transaction_request',array('to'=>'new'))
     ];
 
-    /**
-     *Returns true if the URL matches a sensible operation in SENSIBLE_URLS, false otherwise
-     *
-     *This function first finds if the operation corresponds to a sensible route in SENSIBLE_URLS, then analyzes the different route 
-     *parameters provided, and returns true if at least one route parameter belongs to the list of decisive parameters defining a 
-     *sensible operation.
-     */
-    static function isSensibleURL($route, $parameters)
-    {
-        $sensibleUrls = self::SENSIBLE_URLS;
-
-        $cardinal = count($sensibleUrls);
-        
-        $cmpt = 0; 
-        while($cmpt < $cardinal){
-            if($route == $sensibleUrls[$cmpt][0]){
-                break;
-            }
-            else{
-                $cmpt = $cmpt + 1;
-            }
-        }
-
-        if($cmpt != $cardinal){//if a route matches, check parameters
-            return (count(array_intersect_assoc($sensibleUrls[$cmpt][1], $parameters)) >0) ;
-        }
-
-        return false;
-    }
-
 }

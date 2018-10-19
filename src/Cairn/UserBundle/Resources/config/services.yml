@@ -35,6 +35,12 @@ services:
     cairn_user.datetime_checker:
         class: Cairn\UserBundle\Service\DateTimeChecker
 
+    cairn_user.security:
+        class: Cairn\UserBundle\Service\Security
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@security.token_storage"
+
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener
         arguments: 
@@ -48,14 +54,13 @@ services:
         class: Cairn\UserBundle\EventListener\SecurityListener
         arguments:
             - "@router"
-            - "@security.token_storage"
             - "@security.encoder_factory" 
             - "@cairn_user.counter"
             - "@cairn_user.access_platform"
             - "@doctrine.orm.entity_manager"
             - "@templating"
             - "%cyclos_global_admin_username%"
-
+            - "@cairn_user.security"
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }
             - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
@@ -69,8 +74,9 @@ services:
             - "@cairn_user.access_platform"
             - "@doctrine.orm.entity_manager"
             - "@router"
+            - "@cairn_user.security"
         tags:  
-            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException}
     
     cairn_user.validator:
         class: Cairn\UserBundle\Validator\UserValidator

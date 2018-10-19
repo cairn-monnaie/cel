@@ -104,9 +104,9 @@ cairn_user_card_home:
         id: \d+
         _format: html|json
 
-cairn_user_card_check_activation:
-    path:     card/check/delayed/
-    defaults: { _controller: CairnUserBundle:Card:checkDelayedCards }
+cairn_user_card_check_expiration:
+    path:     card/check/expiration/
+    defaults: { _controller: CairnUserBundle:Card:checkCardsExpiration }
 
 cairn_user_card_new:
     path:     card/new/{id}.{_format}

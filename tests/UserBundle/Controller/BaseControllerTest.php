@@ -27,7 +27,7 @@ class BaseControllerTest extends WebTestCase
     {
       parent::__construct($name, $data, $dataName);
       $this->client = static::createClient();
-//        $this->client->catchExceptions(false);
+
       $this->container = $this->client->getContainer();
       $this->scriptManager = new ScriptManager();
       $this->userManager = new UserManager();

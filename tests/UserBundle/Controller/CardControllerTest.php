@@ -23,7 +23,7 @@ class CardControllerTest extends BaseControllerTest
 
 
     /**
-     *_$referent wants card action for itself :
+     *_$referent wants card action for himself :
      *                          .installed superadmin : revoke / order / activate / generate
      *                          .otherwise : revoke / order / activate
      *_$referent wants card action for $target :
@@ -56,7 +56,6 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
             }
             else{
-                var_dump($this->client->getResponse());
                 $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
             }
         }
@@ -154,14 +153,14 @@ class CardControllerTest extends BaseControllerTest
 
         //sensible operation
         $crawler = $this->client->request('GET','/card/generate/'.$targetUser->getID());
-        $crawler = $this->client->followRedirect();
 
         $card = $targetUser->getCard();
 
         if(! ($targetUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username') 
             && $targetUser === $currentUser)){
-                $crawler = $this->inputCardKey($crawler, '1111');
-                $crawler = $this->client->followRedirect();
+            $crawler = $this->client->followRedirect();
+            $crawler = $this->inputCardKey($crawler, '1111');
+            $crawler = $this->client->followRedirect();
         }
 
         if(!$targetUser->hasReferent($currentUser)){
@@ -171,11 +170,15 @@ class CardControllerTest extends BaseControllerTest
         }else{
             $card = $targetUser->getCard();
             if(!$card || $card->isGenerated()){
-                $this->assertTrue($this->client->getResponse()->isRedirect());
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
             }else{
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/download/'.$card->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertTrue($this->client->getResponse()->headers->contains(
+                        'Content-Type',
+                        'application/pdf'));
             }
         }
     }
@@ -187,152 +190,152 @@ class CardControllerTest extends BaseControllerTest
      *                          . card not revoked : password confirmation
      *                                                      . success password : session message with key "success" + card exists
      *                                                      . wrong password : try again
+     *@dataProvider provideUsersWithRevokedCard 
      *@depends testGenerateCard
      */
-    public function testRevokeCard()
+    public function testRevokeCard($referent, $target)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $targetName = 'MaltOBar';
-        $crawler = $this->login($targetName, '@@bbccdd');
+        $crawler = $this->login($referent[0], $referent[1]);
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$targetName));
-        //        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
-        //
-        //        //action of user for itself
-        $crawler = $this->client->request('GET','/card/revoke/'.$currentUser->getID());
-        $this->assertSame(1,$crawler->filter('html:contains("été créée")')->count());
 
-        if(!$currentUser->getCard()){
-            $this->assertTrue($this->client->getResponse()->isRedirect());
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        //sensible operation
+        $url = '/card/revoke/'.$targetUser->getID();
+        $crawler = $this->client->request('GET',$url);
+        if($currentUser !== $targetUser){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+            $crawler = $this->client->followRedirect();
+            $crawler = $this->inputCardKey($crawler, '1111');
+            $crawler = $this->client->followRedirect();
         }
 
+        if(! ($targetUser->hasReferent($currentUser) || $targetUser === $currentUser)){
+            //access denied exception
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        }else{
+            $targetCard = $targetUser->getCard();
+            if(!$targetCard || !$targetCard->getFields()){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+            }else{
+                $this->client->enableProfiler();
 
-        //        //wrong password
-        //        $form = $crawler->selectButton('card_save')->form();
-        //        $form['card[field]']->setValue('1111');
-        //        $crawler = $this->client->submit($form);
-        //
-        //        //valid password
-        //        $form = $crawler->selectButton('confirmation_save')->form();
-        //        $form['confirmation[password]']->setValue('@@bbccdd');
-        //        $crawler = $this->client->submit($form);
-        //        $this->assertTrue($this->client->getResponse()->isRedirect('/card/revoke/'.$currentUser->getID()));
-        //
-        //
-        //        $card = $currentUser->getCard();
-        //        $this->assertTrue($card);
+                $form = $crawler->selectButton('confirmation_save')->form();
+                $form['confirmation[password]']->setValue('@@bbccdd');
+                $crawler =  $this->client->submit($form);
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+
+                $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+                $this->assertSame(1, $mailCollector->getMessageCount());
+                $message = $mailCollector->getMessages()[0];
+                $this->assertInstanceOf('Swift_Message', $message);
+                $this->assertContains('Révocation', $message->getSubject());
+                $this->assertContains('révocation', $message->getBody());
+                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1,$crawler->filter('html:contains("prise en compte")')->count());
+
+            }
+        }
+
     }
 
-    //    /**
-    //     * $target wants a new card
-    //     *_$referent = $target || $referent is referent of $target
-    //     *                          . card not revoked : redirection to card home page
-    //     *                          . card revoked : password confirmation
-    //     *                                                      . success password : session message with key "success" + card exists
-    //     *                                                      . wrong password : try again
-    //     * @dataProvider provideReferentsAndTargets
-    //     * @depends testRevokeCard
-    //     */
-    //    public function testNewCard($referent,$target)
-    //    {
-    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-    //        $this->client->followRedirects();
-    //
-    //        $crawler = $this->login($referent[0], $referent[1]);
-    //
-    //        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
-    //        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
-    //
-    //        //action of user for itself
-    //        $crawler = $this->client->request('GET','/card/new/'.$currentUser->getID());
-    //        if($currentUser->getCard()){
-    //            $this->assertTrue($this->client->getResponse()->isRedirect());
-    //        }
-    //
-    //        //wrong password
-    //        $form = $crawler->selectButton('confirmation_save')->form();
-    //        $form['confirmation[password]']->setValue('@bbccdd');
-    //        $crawler = $this->client->submit($form);
-    //        $this->assertSame(1,$crawler->filter('html:contains("invalide")')->count());
-    //        $this->assertTrue($this->client->getResponse()->isRedirect('/card/new'.$currentUser->getID()));
-    //
-    //        //valid password
-    //        $form = $crawler->selectButton('confirmation_save')->form();
-    //        $form['confirmation[password]']->setValue('@@bbccdd');
-    //        $crawler = $this->client->submit($form);
-    //
-    //        $card = $currentUser->getCard();
-    //        $this->assertTrue($card);
-    //    }
+    /**
+     * $target wants a new card
+     *_$referent = $target || $referent is referent of $target
+     *                          . card not revoked : redirection to card home page
+     *                          . card revoked : password confirmation
+     *                                                      . success password : session message with key "success" + card exists
+     *                                                      . wrong password : try again
+     * @dataProvider provideUsersWithRevokedCard
+     * @depends testRevokeCard
+     */
+    public function testNewCard($referent,$target)
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->login($referent[0], $referent[1]);
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        //sensible operation
+        $url = '/card/new/'.$targetUser->getID();
+        $crawler = $this->client->request('GET',$url);
+        if($currentUser !== $targetUser){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+            $crawler = $this->client->followRedirect();
+            $crawler = $this->inputCardKey($crawler, '1111');
+            $crawler = $this->client->followRedirect();
+        }
+
+        if(! ($targetUser->hasReferent($currentUser) || $targetUser === $currentUser)){
+            //access denied exception
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        }else{
+            $targetCard = $targetUser->getCard();
+            if($targetCard){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+            }else{
+                $form = $crawler->selectButton('confirmation_save')->form();
+                $form['confirmation[password]']->setValue('@@bbccdd');
+                $crawler =  $this->client->submit($form);
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1,$crawler->filter('html:contains("prise en compte")')->count());
+            }
+        }
+    }
+
+    /**
+     *
+     *@depends testNewCard
+     */
+    public function testCheckCardsExpiration()
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $login = $this->container->getParameter('cyclos_global_admin_username');
+        $password = '@@bbccdd';
+        $crawler = $this->login($login, $password);
+
+        $crawler = $this->client->request('GET','/card/check/expiration/');
+
+        $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
+    }
 
     public function provideReferentsAndTargets()
     {
         return array(
-//            array(array('mazouthm','admin'),'mazouthm'),
-//            array(array('mazouthm','admin'),'DrDBrew'),
-//            array(array('mazouthm','admin'),'MaltOBar'),
-            array(array('mazouthm','admin'),'cafeEurope')
+            array(array('mazouthm','@@bbccdd'),'mazouthm'),
+            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
+            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
+            array(array('mazouthm','@@bbccdd'),'cafeEurope')
+        );
+    }
+
+    public function provideUsersWithRevokedCard()
+    {
+        return array(
+            array(array('mazouthm','@@bbccdd'),'cafeEurope'), 
+            array(array('mazouthm','@@bbccdd'),'LaBonnePioche'),  
+            array(array('MaltOBar','@@bbccdd'),'MaltOBar'),  
+            array(array('DrDBrew','@@bbccdd'),'DrDBrew')     
         );
     }
 
     public function provideUsers()
     {
         return array(
-            array('mazouthm','admin'),
+            array('mazouthm','@@bbccdd'),
             array('DrDBrew','@@bbccdd')
         );
     }
 
-    /**
-     *_ROLE_PRO tries to generate card
-     *_ADMIN tries to generate its own card
-     *_ADMIN tries to generate non referent Pro's card
-     *_ADMIN generates pro' card under its responsibility
-     */
-    //    public function testGenerateCard()
-    //    {
-    //      $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-    //      $this->client->followRedirects();
-    //
-    //      $crawler = $this->login('mazouthm','admin');
-    //        $this->assertSame(1,$crawler->filter('html:contains("Espace Administrateur")')->count());
-    //
-    //      $targetOption = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'DrDBrew'));
-    //      $crawler = $this->client->request('GET','/card/generate/?id='.$targetOption->getID());
-    //        $crawler = $this->client->request('GET','/card/generate/?id=4');
-    //      $this->assertTrue($client->getResponse()->isRedirect());
-    //
-    //
-    //
-    //        $this->assertSame(1,$crawler->filter('html:contains("carte de sécurité")')->count());
-    //        $form = $crawler->selectButton('card_save')->form();
-    //        $form['card[field]']->setValue('1111');
-    //        $crawler = $this->client->submit($form);
-    //
-    //        $crawler = $this->client->request('GET','/card/generate/?id='.$targetOption->getID());
-    //
-    //        $this->assertSame(1,$crawler->filter('html:contains("déjà")')->count());
-    //     
-    //        $targetOption = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'cafeEurope'));
-    //        $crawler = $this->client->request('GET','/card/generate/?id='.$targetOption->getID());
-    //        $this->assertSame(1,$crawler->filter('html:contains("pas référent de")')->count());
-    //
-    //        $this->login('cafeEurope','@@bbccdd');
-    //        $crawler = $this->client->request('GET','/card/generate/?id='.$targetOption->getID());
-    //        $this->assertSame(1,$crawler->filter('html:contains("access denied")')->count());
-    //
-    //  }
-    //  
-    //  public function testCheckDelayedCards()
-    //  {
-    //      $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-    //      $this->client->followRedirects();
-    //
-    //      $this->login('mazouthm','admin');
-    //      $crawler = $this->client->request('GET','/card/check/delayed');
-    //
-    //      //TODO : control users with deadline missed
-    //    }
 }
 
