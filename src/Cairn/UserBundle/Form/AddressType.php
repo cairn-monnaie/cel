@@ -24,7 +24,7 @@ class AddressType extends AbstractType
     {
         $builder
             ->add('street1', TextType::class)
-            ->add('street2', TextType::class,array('required'=>false)
+            ->add('street2', TextType::class,array('required'=>false))
             ->add('zipCity', EntityType::class, array(
                                                      'class'=>ZipCity::class,
                                                      'query_builder' => function (EntityRepository $er) {
