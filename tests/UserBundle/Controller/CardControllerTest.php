@@ -41,7 +41,7 @@ class CardControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/card/home/'.$currentUser->getID());
+        $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
 
         if($currentUser === $targetUser){//user for himself
             if($currentUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username')){
@@ -50,8 +50,6 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
             }
         }else{ //user for someone else
-            $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
-
             if($targetUser->hasReferent($currentUser)){
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
             }
@@ -93,13 +91,20 @@ class CardControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('html:contains("Clé invalide")')->count());
             $this->assertSame(1,$crawler->filter('html:contains("Attention")')->count());
 
+            $this->em->refresh($currentUser);
+            $this->assertSame(1,$currentUser->getCardKeyTries());
+
             //valid key
             $crawler = $this->inputCardKey($crawler,'1111');
             $crawler = $this->client->followRedirect();
             $this->assertSame(0,$crawler->filter('html:contains("Activer la carte")')->count());
+
+            $this->em->refresh($currentUser);
+            $this->em->refresh($card);
+
+            $this->assertSame(0,$currentUser->getCardKeyTries());
+            $this->assertTrue($card->isEnabled());
         }
-
-
     }
 
     /**
@@ -171,11 +176,16 @@ class CardControllerTest extends BaseControllerTest
             $card = $targetUser->getCard();
             if(!$card || $card->isGenerated()){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
             }else{
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/download/'.$card->getID()));
                 $crawler = $this->client->followRedirect();
+
+                $this->em->refresh($card);
+                $this->assertTrue($card->isGenerated());
+                $this->assertNotEquals($card->getFields(),NULL);
                 $this->assertTrue($this->client->getResponse()->headers->contains(
                         'Content-Type',
                         'application/pdf'));
@@ -228,12 +238,18 @@ class CardControllerTest extends BaseControllerTest
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
 
+                //assert card
+                $this->em->refresh($targetUser);
+                $this->assertEquals($targetUser->getCard(),NULL);
+
+                //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
                 $this->assertSame(1, $mailCollector->getMessageCount());
                 $message = $mailCollector->getMessages()[0];
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('Révocation', $message->getSubject());
                 $this->assertContains('révocation', $message->getBody());
+                $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
@@ -282,9 +298,28 @@ class CardControllerTest extends BaseControllerTest
             if($targetCard){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
             }else{
+                $this->client->enableProfiler();
+
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $form['confirmation[password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
+
+                //assert card
+                $this->em->refresh($targetUser);
+                $this->assertNotEquals($targetUser->getCard(),NULL);
+
+                //assert email
+                $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+                $this->assertSame(1, $mailCollector->getMessageCount());
+                $message = $mailCollector->getMessages()[0];
+                $this->assertInstanceOf('Swift_Message', $message);
+                $this->assertContains('Nouvelle carte', $message->getSubject());
+                $this->assertContains('nouvelle carte', $message->getBody());
+                $this->assertContains($currentUser->getName(), $message->getBody());
+
+                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("prise en compte")')->count());
@@ -294,7 +329,7 @@ class CardControllerTest extends BaseControllerTest
 
     /**
      *
-     *@depends testNewCard
+     *depends testNewCard
      */
     public function testCheckCardsExpiration()
     {
@@ -304,9 +339,11 @@ class CardControllerTest extends BaseControllerTest
         $password = '@@bbccdd';
         $crawler = $this->login($login, $password);
 
+
         $crawler = $this->client->request('GET','/card/check/expiration/');
 
         $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
+
     }
 
     public function provideReferentsAndTargets()

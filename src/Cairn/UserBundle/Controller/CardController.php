@@ -533,8 +533,6 @@ class CardController extends Controller
         $cb = $cardRepo->createQueryBuilder('c');
         $cb->join('c.user','u')
             ->where('c.enabled = false')
-            ->andWhere('c.creationDate >= :date')
-            ->setParameter('date',strtotime('-' .$this->getParameter('card_activation_delay').' days'))
             ->andWhere('c.generated = true')
             ->addSelect('u');
         $cards = $cb->getQuery()->getResult();

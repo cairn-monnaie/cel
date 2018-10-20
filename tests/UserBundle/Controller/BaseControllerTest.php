@@ -25,22 +25,22 @@ class BaseControllerTest extends WebTestCase
 
     public function __construct($name = NULL, array $data = array(), $dataName = '')
     {
-      parent::__construct($name, $data, $dataName);
-      $this->client = static::createClient();
+        parent::__construct($name, $data, $dataName);
+        $this->client = static::createClient();
 
-      $this->container = $this->client->getContainer();
-      $this->scriptManager = new ScriptManager();
-      $this->userManager = new UserManager();
-      $this->productManager = new ProductManager();
+        $this->container = $this->client->getContainer();
+        $this->scriptManager = new ScriptManager();
+        $this->userManager = new UserManager();
+        $this->productManager = new ProductManager();
 
-      $crawler = $this->client->request('GET','/install/');
-      $this->login('mazouthm','admin');
+        $crawler = $this->client->request('GET','/install/');
+        $this->login('mazouthm','@@bbccdd');
 
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         //generate doctrine users or not
         $this->em = $this->container->get('doctrine')->getManager();                          
-        
+
         $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
 
         if(!$user){
@@ -50,34 +50,40 @@ class BaseControllerTest extends WebTestCase
             $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_test_db.groovy',false));
 
             $nb = 0;
-//            while($nb != 5){ //delay between running script and database update
+            //            while($nb != 5){ //delay between running script and database update
 
-              $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
-              $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
+            $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
+            $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
 
-              $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
-              $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
+            $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+            $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
 
-              $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
-              $nb = count($cyclosUsers);
-//          }
+            $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
+            $nb = count($cyclosUsers);
+            //          }
 
-          $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
+            $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
 
-//            foreach($cyclosAdmins as $cyclosAdmin){
-//                $this->createUser($cyclosAdmin, $superAdmin);
-//            }
+            //            foreach($cyclosAdmins as $cyclosAdmin){
+            //                $this->createUser($cyclosAdmin, $superAdmin);
+            //            }
 
-          foreach($cyclosMembers as $cyclosMember){
-              $this->createUser($cyclosMember,$superAdmin);
-          }
+            $userRank = 0;
+            foreach($cyclosMembers as $cyclosMember){
+                $this->createUser($cyclosMember,$superAdmin,$userRank);
+                $userRank = $userRank + 1;
+            }
 
             $this->em->flush();
 
-      }
+        }
     }
 
-    public function createUser($cyclosUser, $superAdmin)
+    /**
+     *
+     *$userRank is used to generate card creation dates at fixed intervals
+     */
+    public function createUser($cyclosUser, $superAdmin, $userRank)
     {
         $doctrineUser = new User();
 
@@ -108,6 +114,9 @@ class BaseControllerTest extends WebTestCase
         $doctrineUser->setDescription('Test user blablablabla');             
 
         $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'));
+        $today = new \Datetime(date('Y-m-d H:i:s'));
+        $nbDays = 3*$userRank;
+        $creationDate = date_modify(new \Datetime($today->format('Y-m-d H:i:s')),'- '.$nbDays.' days');
         $card->setCreationDate($creationDate);
         $doctrineUser->setCard($card);
 
@@ -131,7 +140,7 @@ class BaseControllerTest extends WebTestCase
         $form['_username']->setValue($username);
         $form['_password']->setValue($password);
         $crawler = $this->client->submit($form);
-        
+
         return $this->client->followRedirect();
 
     }
