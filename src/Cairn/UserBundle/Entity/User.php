@@ -33,7 +33,6 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="name", type="string", unique=true, nullable=true)
-     * @Assert\Length(min=3, minMessage="Contient {{ limit }} caractères minimum")
      */
     private $name; 
 

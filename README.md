@@ -25,9 +25,10 @@ Digital Cairn
 
   `docker network create cyclos-net`
  
-  `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclospwd cyclos/db`
+  `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=$cyclos_user -e POSTGRES_PASSWORD=cyclos_password cyclos/db`
 
-  The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version.
+  The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version, pretty useful in test environment.
+
   `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos:4.8.2`
 
 
@@ -57,7 +58,7 @@ Digital Cairn
  5. **Basic network information**
 
      * Name : **_$network-name_**
-     * Internal name : xxx
+     * Internal name : xxx (not empty)
      * Description : xxx
      * Click next
  6. **Localization**
@@ -217,7 +218,18 @@ Digital Cairn
        * User access : select "Enforced enabled"
        * session timeout : xxx
        * Click save
+ 27. **Change usernames configuration**
+        
+      For now, the application sets up login name lengths straight in the source code, and is not customizable. If you want to change them,you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
+
+      _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+      * Click on "Global default" configuration
+      * Login name length : 5 to 16
+      * Click save
+
  27. **Change password type configuration**
+
+      For now, the application sets up password lengths straight in the source code, and is not customizable. If you want to change them,you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
 
      _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
      * Click on login password
@@ -243,6 +255,7 @@ Digital Cairn
  * `composer install`
 
  * **Create SQL User and grant permissions on prod-dev/test databases**
+
     The created user will have access merely to the application databases
     * `mysql -u root -p`
     * `CREATE USER '$sql-username'@'localhost' IDENTIFIED BY '$sql-password';`
@@ -311,10 +324,10 @@ Digital Cairn
 # Testing #
 ## Install ##
  * **Install docker images**
-    * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=cyclos -e POSTGRES_PASSWORD=cyclos cyclos/db`
+    * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=%cyclos_user% -e POSTGRES_PASSWORD=%cyclos_password% cyclos/db`
     
-    The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version.
-    * `docker run -d --name=cyclos-app-test -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclos cyclos/cyclos:4.8.2`
+    The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version, pretty useful while testing.
+    * `docker run -d --name=cyclos-app-test -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=%cyclos_user% -e DB_PASSWORD=%cyclos_password% cyclos/cyclos:4.8.2`
 
  * **Install Symfony test database**
     * `php bin/console doctrine:database:create --env=test`
@@ -323,11 +336,11 @@ Digital Cairn
 
  * **Inject into docker data that to be imported in Cyclos database**
     * `docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/`
-    * `docker cp tests/test_simple_payment.csv cyclos-app-test:/usr/local/cyclos/`
+    * `docker cp tests/test_simple_payments.csv cyclos-app-test:/usr/local/cyclos/`
 
  * **Restore the test database with the backup dump file**
-    * `docker restart cyclos-db-test cyclos-app-test`
-    * `docker exec -u postgres -i cyclos-db-test psql --user cyclos cyclos < ./tests/cyclos-dump.sql`
+    * `docker exec -u postgres -i cyclos-db-test psql --user %cyclos_user% cyclos < cyclos-dump.sql`
 
 ## Launch ##
+ * `docker restart cyclos-db-test cyclos-app-test`
  * `./make-test.sh`

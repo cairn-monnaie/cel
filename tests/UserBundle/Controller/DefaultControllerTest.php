@@ -46,7 +46,7 @@ class DefaultControllerTest extends BaseControllerTest
         $form['fos_user_registration_form[name]']->setValue($name);
         $form['fos_user_registration_form[address][street1]']->setValue($street1);
         $form['fos_user_registration_form[address][zipCity]']->select($zipCode);
-        $form['fos_user_registration_form[description]']->setValue('Test');
+        $form['fos_user_registration_form[description]']->setValue($description);
 
         $crawler =  $this->client->submit($form);
 
@@ -61,10 +61,8 @@ class DefaultControllerTest extends BaseControllerTest
 
         if($emailConfirmed){
             $this->client->enableProfiler();
+
             $crawler = $this->client->request('GET','/register/informations/confirm/'.$newUser->getConfirmationToken());
-            $crawler = $this->client->followRedirect();
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
 
            //assert email
             $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -76,8 +74,14 @@ class DefaultControllerTest extends BaseControllerTest
             $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
             $this->assertSame($newUser->getEmail(), key($message->getTo()));
 
-        }
+            $crawler = $this->client->followRedirect();
 
+
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
+
+
+        }
 
         $this->em->refresh($newUser);
         $this->assertTrue(!$newUser->isEnabled());
@@ -113,40 +117,43 @@ class DefaultControllerTest extends BaseControllerTest
         
         $errors = $validator->validate($user);
 
-//        echo $errors;
+        echo $errors;
         $this->assertEquals(1,count($errors));
 
     }
 
     public function provideRegistrationData()
     {
-        $usedEmail = $this->container->getParameter('cyclos_global_admin_email');
-        $usedUsername = $this->container->getParameter('cyclos_global_admin_username');
+        //WARNING : do not take ROLE_SUPER_ADMIN installed user as base data
+        $existingUser = $this->em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_PRO'))[0];
+        $usedUsername = $existingUser->getUsername();
+        $usedEmail = $existingUser->getEmail();
 
+        //valid user data
         $baseData = array(
             'email'=>'test@cairn-monnaie.com',
             'username' => 'testUser',
             'name' => 'Test User V@lidation',
-            'plainPassword'=> '@@bbccdd',
-            'street1' => '7 rue Très Cloîtres',
+            'plainPassword'=> '@@bbccde',
+            'street1' => '7 rue Très Cloître',
             'zipCity' => array('zipCode'=>'38000', 'city'=> 'Grenoble'),
             'description' => 'This user is used to test the validator'
         );
 
         return array(
-            'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
-            'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
-            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
-            'too short username'                                      => array_replace($baseData, array('username'=>'test')),
-            'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
-            'username with special character'                         => array_replace($baseData, array('username'=>'test@')),
-            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
+//            'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
+//            'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
+//            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
+//            'too short username'                                      => array_replace($baseData, array('username'=>'test')),
+//            'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
+//            'username with special character'                         => array_replace($baseData, array('username'=>'test@')),
+//            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
             'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
-            'too short password'                                      => array_replace($baseData, array('password'=>'@bcdefg')),
-            'pseudo included in password'                             => array_replace($baseData, array('password'=>'@testUser@')),
-            'no special character'                                    => array_replace($baseData, array('password'=>'1testPwd2')),
-            'too simple password (all characters have 0 distance)'    => array_replace($baseData, array('password'=>'@@@@@@@@')),
-            'too obvious password(mot de passe = mot dans le nom)'    => array_replace($baseData, array('password'=>'V@lidation')),
+//            'too short password'                                      => array_replace($baseData, array('plainPassword'=>'@bcdefg')),
+//            'pseudo included in password'                             => array_replace($baseData, array('plainPassword'=>'@testUser@')),
+//            'no special character'                                    => array_replace($baseData, array('plainPassword'=>'1testPwd2')),
+//            'too simple password (all characters have 0 distance)'    => array_replace($baseData, array('plainPassword'=>'@@@@@@@@')),
+//            'too obvious password(mot de passe = mot dans le nom)'    => array_replace($baseData, array('password'=>'V@lidation')),
         );
     }
 

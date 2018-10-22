@@ -62,6 +62,11 @@ class UserValidator extends ConstraintValidator
                 ->atPath('username')
                 ->addViolation();
         }
+        if(strlen($user->getName()) < 3){
+            $this->context->buildViolation('Le nom doit contenir au minimum 3 caractères.')
+                ->atPath('name')
+                ->addViolation();
+        }
         if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
             $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
                 ->atPath('plainPassword')
