@@ -22,7 +22,7 @@ class AccessPlatform
      *@var UserRepository $userRepo
      */
     protected $userRepo;
-    
+
     public function __construct(UserRepository $userRepo, MessageNotificator $messageNotificator)
     {
         $this->userRepo = $userRepo;
@@ -66,8 +66,10 @@ class AccessPlatform
     {
         $from = $this->messageNotificator->getNoReplyEmail();
         foreach($users as $user){
-            $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
-            $user->setEnabled(false);
+            if($user->isEnabled()){
+                $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
+                $user->setEnabled(false);
+            }
         }
     }
 
@@ -85,10 +87,12 @@ class AccessPlatform
         $from = $this->messageNotificator->getNoReplyEmail();
 
         foreach($users as $user){
-            $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
-            $user->setEnabled(true);
-            $user->setPasswordTries(0);
-            $user->setCardKeyTries(0);
+            if(!$user->isEnabled()){
+                $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
+                $user->setEnabled(true);
+                $user->setPasswordTries(0);
+                $user->setCardKeyTries(0);
+            }
         }
     }
 

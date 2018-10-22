@@ -52,7 +52,6 @@ class User extends BaseUser
     /**
      * @ORM\Column(name="description", type="text", unique=false)
      * @Assert\NotBlank(message="Entrez une description de votre activité.")
-     * @Assert\Length(min=5, minMessage="Description un peu courte. {{ limit }} caractères minimum")
      */
     private $description; 
 

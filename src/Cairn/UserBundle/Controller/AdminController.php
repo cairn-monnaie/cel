@@ -77,7 +77,7 @@ class AdminController extends Controller
 
         $currentUser = $this->getUser();
 
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+        if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
@@ -87,7 +87,7 @@ class AdminController extends Controller
             if($form->get('save')->isClicked()){
 
                 $subject = 'Votre espace membre Cairn a été désactivé';
-                $body = 'Votre espace membre a été bloqué par le groupe local ' .$this->getUser()->getCity();
+                $body = 'Votre espace membre a été bloqué par ' .$currentUser->getName();
 
                 $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
                 $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
@@ -125,7 +125,7 @@ class AdminController extends Controller
 
         $currentUser = $this->getUser();
 
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+        if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
@@ -137,7 +137,7 @@ class AdminController extends Controller
                 $this->get('cairn_user.access_platform')->enable(array($user));
                 $em->flush();
 
-                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut à nouveau accéder à la plateforme.');
+                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
 
                 //if first activation : ask if generate card now
                 if($user->getLastLogin() == NULL){
@@ -267,11 +267,11 @@ class AdminController extends Controller
 
         foreach($pendingUsers as $user){
             $creationDate = $user->getCreationDate();
-            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ 2 days');//.$this->getParameter('cairn_email_activation_delay').' days');
+            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->getParameter('cairn_email_activation_delay').' days');
             $interval = $today->diff($expirationDate);
             $diff = $interval->days;
             $nbMonths = intdiv($this->getParameter('cairn_email_activation_delay'),30);
-            if($interval->invert == 0){
+            if( ($interval->invert == 0) && ($diff != 0)){
                 if($interval->m == $nbMonths){
                     if(($diff == 5) || ($diff == 2) || ($diff == 1)){
                         $subject = 'Validation de votre adresse email';
@@ -285,23 +285,23 @@ class AdminController extends Controller
                         $messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
 
                     }
-                    elseif($diff == 0){
-                        $subject = 'Expiration de validation';
-                        $body = $this->renderView('CairnUserBundle:Emails:email_expiration.html.twig',array('diff'=>$diff));
-
-                        $params = new \stdClass();                                             
-                        $params->status = 'REMOVED';                                           
-                        $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-                        $this->userManager->changeStatusUser($params);
-                        $saveEmail = $user->getEmail();
-                        $em->remove($user);
-                        $em->flush();
-                        $messageNotificator->notifyByEmail($subject,$from,$saveEmail,$body);
-
-                    }
-
                 }
             }
+            else{
+                $subject = 'Expiration de validation';
+                $body = $this->renderView('CairnUserBundle:Emails:email_expiration.html.twig',array('diff'=>$diff));
+
+                $params = new \stdClass();                                             
+                $params->status = 'REMOVED';                                           
+                $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+                $this->userManager->changeStatusUser($params);
+                $saveEmail = $user->getEmail();
+                $em->remove($user);
+                $em->flush();
+                $messageNotificator->notifyByEmail($subject,$from,$saveEmail,$body);
+
+            }
+
         }
 
         return new Response('ok');

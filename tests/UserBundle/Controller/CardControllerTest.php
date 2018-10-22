@@ -60,13 +60,6 @@ class CardControllerTest extends BaseControllerTest
 
     }
 
-    public function inputCardKey($crawler, $key)
-    {
-        $form = $crawler->selectButton('card_save')->form();
-        $form['card[field]']->setValue($key);
-        return $this->client->submit($form);
-    }
-
     /**
      *Tests the card validation using a key
      *@dataProvider provideUsers
@@ -329,7 +322,7 @@ class CardControllerTest extends BaseControllerTest
 
     /**
      *
-     *depends testNewCard
+     *@depends testNewCard
      */
     public function testCheckCardsExpiration()
     {
@@ -346,15 +339,6 @@ class CardControllerTest extends BaseControllerTest
 
     }
 
-    public function provideReferentsAndTargets()
-    {
-        return array(
-            array(array('mazouthm','@@bbccdd'),'mazouthm'),
-            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
-            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
-            array(array('mazouthm','@@bbccdd'),'cafeEurope')
-        );
-    }
 
     public function provideUsersWithRevokedCard()
     {

@@ -1,5 +1,5 @@
 begin;
-create table del_users as select id from users where user_group_id in (select id from groups where subclass <> 'ADMIN_GROUP');
+create table del_users as select id from users where user_group_id in (select id from groups where subclass <> 'ADMIN_GROUP' or (subclass = 'ADMIN_GROUP' and admin_group_type = 'NETWORK'));
 update users set registered_by_id = null where registered_by_id in (select id from del_users);
 update transactions set transfer_id = null, original_transfer_id = null, last_occurrence_success_id = null, last_occurrence_failure_id = null, feedback_id = null, access_client_id = null;
 delete from amount_reservations;

@@ -150,12 +150,32 @@ class BaseControllerTest extends WebTestCase
     }
 
 
-    public function cardKeyInput($crawler,$key)
+    public function inputCardKey($crawler, $key)
     {
         $form = $crawler->selectButton('card_save')->form();
         $form['card[field]']->setValue($key);
-        $crawler = $this->client->submit($form);
+        return $this->client->submit($form);
     }
 
+
+
+    public function provideReferentsAndTargets()
+    {
+        return array(
+            array(array('mazouthm','@@bbccdd'),'mazouthm'),
+            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
+            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
+            array(array('mazouthm','@@bbccdd'),'cafeEurope')
+        );
+    }
+
+    public function provideReferentsAndTargets2()
+    {
+        return array(
+            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
+            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
+            array(array('mazouthm','@@bbccdd'),'cafeEurope')
+        );
+    }
 
 }

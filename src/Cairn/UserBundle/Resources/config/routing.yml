@@ -69,7 +69,7 @@ cairn_user_users_home:
         _format: html|json
 
 cairn_user_email_check_validation:
-    path:     user/email/check/delayed/
+    path:     user/email/check/expiration/
     defaults: { _controller: CairnUserBundle:Admin:checkEmailsValidation }
 
 cairn_user_users_search:
