@@ -345,7 +345,7 @@ class UserController extends Controller
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $session = new Session();
+        $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
@@ -440,7 +440,7 @@ class UserController extends Controller
      *Edit an existing beneficiary
      *
      * Only the ICC can be changed. Then, this new beneficiary is verified : 
-     *  _checks that the user's beneficiary has an account as provided in the form
+     *  _checks that the user's beneficiary has an account with the provided ICC
      *  _check that new beneficiary is not already a beneficiary
      *@param Beneficiary $beneficiary Beneficiary with a given ICC is edited
      *@Method("GET")
@@ -449,7 +449,7 @@ class UserController extends Controller
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $session = new Session();
+        $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
 
@@ -463,7 +463,7 @@ class UserController extends Controller
             $session->set('formerICC',$beneficiary->getICC());
         }
         if($request->isMethod('POST')){ //form filled and submitted            
-            $formerBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$session->get('formerICC')));;
+            $formerBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$session->get('formerICC')));
             //            $session->remove('formerICC');
             $form->handleRequest($request);                                    
             if($form->isValid()){                                              
@@ -516,7 +516,7 @@ class UserController extends Controller
      */
     public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
     {
-        $session = new Session();
+        $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $form = $this->createForm(ConfirmationType::class);
         $currentUser = $this->getUser();
@@ -625,15 +625,15 @@ class UserController extends Controller
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
                     }else{
-                        $redirection = 'fos_user_security_login';
+                        $redirection = 'fos_user_security_logout';
                     }
 
-                    $this->removeUser($user);
+                    $this->removeUser($user, $currentUser);
                     $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                     return $this->redirectToRoute($redirection, array('_format'=>$_format));
                 }
                 else{
-                    $session->getFlashBag()->add('info','La suppression a été annulée avec succès.');
+                    $session->getFlashBag()->add('info','La demande de suppression a été annulée.');
                     return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
                 }
             }
@@ -652,7 +652,7 @@ class UserController extends Controller
      *@param User $user User to be removed
      *@todo : test query builder request using a join to get beneficiaries associated to user to see if it is faster
      */
-    public function removeUser(User $user)
+    public function removeUser(User $user, User $currentUser)
     {
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
@@ -685,7 +685,7 @@ class UserController extends Controller
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
         $subject = 'Un professionnel a été supprimé de la plateforme';
-        $body = $saveName .' a été supprimé de la plateforme.';
+        $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
         foreach($referents as $referent){
             $to = $referent->getEmail();
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
