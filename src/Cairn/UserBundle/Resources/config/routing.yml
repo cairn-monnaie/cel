@@ -37,7 +37,7 @@ cairn_user_profile_view:
         _format: html|json
 
 cairn_user_beneficiaries_list:
-    path:     user/beneficiaries.{_format}
+    path:     user/beneficiaries/list.{_format}
     defaults: { _controller: CairnUserBundle:User:listBeneficiaries, _format: html }
     requirements:
         _format: html|json
@@ -108,9 +108,9 @@ cairn_user_card_check_expiration:
     path:     card/check/expiration/
     defaults: { _controller: CairnUserBundle:Card:checkCardsExpiration }
 
-cairn_user_card_new:
-    path:     card/new/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:newCard, _format: html }
+cairn_user_card_order:
+    path:     card/order/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:orderCard, _format: html }
     requirements:
         id: \d+
         _format: html|json
@@ -147,14 +147,14 @@ cairn_user_banking_rib_download:
     path:     banking/download/rib/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:downloadRIB, _format: html }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
         _format: html|json
 
 cairn_user_banking_transfer_notice_download:
     path:     banking/download/notice/{id}/
     defaults: { _controller: CairnUserBundle:Banking:downloadTransferNotice }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview_download:
     path:     banking/download/accounts/
@@ -225,7 +225,7 @@ cairn_user_banking_transaction_scheduled_changestatus:
     path:     banking/transaction/scheduled/edit/{id}-{status}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction}
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
         status: cancel|open|block|execute
         _format: html|json
 
@@ -233,21 +233,21 @@ cairn_user_banking_transaction_recurring_cancel:
     path:     banking/transaction/recurring/cancel/{id}/
     defaults: { _controller: CairnUserBundle:Banking:cancelRecurringTransaction }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
 
 
 cairn_user_banking_account_operations:
     path:     banking/account/operations/{accountID}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:accountOperations, _format: html }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
         _format: html|json
 
 cairn_user_banking_transactions_recurring_view_detailed:
     path:     banking/transactions/recurring/view/detailed/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction, _format: html }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
         _format: html|json
 
 cairn_user_banking_transfer_view:
@@ -261,7 +261,7 @@ cairn_user_banking_transaction_occurrence_execute:
     path:     banking/transactions/recurring/occurrence/execute/{id}/
     defaults: { _controller: CairnUserBundle:Banking:executeOccurrence }
     requirements:
-        id: "[-]?[0-9]{19,}"
+        id: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview:
     path:     banking/accounts/overview/{id}.{_format}

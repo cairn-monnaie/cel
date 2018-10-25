@@ -26,6 +26,8 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
+use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
+
 use Cyclos;
 
 /**
@@ -94,39 +96,48 @@ class DefaultController extends Controller
             $new_admin->setAddress($address);
             $new_admin->setDescription('main user admin for app');
 
-            $card = new Card($new_admin,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'));
-            $new_admin->setCard($card);
-
             //set auto-referent
             $new_admin->addReferent($new_admin);
 
             $em = $this->getDoctrine()->getManager();
 
-            $card->generateCard($this->getParameter('kernel.environment'));
-            $fields = unserialize($card->getFields());
-    
-            $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
-                array('card'=>$card,'fields'=>$fields));
-    
-            $card->setGenerated(true);
-   
+
             $em->persist($new_admin);
 
             //generer puis encoder la carte
             $encoder = $this->get('security.encoder_factory')->getEncoder($new_admin);
-    
+
+
+            if ($encoder instanceof BCryptPasswordEncoder) {                       
+                $salt = NULL;                                              
+            } else {                                                               
+                $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
+            }       
+
+            $card = new Card($new_admin,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt);
+
+            $new_admin->setCard($card);
+
+            $card->generateCard($this->getParameter('kernel.environment'));
+            $fields = unserialize($card->getFields());
+
+            $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
+                array('card'=>$card,'fields'=>$fields));
+
+            $card->setGenerated(true);
+
             $nbRows = $card->getRows();
             $nbCols = $card->getCols();
-    
+
             for($row = 0; $row < $nbRows; $row++){
                 for($col = 0; $col < $nbCols; $col++){
-                    $encoded_field = $encoder->encodePassword($fields[$row][$col],$new_admin->getSalt());
+                    $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
                     $fields[$row][$col] = substr($encoded_field,0,4);
                 }
             }
-    
+
             $card->setFields(serialize($fields));
-    
+
             $em->persist($new_admin);
 
             $session = $request->getSession();
@@ -156,17 +167,17 @@ class DefaultController extends Controller
      *
      * The type of user is set in session here because we will need it in our RegistrationEventListener.
      */
-   public function registrationAction(Request $request)
-   {
-       $session = $request->getSession();
+    public function registrationAction(Request $request)
+    {
+        $session = $request->getSession();
         $checker = $this->get('security.authorization_checker');
 
-       $user = $this->getUser();
-       if($user){
+        $user = $this->getUser();
+        if($user){
             if($user->hasRole('ROLE_PRO')){
-                throw new AccessDeniedException('Vous avez déjà un compte.');
+                throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
-       }
+        }
 
         $type = $request->query->get('type'); 
         if($type == NULL){
@@ -174,7 +185,7 @@ class DefaultController extends Controller
         }
         elseif( ($type == 'pro') || ($type == 'localGroup') || ($type == 'superAdmin')){
             if( ($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
-                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
+                throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
 
             $session->set('registration_type',$type);
@@ -184,7 +195,7 @@ class DefaultController extends Controller
         }else{
             return $this->redirectToRoute('cairn_user_registration');
         }
-   }    
+    }    
 
 
 }

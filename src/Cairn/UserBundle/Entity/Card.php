@@ -69,6 +69,13 @@ class Card
     private $creationDate;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="salt", type="string", length=400,nullable=false)
+     */
+    private $salt;
+
+    /**
      * @var boolean
      *
      * @ORM\Column(name="is_generated", type="boolean")
@@ -76,11 +83,12 @@ class Card
     private $generated;
 
 
-    public function __construct($user,$rows,$cols)
+    public function __construct($user,$rows,$cols,$salt)
     {
         $this->setUser($user);
         $this->setRows($rows);
         $this->setCols($cols);
+        $this->setSalt($salt);
         $nbCards = $this->getUser()->getNbCards();
         $this->setNumber($nbCards + 1);
         $this->setEnabled(false);
@@ -327,4 +335,28 @@ class Card
     {
         return $this->generated;
     }
+
+     /**
+     * Set salt
+     *
+     * @param string $salt
+     *
+     * @return Card
+     */
+   public function setSalt($salt)
+    {
+        $this->salt = $salt;
+        return $this;
+    }
+
+     /**
+     * Get salt
+     *
+     * @return string
+     */
+   public function getSalt()
+    {
+        return $this->salt;
+    }
+
 }

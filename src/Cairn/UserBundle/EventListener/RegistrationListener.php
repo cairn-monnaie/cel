@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\DependencyInjection\Container;
 
 use Symfony\Component\Config\Definition\Exception\Exception;
+use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserCyclosBundle\Entity\UserManager;
@@ -76,10 +77,6 @@ class RegistrationListener
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
         $event->getRequest()->getSession()->getFlashBag()->add('info','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée.');
 
-        $subject = 'Demande d\'inscription';                               
-        $from = $messageNotificator->getNoReplyEmail();                    
-        //        $to = $admin->getEmail();                                         
-        //        $body = $this->render('CairnUserBundle:Emails:submit_alert.html.twig',array('user'=>$user));
     }
 
 
@@ -94,7 +91,7 @@ class RegistrationListener
         $session = $event->getRequest()->getSession();
         $type = $session->get('registration_type'); 
         if(!$type){
-           $type = 'pro'; 
+            $type = 'pro'; 
         }
         $user = $event->getUser();
 
@@ -156,7 +153,14 @@ class RegistrationListener
 
         $user->setCyclosID($newUserCyclosID);
 
-        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'));
+        $encoder = $this->container->get('security.encoder_factory')->getEncoder($user);
+        if ($encoder instanceof BCryptPasswordEncoder) {                   
+            $salt = NULL;                                                  
+        } else {                                                           
+            $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
+        }       
+
+        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
         $user->setCard($card);                                         
 
         //        //finally, deal with logo                                      

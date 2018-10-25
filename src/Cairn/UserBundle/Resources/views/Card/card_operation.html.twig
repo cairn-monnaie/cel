@@ -15,7 +15,7 @@
     <ul class="list_card_operations">
         {% set card = user.card %}
         <li> <a class="operation_link" href="{{path('cairn_user_card_revoke',{'id':user.id})}}"> Révoquer la carte </a> </li>
-        <li> <a class="operation_link" href="{{path('cairn_user_card_new',{'id':user.id})}}"> Commander une carte </a> </li>
+        <li> <a class="operation_link" href="{{path('cairn_user_card_order',{'id':user.id})}}"> Commander une carte </a> </li>
     
         {% if user == app.user and card  %}
             {% if not card.enabled %}

@@ -49,7 +49,7 @@ class Security
 
         $isSensibleRoute = in_array($route,$sensibleRoutes);                   
 
-        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_new'){
+        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_order'){
             if(! ($this->userRepo->findOneBy(array('id'=>$parameters['id'])) === $currentUser)){
                 $isSensibleUrl = true;
             }

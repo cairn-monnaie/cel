@@ -165,14 +165,14 @@ class SecurityListener
     {
         $session = $event->getSession();
         $user = $event->getUser();
+        $currentCard = $user->getCard();
+        $salt = $currentCard->getSalt();                                       
 
         $encoder = $this->encoderFactory->getEncoder($user);                         
-        $salt = $user->getSalt();                                       
 
         $cardKey = $event->getCardKey();
         $position = $event->getPosition();
 
-        $currentCard = $user->getCard();
 
         $fields = unserialize($currentCard->getFields());                             
         $rows = $currentCard->getRows();                                              

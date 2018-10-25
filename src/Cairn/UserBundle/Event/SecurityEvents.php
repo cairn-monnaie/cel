@@ -36,7 +36,8 @@ final class SecurityEvents
         'cairn_user_users_activate',
         'cairn_user_users_remove',
         'cairn_user_cyclos_config_home',
-        'cairn_user_cyclos_accountsconfig_account_edit'
+        'cairn_user_cyclos_accountsconfig_account_edit',
+        'cairn_user_password_change'
     ];
 
     /**

@@ -164,7 +164,7 @@ class CardController extends Controller
      *@throws AccessDeniedException currentUser is not card's owner or referent of card's owner
      *@Method("GET")
      */
-    public function newCardAction(Request $request, User $user, $_format)
+    public function orderCardAction(Request $request, User $user, $_format)
     {
         $currentUser = $this->getUser();
         $session = $request->getSession();
@@ -262,7 +262,7 @@ class CardController extends Controller
             $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
         }
-        if(!$card->getFields()){
+        if(!$card->isGenerated()){
                 $session->getFlashBag()->add('error',
                     'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
                 return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
@@ -485,7 +485,7 @@ class CardController extends Controller
 
         for($row = 0; $row < $nbRows; $row++){
             for($col = 0; $col < $nbCols; $col++){
-                $encoded_field = $encoder->encodePassword($fields[$row][$col],$user->getSalt());
+                $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
                 $fields[$row][$col] = substr($encoded_field,0,4);
             }
         }
