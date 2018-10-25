@@ -100,50 +100,51 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
+        //WARNING with commented code below : creates duplicated users in cyclos database. It is a problem for network and global admins if they want to change their password
         //if no violation, it necessarily means that a validation error would come from password
-        if(count($this->context->getViolations()) == 0){
-
-            $this->networkInfo->switchToNetwork($this->networkName);
-
-            $groupName = $this->groupName;
-            $groupVO = $this->groupInfo->getGroupVO($groupName);
-
-            //if the webServices channel is not added, it will be impossible to update/remove the cyclos user entity from third application
-            $webServicesChannelVO = $this->channelInfo->getChannelVO('webServices');
-
-            //add an equivalent user in cyclos if no other error to make sure a possible validation error comes from Cyclos algorithm  
-
-            $userDTO = new \stdClass();                                    
-            $userDTO->name = $user->getName();                             
-            $userDTO->username = $user->getUsername();                     
-            $userDTO->internalName = $user->getUsername();                 
-            $userDTO->login = $user->getUsername();                        
-            $userDTO->email = $user->getEmail();                           
-
-
-            $password = new \stdClass();                                   
-            $password->assign = true;                                      
-            $password->type = 'login';//in Cyclos : System -> User config -> password types -> click on login Password
-            $password->value = $user->getPlainPassword();                  
-            $password->confirmationValue = $user->getPlainPassword();//control already done in Symfony
-            $userDTO->passwords = $password;                               
-
-            try{                                                                   
-                $newUserCyclosID = $this->cyclosUserManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
-                $params = new \stdClass();                                             
-                $params->status = 'REMOVED';
-                $params->user = $newUserCyclosID;
-                $this->cyclosUserManager->changeStatusUser($params);
-            }catch(\Exception $e){                                                 
-                if($e->errorCode == 'VALIDATION'){                                 
-                    $this->context->buildViolation('Mot de passe trop simple')
-                        ->atPath('plainPassword')
-                        ->addViolation();
-                }else{
-                    throw $e;
-                }
-            }
-        }
+//        if(count($this->context->getViolations()) == 0){
+//
+//            $this->networkInfo->switchToNetwork($this->networkName);
+//
+//            $groupName = $this->groupName;
+//            $groupVO = $this->groupInfo->getGroupVO($groupName);
+//
+//            //if the webServices channel is not added, it will be impossible to update/remove the cyclos user entity from third application
+//            $webServicesChannelVO = $this->channelInfo->getChannelVO('webServices');
+//
+//            //add an equivalent user in cyclos if no other error to make sure a possible validation error comes from Cyclos algorithm  
+//
+//            $userDTO = new \stdClass();                                    
+//            $userDTO->name = $user->getName();                             
+//            $userDTO->username = $user->getUsername();                     
+//            $userDTO->internalName = $user->getUsername();                 
+//            $userDTO->login = $user->getUsername();                        
+//            $userDTO->email = $user->getEmail();                           
+//
+//
+//            $password = new \stdClass();                                   
+//            $password->assign = true;                                      
+//            $password->type = 'login';//in Cyclos : System -> User config -> password types -> click on login Password
+//            $password->value = $user->getPlainPassword();                  
+//            $password->confirmationValue = $user->getPlainPassword();//control already done in Symfony
+//            $userDTO->passwords = $password;                               
+//
+//            try{                                                                   
+//                $newUserCyclosID = $this->cyclosUserManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
+//                $params = new \stdClass();                                             
+//                $params->status = 'REMOVED';
+//                $params->user = $newUserCyclosID;
+//                $this->cyclosUserManager->changeStatusUser($params);
+//            }catch(\Exception $e){                                                 
+//                if($e->errorCode == 'VALIDATION'){                                 
+//                    $this->context->buildViolation('Mot de passe trop simple')
+//                        ->atPath('plainPassword')
+//                        ->addViolation();
+//                }else{
+//                    throw $e;
+//                }
+//            }
+//        }
 
     }
 }
