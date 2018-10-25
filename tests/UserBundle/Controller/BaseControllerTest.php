@@ -113,7 +113,7 @@ class BaseControllerTest extends WebTestCase
         $doctrineUser->setAddress($address);                                  
         $doctrineUser->setDescription('Test user blablablabla');             
 
-        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'));
+        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
         $today = new \Datetime(date('Y-m-d H:i:s'));
         $nbDays = 3*$userRank;
         $creationDate = date_modify(new \Datetime($today->format('Y-m-d H:i:s')),'- '.$nbDays.' days');
@@ -158,6 +158,15 @@ class BaseControllerTest extends WebTestCase
     }
 
 
+    public function provideCommercialPartners()
+    {
+         return array(
+            array('creditor'=>'DrDBrew','debitor'=>'MaltOBar' ,'isValid'=>true),
+            array('creditor'=>'DrDBrew','debitor'=>'LaDourbie','isValid'=>true),
+            array('creditor'=>'DrDBrew','debitor'=>'DrDBrew'  ,'isValid'=>false),
+        );
+       
+    }
 
     public function provideReferentsAndTargets()
     {

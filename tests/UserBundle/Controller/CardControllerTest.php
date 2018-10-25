@@ -23,6 +23,7 @@ class CardControllerTest extends BaseControllerTest
 
 
     /**
+     * @TODO : tester directement la présence des urls
      *_$referent wants card action for himself :
      *                          .installed superadmin : revoke / order / activate / generate
      *                          .otherwise : revoke / order / activate
@@ -62,54 +63,66 @@ class CardControllerTest extends BaseControllerTest
 
     /**
      *Tests the card validation using a key
-     *@dataProvider provideUsers
+     *@dataProvider provideUsersForCardValidation
      */
-    public function testValidateCard($login,$password)
+    public function testValidateCard($login,$key, $expectForm, $expectValid)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($login, $password);
+        $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
         $crawler = $this->client->request('GET', '/card/validate');
 
         $card = $currentUser->getCard();
-        if(!$card || !$card->isGenerated() || $card->isEnabled()){
+        if(!$expectForm){
             $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
         }else{
-            //wrong key
-            $crawler = $this->inputCardKey($crawler,'5555');
-            $this->assertTrue($this->client->getResponse()->isRedirect('/card/validate'));
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1,$crawler->filter('html:contains("Clé invalide")')->count());
-            $this->assertSame(1,$crawler->filter('html:contains("Attention")')->count());
+            $crawler = $this->inputCardKey($crawler,$key);
 
-            $this->em->refresh($currentUser);
-            $this->assertSame(1,$currentUser->getCardKeyTries());
+            if(!$expectValid){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/card/validate'));
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1,$crawler->filter('html:contains("Clé invalide")')->count());
+                $this->assertSame(1,$crawler->filter('html:contains("Attention")')->count());
+    
+                $this->em->refresh($currentUser);
+                $this->assertSame(1,$currentUser->getCardKeyTries());
+                $this->assertFalse($card->isEnabled());
+            }else{
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(0,$crawler->filter('html:contains("Activer la carte")')->count());
+    
+                $this->em->refresh($currentUser);
+                $this->em->refresh($card);
+    
+                $this->assertSame(0,$currentUser->getCardKeyTries());
+                $this->assertTrue($card->isEnabled());
+            }
 
-            //valid key
-            $crawler = $this->inputCardKey($crawler,'1111');
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(0,$crawler->filter('html:contains("Activer la carte")')->count());
-
-            $this->em->refresh($currentUser);
-            $this->em->refresh($card);
-
-            $this->assertSame(0,$currentUser->getCardKeyTries());
-            $this->assertTrue($card->isEnabled());
         }
+    }
+
+    public function provideUsersForCardValidation()
+    {
+        return array(
+            'invalid key'        => array('login'=>'mazouthm','key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
+            'valid key'          => array('login'=>'mazouthm','key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
+            'validated card'     => array('login'=>'mazouthm','key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
+            'not generated card' => array('login'=>'DrDBrew', 'key'=>'1111','expectForm'=>false,'expectValidKey'=>false),
+        );
     }
 
     /**
      *Tests if card intermediate step is reached for a  sensible operation
      *@depends testValidateCard
-     *@dataProvider provideUsers
+     *@dataProvider provideUsersWithValidatedCard
      */
-    public function testCardSecurityLayer($login,$password)
+    public function testCardSecurityLayer($login,$expectValid)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($login, $password);
+        $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
 
@@ -121,32 +134,41 @@ class CardControllerTest extends BaseControllerTest
         $crawler = $this->client->followRedirect();
 
         $card = $currentUser->getCard();
-        if(!$card || !$card->isEnabled()){
+        if(!$expectValid){
             $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("pas active")')->count());
         }else{
-            //valid key
             $crawler = $this->inputCardKey($crawler,'1111');
             $this->assertTrue($this->client->getResponse()->isRedirect($url));
         }
     }
 
+    public function provideUsersWithValidatedCard()
+    {
+        return array(
+            'validated card'     => array('login'=>'mazouthm', 'expectValid'=>true),
+            'not validated card' => array('login'=>'LaDourbie','expectValid'=>false),
+        );
+    }
+
     /**
-     * if $referent is installed super admin : can generate a card for himself
-     * if $referent is referent of $target : can generate card
-     * if $referent is not referent of $target : code 403
-     * if $referent does not have active card : redirection
+     * if $current is installed super admin : can generate a card for himself
+     * if $current is current of $target : can generate card
+     * if $current is not current of $target : code 403
+     * if $current does not have active card : redirection
      * if $target has a generated card : redirection
      *
      *@depends testCardSecurityLayer
-     *@dataProvider provideReferentsAndTargets
+     *@dataProvider provideUsersForCardGeneration
      */
-    public function testGenerateCard($referent, $target)
+    public function testGenerateCard($current, $target,$expectConfirm,$expectMessage)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($referent[0], $referent[1]);
+        $crawler = $this->login($current, '@@bbccdd');
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
@@ -164,12 +186,13 @@ class CardControllerTest extends BaseControllerTest
         if(!$targetUser->hasReferent($currentUser)){
             //access denied exception
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
             $card = $targetUser->getCard();
-            if(!$card || $card->isGenerated()){
+            if(!$expectConfirm){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }else{
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $crawler =  $this->client->submit($form);
@@ -186,24 +209,36 @@ class CardControllerTest extends BaseControllerTest
         }
     }
 
+    public function provideUsersForCardGeneration()
+    {
+        return array(
+               array('current'=>'mazouthm','target'=>'mazouthm','expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
+               array('current'=>'mazouthm','target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>'mazouthm','target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>'mazouthm','target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>'mazouthm','target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>'mazouthm','target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
+        );
+    }
+
     /**
      * $target wants to revoke his card
-     *_$referent = $target || $referent is referent of $target
+     *_$current = $target || $current is referent of $target
      *                          . no card || card revoked : redirection to card home page
      *                          . card not revoked : password confirmation
      *                                                      . success password : session message with key "success" + card exists
      *                                                      . wrong password : try again
-     *@dataProvider provideUsersWithRevokedCard 
+     *@dataProvider provideUsersForCardRevocation 
      *@depends testGenerateCard
      */
-    public function testRevokeCard($referent, $target)
+    public function testRevokeCard($current, $target,$expectForm,$expectMessage)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($referent[0], $referent[1]);
+        $crawler = $this->login($current, '@@bbccdd');
 
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
@@ -219,10 +254,13 @@ class CardControllerTest extends BaseControllerTest
         if(! ($targetUser->hasReferent($currentUser) || $targetUser === $currentUser)){
             //access denied exception
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
             $targetCard = $targetUser->getCard();
-            if(!$targetCard || !$targetCard->getFields()){
+            if(!$expectForm){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }else{
                 $this->client->enableProfiler();
 
@@ -245,13 +283,18 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
-
-                $crawler = $this->client->followRedirect();
-                $this->assertSame(1,$crawler->filter('html:contains("prise en compte")')->count());
-
             }
         }
+    }
 
+    public function provideUsersForCardRevocation()
+    {
+        return array(
+             'revocation from ref'=> array('current'=>'mazouthm','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'self revocation'=> array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'),             
+             'revoc from non ref'=>array('current'=>'mazouthm','target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'no card to revoke'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'pas encore été créée'),
+        );
     }
 
     /**
@@ -261,20 +304,20 @@ class CardControllerTest extends BaseControllerTest
      *                          . card revoked : password confirmation
      *                                                      . success password : session message with key "success" + card exists
      *                                                      . wrong password : try again
-     * @dataProvider provideUsersWithRevokedCard
+     * @dataProvider provideUsersForCardOrder
      * @depends testRevokeCard
      */
-    public function testNewCard($referent,$target)
+    public function testOrderCard($current,$target,$expectForm, $expectMessage)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($referent[0], $referent[1]);
+        $crawler = $this->login($current, '@@bbccdd');
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
-        $url = '/card/new/'.$targetUser->getID();
+        $url = '/card/order/'.$targetUser->getID();
         $crawler = $this->client->request('GET',$url);
         if($currentUser !== $targetUser){
             $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
@@ -286,10 +329,14 @@ class CardControllerTest extends BaseControllerTest
         if(! ($targetUser->hasReferent($currentUser) || $targetUser === $currentUser)){
             //access denied exception
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+
         }else{
             $targetCard = $targetUser->getCard();
-            if($targetCard){
+            if(!$expectForm){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }else{
                 $this->client->enableProfiler();
 
@@ -300,6 +347,7 @@ class CardControllerTest extends BaseControllerTest
                 //assert card
                 $this->em->refresh($targetUser);
                 $this->assertNotEquals($targetUser->getCard(),NULL);
+                $this->assertEquals($targetUser->getCardKeyTries(), 0);
 
                 //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -314,49 +362,39 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
-                $crawler = $this->client->followRedirect();
-                $this->assertSame(1,$crawler->filter('html:contains("prise en compte")')->count());
             }
         }
     }
 
-    /**
-     *
-     *@depends testNewCard
-     */
-    public function testCheckCardsExpiration()
-    {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $login = $this->container->getParameter('cyclos_global_admin_username');
-        $password = '@@bbccdd';
-        $crawler = $this->login($login, $password);
-
-
-        $crawler = $this->client->request('GET','/card/check/expiration/');
-
-        $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
-
-    }
-
-
-    public function provideUsersWithRevokedCard()
+    public function provideUsersForCardOrder()
     {
         return array(
-            array(array('mazouthm','@@bbccdd'),'cafeEurope'), 
-            array(array('mazouthm','@@bbccdd'),'LaBonnePioche'),  
-            array(array('MaltOBar','@@bbccdd'),'MaltOBar'),  
-            array(array('DrDBrew','@@bbccdd'),'DrDBrew')     
+             'ordered by ref'=> array('current'=>'mazouthm','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'self order'=> array('current'=>'MaltOBar','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'),             
+             'ordered by non ref'=>array('current'=>'mazouthm','target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'no card to order'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'déjà une carte'),
         );
     }
 
-    public function provideUsers()
-    {
-        return array(
-            array('mazouthm','@@bbccdd'),
-            array('DrDBrew','@@bbccdd')
-        );
-    }
+//    /**
+//     *
+//     *@depends testOrderCard
+//     */
+//    public function testCheckCardsExpiration()
+//    {
+//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+//
+//        $login = $this->container->getParameter('cyclos_global_admin_username');
+//        $password = '@@bbccdd';
+//        $crawler = $this->login($login, $password);
+//
+//
+//        $crawler = $this->client->request('GET','/card/check/expiration/');
+//
+//        $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
+//
+//    }
+
 
 }
 
