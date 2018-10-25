@@ -202,7 +202,8 @@ class CardController extends Controller
                     }
 
                     if($currentUser->getPasswordTries() == 0) {
-                        $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols') );
+                        $salt = $this->get('cairn_user.security')->generateCardSalt($user);
+                        $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols'),$salt);
                         $user->setCard($card);
 
                         $em->flush();

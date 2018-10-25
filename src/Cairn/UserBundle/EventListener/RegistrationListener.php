@@ -14,7 +14,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\DependencyInjection\Container;
 
 use Symfony\Component\Config\Definition\Exception\Exception;
-use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserCyclosBundle\Entity\UserManager;
@@ -153,13 +152,7 @@ class RegistrationListener
 
         $user->setCyclosID($newUserCyclosID);
 
-        $encoder = $this->container->get('security.encoder_factory')->getEncoder($user);
-        if ($encoder instanceof BCryptPasswordEncoder) {                   
-            $salt = NULL;                                                  
-        } else {                                                           
-            $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
-        }       
-
+        $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
         $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
         $user->setCard($card);                                         
 

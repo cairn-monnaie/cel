@@ -40,6 +40,7 @@ services:
         arguments:
             - "@cairn_user.repository_user"
             - "@security.token_storage"
+            - "@security.encoder_factory" 
 
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener

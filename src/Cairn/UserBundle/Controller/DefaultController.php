@@ -26,7 +26,6 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
 use Cyclos;
 
@@ -105,15 +104,7 @@ class DefaultController extends Controller
             $em->persist($new_admin);
 
             //generer puis encoder la carte
-            $encoder = $this->get('security.encoder_factory')->getEncoder($new_admin);
-
-
-            if ($encoder instanceof BCryptPasswordEncoder) {                       
-                $salt = NULL;                                              
-            } else {                                                               
-                $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
-            }       
-
+            $salt = $this->get('cairn_user.security')->generateCardSalt($new_admin);
             $card = new Card($new_admin,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt);
 
             $new_admin->setCard($card);
@@ -129,6 +120,7 @@ class DefaultController extends Controller
             $nbRows = $card->getRows();
             $nbCols = $card->getCols();
 
+            $encoder = $this->get('security.encoder_factory')->getEncoder($new_admin);
             for($row = 0; $row < $nbRows; $row++){
                 for($col = 0; $col < $nbCols; $col++){
                     $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());

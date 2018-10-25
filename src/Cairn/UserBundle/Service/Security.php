@@ -5,8 +5,11 @@ namespace Cairn\UserBundle\Service;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Entity\User;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Encoder\EncoderFactory;
+use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
 /**
  * This class contains services related to security
@@ -21,10 +24,13 @@ class Security
 
     protected $tokenStorage;
 
-    public function __construct(UserRepository $userRepo, TokenStorageInterface $tokenStorage)
+    protected $encoderFactory;
+
+    public function __construct(UserRepository $userRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory)
     {
         $this->userRepo = $userRepo;
         $this->tokenStorage = $tokenStorage;
+        $this->encoderFactory = $encoderFactory;
     }
 
     public function getCurrentUser()
@@ -87,4 +93,16 @@ class Security
 
         return false;                                                          
     }                
+
+    public function generateCardSalt(User $user)
+    {
+        $encoder = $this->encoderFactory->getEncoder($user);
+
+        if ($encoder instanceof BCryptPasswordEncoder) {                   
+            $salt = NULL;                                                  
+        } else {                                                           
+            $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
+        }                    
+        return $salt;
+    }
 }
