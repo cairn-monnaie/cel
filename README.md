@@ -13,6 +13,8 @@ Digital Cairn
    * **_$variable_** : line that you need to enter or customize,  it will be reused later on
    * **_%variable%_** : line already entered previously in the tutorial
 
+ You will find these notations either in instructions or in command lines.
+
 ## Download Sources
 
    `git clone https://github.com/cairn-monnaie/CairnB2B.git`
@@ -25,11 +27,11 @@ Digital Cairn
 
   `docker network create cyclos-net`
  
-  `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=$cyclos_user -e POSTGRES_PASSWORD=cyclos_password cyclos/db`
+  `docker run -d --name=cyclos-db --net=cyclos-net --hostname=cyclos-db -e POSTGRES_DB=cyclos -e POSTGRES_USER=$cyclos_user -e POSTGRES_PASSWORD=$cyclos_password cyclos/db`
 
   The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version, pretty useful in test environment.
 
-  `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=cyclospwd cyclos/cyclos:4.8.2`
+  `docker run -d --name=cyclos-app -p 1234:8080 --net=cyclos-net -e DB_HOST=cyclos-db -e DB_NAME=cyclos -e DB_USER=cyclos -e DB_PASSWORD=%cyclos_password% cyclos/cyclos:4.8.2`
 
 
 ## Configure a Cyclos instance
