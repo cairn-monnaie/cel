@@ -77,15 +77,17 @@ class CardControllerTest extends BaseControllerTest
         $card = $currentUser->getCard();
         if(!$expectForm){
             $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
+
         }else{
             $crawler = $this->inputCardKey($crawler,$key);
 
             if(!$expectValid){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/validate'));
                 $crawler = $this->client->followRedirect();
-                $this->assertSame(1,$crawler->filter('html:contains("Clé invalide")')->count());
-                $this->assertSame(1,$crawler->filter('html:contains("Attention")')->count());
-    
+                $this->assertSame(1, $crawler->filter('div.alert-error')->count());    
+   
                 $this->em->refresh($currentUser);
                 $this->assertSame(1,$currentUser->getCardKeyTries());
                 $this->assertFalse($card->isEnabled());
@@ -98,6 +100,7 @@ class CardControllerTest extends BaseControllerTest
     
                 $this->assertSame(0,$currentUser->getCardKeyTries());
                 $this->assertTrue($card->isEnabled());
+                $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
             }
 
         }
@@ -138,6 +141,8 @@ class CardControllerTest extends BaseControllerTest
             $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
             $crawler = $this->client->followRedirect();
             $this->assertSame(1,$crawler->filter('html:contains("pas active")')->count());
+            $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
+
         }else{
             $crawler = $this->inputCardKey($crawler,'1111');
             $this->assertTrue($this->client->getResponse()->isRedirect($url));
@@ -193,6 +198,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+                $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
             }else{
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $crawler =  $this->client->submit($form);
@@ -261,6 +267,8 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+                $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
+
             }else{
                 $this->client->enableProfiler();
 
@@ -283,6 +291,10 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
             }
         }
     }
@@ -337,6 +349,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+                $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
             }else{
                 $this->client->enableProfiler();
 
@@ -362,6 +375,9 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
             }
         }
     }

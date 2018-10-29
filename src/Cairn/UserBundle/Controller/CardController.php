@@ -264,7 +264,7 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         if(!$card->isGenerated()){
-                $session->getFlashBag()->add('error',
+                $session->getFlashBag()->add('info',
                     'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
                 return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
         }
@@ -296,7 +296,7 @@ class CardController extends Controller
                         $em->remove($card);
                         $em->flush();
 
-                        $session->getFlashBag()->add('info','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
+                        $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
                     }
                     else{
                         $session->getFlashBag()->add('error','Mot de passe invalide.');

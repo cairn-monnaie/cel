@@ -29,7 +29,8 @@ class DefaultControllerTest extends BaseControllerTest
         $this->assertTrue($this->client->getResponse()->isRedirect('/'));
         $crawler = $this->client->followRedirect();
 
-        $this->assertSame(1,$crawler->filter('html:contains("already exists")')->count());
+        $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
+
     }
 
 //    /**
@@ -89,9 +90,6 @@ class DefaultControllerTest extends BaseControllerTest
         $crawler = $this->client->request('GET','/registration/?type='.$type);
         $crawler = $this->client->followRedirect();
 
-
-        $this->assertSame(1,$crawler->filter('html:contains("Nom de la structure")')->count());
-
         $form = $crawler->selectButton('registration.submit')->form();
         $form['fos_user_registration_form[email]']->setValue($email);
         $form['fos_user_registration_form[username]']->setValue($username);
@@ -131,8 +129,7 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
             $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
-
-
+            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
         }
 
         $this->em->refresh($newUser);
@@ -156,7 +153,7 @@ class DefaultControllerTest extends BaseControllerTest
 
     /**
      *
-     *@depends testRegistrationByAdmin
+     *@depends testRegistration
      *@dataProvider provideRegistrationData
      */
     public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$description)
@@ -172,8 +169,6 @@ class DefaultControllerTest extends BaseControllerTest
         $address->setStreet1($street1);                        
                                                                              
         $user->setAddress($address);
-        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'));
-        $user->setCard($card);
         
         $user->setEmail($email);
         $user->setUsername($username);
@@ -208,11 +203,12 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
             'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
-            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
+//            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
+//
             'too short username'                                      => array_replace($baseData, array('username'=>'test')),
             'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
             'username with special character'                         => array_replace($baseData, array('username'=>'test@')),
-            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
+//            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
           'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
             'too short password'                                      => array_replace($baseData, array('plainPassword'=>'@bcdefg')),
             'pseudo included in password'                             => array_replace($baseData, array('plainPassword'=>'@testUser@')),
