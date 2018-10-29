@@ -34,13 +34,14 @@ class UserControllerTest extends BaseControllerTest
 
         $crawler = $this->login($login, '@@bbccdd');
 
-        $crawler = $this->client->request('GET','/password/new/');
+        $url = '/password/new/';
+        $crawler = $this->client->request('GET',$url);
 
         $card = $currentUser->getCard();
         if(!$card->isEnabled()){
             $crawler = $this->client->request('GET', '/card/validate');
             $crawler = $this->inputCardKey($crawler,'1111');
-            $crawler = $this->client->request('GET','/password/new/');
+            $crawler = $this->client->request('GET',$url);
         }
 
         $crawler = $this->client->followRedirect();
@@ -54,16 +55,17 @@ class UserControllerTest extends BaseControllerTest
         $crawler = $this->client->submit($form);
 
         if($isValid){
-            $this->assertTrue($this->client->getResponse()->isRedirect('user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
             $crawler = $this->client->followRedirect();
+            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
             $crawler = $this->login($login, $new);
             $this->assertSame(1,$crawler->filter('html:contains("Espace Professionnel")')->count());
+            $this->assertSame(1, $crawler->filter('li#id_welcome')->count());    
         }else{
-            ;
-//            $crawler = $this->client->followRedirect();
-//            $this->assertTrue($this->client->getRequest()->isMethod('GET'));
-//            $this->assertSame(1,$crawler->filter('html:contains("Mot de passe actuel")')->count());
+            $this->assertSame(1, $crawler->filter('input#change_password_current_password')->count());    
+            $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
         }
     }
 
@@ -82,8 +84,6 @@ class UserControllerTest extends BaseControllerTest
 
         return array(
             'invalid current'             => array_replace($baseData, array('current'=>'@bbccdd','expectValid'=>false)),          
-            'current = new'               => array_replace($baseData, array('new'=>'@@bbccdd','confirm'=>'@@bbccdd','expectValid'=>false,
-            'expectedMessage'=>'identiques')),          
             'new != confirm'              => array_replace($baseData, array('confirm'=>'@bcdefg','expectValid'=>false,
             'expectedMessage'=>'correspondent pas')),          
             'too short new password'      => array_replace($baseData, array('new'=>'@bcdefg','confirm'=>'@bcdefg','expectValid'=>false,
@@ -92,7 +92,7 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessage'=>'contenu dans le mot de passe')),
             'no special character'        => array_replace($baseData, array('new'=>'1testPwd2' ,'confirm'=>'1testPwd2','expectValid'=>false,
             'expectedMessage'=>'caractère spécial')),
-//            'valid'                       => $baseData
+            'valid'                       => $baseData
         );
     }
 
@@ -161,7 +161,7 @@ class UserControllerTest extends BaseControllerTest
 //    }
 //
 //    /**
-//     *@depends testValidateCard
+//     *depends testValidateCard
 //     *@dataProvider provideBeneficiariesToAdd
 //     */
 //    public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid,$expectMessage)
@@ -171,17 +171,22 @@ class UserControllerTest extends BaseControllerTest
 //        $crawler = $this->login($current, '@@bbccdd');
 //
 //        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
-//        $creditorUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('email'=>$email));
+//        $creditorUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('email'=>$email,'name'=>$name));
 //
-//        $ICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
-//        $ICC = ($changeICC) ? $ICC + 1 : $ICC;
-//        $crawler = $this->client->request('GET','user/beneficiaries/add');
+//        if($creditorUser){
+//            $ICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
+//            $ICC = ($changeICC) ? $ICC + 1 : $ICC;
+//        }else{
+//            $ICC = 123456789;
+//        }
+//
+//        $crawler = $this->client->request('GET','/user/beneficiaries/add');
 //
 //        $card = $debitorUser->getCard();
 //        if(!$card->isEnabled()){
 //            $crawler = $this->client->request('GET', '/card/validate');
 //            $crawler = $this->inputCardKey($crawler,'1111');
-//            $crawler = $this->client->request('GET','user/beneficiaries/add');
+//            $crawler = $this->client->request('GET','/user/beneficiaries/add');
 //        }
 //
 //        $crawler = $this->inputCardKey($crawler,'1111');
@@ -200,29 +205,31 @@ class UserControllerTest extends BaseControllerTest
 //
 //            $this->em->refresh($debitorUser);
 //            $this->assertTrue($debitorUser->hasBeneficiary($beneficiary));
+//            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 //        }else{
 //            $crawler = $this->client->followRedirect();
 //            $this->assertTrue($this->client->getResponse()->isRedirect());
 //            $crawler = $this->client->followRedirect();
 //
 //            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+//            $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
 //        }
 //    }
-//
-//    public function provideBeneficiariesToAdd()
-//    {
-//        return array(
-//             'self beneficiary'=> array('current'=>'DrDBrew','name'=>'Le DocteurD BrewPub','email'=>'docteurd@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'ajouter vous-même'), 
-//             'user not found'=> array('current'=>'DrDBrew','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'aucun membre'),              
-//              'ICC not found'=>array('current'=>'DrDBrew', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'ne correspond à aucun compte'),              
-//              'valid benef'=>array('current'=>'DrDBrew','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>''),              
-//              'valid benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourb','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>''),              
-//              'already benef'=>array('current'=>'DrDBrew','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'déjà partie de vos bénéficiaires'),              
-//
-//        );
-//    }
+
+    public function provideBeneficiariesToAdd()
+    {
+        return array(
+             'self beneficiary'=> array('current'=>'DrDBrew','name'=>'Le DocteurD BrewPub','email'=>'docteurd@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'ajouter vous-même'), 
+             'user not found'=> array('current'=>'DrDBrew','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'aucun membre'),              
+              'ICC not found'=>array('current'=>'DrDBrew', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'ne correspond à aucun compte'),              
+              'valid benef'=>array('current'=>'DrDBrew','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>''),              
+              'valid benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourb','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>''),              
+              'already benef'=>array('current'=>'DrDBrew','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'déjà partie de vos bénéficiaires'),              
+
+        );
+    }
 //    /**
-//     *@depends testAddBeneficiary
+//     *depends testAddBeneficiary
 //     */
 //    public function testEditBeneficiary()
 //    {
@@ -238,7 +245,7 @@ class UserControllerTest extends BaseControllerTest
 
 //    /**
 //     *@dataProvider provideBeneficiariesToRemove
-//     *@depends testAddBeneficiary
+//     *depends testAddBeneficiary
 //     */
 //    public function testRemoveBeneficiary($beneficiary, $isValid, $expectMessage)
 //    {

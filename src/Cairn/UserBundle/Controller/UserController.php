@@ -216,7 +216,7 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
 
         $currentUser = $this->getUser();
-        $form = $this->createForm(ChangePasswordType::class);
+        $form = $this->createForm(ChangePasswordType::class,$currentUser);
 
         if($request->isMethod('POST')){ //form filled and submitted
 
@@ -232,28 +232,18 @@ class UserController extends Controller
 
             if($currentUser->getPasswordTries() != 0) {
                 $session->getFlashBag()->add('error','Mot de passe invalide. Attention, au bout de 3 essais, le compte sera bloqué');
-                return new RedirectResponse($request->getRequestUri());
+                return $this->render('CairnUserBundle:Default:change_password.html.twig',array('form'=>$form->createView()));
             } 
 
             if($form->isValid()){
                 $newPassword = $form->get('plainPassword')->getData();
-                $currentUser->setPlainPassword($newPassword);
-
-                $listErrors = $this->get('validator')->validate($currentUser);
-                if(count($listErrors) != 0){
-                    foreach($listErrors as $error){
-                        $session->getFlashBag()->add('error',$error->getMessage());
-                    }
-                    return new RedirectResponse($request->getRequestUri());
-
-                }
 
                 $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
                 $encoded = $encoder->encodePassword($currentUser,$newPassword);
                 $currentUser->setPassword($encoded);
 
                 $em->flush();
-                $session->getFlashBag()->add('info','Mot de passe modifié avec succès');
+                $session->getFlashBag()->add('success','Mot de passe modifié avec succès');
                 return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
 
             }

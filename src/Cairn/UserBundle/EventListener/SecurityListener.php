@@ -3,7 +3,7 @@
 
 namespace Cairn\UserBundle\EventListener;
 
-use Symfony\Component\HttpFoundation\RedirectResponse; // N'oubliez pas ce use
+use Symfony\Component\HttpFoundation\RedirectResponse; 
 use Symfony\Component\HttpFoundation\Response;
 
 use Cairn\UserBundle\Event\InputCardKeyEvent;
@@ -11,6 +11,8 @@ use Cairn\UserBundle\Event\InputPasswordEvent;
 use Cairn\UserBundle\Event\DisabledUserEvent;
 
 use Cairn\UserBundle\Event\SecurityEvents;
+use FOS\UserBundle\Event\FormEvent;
+
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Cairn\UserBundle\Service\Counter;
@@ -131,7 +133,7 @@ class SecurityListener
         $salt = $user->getSalt();                                       
 
         if(!$encoder->isPasswordValid($user->getPassword(), $password, $salt)){
-            $this->em->refresh($user);
+            $this->em->clear();//$this->em->refresh($user);
 
             if($user->getPasswordTries() >= 2){
                 $this->counter->incrementTries($user,'password');

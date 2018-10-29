@@ -13,6 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Validator\Constraints as Assert;
 
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ChangePasswordType extends AbstractType
 {
@@ -24,14 +25,6 @@ class ChangePasswordType extends AbstractType
                 'label'=>'Mot de passe actuel',
                 'mapped'=>false))
             ->add('plainPassword', RepeatedType::class, array(                 
-                'mapped'=>false,
-                'constraints'=>array(                                          
-                    new Assert\Length(array(                                   
-                        'min'=>8,                                              
-                        'minMessage'=>'Au moins 8 caractères',                 
-                        'max'=>12,                                             
-                        'maxMessage'=>'Au maximum 12 caractères'))             
-                    ),                                                         
                     'type' => PasswordType::class,                             
                     'options' => array(                                        
                         'translation_domain' => 'FOSUserBundle',               
@@ -46,5 +39,14 @@ class ChangePasswordType extends AbstractType
                 ->add('save',SubmitType::class,array('label'=>'Valider'));
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults(array(
+            'data_class' => 'Cairn\UserBundle\Entity\User'
+        ));
+    }
 
 }
