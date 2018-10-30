@@ -171,20 +171,12 @@ class BaseControllerTest extends WebTestCase
     public function provideReferentsAndTargets()
     {
         return array(
-            array(array('mazouthm','@@bbccdd'),'mazouthm'),
-            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
-            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
-            array(array('mazouthm','@@bbccdd'),'cafeEurope')
+            array('referent'=>'mazouthm','target'=>'mazouthm','isReferent'=>true),
+            array('referent'=>'mazouthm','target'=>'DrDBrew','isReferent'=>true),
+            array('referent'=>'mazouthm','target'=>'MaltOBar','isReferent'=>true),
+            array('referent'=>'mazouthm','target'=>'cafeEurope','isReferent'=>false)
         );
     }
 
-    public function provideReferentsAndTargets2()
-    {
-        return array(
-            array(array('mazouthm','@@bbccdd'),'DrDBrew'),
-            array(array('mazouthm','@@bbccdd'),'MaltOBar'),
-            array(array('mazouthm','@@bbccdd'),'cafeEurope')
-        );
-    }
 
 }

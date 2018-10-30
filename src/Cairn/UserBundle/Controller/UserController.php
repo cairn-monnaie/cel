@@ -354,8 +354,9 @@ class UserController extends Controller
             $form->handleRequest($request);
             if($form->isValid()){
                 $dataForm = $form->getData();
+
                 $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-                $re_name ='#^[a-z]+$#' ;
+                $re_name ='#^[\w\.]+$#' ;
                 $re_ICC = '#^[-]?[0-9]+$#';
                 preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
                 preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
@@ -574,7 +575,7 @@ class UserController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
         if($user->getUsername() == $this->getParameter('cyclos_global_admin_username')){
-            $session->getFlashBag()->add('info','Le membre super administrateur ne peut être supprimé');
+            $session->getFlashBag()->add('error','Le membre super administrateur ne peut être supprimé');
             return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format, 'id'=>$user->getID()));       
         }
 
@@ -610,7 +611,7 @@ class UserController extends Controller
 
                     if($currentUser->getPasswordTries() != 0) {
                         $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                        return new RedirectResponse($request->getRequestUri());
                     } 
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';

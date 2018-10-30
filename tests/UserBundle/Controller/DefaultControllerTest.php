@@ -145,9 +145,9 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideRegistrationUsers()
     {
         return array(
-            array('localGroup','gl_grenoble@cairn-monnaie.com','glGrenoble','Groupe Local Grenoble','7 rue Très Cloîtres','1','Groupe Local de Grenoble',true),
-            array('localGroup','gl_voiron@cairn-monnaie.com','glVoiron','Groupe Local Voiron','12 rue Mainssieux','534','Groupe Local de Voiron',true),
-            array('pro','apogee_du_vin@cairn-monnaie.com','ApogeeDuVin','L\'apogée du Vin','8 rue Lesdiguères','1','Cave à vins',false),
+            array('localGroup','gl_grenoble@cairn-monnaie.com','glGrenoble','Groupe Local Grenoble','7 rue Très Cloîtres','38000','Groupe Local de Grenoble',true),
+            array('localGroup','gl_voiron@cairn-monnaie.com','glVoiron','Groupe Local Voiron','12 rue Mainssieux','38500','Groupe Local de Voiron',true),
+            array('pro','apogee_du_vin@cairn-monnaie.com','ApogeeDuVin','L\'apogée du Vin','8 rue Lesdiguères','38000','Cave à vins',false),
         );
     }
 
@@ -182,6 +182,10 @@ class DefaultControllerTest extends BaseControllerTest
 
     }
 
+    /**
+     *
+     *@todo : tester les login avec plusieurs points d'affilée, tirets...
+     */
     public function provideRegistrationData()
     {
         //WARNING : do not take ROLE_SUPER_ADMIN installed user as base data

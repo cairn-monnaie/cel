@@ -31,7 +31,8 @@ class AddressType extends AbstractType
                                                                  return $er->createQueryBuilder('z')
                                                                                  ->orderBy('z.zipCode', 'ASC');
                                                                      },
-                                                     'choice_label'=>'zipCode'
+                                                     'choice_label'=>'zipCode',
+                                                     'choice_value'=>'zipCode'
             ));
     }/**
      * {@inheritdoc}

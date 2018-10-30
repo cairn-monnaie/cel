@@ -62,8 +62,6 @@ class AdminController extends Controller
     /**
      * Set the enabled attribute of user with provided ID to false
      *
-     * The ParamConverter is not used to retrieve the User object because this action is preceded by the card security layer
-     * in Cairn/UserBundle/CardController/InputCardKey, which needs explicitely all the query parameters in the query array
      * An email is sent to the user being (re)activated
      *
      * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
@@ -79,6 +77,9 @@ class AdminController extends Controller
 
         if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }elseif(!$user->isEnabled()){
+            $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -127,6 +128,9 @@ class AdminController extends Controller
 
         if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }elseif($user->isEnabled()){
+            $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà accessible.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -189,6 +193,7 @@ class AdminController extends Controller
                     new Assert\NotNull()                           
                 ),
                 'choice_label'=>'name',
+                'choice_value'=>'username',
                 'data'=> $user->getLocalGroupReferent(),
                 'choices'=>$choices,
                 'expanded'=>true,
@@ -200,38 +205,36 @@ class AdminController extends Controller
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
-            if($form->isValid()){
-                if($form->get('save')->isClicked()){
-                    $referent = $form->get('singleReferent')->getData();
-                    if($user->hasReferent($referent)){
-                        $session->getFlashBag()->add('info',
-                            $referent->getName() . ' est déjà le groupe local référent de '.$user->getName());
-                        return new RedirectResponse($request->getRequestUri());
-                    }else{
-                        $currentAdminReferent = $user->getLocalGroupReferent();
-                        if($currentAdminReferent){
-                            $to = $currentAdminReferent->getEmail();
-                            $subject = 'Référencement Pro';
-                            $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
-                            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                            $user->removeReferent($currentAdminReferent);
-                        }
-
-                        $user->addReferent($referent);
-
-                        $to = $referent->getEmail();
-                        $subject = 'Référencement Pro';
-                        $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
-                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-                        $em->flush();
-                        $session->getFlashBag()->add('success',
-                            $referent->getName() . ' est désormais référent de '.$user->getName());
-                        return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
-                    }
+            if($form->get('save')->isClicked()){
+                $referent = $form->get('singleReferent')->getData();
+                if($user->hasReferent($referent)){
+                    $session->getFlashBag()->add('info',
+                        $referent->getName() . ' est déjà le groupe local référent de '.$user->getName());
+                    return new RedirectResponse($request->getRequestUri());
                 }else{
+                    $currentAdminReferent = $user->getLocalGroupReferent();
+                    if($currentAdminReferent){
+                        $to = $currentAdminReferent->getEmail();
+                        $subject = 'Référencement Pro';
+                        $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                        $user->removeReferent($currentAdminReferent);
+                    }
+
+                    $user->addReferent($referent);
+
+                    $to = $referent->getEmail();
+                    $subject = 'Référencement Pro';
+                    $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
+                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+                    $em->flush();
+                    $session->getFlashBag()->add('success',
+                        $referent->getName() . ' est désormais référent de '.$user->getName());
                     return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
                 }
+            }else{
+                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
             }
         }
         return $this->render('CairnUserBundle:User:add_referent.html.twig',array('form'=>$form->createView(),'user'=>$user));

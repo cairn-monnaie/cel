@@ -33,13 +33,13 @@ class CardControllerTest extends BaseControllerTest
      *                              *otherwise : nothing(should not even see card_operations) 
      * @dataProvider provideReferentsAndTargets
      */
-    public function testCardOperations($referent,$target)
+    public function testCardOperations($referent,$target,$isReferent)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $crawler = $this->login($referent[0], $referent[1]);
+        $crawler = $this->login($referent, '@@bbccdd');
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent[0]));
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
@@ -51,7 +51,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
             }
         }else{ //user for someone else
-            if($targetUser->hasReferent($currentUser)){
+            if($isReferent){
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
             }
             else{
