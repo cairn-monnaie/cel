@@ -207,20 +207,32 @@ class AdminController extends Controller
             $form->handleRequest($request);
             if($form->get('save')->isClicked()){
                 $referent = $form->get('singleReferent')->getData();
-                if($user->hasReferent($referent)){
-                    $session->getFlashBag()->add('info',
-                        $referent->getName() . ' est déjà le groupe local référent de '.$user->getName());
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    $currentAdminReferent = $user->getLocalGroupReferent();
-                    if($currentAdminReferent){
-                        $to = $currentAdminReferent->getEmail();
-                        $subject = 'Référencement Pro';
-                        $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
-                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                        $user->removeReferent($currentAdminReferent);
-                    }
+                $currentAdminReferent = $user->getLocalGroupReferent();
 
+                if($referent && !$referent->hasRole('ROLE_ADMIN')){
+                    throw new AccessDeniedException('Seul un groupe local peut être assigné via ce formulaire.');
+                }
+                if($referent){
+                    if($user->hasReferent($referent)){
+                        $session->getFlashBag()->add('info',
+                            $referent->getName() . ' est déjà le groupe local référent de '.$user->getName());
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+                }
+
+                if(!$currentAdminReferent && !$referent){
+                    $session->getFlashBag()->add('info',$user->getName(). ' n\'avait pas de groupe local référent.');
+                    return new RedirectResponse($request->getRequestUri());
+                }
+
+                if($currentAdminReferent){
+                    $to = $currentAdminReferent->getEmail();
+                    $subject = 'Référencement Pro';
+                    $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
+                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $user->removeReferent($currentAdminReferent);
+                }
+                if($referent){
                     $user->addReferent($referent);
 
                     $to = $referent->getEmail();
@@ -228,11 +240,15 @@ class AdminController extends Controller
                     $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                    $em->flush();
                     $session->getFlashBag()->add('success',
                         $referent->getName() . ' est désormais référent de '.$user->getName());
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                }else{
+                    $session->getFlashBag()->add('success',
+                        $user->getName(). ' n\'a plus de groupe local référent.');
                 }
+
+                $em->flush();
+                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
             }else{
                 return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
             }
