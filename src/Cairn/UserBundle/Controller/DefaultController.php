@@ -159,7 +159,7 @@ class DefaultController extends Controller
      *
      * The type of user is set in session here because we will need it in our RegistrationEventListener.
      */
-    public function registrationAction(Request $request)
+    public function registrationAction(Request $request, $_format)
     {
         $session = $request->getSession();
         $checker = $this->get('security.authorization_checker');
@@ -181,6 +181,10 @@ class DefaultController extends Controller
             }
 
             $session->set('registration_type',$type);
+            if($_format == 'json'){
+                $registrationData = array('name'=>'','username'=>'','email'=>'','description'=>'');
+                return $this->json($registrationData);
+            }
             return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
         }elseif($type == 'adherent'){
             return $this->render('CairnUserBundle:Registration:register_adherent_content.html.twig');

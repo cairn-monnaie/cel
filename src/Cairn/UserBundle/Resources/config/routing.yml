@@ -9,7 +9,9 @@ cairn_user_install:
 
 cairn_user_registration:
     path:     registration/
-    defaults: { _controller: CairnUserBundle:Default:registration }
+    defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_redirect_login:
     path:     login/redirection/{message}/
