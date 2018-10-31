@@ -24,7 +24,7 @@ cairn_user_card_security_layer:
     defaults: { _controller: CairnUserBundle:Card:inputCardKey }
 
 cairn_user_referents_assign:
-    path:     user/referents/assign/{id}/
+    path:     user/referents/assign/{id}
     defaults: { _controller: CairnUserBundle:Admin:assignReferent }
     requirements:
         id: \d+

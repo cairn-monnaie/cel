@@ -159,6 +159,7 @@ Digital Cairn
      * Click on **_%user-account%_** (defined in step 10)
      * Click on "Transfer types" (top-right tab on account type screen)
      * Click on the first transfer type (from **_%user-account%_** to **_%debit-account%_**)
+     * internal name : xxx (compulsary)
      * Enabled : check
      * Channels : check main web + web services + Mobile app
      * Allow recurring payments : check
@@ -335,6 +336,10 @@ Digital Cairn
     * `php bin/console doctrine:database:create --env=test`
     * `php bin/console doctrine:schema:update --env=test --force`
     * `php bin/console doctrine:database:import --env=test web/zipcities.sql`
+
+ * **Update data that will imported in Cyclos database**
+    * Open csv file tests/test_simple_payments.csv
+    * Replace 'debit.toUser' by transfer type's internal name from **_%debit-account%_** to **_%user-account%_**
 
  * **Inject into docker data that to be imported in Cyclos database**
     * `docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/`

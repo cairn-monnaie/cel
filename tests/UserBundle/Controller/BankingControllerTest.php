@@ -20,4 +20,18 @@ class BankingControllerTest extends BaseControllerTest
         parent::__construct($name, $data, $dataName);
     }
 
+    public function testSimpleTransaction()
+    {
+        ;
+    }
+
+    public function testScheduledTransaction()
+    {
+        ;
+    }
+
+    public function testRecurringTransaction()
+    {
+        ;
+    }
 }

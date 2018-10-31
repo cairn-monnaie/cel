@@ -47,7 +47,7 @@ class BaseControllerTest extends WebTestCase
             $memberGroupName = $this->container->getParameter('cyclos_group_pros');
             $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
 
-            $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_test_db.groovy',false));
+            $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_users.groovy',false));
 
             $nb = 0;
             //            while($nb != 5){ //delay between running script and database update
@@ -75,6 +75,7 @@ class BaseControllerTest extends WebTestCase
             }
 
             $this->em->flush();
+            $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_payments.groovy',false));
 
         }
     }

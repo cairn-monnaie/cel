@@ -16,6 +16,9 @@
         <testsuite name="Project">
             <directory>tests</directory>
         </testsuite>
+        <testsuite name="set_database">
+            <file>tests/UserBundle/Controller/BaseControllerTest.php</file>
+        </testsuite>
         <testsuite name="Order">
             <file>tests/UserBundle/Controller/CardControllerTest.php</file>
             <file>tests/UserBundle/Controller/DefaultControllerTest.php</file>
