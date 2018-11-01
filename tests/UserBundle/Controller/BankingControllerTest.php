@@ -25,31 +25,40 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideSimpleTransactionData
      */
-    public function testSimpleTransaction($debitor,$to,$expectForm,$changeCreditorICC,$changeDebitorICC,$isValid,$amount,$day,$month,$year)
+    public function testSimpleTransaction($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$date)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $creditor = 'MaltOBar';
         $crawler = $this->login($debitor, '@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
+
+        if(!$ownsAccount){
+            $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
+        }
+
         $debitorICC = $debitorAccount->id;
         $previousBalance = $debitorAccount->status->balance;
-        $debitorICC = ($changeDebitorICC) ? $debitorICC + 1 : $debitorICC;
 
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
         $creditorICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
-        $creditorICC = ($changeCreditorICC) ? $creditorICC + 1 : $creditorICC;
 
-        $crawler = $this->client->request('GET','/banking/transaction/request/'.$to.'-'.$frequency);
+        $url = '/banking/transaction/request/'.$to.'-unique';
+        $crawler = $this->client->request('GET',$url);
 
-        $crawler = $this->client->followRedirect();
-        $crawler = $this->inputCardKey($crawler, '1111');
-        $crawler = $this->client->followRedirect();
+        if($to == 'new'){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+
+            $crawler = $this->client->followRedirect();
+            $crawler = $this->inputCardKey($crawler, '1111');
+            $crawler = $this->client->followRedirect();
+        }else{
+            $this->assertFalse($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+        }
 
         if(!$expectForm){
-            ;
+             $this->assertTrue($this->client->getResponse()->isRedirect());
         }else{
             $form = $crawler->selectButton('cairn_userbundle_simpletransaction_save')->form();
             $form['cairn_userbundle_simpletransaction[amount]']->setValue($amount);
@@ -58,9 +67,9 @@ class BankingControllerTest extends BaseControllerTest
             $form['cairn_userbundle_simpletransaction[toAccount][email]']->setValue($creditorUser->getEmail());
             $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
             $form['cairn_userbundle_simpletransaction[description]']->setValue('Test virement simple');
-            //        $form['cairn_userbundle_simpletransaction[date][day]']->select($day);
-            //        $form['cairn_userbundle_simpletransaction[date][month]']->select($month);
-            //        $form['cairn_userbundle_simpletransaction[date][year]']->select($year);
+            $form['cairn_userbundle_simpletransaction[date][day]']->select('1');
+            $form['cairn_userbundle_simpletransaction[date][month]']->select('11');
+            $form['cairn_userbundle_simpletransaction[date][year]']->select('2018');
 
             $crawler =  $this->client->submit($form);
 
@@ -68,45 +77,53 @@ class BankingControllerTest extends BaseControllerTest
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
 
+                //checker le contenu du récapitulatif
                 $form = $crawler->selectButton('form_save')->form();
                 $crawler = $this->client->submit($form);
+            }else{
+                 $this->assertTrue($this->client->getResponse()->isRedirect());
             }
         }
     }
 
     /**
-     *@todo : test to=beneficiary but data not beneficiary
      */
-    public function provideTransactionData()
+    public function provideSimpleTransactionData()
     {
         //valid data
-        $baseData = array('login'=>'LaBonnePioche','to'=>'new','expectForm'=>true,'changeCreditorICC'=>false,
-                'changeDebitorICC'=>false, 'isValid'=>true, 'amount'=>'10', 'day'=>'01', 'month'=>'11', 'year'=>'2018');
+        $baseData = array('login'=>'LaBonnePioche','creditor'=>'MaltOBar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
+                          'isValid'=>true,'amount'=>'10', 'date'=>new \Datetime());
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
             'no beneficiary'=>array_replace($baseData,array('login'=>'DrDBrew', 'to'=>'beneficiary','expectForm'=>false)),
-            'wrong debitor ICC'=> array_replace($baseData,array('changeDebitorICC'=>true,'isValid'=>false))
-
+            'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
+            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
         );
     }
 
     /**
      *
-     *@dataProvider provideSimpleTransactionDataForValidation
+     *@dataProvider provideTransactionDataForValidation
      */
-    public function testSimpleTransactionValidator($amount, $description, $fromAccount, $toAccount,$date, $isValid)
+    public function testTransactionValidator($frequency, $amount, $description, $fromAccount, $toAccount,$date, $isValid)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $validator = $this->container->get('validator');
 
-        $transaction = new SimpleTransaction();
+        if($frequency == 'unique'){
+            $transaction = new SimpleTransaction();
+            $transaction->setDate($date); 
+        }else{
+            $transaction = new RecurringTransaction();
+            $transaction->setFirstOccurrenceDate($date); 
+            $transaction->setLastOccurrenceDate($date); 
+        }
         $transaction->setAmount($amount); 
         $transaction->setDescription($description); 
         $transaction->setFromAccount($fromAccount); 
         $transaction->setToAccount($toAccount); 
-        $transaction->setDate($date); 
          
         $errors = $validator->validate($transaction);
 
@@ -117,7 +134,7 @@ class BankingControllerTest extends BaseControllerTest
         }
     }
 
-    public function provideSimpleTransactionDataForValidation()
+    public function provideTransactionDataForValidation()
     {
         $creditor = 'MaltOBar';
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
@@ -129,7 +146,7 @@ class BankingControllerTest extends BaseControllerTest
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
         $debitorICC = $debitorAccount->id;
 
-        $baseData = array('amount'=>'10','description'=>'Test Validator',
+        $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
             'fromAccount'=> array('id'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
             'toAccount'=> array('id'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
             'date'=> new \Datetime(),
@@ -139,13 +156,14 @@ class BankingControllerTest extends BaseControllerTest
             'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
             'undersize amount'=>array_replace($baseData,array('amount'=>'0.0099','isValid'=>false)),
             'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('id'=>$debitorICC + 1),'isValid'=>false)),
-            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>$creditorICC + 1),'isValid'=>false)),
+          'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>$creditorICC + 1),'isValid'=>false)),
             'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>'','email'=>'test@test.com'),
                                                                       'isValid'=>false)),
             'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>'','email'=>''),'isValid'=>false)),
             'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('id'=>''),'isValid'=>false)),
-            'identical accounts'=>array_replace($baseData,array('toAccount'=>json_decode(json_encode($debitorAccount),true),
-                                                                         'isValid'=>false)),
+            'identical accounts'=>array_replace($baseData,array(
+                'toAccount'=>array('id'=>$debitorAccount->id,'email'=>$debitorUser->getEmail()),
+                'isValid'=>false)),
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
             'inconsistent date'=>array_replace($baseData,array('date'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
             'date before today' =>array_replace($baseData,array('date'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),

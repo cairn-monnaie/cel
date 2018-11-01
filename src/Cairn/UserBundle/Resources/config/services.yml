@@ -79,7 +79,7 @@ services:
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException}
     
-    cairn_user.validator:
+    cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:
             - "%cyclos_network_cairn%"
@@ -89,6 +89,14 @@ services:
             - "@cairn_user_cyclos_network_info"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
+
+    cairn_user.transaction_validator:
+        class: Cairn\UserBundle\Validator\TransactionValidator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user_cyclos_account_info"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_transaction_validator }
 
     Cairn\UserBundle\Form\CreditType:
         arguments: ['@security.authorization_checker']

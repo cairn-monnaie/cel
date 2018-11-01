@@ -142,7 +142,6 @@ class BankingController extends Controller
         //does not provide future transactions
         $history = $accountService->getAccountHistory($account->id,$period,NULL,NULL,NULL,NULL);
 
-        //        var_dump($history->transactions[0]->relatedAccount->owner);
         $futureTransactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions(
             $account->owner,$accountTypeVO,array('RECURRING_PAYMENT','SCHEDULED_PAYMENT'),array(NULL,'OPEN','OPEN'),NULL);
 
@@ -393,11 +392,6 @@ class BankingController extends Controller
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-//                $dataForm = $form->getData();
-//                $amount = $dataForm['amount'];
-//                $toAccount = $dataForm['toAccount'];
-//                $fromAccount = $dataForm['fromAccount'];
-//                $description = $this->editDescription($type,$dataForm['description']);
                 $transaction->setDescription($this->editDescription($type, $transaction->getDescription()));
                 if($frequency == 'recurring'){
                     $dataTime = new \stdClass();
@@ -405,46 +399,36 @@ class BankingController extends Controller
                     $dataTime->firstOccurrenceDate = $transaction->getFirstOccurrenceDate();
                     $dataTime->lastOccurrenceDate =  $transaction->getLastOccurrenceDate();
                 }else{
-//                    $dataTime = $dataForm['date'];
                     $dataTime = $transaction->getDate();
                 }
 
-
-                //check that the current user owns the debited account
-//                if(!$accountService->hasAccount($debitorVO->id,$dataForm['fromAccount']['id'])){
-
-//                $fromAccount = $accountService->getAccountByID($dataForm['fromAccount']['id']);
                 $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
 
                 if(!$accountService->hasAccount($debitorVO->id,$fromAccount->id)){
-                         $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                         return new RedirectResponse($request->getRequestUri());
+                    $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
-//                $toAccount = $dataForm['toAccount'];
                 $toAccount = $transaction->getToAccount();
                 if($toAccount['id']){
-                    try{
-                        $toAccount = $accountService->getAccountByID($toAccount['id']);
-                    }catch(\Exception $e){
-                        if(!$e->errorCode == 'ENTITY_NOT_FOUND'){
-                            throw $e;
-                        }
-                    }
+                    $toAccount = $accountService->getAccountByID($toAccount['id']);
                 }else{//if id not mentioned, then email is necessarily(see Entity Transaction validation)
                     $creditor = $userRepo->findOneBy(array('email'=>$toAccount['email']));
-                    if(!$creditor){
-                        $session->getFlashBag()->add('error','Bénéficiaire introuvable.');
-                        return new RedirectResponse($request->getRequestUri());
-                    }
                     $creditorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditor);
                     $toAccount = $accountService->getDefaultAccount($creditorVO->id);
                 }
 
-                if(($to != 'self') && ($accountService->hasAccount($debitorVO->id,$toAccount->id))){
-                    $session->getFlashBag()->add('info','Ce compte vous appartient. Ce n\'est pas un nouveau bénéficiaire. Sélectionnez "Entre vos comptes".' );
-                    return new RedirectResponse($request->getRequestUri());
+                if($to == 'beneficiary'){
+                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->id));
+                    if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
+                        $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+                }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id,$toAccount->id)){
+                        $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
+                        return new RedirectResponse($request->getRequestUri());
                 }
+
 
                 $amount = $transaction->getAmount();
                 $description = $transaction->getDescription();
@@ -669,7 +653,6 @@ class BankingController extends Controller
         $involvedAccounts = array();
 
         $transaction = new SimpleTransaction();
-        $transaction->setDate(new \Datetime());
         $transaction->setFromAccount(json_decode(json_encode($debitAccount),true));
 
         $formUser = $this->createFormBuilder()
@@ -705,18 +688,7 @@ class BankingController extends Controller
 
             $dataTime = $transaction->getDate();
             $fromAccount = $debitAccount; 
-
-            $toAccount = $transaction->getToAccount();
-            try{
-                $toAccount = $accountService->getAccountByID($toAccount['id']);
-            }catch(\Exception $e){
-                if($e->errorCode == 'ENTITY_NOT_FOUND'){
-                    $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    throw $e;
-                }
-            }
+            $toAccount = $accountService->getAccountByID($toAccount['id']);
 
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
@@ -799,17 +771,7 @@ class BankingController extends Controller
             $dataTime = $transaction->getDate();
             $toAccount = $debitAccount; 
 
-            $fromAccount = $transaction->getFromAccount();
-            try{
-                $fromAccount = $accountService->getAccountByID($fromAccount['id']);
-            }catch(\Exception $e){
-                if($e->errorCode == 'ENTITY_NOT_FOUND'){
-                    $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    throw $e;
-                }
-            }
+            $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
 
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
 
@@ -866,18 +828,6 @@ class BankingController extends Controller
 
             throw new \Exception($message);
         }
-        if($fromAccount->id == $toAccount->id){
-
-            $message = 'Les comptes à débiter et à créditer sont identiques';
-            $review->error = $message;
-            return $review;
-
-        }
-
-        $fromAccountType = $fromAccount->type;
-        $toAccountType = $toAccount->type;
-        $transferTypes = $this->get('cairn_user_cyclos_transfertype_info')->getListTransferTypes($fromAccountType,$toAccountType,$direction,'PAYMENT');
-        //        var_dump($transferTypes);
 
         //check that transfer type is unique and active
         if((count($transferTypes) >= 2) || (count($transferTypes) == 0)){//unique
@@ -889,26 +839,6 @@ class BankingController extends Controller
             if(!$transferTypes[0]->enabled){
                 $message = 'Contexte : ' .$type. ' de ' .$fromName . ' vers ' .$toName. '. \n Détail : Le type de transfert allant du compte ' .$fromAccountType->name .' vers le compte ' .$toAccountType->name . ' avec une direction ' .$direction.' est inactif. \n Solution : Activez le type de transfert en question pour permettre cette transaction d\'aboutir.';
                 throw new \Exception($message);
-            }
-        }
-
-        //check balance validity
-        if(!$fromAccount->unlimited){
-            if($type == 'transaction'){
-                if($fromAccount->status->availableBalance < $amount){
-                    $message = 'La capacité de dépense depuis votre compte est inférieure au montant indiqué. Le virement ne peut aboutir. Veuillez recharger votre compte.';
-                    $review->error = $message;
-                    return $review;
-
-                }
-            }
-            else{//for withdrawal, reconversion : the credit limit does not matter : the limit is 0
-                if($fromAccount->status->balance < $amount){
-                    $message = 'Le solde de votre compte est inférieur au montant indiqué. L\'opération ne peut aboutir. Veuillez recharger votre compte.';
-                    $review->error = $message;
-                    return $review;
-                }
-
             }
         }
 
@@ -1095,7 +1025,7 @@ class BankingController extends Controller
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
                     array('processedTransactions'=>$processedTransactions ,
                     'futureInstallments'=> $futureInstallments));
-            
+
             }else{
                 $processedTransactions = $bankingService->getRecurringTransactionsDataBy(
                     $userVO,$accountTypesVO,array('CLOSED','CANCELED'),$description);
@@ -1356,9 +1286,9 @@ class BankingController extends Controller
                 $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($id);
                 $recurringPaymentDTO = new \stdClass();
                 $recurringPaymentDTO->recurringPayment = $recurringPaymentData->transaction;
-    
+
                 $this->bankingManager->cancelRecurringPayment($recurringPaymentDTO);
-    
+
                 $session->getFlashBag()->add('success','Le virement permanent a été annulé avec succès');
             }
 
@@ -1402,8 +1332,6 @@ class BankingController extends Controller
                 'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
             ]
         );
-        //        $pdfPath = $this->getParameter('kernel.project_dir').'/userListing.pdf';
-        //        return $this->file($pdfPath, 'sample.pdf', ResponseHeaderBag::DISPOSITION_INLINE);
     }
 
     /**

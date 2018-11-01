@@ -42,33 +42,6 @@ class Transaction
 
 
     /**
-     *
-     *@Assert\Callback() 
-     */
-    public function isTransactionValid(ExecutionContextInterface $context)
-    {
-        if($this->getAmount() < 0.01){
-            $context->buildViolation('Montant trop faible : doit être supérieur à 0.01 cairn')
-                ->atPath('amount')
-                ->addViolation();
-        }
-
-        if(!$this->getFromAccount()['id']){
-            $context->buildViolation('Le compte débiteur n\'a pas été sélectionné')
-                ->atPath('fromAccount')
-                ->addViolation();
-        }
-
-        if(! ($this->getToAccount()['id'] || $this->getToAccount()['email'])){
-            $context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
-                ->atPath('toAccount')
-                ->addViolation();
-        }
-
-
-    }
-
-    /**
      * Set amount
      *
      * @param string $amount

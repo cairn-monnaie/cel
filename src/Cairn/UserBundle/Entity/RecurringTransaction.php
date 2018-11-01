@@ -49,7 +49,7 @@ class RecurringTransaction extends Transaction
     {
         $today = new \Datetime('today');
         if($today->diff($this->getFirstOccurrenceDate())->invert == 1){
-            $context->buildViolation('La date d\'exécution ne peut être antérieure à la date du jour')
+            $context->buildViolation('La date de première échéance ne peut être antérieure à la date du jour')
                 ->atPath('firstOccurrenceDate')
                 ->addViolation();
         }

@@ -4,3 +4,7 @@ Cairn\UserBundle\Entity\User:
     constraints:
             - Cairn\UserBundle\Validator\User: ~
 
+Cairn\UserBundle\Entity\Transaction:
+    constraints:
+            - Cairn\UserBundle\Validator\Transaction: ~
+
