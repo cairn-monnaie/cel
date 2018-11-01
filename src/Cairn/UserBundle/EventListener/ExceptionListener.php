@@ -80,7 +80,6 @@ class ExceptionListener
         $body = $routesMessage ."\n". $fileMessage ."\n". $lineMessage . "\n". $exceptionMessage . "\n" . $traceMessage;
 
         //this condition avoids circular exceptions thrown if the redirection page (login / homepage) contains an error
-        //PROBLEME DE PRIORITE DANS LES EXCPTIONS LISTENER !!
         if(strpos($request->headers->get('referer'), $request->getRequestUri()) && 
                                                      !$request->isMethod('POST') && 
                                                      !$this->security->isSensibleOperation($request->get('_route'),$parameters)

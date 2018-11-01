@@ -21,6 +21,11 @@ class SimpleTransaction extends Transaction
      */
     private $date;
 
+    public function __construct()
+    {
+        $this->date = new \Datetime('today');
+    }
+
     /**
      *
      *@Assert\Callback() 

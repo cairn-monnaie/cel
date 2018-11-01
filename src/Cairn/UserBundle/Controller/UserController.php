@@ -511,6 +511,11 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
         $form = $this->createForm(ConfirmationType::class);
         $currentUser = $this->getUser();
+
+        if(!$currentUser->hasBeneficiary($beneficiary)){
+            $session->getFlashBag()->add('error',' Donnée introuvable');
+            return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
+        }
         if($request->isMethod('POST')){ //form filled and submitted            
 
             $form->handleRequest($request);                                    

@@ -20,7 +20,7 @@ class DefaultControllerTest extends BaseControllerTest
     function __construct($name = NULL, array $data = array(), $dataName = ''){
         parent::__construct($name, $data, $dataName);
     }
-    
+
     public function testInstall()
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
@@ -33,44 +33,42 @@ class DefaultControllerTest extends BaseControllerTest
 
     }
 
-//    /**
-//     *
-//     *@dataProvider provideTypeForRegistration
-//     */
-//    public function testRegistrationPage($login,$username,$type,$expectValid,$expectMessage)
-//    {
-//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-//
-//        if($login){
-//            $crawler = $this->login($username, '@@bbccdd');
-//            $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
-//        }else{
-//            $currentUser = NULL;
-//        }
-//
-//        $crawler = $this->client->request('GET','/registration/?type='.$type);
-//        if(!$expectValid){
-//                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
-//        }else{
-//            $this->assertTrue($this->client->getResponse()->isRedirect('/register/informations/'));
-//        }
-//    }
-
     /**
-     *@todo : add test with ROLE_ADMIN trying to register new localgroup/super_admin
-     *
+     *@dataProvider provideTypeForRegistration
      */
-    public function provideTypeForRegistration($login, $username, $type, $expectValid, $expectMessage)
+    public function testRegistrationPage($login,$username,$type,$expectValid,$expectMessage)
     {
-        array(
-            array('log in'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('log in'=>true,'username'=>'mazouthm','type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
-            array('log in'=>true,'username'=>'mazouthm','type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
-            array('log in'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
-            array('log in'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits nécessaires'),
-            array('log in'=>false,'username'=>'','type'=>'', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
-            array('log in'=>false,'username'=>'','type'=>'adherent', 'expectValid'=>false, 'expectMessage'=>'Inscription impossible'),
-            array('log in'=>false,'username'=>'','type'=>'xxx', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
+
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->client->request('GET','/logout');
+
+        if($login){
+            $crawler = $this->login($username, '@@bbccdd');
+            $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+        }else{
+            $currentUser = NULL;
+        }
+
+        $crawler = $this->client->request('GET','/inscription?type='.$type);
+        if(!$expectValid){
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+        }else{
+            $this->assertTrue($this->client->getResponse()->isRedirect('/register/informations/?type='.$type));
+        }
+    }
+
+    public function provideTypeForRegistration()
+    {
+        return array(
+            array('login'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
+            array('login'=>true,'username'=>'mazouthm','type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
+            array('login'=>true,'username'=>'mazouthm','type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
+            array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
+          array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
+            array('login'=>false,'username'=>'','type'=>'', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
+            array('login'=>false,'username'=>'','type'=>'adherent', 'expectValid'=>false, 'expectMessage'=>'Inscription impossible'),
+            array('login'=>false,'username'=>'','type'=>'xxx', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
         );
     }
 
@@ -87,7 +85,7 @@ class DefaultControllerTest extends BaseControllerTest
         $crawler = $this->login($login, $password);
 
 
-        $crawler = $this->client->request('GET','/registration/?type='.$type);
+        $crawler = $this->client->request('GET','/inscription?type='.$type);
         $crawler = $this->client->followRedirect();
 
         $form = $crawler->selectButton('registration.submit')->form();
@@ -114,7 +112,7 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->request('GET','/register/informations/confirm/'.$newUser->getConfirmationToken());
 
-           //assert email
+            //assert email
             $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
             $this->assertSame(1, $mailCollector->getMessageCount());
             $message = $mailCollector->getMessages()[0];
@@ -167,15 +165,15 @@ class DefaultControllerTest extends BaseControllerTest
         $address = new Address();                                          
         $address->setZipCity($zip);                                        
         $address->setStreet1($street1);                        
-                                                                             
+
         $user->setAddress($address);
-        
+
         $user->setEmail($email);
         $user->setUsername($username);
         $user->setName($name);
         $user->setPlainPassword($plainPassword);
         $user->setDescription($description);
-        
+
         $errors = $validator->validate($user);
 
         $this->assertEquals(1,count($errors));
@@ -207,18 +205,18 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
             'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
-//            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
-//
+            //            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
+            //
             'too short username'                                      => array_replace($baseData, array('username'=>'test')),
             'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
             'username with special character'                         => array_replace($baseData, array('username'=>'test@')),
-//            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
-          'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
+            //            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
+            'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
             'too short password'                                      => array_replace($baseData, array('plainPassword'=>'@bcdefg')),
             'pseudo included in password'                             => array_replace($baseData, array('plainPassword'=>'@testUser@')),
             'no special character'                                    => array_replace($baseData, array('plainPassword'=>'1testPwd2')),
-//            'too simple password (all characters have 0 distance)'    => array_replace($baseData, array('plainPassword'=>'@@@@@@@@')),
-//            'too obvious password(mot de passe = mot dans le nom)'    => array_replace($baseData, array('password'=>'V@lidation')),
+            //            'too simple password (all characters have 0 distance)'    => array_replace($baseData, array('plainPassword'=>'@@@@@@@@')),
+            //            'too obvious password(mot de passe = mot dans le nom)'    => array_replace($baseData, array('password'=>'V@lidation')),
         );
     }
 

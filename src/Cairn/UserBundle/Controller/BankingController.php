@@ -1456,7 +1456,7 @@ class BankingController extends Controller
 
         $filename = sprintf('rib-cairn-%s.pdf',$account->type->name.'-'.$owner->getUsername());
 
-        if($format == 'json'){
+        if($_format == 'json'){
             return new JsonResponse(
                 $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
                 200,

@@ -159,15 +159,6 @@ class BaseControllerTest extends WebTestCase
     }
 
 
-    public function provideCommercialPartners()
-    {
-         return array(
-            array('creditor'=>'DrDBrew','debitor'=>'MaltOBar' ,'isValid'=>true),
-            array('creditor'=>'DrDBrew','debitor'=>'LaDourbie','isValid'=>true),
-            array('creditor'=>'DrDBrew','debitor'=>'DrDBrew'  ,'isValid'=>false),
-        );
-       
-    }
 
     public function provideReferentsAndTargets()
     {

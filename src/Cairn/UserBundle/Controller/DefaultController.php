@@ -189,7 +189,7 @@ class DefaultController extends Controller
         }elseif($type == 'adherent'){
             return $this->render('CairnUserBundle:Registration:register_adherent_content.html.twig');
         }else{
-            return $this->redirectToRoute('cairn_user_registration');
+            return $this->redirectToRoute('cairn_user_registration',array('format'=>$_format));
         }
     }    
 

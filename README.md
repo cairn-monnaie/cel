@@ -153,13 +153,15 @@ Digital Cairn
         * Accounts balance limits : select "manage"
      * Click save
 
- 20. **Configure a transfer type from an existing account type**
+ 20. **Configure an account type and its corresponding transfer types**
 
      _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
      * Click on **_%user-account%_** (defined in step 10)
+     * Internal name : **_$user-account-internal_** (e.g memberAccount)
+     * Click save
      * Click on "Transfer types" (top-right tab on account type screen)
      * Click on the first transfer type (from **_%user-account%_** to **_%debit-account%_**)
-     * internal name : xxx (compulsary)
+     * internal name : xxx (compulsary) (e.g toDebit)
      * Enabled : check
      * Channels : check main web + web services + Mobile app
      * Allow recurring payments : check
@@ -176,6 +178,7 @@ Digital Cairn
      * Click on group "Users"(unique member group)
      * Enabled : check
      * Name : **_$network-group-members_** (by default Users)
+     * Internal name : xxx
      * Click save
 
  24. **Configure the Product associated with user Account Type %_user-account%_**
@@ -223,7 +226,7 @@ Digital Cairn
        * Click save
  27. **Change usernames configuration**
         
-      For now, the application sets up login name lengths straight in the source code, and is not customizable. If you want to change them,you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
+      For now, the application sets up login name lengths straight in the source code, and is not customizable. If you want to change them, you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
 
       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
       * Click on "Global default" configuration
@@ -232,13 +235,13 @@ Digital Cairn
 
  27. **Change password type configuration**
 
-      For now, the application sets up password lengths straight in the source code, and is not customizable. If you want to change them,you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
+      For now, the application sets up password lengths straight in the source code, and is not customizable. If you want to change them, you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
 
      _Access : System (top tab) / User Configuration(bold in left menu) / Password types_
      * Click on login password
      * password length :  8 to 25 
-     * Disallow obvious password :  check
-     * Avoid repeated passwords : check
+     * Disallow obvious password :  uncheck
+     * Avoid repeated passwords : uncheck
      * Expires after : 100 years (we don't deal with password expiration)
      * Click save
  28. **Configure group of global administrators**
@@ -337,17 +340,30 @@ Digital Cairn
     * `php bin/console doctrine:schema:update --env=test --force`
     * `php bin/console doctrine:database:import --env=test web/zipcities.sql`
 
- * **Update data that will imported in Cyclos database**
+ * **Customize data that will imported in Cyclos database**
+    At the testing setup, the cyclos database will be filled with users and payments defined in the tests/*.csv files. In order to add initial payments to some of the users(payments from debit account to member account), the transfer type must be added. It depends on data provided in steps 20-21-22.
     * Open csv file tests/test_simple_payments.csv
-    * Replace 'debit.toUser' by transfer type's internal name from **_%debit-account%_** to **_%user-account%_**
+    * Fill "type" column with format: {debit account internal name}.{debit-member transfer type's internal name} (e.g debit.toUser)
+    * save the file
 
  * **Inject into docker data that to be imported in Cyclos database**
     * `docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/`
     * `docker cp tests/test_simple_payments.csv cyclos-app-test:/usr/local/cyclos/`
 
- * **Restore the test database with the backup dump file**
+ * **Restore the cyclos test database with the backup dump file**
+    * `docker restart cyclos-db-test cyclos-app-test`
     * `docker exec -u postgres -i cyclos-db-test psql --user %cyclos_user% cyclos < cyclos-dump.sql`
 
+ * **Change the cyclos test database port**
+    The backup restoration permits to have the desired cyclos configuration. However, the database port is the same for testing and dev in conf. 
+    * Reach your testing instance global administration at example.com:1235/global
+        *log in with global administrators credentials : **_%admin-login%_** and **_%admin-password%_**
+
+         _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+        * Click on "Global default" configuration
+        * Main URL : replace 1234 by 1235
+        * Click save 
+    
 ## Launch ##
  * `docker restart cyclos-db-test cyclos-app-test`
  * `./make-test.sh`

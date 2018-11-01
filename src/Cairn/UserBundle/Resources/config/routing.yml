@@ -8,7 +8,7 @@ cairn_user_install:
 
 
 cairn_user_registration:
-    path:     registration.{_format}
+    path:     inscription.{_format}
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
     requirements:
         _format: html|json

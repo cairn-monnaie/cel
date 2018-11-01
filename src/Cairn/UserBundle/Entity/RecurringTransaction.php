@@ -34,6 +34,13 @@ class RecurringTransaction extends Transaction
      */
     private $periodicity;
 
+    public function __construct()
+    {
+        $this->firstOccurrenceDate = new \Datetime('today');
+        $this->lastOccurrenceDate = date_modify(new \Datetime($this->getFirstOccurrenceDate()->format('Y-m-d')), '+ 1 months');
+        $this->periodicity = '1';
+    }
+
     /**
      *
      *@Assert\Callback() 

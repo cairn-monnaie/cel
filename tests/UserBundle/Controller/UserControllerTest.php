@@ -250,10 +250,10 @@ class UserControllerTest extends BaseControllerTest
 //    }
 
     /**
-     *depends testAddBeneficiary
-     *@dataProvider provideRemove
+     *@depends testAddBeneficiary
+     *@dataProvider provideBeneficiariesToRemove
      */
-    public function testRemoveBenef($current,$beneficiary, $isValid, $benefRemains, $expectKey)
+    public function testRemoveBeneficiary($current,$beneficiary, $isValid, $benefRemains, $expectKey)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -273,6 +273,8 @@ class UserControllerTest extends BaseControllerTest
             $this->assertFalse($debitorUser->hasBeneficiary($beneficiary));
 
             $this->em->refresh($beneficiary);
+            $this->em->refresh($creditorUser);
+            $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
 
             if($benefRemains){
                 //check that beneficiary entity still exists but is not in list of $debitor
@@ -287,7 +289,7 @@ class UserControllerTest extends BaseControllerTest
 
         }else{
             $beneficiary2 = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
-            $this->assertTrue($benficiary === $beneficiary2);
+            $this->assertTrue($beneficiary === $beneficiary2);
             $crawler = $this->client->followRedirect();
             $this->assertSame(1, $crawler->filter('div.alert-'.$expectKey)->count());    
             $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
@@ -295,9 +297,9 @@ class UserControllerTest extends BaseControllerTest
         }
     }
 
-    public function provideRemove()
+    public function provideBeneficiariesToRemove()
     {
-        array(
+        return array(
             array('current'=>'LaBonnePioche','beneficiary'=>'LaDourbie','isValid'=>true,'benefRemains'=>true,'expectKey'=>'success'),
             array('current'=>'locavore','beneficiary'=>'MaltOBar','isValid'=>false,'benefRemains'=>true,'expectKey'=>'error'),
             array('current'=>'locavore','beneficiary'=>'LaDourbie','isValid'=>true,'benefRemains'=>false,'expectKey'=>'success'),
