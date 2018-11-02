@@ -25,7 +25,7 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideSimpleTransactionData
      */
-    public function testSimpleTransaction($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$date)
+    public function testSimpleTransactionProcess($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$day,$month,$year)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -67,9 +67,9 @@ class BankingControllerTest extends BaseControllerTest
             $form['cairn_userbundle_simpletransaction[toAccount][email]']->setValue($creditorUser->getEmail());
             $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
             $form['cairn_userbundle_simpletransaction[description]']->setValue('Test virement simple');
-            $form['cairn_userbundle_simpletransaction[date][day]']->select('1');
-            $form['cairn_userbundle_simpletransaction[date][month]']->select('11');
-            $form['cairn_userbundle_simpletransaction[date][year]']->select('2018');
+            $form['cairn_userbundle_simpletransaction[date][day]']->select($day);
+            $form['cairn_userbundle_simpletransaction[date][month]']->select($month);
+            $form['cairn_userbundle_simpletransaction[date][year]']->select($year);
 
             $crawler =  $this->client->submit($form);
 
@@ -90,15 +90,27 @@ class BankingControllerTest extends BaseControllerTest
      */
     public function provideSimpleTransactionData()
     {
+        $today = new \Datetime();
+        $day = intval($today->format('d'));
+        $month = intval($today->format('m'));
+        $year = $today->format('Y');
+
+        $future = date_modify(new \Datetime(),'+1 months');
+        $futureDay = intval($today->format('d'));
+        $futureMonth = intval($today->format('m'));
+        $futureYear = $today->format('Y');
+
         //valid data
         $baseData = array('login'=>'LaBonnePioche','creditor'=>'MaltOBar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
-                          'isValid'=>true,'amount'=>'10', 'date'=>new \Datetime());
+                          'isValid'=>true,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year);
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
             'no beneficiary'=>array_replace($baseData,array('login'=>'DrDBrew', 'to'=>'beneficiary','expectForm'=>false)),
             'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
             'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
+            'valid immediate'=>$baseData,
+            'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
         );
     }
 
@@ -106,7 +118,8 @@ class BankingControllerTest extends BaseControllerTest
      *
      *@dataProvider provideTransactionDataForValidation
      */
-    public function testTransactionValidator($frequency, $amount, $description, $fromAccount, $toAccount,$date, $isValid)
+    public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,
+                                             $periodicity, $isValid)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -114,11 +127,12 @@ class BankingControllerTest extends BaseControllerTest
 
         if($frequency == 'unique'){
             $transaction = new SimpleTransaction();
-            $transaction->setDate($date); 
+            $transaction->setDate($firstDate); 
         }else{
             $transaction = new RecurringTransaction();
-            $transaction->setFirstOccurrenceDate($date); 
-            $transaction->setLastOccurrenceDate($date); 
+            $transaction->setFirstOccurrenceDate($firstDate); 
+            $transaction->setLastOccurrenceDate($lastDate); 
+            $transaction->setPeriodicity($periodicity);
         }
         $transaction->setAmount($amount); 
         $transaction->setDescription($description); 
@@ -149,8 +163,7 @@ class BankingControllerTest extends BaseControllerTest
         $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
             'fromAccount'=> array('id'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
             'toAccount'=> array('id'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
-            'date'=> new \Datetime(),
-            'isValid'=>true );
+            'firstDate'=> new \Datetime(),'lastDate'=>date_modify(new \Datetime(),'+1 months') ,'periodicity'=>'1', 'isValid'=>true );
 
         return array(
             'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
@@ -165,9 +178,19 @@ class BankingControllerTest extends BaseControllerTest
                 'toAccount'=>array('id'=>$debitorAccount->id,'email'=>$debitorUser->getEmail()),
                 'isValid'=>false)),
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
-            'inconsistent date'=>array_replace($baseData,array('date'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
-            'date before today' =>array_replace($baseData,array('date'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-            'valid'=> $baseData
+            'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
+            'date before today' =>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+            'first date b4 today' =>array_replace($baseData,array('frequency'=>'recurring',
+                                                  'firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+            'last date b4 first' =>array_replace($baseData,array('frequency'=>'recurring',
+                                                  'lastDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+            'too short interval' =>array_replace($baseData,array('frequency'=>'recurring',
+                                                  'lastDate'=>date_modify(new \Datetime(),'+10 days'),'isValid'=>false)),
+            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
+                                                  'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
+
+            'valid simple'=> $baseData,
+            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
         );
     }
 
