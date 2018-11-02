@@ -86,7 +86,7 @@ class TransactionValidator extends ConstraintValidator
                         ->atPath('toAccount')                                          
                         ->addViolation();                                              
                 }else{//valid email
-                    $account = $this->accountInfo->getDefaultAccount($creditorUser->getID());
+                    $account = $this->accountInfo->getDefaultAccount($creditorUser->getCyclosID());
                     $toICC = $account->id;
                 }
             }

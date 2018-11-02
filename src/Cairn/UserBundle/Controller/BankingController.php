@@ -425,8 +425,8 @@ class BankingController extends Controller
                         return new RedirectResponse($request->getRequestUri());
                     }
                 }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id,$toAccount->id)){
-                        $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
-                        return new RedirectResponse($request->getRequestUri());
+                    $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
+                    return new RedirectResponse($request->getRequestUri());
                 }
 
 
@@ -484,7 +484,6 @@ class BankingController extends Controller
                 $toAccount = $debitAccount;
                 $description = $this->editDescription($type,$dataForm['description']);
 
-                //                $dataTime = $dataForm['date'];
                 $dataTime = new \Datetime(date('Y-m-d'));
 
                 if(!$accountService->hasAccount($ownerVO->id,$dataForm['fromAccount']['id'])){
@@ -1337,10 +1336,10 @@ class BankingController extends Controller
     /**
      * Downloads a PDF document relating the transfer notice with ID $id
      *
-     * This document can be requestes by a pro for itself, by an admin for itself, by an admin for a pro under its responsibility
+     * This document can be requested by a pro for himself, by an admin for himself, by an admin for a pro under its responsibility
      * which means current user is referent of account's owner
      *
-     * @param int $id transfer ID
+     * @param int $id account ID
      * @throws Cyclos\ServiceException
      * @throws AccessDeniedException A non admin granted user requests for a SYSTEM account
      * @throws AccessDeniedException The current user is not referent of account's owner
@@ -1375,7 +1374,7 @@ class BankingController extends Controller
                 return $this->redirectToRoute('cairn_user_welcome',array('_format'=>$_format));
             }
             if(! ($owner->hasReferent($currentUser) || $owner === $currentUser)){
-                throw new AccessDeniedException('Vous n\'êtes pas référent du propriétaire du compte : ' .$owner->getName());
+                throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires');
             }
         }
 
@@ -1409,15 +1408,12 @@ class BankingController extends Controller
     /**
      * Downloads a document with accounts overview : balance + account history for a given period
      *
-     * This document can be requested by a pro for itself, by a SUPER_ADMIN for itself
+     * This document can be requested by a pro for himself, by a SUPER_ADMIN for himself
      * A local group(ROLE_ADMIN) cannot download it.
      * Two formats are possible : CSV | PDF
      * By default, end date is today's date
      *
-     * @param int $id transfer ID
-     * @throws Cyclos\ServiceException
-     * @throws AccessDeniedException A non admin granted user requests for a SYSTEM account
-     * @throws AccessDeniedException The current user is not referent of account's owner
+     * @throws AccessDeniedException Current user is not a ROLE_PRO or a ROLE_SUPER_ADMIN 
      */
     public function downloadAccountsOverviewAction(Request $request)
     {
@@ -1427,7 +1423,7 @@ class BankingController extends Controller
 
         $currentUser = $this->getUser();
         if($currentUser->hasRole('ROLE_ADMIN')){
-            throw new AccessDeniedException('En tant que groupe local, vous ne pouvez pas télécharger le televé de compte d\'un professionnel.');
+            throw new AccessDeniedException('En tant que groupe local, vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
         }
 
         $accountTypesVO = array();
@@ -1441,22 +1437,23 @@ class BankingController extends Controller
                 'label'=>'Format du fichier',
                 'choices'=>array('CSV'=>'csv','PDF'=>'pdf'),
                 'expanded'=>true))
-                ->add('accounts',ChoiceType::class,array(
-                    'label'=>'Comptes',
-                    'choices'=>$accounts,
-                    'choice_label'=>'type.name',
-                    'multiple'=>true,
-                    'expanded'=>true))
-                    ->add('begin', DateType::class,array(
-                        'label'=>'depuis',
-                        'required'=>false))
-                        ->add('end', DateType::class,array(
-                            'label'=>'jusqu\'à',
-                            'data'=> new \Datetime(),
-                            'required'=>false))
-                            ->add('save', SubmitType::class,array(
-                                'label'=>'Télécharger'))
-                                ->getForm();
+            ->add('accounts',ChoiceType::class,array(
+                'label'=>'Comptes',
+                'choices'=>$accounts,
+                'choice_label'=>'type.name',
+                'multiple'=>true,
+                'expanded'=>true))
+            ->add('begin', DateType::class,array(
+                'label'=>'depuis',
+                'data'=> date_modify(new \Datetime(),'-1 months'),
+                'required'=>false))
+            ->add('end', DateType::class,array(
+                'label'=>'jusqu\'à',
+                'data'=> new \Datetime(),
+                'required'=>false))
+            ->add('save', SubmitType::class,array(
+                'label'=>'Télécharger'))
+                ->getForm();
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -1467,24 +1464,17 @@ class BankingController extends Controller
                 $begin = $dataForm['begin'];
                 $end = $dataForm['end'];
 
+                //if nothing selected, select all
                 $accounts = ($dataForm['accounts'] != NULL) ? $dataForm['accounts'] : $accounts;
-                try{
-                    $this->get('cairn_user.datetime_checker')->isValidInterval($begin,$end);
-                }catch(\Exception $e){
+                if(! $this->get('cairn_user.datetime_checker')->isValidInterval($begin,$end)){
                     $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-                if($begin){
-                    //+1 day because the time is 00:00:00 so if user input 2018-07-13 the filter will get payments 
-                    //until 2018-07-12 23:59:59
-                    $period = array('begin' => $dataForm['begin']->format('Y-m-d'),
-                        'end' => date_modify($dataForm['end'],'+1 day')->format('Y-m-d'));
-                }else{
-                    $period = array(
-                        'begin' => date_modify(new \Datetime(),'-1 month')->format('Y-m-d'), 
-                        'end' => date_modify(new \Datetime(),'+1 day')->format('Y-m-d'));
-                }
+                //+1 day because the time is 00:00:00 so if user input 2018-07-13 the filter will get payments 
+                //until 2018-07-12 23:59:59
+                $period = array('begin' => $dataForm['begin']->format('Y-m-d'),
+                    'end' => date_modify($dataForm['end'],'+1 day')->format('Y-m-d'));
 
                 if($format == 'csv'){
                     $response = new StreamedResponse();

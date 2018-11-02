@@ -138,7 +138,7 @@ class AccountInfo
             }
         }
 
-        return $accounts;
+        return array_values($accounts);
     }
 
     /**

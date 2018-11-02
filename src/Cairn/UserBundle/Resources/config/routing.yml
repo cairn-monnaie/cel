@@ -225,7 +225,7 @@ cairn_user_banking_operation_confirm:
 
 cairn_user_banking_transaction_scheduled_changestatus:
     path:     banking/transaction/scheduled/edit/{id}-{status}.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction}
+    defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction, _format: html}
     requirements:
         id: "[-]?[0-9]{1,}"
         status: cancel|open|block|execute

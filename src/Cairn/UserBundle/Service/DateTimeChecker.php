@@ -19,15 +19,10 @@ class DateTimeChecker
      */
     public function isValidInterval($begin,$end)
     {
-        if( (!$begin && !$end) || ($begin && $end)){                   
-            if($begin && $end){                                        
-                if($begin->diff($end)->invert == 1){                   
-                    throw new \Exception('La date de début ne peut être antérieure à la date de fin.');
-                }                                                      
-            }
-        }else{                                                         
-            throw new \Exception('Vous n\'avez spécifié qu\'une seule date');
-        }   
+        $interval = $begin->diff($end);
+        if($interval->invert == 1 || ($interval->invert == 0 && $interval->days == 0)){                   
+            return false;
+        }                                                      
 
         return true;
     }
