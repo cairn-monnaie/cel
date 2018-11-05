@@ -10,6 +10,7 @@ app:
     resource: '@AppBundle/Controller/'
     type: annotation
 
+
 fos_user_security:
     resource: "@FOSUserBundle/Resources/config/routing/security.xml"
 
@@ -24,6 +25,11 @@ fos_user_register:
 fos_user_resetting:
     resource: "@FOSUserBundle/Resources/config/routing/resetting.xml"
     prefix: /resetting
+
+fos_oauth_server_token:
+    resource: "@FOSOAuthServerBundle/Resources/config/routing/token.xml"
+fos_oauth_server_authorize:
+    resource: "@FOSOAuthServerBundle/Resources/config/routing/authorize.xml"
 
 #fos_user_change_password:
 #    resource: "@FOSUserBundle/Resources/config/routing/change_password.xml"

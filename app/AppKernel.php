@@ -20,6 +20,7 @@ class AppKernel extends Kernel
             new Cairn\UserBundle\CairnUserBundle(),
             new FOS\UserBundle\FOSUserBundle(),
             new Knp\Bundle\SnappyBundle\KnpSnappyBundle(),
+            new FOS\OAuthServerBundle\FOSOAuthServerBundle(),
         ];
 
         if (in_array($this->getEnvironment(), ['dev', 'test'], true)) {

@@ -1,3 +1,9 @@
+# Cairn/UserBundle/Resources/config/routing.yml
+
+#login:
+#    path:     /login
+#    defaults: { _controller: CairnUserBundle:Security:login }
+
 cairn_user_welcome:
     path:     / 
     defaults: { _controller: CairnUserBundle:User:index }

@@ -28,7 +28,7 @@ framework:
         handler_id: session.handler.native_file
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
         gc_maxlifetime: 300
-        cookie_lifetime: 120
+        cookie_lifetime: 300
     fragments: ~
     http_method_override: true
     assets: ~
@@ -53,6 +53,7 @@ doctrine:
         user: '%database_user%'
         password: '%database_password%'
         charset: UTF8
+        server_version: 5.7
         # if using pdo_sqlite as your database driver:
         #   1. add the path in parameters.yml
         #     e.g. database_path: "%kernel.project_dir%/var/data/data.sqlite"
@@ -94,6 +95,14 @@ fos_user:
             enabled:    true # change to false to disable registration email confirmation  
             template:   CairnUserBundle:Emails:email_confirmation.html.twig
 
+fos_oauth_server:
+    db_driver: orm       
+    client_class:        Cairn\UserBundle\Entity\Client
+    access_token_class:  Cairn\UserBundle\Entity\AccessToken
+    refresh_token_class: Cairn\UserBundle\Entity\RefreshToken
+    auth_code_class:     Cairn\UserBundle\Entity\AuthCode
+    service:
+        user_provider: fos_user.user_provider.username
 
 #assetic:
 #    debug:          '%kernel.debug%'
