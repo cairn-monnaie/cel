@@ -132,7 +132,7 @@ Digital Cairn
      * Click save
      * Click Permissions(top-right tab on group screen)
      * General :
-        * My profile fields : enabled/registration/visible/editable : check for full name / login name / email
+        * My profile fields : enabled/registration/visible/editable : check for full name / login name / email / address
         * Manage my channels access : check
      * System Accounts : 
         * system accounts : check all
