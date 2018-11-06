@@ -85,7 +85,9 @@ class SecurityListener
         $route = $request->get('_route');
 
         $attributes = $request->attributes->all();
-        $parameters = key_exists('_route_params', $attributes) ? $attributes['_route_params'] : array();
+        $route_parameters = key_exists('_route_params', $attributes) ? $attributes['_route_params'] : array();
+        $query_parameters = $request->query->all();
+        $parameters = array_merge($route_parameters, $query_parameters);
 
         $isExceptionCase = false;
         //check if installed admin is asking for a new security card
