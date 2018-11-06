@@ -308,16 +308,16 @@ class AccountTypeController extends Controller
             ->add('name'     , TextType::class , array('label' => 'nom du nouveau compte'))
             //            ->add('limitType'     , ChoiceType::class , array('choices' => array('limité' => 'LIMITED' ,'illimité' => 'UNLIMITED')))
             ->add('creditLimit'   , TextType::class , array('label' => 'débit maximal du compte',
-                                                            'data'=>'0'))                                
-            ->add('description'   , TextType::class , array('label' => 'Description'))                                
-            //            ->add('to'            , ChoiceType::class , array('label'=>'Assigné à',
-            //                                                              'choices' => array($allPros,$usersVO),
-            //                                                              'choice_label'=>'display',
-            //                                                              'multiple' => true,
-            //                                                              'expanded' => true ))
-            ->add('save'     , SubmitType::class)                              
-            ->getForm()
-            ;       
+                'data'=>'0'))                                
+                ->add('description'   , TextType::class , array('label' => 'Description'))                                
+                //            ->add('to'            , ChoiceType::class , array('label'=>'Assigné à',
+                //                                                              'choices' => array($allPros,$usersVO),
+                //                                                              'choice_label'=>'display',
+                //                                                              'multiple' => true,
+                //                                                              'expanded' => true ))
+                ->add('save'     , SubmitType::class)                              
+                ->getForm()
+                ;       
 
 
         if($request->isMethod('POST')){ //form filled and submitted
@@ -566,34 +566,6 @@ class AccountTypeController extends Controller
     }
 
 
-    /**
-     *Confirms will to remove account type 
-     *
-     */
-    public function confirmRemoveAccountTypeAction(Request $request, $id)   
-    {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $session = $request->getSession();
-
-        $accountTypeDTO = $this->get('cairn_user_cyclos_accounttype_info')->getAccountTypeDTOByID($id);
-
-        $form = $this->createForm(ConfirmationType::class);
-
-        if($request->isMethod('POST')){
-            $form->handleRequest($request);
-            if($form->isValid()){
-                if($form->get('save')->isClicked()){
-                    return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_remove',array('id'=>$id));
-                }
-                else{
-                    return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$id));
-                }
-
-            }
-        }
-        return $this->render('CairnUserCyclosBundle:Config/AccountType:confirm_remove.html.twig',array('form'=>$form->createView(),'accountType'=>$accountTypeDTO));
-    }
 
     /**
      * Removes account type with ID $id
@@ -667,49 +639,64 @@ class AccountTypeController extends Controller
 
             return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$id));
 
-        }else{
-            //unassign product to group Pros
-            //cyclos returns ILLEGAL_ACTION if trying to unassign an unassigned product
-            $changeAssignation = true;
-            if($this->get('cairn_user_cyclos_accounttype_info')->groupHasAssignedProduct($id,$groupVO)){ 
-                $changeAssignation = $this->changeAssignationAccountType($id,false);
-            }
-
-            $processedTransactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions(NULL,$id,NULL,NULL,NULL);
-
-            if(count($processedTransactions) != 0){
-                $session->getFlashBag()->add('info','Des transactions impliquant ce compte ont déjà été réalisées. Le compte ne peut donc être supprimé. En revanche, il sera désormais invisible des professionnels.');
-
-            }else{//remove product then remove account type
-                $productDTO = $this->get('cairn_user_cyclos_product_info')->getAccountProductDTO($accountTypeDTO);
-                //Awful error to avoid ABSOLUTELY : While removing a system Account, removing the AdminProductDTO
-                //which allows the administator to manage all actions made in Cyclos through web Services
-                if($productDTO->nature == 'MEMBER'){
-                    $this->productManager->removeProduct($productDTO->id);
-                }
-                $this->accountTypeManager->removeAccountType($id);
-                $session->getFlashBag()->add('info','Le compte a été supprimé avec succès.');
-
-            }
-
-
-            $bb = $beneficiaryRepo->createQueryBuilder('b');
-            $bb->where($bb->expr()->in('b.ICC','?1'))
-                ->setParameter(1,$accountIds);
-
-            $beneficiaries = $bb->getQuery()->getResult();
-            foreach($beneficiaries as $beneficiary){
-                $em->remove($beneficiary);
-            }
-            $em->flush();
-
-            $subject = 'Suppression de compte';
-            $from = $messageNotificator->getNoReplyEmail();
-            $body = $this->renderView('CairnUserBundle:Emails:account_removal.html.twig',array('account'=>$accountTypeDTO));
-            $messageNotificator->notifyRolesByEmail(array('ROLE_PRO'),$subject,$from,$body);
-
-            return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_list');
         }
-    }
 
+        $form = $this->createForm(ConfirmationType::class);
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()){
+                if($form->get('save')->isClicked()){
+
+                    //unassign product to group Pros
+                    //cyclos returns ILLEGAL_ACTION if trying to unassign an unassigned product
+                    $changeAssignation = true;
+                    if($this->get('cairn_user_cyclos_accounttype_info')->groupHasAssignedProduct($id,$groupVO)){ 
+                        $changeAssignation = $this->changeAssignationAccountType($id,false);
+                    }
+
+                    $processedTransactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions(NULL,$id,NULL,NULL,NULL);
+
+                    if(count($processedTransactions) != 0){
+                        $session->getFlashBag()->add('info','Des transactions impliquant ce compte ont déjà été réalisées. Le compte ne peut donc être supprimé. En revanche, il sera désormais invisible des professionnels.');
+
+                    }else{//remove product then remove account type
+                        $productDTO = $this->get('cairn_user_cyclos_product_info')->getAccountProductDTO($accountTypeDTO);
+                        //Awful error to avoid ABSOLUTELY : While removing a system Account, removing the AdminProductDTO
+                        //which allows the administator to manage all actions made in Cyclos through web Services
+                        if($productDTO->nature == 'MEMBER'){
+                            $this->productManager->removeProduct($productDTO->id);
+                        }
+                        $this->accountTypeManager->removeAccountType($id);
+                        $session->getFlashBag()->add('info','Le compte a été supprimé avec succès.');
+
+                    }
+
+
+                    $bb = $beneficiaryRepo->createQueryBuilder('b');
+                    $bb->where($bb->expr()->in('b.ICC','?1'))
+                        ->setParameter(1,$accountIds);
+
+                    $beneficiaries = $bb->getQuery()->getResult();
+                    foreach($beneficiaries as $beneficiary){
+                        $em->remove($beneficiary);
+                    }
+                    $em->flush();
+
+                    $subject = 'Suppression de compte';
+                    $from = $messageNotificator->getNoReplyEmail();
+                    $body = $this->renderView('CairnUserBundle:Emails:account_removal.html.twig',array('account'=>$accountTypeDTO));
+                    $messageNotificator->notifyRolesByEmail(array('ROLE_PRO'),$subject,$from,$body);
+
+                    return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_list');
+                }else{
+                    return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$id));
+                }
+            }
+
+        }
+        return $this->render('CairnUserCyclosBundle:Config/AccountType:confirm_remove.html.twig',array(
+            'form'=>$form->createView(),'accountType'=>$accountTypeDTO));
+
+    }
 }
