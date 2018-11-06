@@ -25,10 +25,21 @@ class ProfileType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-                ->add('description', TextareaType::class)
-                ->add('address' , AddressType::class)
-                ->add('image', ImageType::class,array('required'=>false))
-                ->add('save' , SubmitType::class);
+            ->add('description', TextareaType::class)
+            ->add('address' , AddressType::class)
+            ->add('image', ImageType::class,array('required'=>false));
+        $builder->addEventListener(
+            FormEvents::SUBMIT,
+            function (FormEvent $event) {
+                $user = $event->getData();
+                $form = $event->getForm();
+                if(null === $user){
+                    return;
+                }
+                $user->setPlainPassword($form->get('current_password')->getData());
+            }
+        );
+        $builder->add('save' , SubmitType::class);
     }
 
     /**
@@ -43,7 +54,7 @@ class ProfileType extends AbstractType
 
     public function getParent()
     {
-//        return 'FOS\UserBundle\Form\Type\ProfileFormType';
+        //        return 'FOS\UserBundle\Form\Type\ProfileFormType';
         return ProfileFormType::class;
     }
 
@@ -52,7 +63,7 @@ class ProfileType extends AbstractType
      */
     public function getBlockPrefix()
     {
-        return 'app_user_profile_edit';
+        return 'cairn_user_profile_edit';
     }
 
 
