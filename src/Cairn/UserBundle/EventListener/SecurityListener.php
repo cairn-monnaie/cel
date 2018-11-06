@@ -62,7 +62,7 @@ class SecurityListener
     public function onMaintenance(GetResponseEvent $event)
     {
         //if maintenance.txt exists
-        if(is_file('../maintenance.txt')){
+        if(is_file('maintenance.txt')){
             $event->setResponse($this->templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
         }
     }

@@ -111,7 +111,7 @@ class ExceptionListener
                 $subject = 'Maintenance automatique : ConnectionException Cyclos';
 
                 //maintenance state 
-               file_put_contents("../maintenance.txt", '');
+               file_put_contents("maintenance.txt", '');
 
                 $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
