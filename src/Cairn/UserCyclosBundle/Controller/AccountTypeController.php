@@ -221,12 +221,12 @@ class AccountTypeController extends Controller
     /**
      * Adds a USER account type and assigns it to the group of users defined in global parameter
      * 
-     * This action is probably the most complicated while managing cyclos configuration.
+     * This action is probably the most complicated while managing cyclos configuration from web services
      * Cyclos does not provide any way to get a new Account Type object so that we just fill the missing properties.
      * To get around this issue, we follow the steps below :
      *  _ 1)retrieve an instance of AccountTypeDTO and its corresponding productDTO
      *  _ 2) unset its attribute id (doing this will make it a new AccountType object)
-     *  _ 3) if no account is using the current currency, retrieve AccountTypeDTO using another currency, then change its property currency 
+     *  _ 3) if no account is using the current currency, retrieve AccountTypeDTO using another currency, then change its property currency
      *  _ 4)unset associated productDTO id (doing this will make it a new Product object)
      * 
      * Then, once the new objects $newAccountType and $newProduct have been created, we must ensure that the names won't provok 
@@ -253,7 +253,7 @@ class AccountTypeController extends Controller
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        $session = new Session();
+        $session = $request->getSession();
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if($nature != 'USER'){
@@ -287,6 +287,12 @@ class AccountTypeController extends Controller
         $accountTypeDTO->description = NULL;
         unset($accountTypeDTO->id);
         unset($productDTO->id);
+        $profileFields = $productDTO->myProfileFields;
+        foreach($profileFields as $field){
+            if(property_exists($field,'id')){
+                unset($field->id);
+            }
+        }
 
         $accountTypeDTO->name         = NULL;
         $productDTO->name = NULL;
@@ -301,7 +307,8 @@ class AccountTypeController extends Controller
         $form = $this->createFormBuilder($accountTypeArray)
             ->add('name'     , TextType::class , array('label' => 'nom du nouveau compte'))
             //            ->add('limitType'     , ChoiceType::class , array('choices' => array('limité' => 'LIMITED' ,'illimité' => 'UNLIMITED')))
-            ->add('creditLimit'   , TextType::class , array('label' => 'débit maximal du compte'))                                
+            ->add('creditLimit'   , TextType::class , array('label' => 'débit maximal du compte',
+                                                            'data'=>'0'))                                
             ->add('description'   , TextType::class , array('label' => 'Description'))                                
             //            ->add('to'            , ChoiceType::class , array('label'=>'Assigné à',
             //                                                              'choices' => array($allPros,$usersVO),
@@ -410,11 +417,12 @@ class AccountTypeController extends Controller
                 //
                 //                }
 
-                $subject = 'Création de compte';
+                $subject = 'Création de compte Cairn';
                 $from = $messageNotificator->getNoReplyEmail();
                 $body = $this->renderView('CairnUserBundle:Emails:account_creation.html.twig',array('account'=>$accountTypeDTO));
                 $messageNotificator->notifyRolesByEmail(array('ROLE_PRO'),$subject,$from,$body);
 
+                $session->getFlashBag()->add('success','Le type de compte '. $accountTypeDTO->name . ' a été créé avec succès.');
                 return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$accountTypeID));
             }
         }
@@ -606,17 +614,7 @@ class AccountTypeController extends Controller
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
-        try{
-            $accountTypeDTO = $this->get('cairn_user_cyclos_accounttype_info')->getAccountTypeDTOByID($id);
-        }catch(\Exception $e){
-            if($e->errorCode == 'ENTITY_NOT_FOUND'){
-                $session->getFlashBag()->add('error','Cet identifiant ne correspond à aucun type de compte.');
-                return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_list');
-            }
-            else{
-                throw $e;
-            }
-        }
+        $accountTypeDTO = $this->get('cairn_user_cyclos_accounttype_info')->getAccountTypeDTOByID($id);
 
         //if debit account, refuse
         $debitAccount = $this->get('cairn_user_cyclos_account_info')->getDebitAccount();
@@ -639,7 +637,7 @@ class AccountTypeController extends Controller
             return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_view',array('id'=>$id));
         }
 
-        //check if all null balances for the given account
+        //check if all null balances for the given account type
         $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($this->getParameter('cyclos_group_pros'),'MEMBER_GROUP');
         $usersVO =  $this->get('cairn_user_cyclos_user_info')->getListInGroup($groupVO);
 

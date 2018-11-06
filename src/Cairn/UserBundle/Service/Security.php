@@ -59,6 +59,8 @@ class Security
             if(! ($this->userRepo->findOneBy(array('id'=>$parameters['id'])) === $currentUser)){
                 $isSensibleUrl = true;
             }
+        }elseif(strpos($route,'cairn_user_cyclos') !== false){
+            $isSensibleRoute = true;
         }
 
         return ($isSensibleUrl || $isSensibleRoute);  
