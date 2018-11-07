@@ -96,14 +96,31 @@ class AccountTypeControllerTest extends BaseControllerTest
      *@depends testAddAccountType
      *@dataProvider provideDataForAccountRemoval
      */
-    public function testRemoveAccountType($login, $isLegit, $accountTypeID, $isValid)
+    public function testRemoveAccountType($login,$isLegit, $nature, $isValid)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $this->login($login,'@@bbccdd');
 
-        $accounttypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER');
-        $countBefore = count($accounttypes);
+        $systemAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'SYSTEM');
+        $memberAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER');
+        $debitAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
+
+        $countBefore = count($memberAccountTypes);
+
+        switch($nature){
+            case 'debit':
+                $accountTypeID = $debitAccount->type->id;
+                break;
+            case 'system':
+                $accountTypeID = $systemAccountTypes[0]->id;
+                break;
+            case 'member':
+                $accountTypeID = ($countBefore > 1) ? $memberAccountTypes[1]->id : $memberAccountTypes[0]->id;
+                break;
+            case 'wrong':
+                $accountTypeID = '123456789';
+        }
 
         $url = '/config/accounts/accounttype/remove/'.$accountTypeID;
         $crawler = $this->client->request('GET', $url);
@@ -117,34 +134,33 @@ class AccountTypeControllerTest extends BaseControllerTest
             $crawler = $this->inputCardKey($crawler,'1111');
             $crawler = $this->client->followRedirect();
 
-            $accounttypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER');
 
             if($isValid){
                     $form = $crawler->selectButton('confirmation_save')->form();
                     $crawler =  $this->client->submit($form);
 
-                    $this->assertEquals($countBefore - 1, count($accounttypes));
+                    $memberAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(null,'USER');
+
+                    $this->assertEquals($countBefore - 1, count($memberAccountTypes));
                     $crawler = $this->client->followRedirect();
                     $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
             }else{
-                    $this->assertEquals($countBefore, count($accounttypes));
-                    $this->assertTrue($this->client->getResponse()->isRedirect('/accounts/accounttype/view/'.$accountTypeID));
+                    $memberAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(null,'USER');
+
+                    $this->assertEquals($countBefore, count($memberAccountTypes));
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/config/accounts/accounttype/view/'.$accountTypeID));
             }
         }
     }
 
     public function provideDataForAccountRemoval()
     {
-        $systemAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'SYSTEM');
-        $memberAccountTypes = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER');
-        $debitAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
-
-        $baseData = array('login'=>'mazouthm','isLegit'=>true,'accountTypeID'=>$memberAccountTypes[1]->id,'isValid'=>true);
+        $baseData = array('login'=>'mazouthm','isLegit'=>true,'nature'=>'member','isValid'=>true);
         return array(
             'non legit user'=> array_replace($baseData,array('login'=>'LaBonnePioche','isLegit'=>false, 'isValid'=>false)),
-            'invalid id'=> array_replace($baseData, array('accountTypeID'=>'123456789','isLegit'=>false, 'isValid'=>false)),
-            'debit account type'=> array_replace($baseData, array('isValid'=>false)),
-            'system account type'=> array_replace($baseData, array('isValid'=>false) ),
+            'invalid id'=> array_replace($baseData, array('nature'=>'wrong','isLegit'=>false, 'isValid'=>false)),
+            'debit account type'=> array_replace($baseData, array('nature'=>'debit','isValid'=>false)),
+            'system account type'=> array_replace($baseData, array('nature'=>'system','isValid'=>false) ),
             'remove first member account type'=> $baseData,
             'remove unique member account type'=> array_replace($baseData, array('isValid'=>false)),
         );

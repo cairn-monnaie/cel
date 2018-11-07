@@ -668,7 +668,7 @@ class AccountTypeController extends Controller
                             $this->productManager->removeProduct($productDTO->id);
                         }
                         $this->accountTypeManager->removeAccountType($id);
-                        $session->getFlashBag()->add('info','Le compte a été supprimé avec succès.');
+                        $session->getFlashBag()->add('success','Le compte a été supprimé avec succès.');
 
                     }
 
