@@ -69,7 +69,7 @@ class UserController extends Controller
 
     }
 
-    public function indexAction(Request $request)
+    public function indexAction(Request $request, $_format)
     {
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -99,11 +99,20 @@ class UserController extends Controller
         $transactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions($ownerVO,$accountTypes,array('PAYMENT','SCHEDULED_PAYMENT'),$statuses,NULL,NULL,NULL,20);
 
         if($checker->isGranted('ROLE_PRO')){
+            if($_format == 'json'){
+                $response = array('accounts'=>$accounts,'lastTransactions'=>$transactions, 'lastUsers'=>$users);
+                return $this->json($response);
+            }
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$transactions,'lastUsers'=>$users));
         }
 
     }
 
+    public function getIDAction(Request $request, $_format)
+    {
+        $user = $this->getUser();
+        return $this->json(array('current_user_id'=>$user->getID()));
+    }
 
     /**
      * This function os compulsary to login to Cyclos network

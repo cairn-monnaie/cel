@@ -5,13 +5,20 @@
 #    defaults: { _controller: CairnUserBundle:Security:login }
 
 cairn_user_welcome:
-    path:     / 
-    defaults: { _controller: CairnUserBundle:User:index }
+    path:     .{_format} 
+    defaults: { _controller: CairnUserBundle:User:index, _format: html}
+    requirements:
+        _format: html|json
 
 cairn_user_install:
     path:     install/
     defaults: { _controller: CairnUserBundle:Default:install }
 
+cairn_user_api_current_user:
+    path: api/user.{_format}
+    defaults: { _controller: CairnUserBundle:User:getID, _format: json }
+    requirements:
+        _format: json
 
 cairn_user_registration:
     path:     inscription.{_format}
