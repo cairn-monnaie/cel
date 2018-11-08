@@ -23,14 +23,6 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        main:
-            pattern:   ^/
-            anonymous: true
-            json_login:
-                check_path: /login
-        #                username_path: security.login.username
-        #                password_path: security.login.password
-
         oauth_token: # Everyone can access the access token URL.
             pattern: ^/oauth/v2/token
             security: false
@@ -40,6 +32,15 @@ security:
             fos_oauth:  true
             stateless:  true
             anonymous:  true # can be omitted as its default value        
+
+        main:
+            pattern:   ^/
+            anonymous: true
+            json_login:
+                check_path: /login
+        #                username_path: security.login.username
+        #                password_path: security.login.password
+
 
             provider: main
             form_login:
