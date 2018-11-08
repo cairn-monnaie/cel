@@ -28,7 +28,7 @@ security:
             security: false
 
         api:
-            pattern:    ^/
+            pattern:    .json$
             fos_oauth:  true
             stateless:  true
             anonymous:  true # can be omitted as its default value        
