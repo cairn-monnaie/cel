@@ -16,7 +16,7 @@ cairn_user_install:
 
 cairn_user_api_current_user:
     path: api/user.{_format}
-    defaults: { _controller: CairnUserBundle:User:getID, _format: json }
+    defaults: { _controller: CairnUserBundle:Default:getId, _format: json }
     requirements:
         _format: json
 

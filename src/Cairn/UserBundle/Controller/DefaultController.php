@@ -45,19 +45,11 @@ class DefaultController extends Controller
         $this->userManager = new UserManager();                                
     }   
 
-    public function indexAction()
+    public function getIdAction(Request $request, $_format)
     {
-        return $this->render('CairnUserBundle:Default:index.html.twig');
+        $user = $this->getUser();
+        return $this->json(array('current_user_id'=>$user->getID()));
     }
-
-
-    public function redirectToLoginAction(Request $request, $message)
-    {
-        $session = $request->getSession();
-        $session->getFlashBag()->add('info',$message);
-        return $this->redirectToRoute('fos_user_security_logout');
-    }
-
 
 
     public function installAction(Request $request)

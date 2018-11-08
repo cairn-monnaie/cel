@@ -108,11 +108,6 @@ class UserController extends Controller
 
     }
 
-    public function getIDAction(Request $request, $_format)
-    {
-        $user = $this->getUser();
-        return $this->json(array('current_user_id'=>$user->getID()));
-    }
 
     /**
      * This function os compulsary to login to Cyclos network
