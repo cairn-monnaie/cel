@@ -31,6 +31,16 @@ security:
         #                username_path: security.login.username
         #                password_path: security.login.password
 
+        oauth_token: # Everyone can access the access token URL.
+            pattern: ^/oauth/v2/token
+            security: false
+
+        api:
+            pattern:    ^/
+            fos_oauth:  true
+            stateless:  true
+            anonymous:  true # can be omitted as its default value        
+
             provider: main
             form_login:
                 login_path: fos_user_security_login
@@ -42,15 +52,6 @@ security:
             remember_me:
                 secret:     '%secret%' #defined in parameters.yml 
 
-        oauth_token: # Everyone can access the access token URL.
-            pattern: ^/oauth/v2/token
-            security: false
-
-        api:
-            pattern:    ^/api
-            fos_oauth:  true
-            stateless:  true
-            anonymous:  true # can be omitted as its default value        
 
     access_control:
         - { path: ^/config, roles: ROLE_SUPER_ADMIN , requires_channel: https, host: moncompte.cairn-monnaie\.com$}
