@@ -199,24 +199,5 @@ class AdminControllerTest extends BaseControllerTest
         );
 
     }
-    //    //test that after registration + email confirmation, user is disabled
-    //    //not randomly(define criteria), a registered user will confirm its email or not
-    //    /**
-    //     *depends testRegistration
-    //     */
-    //    public function testCheckEmailsValidation()
-    //    {
-    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-    //
-    //        $login = $this->container->getParameter('cyclos_global_admin_username');
-    //        $password = '@@bbccdd';
-    //        $crawler = $this->login($login, $password);
-    //
-    //
-    //        $crawler = $this->client->request('GET','user/email/check/expiration/');
-    //
-    //        $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
-    //
-    //    }
 
 }

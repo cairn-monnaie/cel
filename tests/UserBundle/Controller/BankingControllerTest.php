@@ -93,7 +93,6 @@ class BankingControllerTest extends BaseControllerTest
 
             if($isValid){
                 $crawler = $this->client->followRedirect();
-                echo $this->client->getResponse()->getContent();
                 $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
 
                 //checker le contenu du récapitulatif
@@ -125,12 +124,12 @@ class BankingControllerTest extends BaseControllerTest
             'frequency'=>'unique','periodicity'=>'1','futureDay'=>$futureDay,'futureMonth'=>$futureMonth,'futureYear'=>$futureYear);
 
         return array(
-//            'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
-//            'no beneficiary'=>array_replace($baseData,array('login'=>'DrDBrew', 'to'=>'beneficiary','expectForm'=>false)),
-//            'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
-//            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
-//            'valid immediate'=>$baseData,
-//            'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
+            'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
+            'no beneficiary'=>array_replace($baseData,array('login'=>'DrDBrew', 'to'=>'beneficiary','expectForm'=>false)),
+            'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
+            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
+            'valid immediate'=>$baseData,
+            'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
             'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }

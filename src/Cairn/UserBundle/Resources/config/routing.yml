@@ -83,10 +83,6 @@ cairn_user_users_home:
     requirements:
         _format: html|json
 
-cairn_user_email_check_validation:
-    path:     user/email/check/expiration/
-    defaults: { _controller: CairnUserBundle:Admin:checkEmailsValidation }
-
 cairn_user_users_search:
     path:     user/search/
     defaults: { _controller: CairnUserBundle:User:searchUser }
@@ -118,10 +114,6 @@ cairn_user_card_home:
     requirements:
         id: \d+
         _format: html|json
-
-cairn_user_card_check_expiration:
-    path:     card/check/expiration/
-    defaults: { _controller: CairnUserBundle:Card:checkCardsExpiration }
 
 cairn_user_card_order:
     path:     card/order/{id}.{_format}

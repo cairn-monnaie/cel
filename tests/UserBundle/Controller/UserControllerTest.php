@@ -309,6 +309,7 @@ class UserControllerTest extends BaseControllerTest
     /**
      *@todo : try to remove a ROLE_ADMIN
      *@todo :check that all beneficiaries with user $target have been removed
+     *@depends testRemoveBeneficiary
      *@dataProvider provideUsersToRemove
      */
     public function testRemoveUser($referent,$target,$isReferent,$nullAccount)

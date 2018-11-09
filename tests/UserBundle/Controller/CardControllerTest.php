@@ -202,6 +202,7 @@ class CardControllerTest extends BaseControllerTest
             }else{
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $crawler =  $this->client->submit($form);
+
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/download/'.$card->getID()));
                 $crawler = $this->client->followRedirect();
 
@@ -391,26 +392,6 @@ class CardControllerTest extends BaseControllerTest
              'no card to order'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'déjà une carte'),
         );
     }
-
-//    /**
-//     *
-//     *@depends testOrderCard
-//     */
-//    public function testCheckCardsExpiration()
-//    {
-//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-//
-//        $login = $this->container->getParameter('cyclos_global_admin_username');
-//        $password = '@@bbccdd';
-//        $crawler = $this->login($login, $password);
-//
-//
-//        $crawler = $this->client->request('GET','/card/check/expiration/');
-//
-//        $this->assertTrue($this->client->getResponse()->isSuccessful(), 'response status is 2xx');
-//
-//    }
-
 
 }
 

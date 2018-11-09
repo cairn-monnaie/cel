@@ -8,6 +8,14 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\User] 
 
+    cairn_user.commands:
+        class: Cairn\UserBundle\Service\Commands
+        arguments:
+            - "@doctrine.orm.entity_manager"
+            - "@cairn_user.message_notificator"
+            - "@templating"
+            - "%card_activation_delay%"
+
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
 
