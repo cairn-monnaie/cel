@@ -110,7 +110,8 @@ class BankingController extends Controller
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
 
         $currentUser = $this->getUser();
-        $currentUserID = $currentUser->getCyclosID();
+        $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $currentUserID = $currentUserVO->id;
 
         $account = $accountService->getAccountByID($accountID);
 
@@ -135,9 +136,11 @@ class BankingController extends Controller
         $accountTypeVO = $account->type; 
 
         //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
+        $begin = date_modify(new \Datetime(),'-2 months');
+        $end = date_modify(new \Datetime(),'+1 days');
         $period = array(
-            'begin' => date_modify(new \Datetime(),'-2 month')->format('Y-m-d'), 
-            'end' => date_modify(new \Datetime(),'+1 day')->format('Y-m-d'));
+            'begin' => $begin->format('Y-m-d'), 
+            'end' => $end->format('Y-m-d'));
 
         //does not provide future transactions
         $history = $accountService->getAccountHistory($account->id,$period,NULL,NULL,NULL,NULL);
@@ -160,10 +163,12 @@ class BankingController extends Controller
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
                     'widget' => 'single_text',
+                    'data' => $begin,
                     'required'=>false))
                     ->add('end',       DateType::class, array(
                         'label' => 'jusqu\'à',
                         'widget' => 'single_text',
+                        'data'=> $end,
                         'required'=>false))
                         ->add('minAmount', IntegerType::class,array(
                             'label'=>'Montant minimum',
@@ -189,38 +194,29 @@ class BankingController extends Controller
                 $maxAmount = $dataForm['maxAmount'];
                 $keywords = $dataForm['keywords'];
 
-                if( (!$begin && !$end) || ($begin && $end)){
-                    if($begin && $end){
-                        if($begin->diff($end)->invert == 1){                                   
-                            $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
-                            return new RedirectResponse($request->getRequestUri());
-                        }    
-                        //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
-                        $period = array(
-                            'begin' => $dataForm['begin']->format('Y-m-d'), 
-                            'end' => date_modify($dataForm['end'],'+1 day')->format('Y-m-d'));
-                    }else{
-                        $period = NULL;
-                    }
-
-                }else{
-                    $session->getFlashBag()->add('error','Les deux dates doivent être spécifiées.');
+                if(! $this->get('cairn_user.datetime_checker')->isValidInterval($begin, $end)){
+                    $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-                $history = $accountService->getAccountHistory($account->id,$period,$minAmount,$maxAmount,$keywords,NULL,NULL);
+                //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
+                $period = array(
+                    'begin' => $begin->format('Y-m-d'), 
+                    'end' => date_modify($end,'+1 days')->format('Y-m-d'));
 
+                $history = $accountService->getAccountHistory($account->id,$period,$minAmount,$maxAmount,$keywords,NULL,NULL);
             }
         }
 
+
         if($_format == 'json'){
             return $this->json(array(
-                'form' => $form->createView(),
                 'transactions'=>$history->transactions,
                 'futureAmount' => $totalAmount,
                 'account'=>$account
             ));
         }
+
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
             array('form' => $form->createView(),
             'transactions'=>$history->transactions,'futureAmount' => $totalAmount,'account'=>$account));
@@ -520,7 +516,7 @@ class BankingController extends Controller
      * On the cyclos-side, the transfer occurring is to the requested user account and from the debitAccount(which is a specific system 
      * account with unlimited balance to justify credit/debit of the user's account).
      * Any credit/debit on an account in Cyclos must be compensated by the opposite operation on another one.
-     * The conversion can be done by a pro itself (debiting its banking account) or by an admin : the pro comes with banknotes
+     * The conversion can be done by a pro himself (debiting its banking account) or by an admin : the pro comes with banknotes
      * and the admin credits its cyclos account
      */
     public function conversionRequestAction(Request $request)
@@ -543,7 +539,10 @@ class BankingController extends Controller
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $formConversion = $this->createForm(ConversionType::class);
+        $conversion = new SimpleTransaction();
+        $data = array('id'=>$debitAccount->id);
+        $conversion->setFromAccount($data);
+        $formConversion = $this->createForm(ConversionType::class,$conversion);
 
         if($currentUser->hasRole('ROLE_PRO')){
             $direction = 'SYSTEM_TO_USER';
@@ -581,15 +580,17 @@ class BankingController extends Controller
 
                 }
             }
+            else{
+                $session->getFlashBag()->add('error','destinataire ambigü');
+                return $this->redirectToRoute('cairn_user_banking_operations_view',array('type'=>'conversion'));
+            }
         }
 
         $formConversion->handleRequest($request);
         if($formConversion->isSubmitted() && $formConversion->isValid()){
-            $dataForm = $formConversion->getData();
-            $amount = $dataForm['amount'];
-            $description = $this->editDescription($type,$dataForm['description']);
-            //                $dataTime = $dataForm['date'];
-            $dataTime = new \Datetime(date('Y-m-d'));
+            $amount = $conversion->getAmount();
+            $dataTime = $conversion->getDate();
+            $description = $this->editDescription($type,$conversion->getDescription());
             $fromAccount = $debitAccount; 
 
             $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -599,18 +600,15 @@ class BankingController extends Controller
                 return new RedirectResponse($request->getRequestUri());
             }
 
-            if(($userToCreditVO->id === $currentUser->getCyclosID()) && 
-                !$accountService->hasAccount($currentUserVO->id,$dataForm['toAccount']['id'])){
+            $toAccount = $accountService->getAccountByID($conversion->getToAccount()['id']);
+
+            if(($userToCreditVO->id == $currentUser->getCyclosID()) && 
+                !$accountService->hasAccount($currentUserVO->id, $toAccount->id)){
 
                 $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
                 return new RedirectResponse($request->getRequestUri());
             }
 
-            $toAccount = $accountService->getAccountByID($dataForm['toAccount']['id']);
-            if(!$toAccount){
-                $session->getFlashBag()->add('error','Les champs du formulaire ne correspondent à aucun compte');
-                return new RedirectResponse($request->getRequestUri());
-            }
 
             $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
             if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
@@ -1352,7 +1350,9 @@ class BankingController extends Controller
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
 
         $currentUser = $this->getUser();
-        $currentUserID = $currentUser->getCyclosID();
+        $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+
+        $currentUserID = $currentUserVO->id;
 
         $account = $accountService->getAccountByID($id);
 
@@ -1437,23 +1437,23 @@ class BankingController extends Controller
                 'label'=>'Format du fichier',
                 'choices'=>array('CSV'=>'csv','PDF'=>'pdf'),
                 'expanded'=>true))
-            ->add('accounts',ChoiceType::class,array(
-                'label'=>'Comptes',
-                'choices'=>$accounts,
-                'choice_label'=>'type.name',
-                'multiple'=>true,
-                'expanded'=>true))
-            ->add('begin', DateType::class,array(
-                'label'=>'depuis',
-                'data'=> date_modify(new \Datetime(),'-1 months'),
-                'required'=>false))
-            ->add('end', DateType::class,array(
-                'label'=>'jusqu\'à',
-                'data'=> new \Datetime(),
-                'required'=>false))
-            ->add('save', SubmitType::class,array(
-                'label'=>'Télécharger'))
-                ->getForm();
+                ->add('accounts',ChoiceType::class,array(
+                    'label'=>'Comptes',
+                    'choices'=>$accounts,
+                    'choice_label'=>'type.name',
+                    'multiple'=>true,
+                    'expanded'=>true))
+                    ->add('begin', DateType::class,array(
+                        'label'=>'depuis',
+                        'data'=> date_modify(new \Datetime(),'-1 months'),
+                        'required'=>false))
+                        ->add('end', DateType::class,array(
+                            'label'=>'jusqu\'à',
+                            'data'=> new \Datetime(),
+                            'required'=>false))
+                            ->add('save', SubmitType::class,array(
+                                'label'=>'Télécharger'))
+                                ->getForm();
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
