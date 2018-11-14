@@ -278,7 +278,8 @@ class UserController extends Controller
                                 'street1'=>$user->getAddress()->getStreet1(),
                                 'street2'=>$user->getAddress()->getStreet2(),
                                 'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
-                                'city'=>$user->getCity()
+                                'city'=>$user->getCity(),
+                                'image'=>$user->getImage()
                             );
 
             return $this->json(array('user'=>$array_user,'accounts'=>$accounts));
