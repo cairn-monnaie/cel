@@ -272,7 +272,16 @@ class UserController extends Controller
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         if($_format == 'json'){
-            return $this->json(array('user'=>$user,'accounts'=>$accounts));
+            $array_user = array('name'=>$user->getName(),
+                                'username'=>$user->getUsername(),
+                                'email'=>$user->getEmail(),
+                                'street1'=>$user->getAddress()->getStreet1(),
+                                'street2'=>$user->getAddress()->getStreet2(),
+                                'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
+                                'zipcode'=>$user->getCity()
+                            );
+
+            return $this->json(array('user'=>$array_user,'accounts'=>$accounts));
         }
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user,'accounts'=>$accounts));
     }                      
