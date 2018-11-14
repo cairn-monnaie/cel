@@ -1,0 +1,46 @@
+2018/11/14 18:23:50 INFO  - jmeter.util.JMeterUtils: Setting Locale to fr_FR 
+2018/11/14 18:23:50 INFO  - jmeter.util.JMeterUtils: Could not find resources for 'fr_FR', using 'fr' 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Loading user properties from: /usr/share/jmeter/bin/user.properties 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Loading system properties from: /usr/share/jmeter/bin/system.properties 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Copyright (c) 1998-2014 The Apache Software Foundation 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Version 2.11.20151206 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: java.version=1.8.0_181 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: java.vm.name=OpenJDK 64-Bit Server VM 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: os.name=Linux 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: os.arch=amd64 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: os.version=4.15.0-36-generic 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: file.encoding=UTF-8 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Default Locale=français (France) 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: JMeter  Locale=français (France) 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: JMeterHome=/usr/share/jmeter 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: user.dir  =/var/www/Symfony/CairnB2B/tests/performances 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: PWD       =/var/www/Symfony/CairnB2B/tests/performances 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: IP: 127.0.1.1 Name: mazouthm FullName: mazouthm 
+2018/11/14 18:23:50 INFO  - jmeter.JMeter: Loaded icon properties from org/apache/jmeter/images/icon.properties 
+2018/11/14 18:23:51 INFO  - jmeter.engine.util.CompoundVariable: Note: Function class names must contain the string: '.functions.' 
+2018/11/14 18:23:51 INFO  - jmeter.engine.util.CompoundVariable: Note: Function class names must not contain the string: '.gui.' 
+2018/11/14 18:23:51 INFO  - jmeter.gui.action.LookAndFeelCommand: Using look and feel: javax.swing.plaf.metal.MetalLookAndFeel [Metal, CrossPlatform, System] 
+2018/11/14 18:23:55 INFO  - jmeter.util.BSFTestElement: Registering JMeter version of JavaScript engine as work-round for BSF-22 
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Cannot find .className property for htmlParser, using default 
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/html is  
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for application/xhtml+xml is  
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for application/xml is  
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/xml is  
+2018/11/14 18:23:55 INFO  - jmeter.protocol.http.sampler.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser 
+2018/11/14 18:23:56 INFO  - jmeter.gui.util.MenuFactory: Skipping org.apache.jmeter.protocol.http.modifier.gui.ParamModifierGui 
+2018/11/14 18:23:56 INFO  - jorphan.exec.KeyToolUtils: keytool found at 'keytool' 
+2018/11/14 18:23:56 INFO  - jmeter.protocol.http.proxy.ProxyControl: HTTP(S) Test Script Recorder SSL Proxy will use keys that support embedded 3rd party resources in file /usr/share/jmeter/bin/proxyserver.jks 
+2018/11/14 18:23:56 INFO  - jmeter.samplers.SampleResult: Note: Sample TimeStamps are START times 
+2018/11/14 18:23:56 INFO  - jmeter.samplers.SampleResult: sampleresult.default.encoding is set to ISO-8859-1 
+2018/11/14 18:23:56 INFO  - jmeter.samplers.SampleResult: sampleresult.useNanoTime=true 
+2018/11/14 18:23:56 INFO  - jmeter.samplers.SampleResult: sampleresult.nanoThreadSleep=5000 
+2018/11/14 18:23:59 INFO  - jmeter.services.FileServer: Default base='/var/www/Symfony/CairnB2B/tests/performances' 
+2018/11/14 18:23:59 INFO  - jmeter.gui.action.Load: Loading file: /home/mazouth--laurol/Téléchargements/test_load_steps.jmx 
+2018/11/14 18:23:59 INFO  - jmeter.services.FileServer: Set new base='/home/mazouth--laurol/Téléchargements' 
+2018/11/14 18:23:59 INFO  - jmeter.save.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2 
+2018/11/14 18:23:59 INFO  - jmeter.save.SaveService: Using SaveService properties file encoding UTF-8 
+2018/11/14 18:23:59 INFO  - jmeter.save.SaveService: Using SaveService properties version 2.6 
+2018/11/14 18:23:59 INFO  - jmeter.save.SaveService: Using SaveService properties file version 1554411 
+2018/11/14 18:23:59 INFO  - jmeter.save.SaveService: All converter versions present and correct 
+2018/11/14 18:23:59 INFO  - jmeter.protocol.http.control.CookieManager: Settings: Delete null: true Check: true Allow variable: true Save: false Prefix: COOKIE_ 
+2018/11/14 18:23:59 INFO  - jmeter.services.FileServer: Set new base='/home/mazouth--laurol/Téléchargements' 
