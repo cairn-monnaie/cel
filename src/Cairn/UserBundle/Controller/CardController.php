@@ -6,7 +6,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
-use Cairn\UserBundle\Event\InputPasswordEvent;
 use Cairn\UserBundle\Event\InputCardKeyEvent;
 
 //manage Entities
@@ -24,6 +23,8 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\ConfirmationType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+
+use Cairn\UserBundle\Validator\UserPassword;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -179,48 +180,38 @@ class CardController extends Controller
             if($card->isEnabled()){
                 $session->getFlashBag()->add('info','La carte courante est active. Vous ne pouvez commander une autre carte qu\'en cas de perte de la carte courante. Veuillez la révoquer d\'abord.');
             }else{
-                $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
+                if($card->isGenerated()){
+                    $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
+                }else{
+                    $session->getFlashBag()->add('info','Vous avez déjà commandé une nouvelle carte, mais elle ne vous a pas encore été envoyée.');
+                }
             }
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false));
+        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
+                                                          'constraints'=>new UserPassword() ));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
+
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    $password = $form->get('password')->getData();
+                    $salt = $this->get('cairn_user.security')->generateCardSalt($user);
+                    $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols'),$salt);
+                    $user->setCard($card);
 
-                    $event = new InputPasswordEvent($currentUser,$password);
-                    $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_PASSWORD,$event);
+                    $em->flush();
+                    //email
+                    $subject = 'Nouvelle carte de sécurité Cairn';
+                    $from = $this->getParameter('cairn_email_noreply');
+                    $to = $user->getEmail();
 
-                    if($event->getRedirect()){
-                        $session->getFlashBag()->add('error','Votre compte a été bloqué');
-                        return $this->redirectToRoute('fos_user_security_logout');
-                    }
+                    $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('by'=>$currentUser,'user'=>$user));
+                    $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
 
-                    if($currentUser->getPasswordTries() == 0) {
-                        $salt = $this->get('cairn_user.security')->generateCardSalt($user);
-                        $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols'),$salt);
-                        $user->setCard($card);
-
-                        $em->flush();
-                        //email
-                        $subject = 'Nouvelle carte de sécurité Cairn';
-                        $from = $this->getParameter('cairn_email_noreply');
-                        $to = $user->getEmail();
-
-                        $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('by'=>$currentUser,'user'=>$user));
-                        $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-
-                        $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
-                    }
-                    else{
-                        $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return new RedirectResponse($request->getRequestUri());
-                    }
+                    $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
                 }
                 else{
                     $session->getFlashBag()->add('info','Vous avez annulé votre commande de carte.');
@@ -264,44 +255,33 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         if(!$card->isGenerated()){
-                $session->getFlashBag()->add('info',
-                    'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
-                return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            $session->getFlashBag()->add('info',
+                'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
+            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false));
+        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
+                                                          'constraints'=> new UserPassword() ));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
+
+
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    $password = $form->get('password')->getData();
-                    $event = new InputPasswordEvent($currentUser,$password);
-                    $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_PASSWORD,$event);
 
-                    if($event->getRedirect()){
-                        $session->getFlashBag()->add('error','Votre compte a été bloqué');
-                        return $this->redirectToRoute('fos_user_security_logout');
-                    }
+                    $subject = 'Révocation de votre carte de sécurité Cairn';
+                    $from = $this->getParameter('cairn_email_noreply');
+                    $to = $user->getEmail();
+                    $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig',array('by'=>$currentUser));
 
-                    if($currentUser->getPasswordTries() == 0){
-                        $subject = 'Révocation de votre carte de sécurité Cairn';
-                        $from = $this->getParameter('cairn_email_noreply');
-                        $to = $user->getEmail();
-                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig',array('by'=>$currentUser));
+                    $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
 
-                        $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
+                    $em->remove($card);
+                    $em->flush();
 
-                        $em->remove($card);
-                        $em->flush();
-
-                        $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
-                    }
-                    else{
-                        $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return new RedirectResponse($request->getRequestUri()); 
-                    }
+                    $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
                 }
                 else{
                     $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte n° ' .$card->getNumber());
@@ -310,6 +290,7 @@ class CardController extends Controller
 
             }
         }
+
         if($_format == 'json'){
             return $this->json(array('form'=>$form->createView(),'card'=>$card));
         }

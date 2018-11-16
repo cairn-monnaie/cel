@@ -10,6 +10,7 @@ use Cairn\UserBundle\Event\InputCardKeyEvent;
 use Cairn\UserBundle\Event\InputPasswordEvent;
 use Cairn\UserBundle\Event\DisabledUserEvent;
 
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
 
@@ -39,8 +40,9 @@ class SecurityListener
     protected $templating;
     protected $adminUsername;
     protected $security;
+    protected $dispatcher;
 
-    public function __construct(Router $router, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername, Security $security)
+    public function __construct(Router $router, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername, Security $security, EventDispatcherInterface $dispatcher)
     {
         $this->router = $router;
         $this->encoderFactory = $encoderFactory;
@@ -50,6 +52,7 @@ class SecurityListener
         $this->templating = $templating;
         $this->adminUsername = $adminUsername;
         $this->security = $security;
+        $this->dispatcher = $dispatcher;
     }
 
 
@@ -64,7 +67,19 @@ class SecurityListener
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
             $event->setResponse($this->templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
+        }else{
+            $currentUser = $this->security->getCurrentUser();
+
+            if($currentUser instanceof \Cairn\UserBundle\Entity\User){
+                if(!$currentUser->isEnabled()){
+                    $logoutUrl = $this->router->generate('fos_user_security_logout');
+                    $event->setResponse(new RedirectResponse($logoutUrl));
+                }
+            }
+
         }
+
+
     }
 
     /**
@@ -112,49 +127,6 @@ class SecurityListener
 
     }
 
-
-    /**
-     * Deals with the input password event
-     *
-     * When a password input is required, we follow the steps below :
-     *     _compare the input with the real user's password
-     *     _if failure, clear the entityManager from all persistance then increment user's attribute 'passwordTries'
-     *     _if 3 passwordTries : disable the user
-     *     _if success : reinitialize tries
-     *
-     *@todo Refresh all changes entities and not just $user. Imagine that $user creates a new entity in a controller action, but fails
-     * password input. In the current state of the code, the entity could be added to database if persisted before InputPasswordEvent
-     * dispatchment. Moremover, an existing changed entity would be saved in database     
-     */
-    public function onPasswordInput(InputPasswordEvent $event)
-    {
-        $user = $event->getUser();
-        $password = $event->getPassword();
-
-        $encoder = $this->encoderFactory->getEncoder($user);                         
-        $salt = $user->getSalt();                                       
-
-        if(!$encoder->isPasswordValid($user->getPassword(), $password, $salt)){
-            $this->em->clear();//$this->em->refresh($user);
-
-            if($user->getPasswordTries() >= 2){
-                $this->counter->incrementTries($user,'password');
-                $subject = 'Trop d\'essais de mot de passe';
-                $body = 'Trois échecs ont été enrigistrés lors de la saisie de votre mot de passe. Votre compte a donc été automatiquement bloqué. Veuillez nous contacter pour trouver une solution.';
-                $this->accessPlatform->disable(array($user),$subject,$body);
-                $event->setRedirect(true);
-
-            }
-            else{
-                $this->counter->incrementTries($user,'password');
-            }
-
-        }
-        else{
-            $this->counter->reinitializeTries($user,'password');
-        }
-        $this->em->flush();
-    }
 
     /**
      * Deals with the input card key event

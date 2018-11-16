@@ -10,7 +10,6 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
-use Symfony\Component\Validator\Constraints as Assert;
 
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -21,22 +20,19 @@ class ChangePasswordType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('current_password', PasswordType::class,array(
-                'label'=>'Mot de passe actuel',
-                'mapped'=>false))
             ->add('plainPassword', RepeatedType::class, array(                 
-                    'type' => PasswordType::class,                             
-                    'options' => array(                                        
-                        'translation_domain' => 'FOSUserBundle',               
-                        'attr' => array(                                       
-                            'autocomplete' => 'new-password',                  
-                        ),                                                     
-                    ),                                                         
-                    'first_options' => array('label' => 'Nouveau mot de passe'),
-                    'second_options' => array('label' => 'Confirmation'),      
-                    'invalid_message' => 'Les champs ne correspondent pas',    
-                ))                                                             
-                ->add('save',SubmitType::class,array('label'=>'Valider'));
+                'type' => PasswordType::class,                             
+                'options' => array(                                        
+                    'translation_domain' => 'FOSUserBundle',               
+                    'attr' => array(                                       
+                        'autocomplete' => 'new-password',                  
+                    ),                                                     
+                ),                                                         
+                'first_options' => array('label' => 'Nouveau mot de passe'),
+                'second_options' => array('label' => 'Confirmation'),      
+                'invalid_message' => 'Les champs ne correspondent pas',    
+            ))                                                             
+            ->add('save',SubmitType::class,array('label'=>'Valider'));
     }
 
     /**
@@ -47,6 +43,11 @@ class ChangePasswordType extends AbstractType
         $resolver->setDefaults(array(
             'data_class' => 'Cairn\UserBundle\Entity\User'
         ));
+    }
+
+    public function getParent()
+    {
+        return CurrentPasswordType::class;
     }
 
 }

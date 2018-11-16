@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Form;
 
+use Cairn\UserBundle\Validator\UserPassword;
+
 use FOS\UserBundle\Form\Type\ProfileFormType;
 use Cairn\UserBundle\Form\AddressType;
 use Cairn\UserBundle\Form\ImageType;
@@ -25,6 +27,10 @@ class ProfileType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
+            ->add('current_password', PasswordType::class,array(
+                'label'=>'Mot de passe actuel',
+                'mapped'=>false,
+                'constraints'=>new UserPassword() ))
             ->add('description', TextareaType::class)
             ->add('address' , AddressType::class)
             ->add('image', ImageType::class,array('required'=>false));

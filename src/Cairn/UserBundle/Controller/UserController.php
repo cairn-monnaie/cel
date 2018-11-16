@@ -9,7 +9,6 @@ use Cyclos;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
-use Cairn\UserBundle\Event\InputPasswordEvent;
 use Cairn\UserBundle\Event\InputCardKeyEvent;
 
 //manage Entities
@@ -32,6 +31,8 @@ use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\BeneficiaryType;
 use Cairn\UserBundle\Form\ProfileFormType;
 use Cairn\UserBundle\Form\ChangePasswordType;
+
+use Cairn\UserBundle\Validator\UserPassword;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -225,19 +226,6 @@ class UserController extends Controller
         if($request->isMethod('POST')){ //form filled and submitted
 
             $form->handleRequest($request);    
-            $password = $form->get('current_password')->getData();
-            $event = new InputPasswordEvent($currentUser,$password);
-            $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_PASSWORD,$event);
-
-            if($event->getRedirect()){
-                $session->getFlashBag()->add('error','Votre compte a été bloqué');
-                return $this->redirectToRoute('fos_user_security_logout');
-            }
-
-            if($currentUser->getPasswordTries() != 0) {
-                $session->getFlashBag()->add('error','Mot de passe invalide. Attention, au bout de 3 essais, le compte sera bloqué');
-                return $this->render('CairnUserBundle:Default:change_password.html.twig',array('form'=>$form->createView()));
-            } 
 
             if($form->isValid()){
                 $newPassword = $form->get('plainPassword')->getData();
@@ -612,26 +600,13 @@ class UserController extends Controller
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('plainPassword', PasswordType::class,array('label'=>'Mot de passe','required'=>false));
+        $form->add('current_password', PasswordType::class,array('label'=>'Mot de passe','required'=>false,
+                                                              'constraints'=> new UserPassword() ));
         if($request->isMethod('POST')){ //form filled and submitted
 
             $form->handleRequest($request);    
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    $password = $form->get('plainPassword')->getData();                         
-                    $event = new InputPasswordEvent($currentUser,$password);
-                    //eventListener may change the user attribute passwordTries
-                    $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_PASSWORD,$event);
-
-                    if($event->getRedirect()){
-                        $session->getFlashBag()->add('error','Votre compte a été bloqué');
-                        return $this->redirectToRoute('fos_user_security_logout');
-                    }
-
-                    if($currentUser->getPasswordTries() != 0) {
-                        $session->getFlashBag()->add('error','Mot de passe invalide.');
-                        return new RedirectResponse($request->getRequestUri());
-                    } 
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
                     }else{

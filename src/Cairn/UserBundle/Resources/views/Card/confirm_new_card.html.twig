@@ -12,9 +12,7 @@
 {% block body %}
     {{parent()}} 
 
-    {{
-        include('CairnUserBundle:Default:warning_password_tries.html.twig')
-    }}      
+    <h2>Commander une nouvelle carte de sécurité Cairn</h2>
 
     <div>                                                                          
         {{ form_start(form) }}            

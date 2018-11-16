@@ -18,7 +18,7 @@
         <li> <a class="operation_link" href="{{path('cairn_user_card_order',{'id':user.id})}}"> Commander une carte </a> </li>
     
         {% if user == app.user and card  %}
-            {% if not card.enabled %}
+            {% if not card.enabled and card.isGenerated%}
                <li> <a class="operation_link" href="{{path('cairn_user_card_validate')}}"> Activer la carte </a> </li>
             {% endif %}
         {% endif %}

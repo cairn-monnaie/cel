@@ -83,7 +83,7 @@ fos_user:
         mailer: fos_user.mailer.twig_swift
     from_email:
         address: '%cairn_email_noreply%'
-        sender_name: Maxime
+        sender_name: Le Cairn, Monnaie Locale et Citoyenne
     profile:
         form:
             type: Cairn\UserBundle\Form\ProfileType

@@ -70,10 +70,11 @@ services:
             - "@templating"
             - "%cyclos_global_admin_username%"
             - "@cairn_user.security"
+            - "@event_dispatcher"
+
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }
             - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
-            - { name: kernel.event_listener, event: cairn_user.input_password, method: onPasswordInput }
             - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
 
     cairn_user.technical.exception_listener:
@@ -97,6 +98,17 @@ services:
             - "@cairn_user_cyclos_network_info"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
+
+    cairn_user.user_password_validator:
+        class: Cairn\UserBundle\Validator\UserPasswordValidator
+        arguments:
+            - "@security.encoder_factory" 
+            - "@cairn_user.counter"
+            - "@cairn_user.access_platform"
+            - "@doctrine.orm.entity_manager"
+            - "@cairn_user.security"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_user_password_validator }
 
     cairn_user.transaction_validator:
         class: Cairn\UserBundle\Validator\TransactionValidator
