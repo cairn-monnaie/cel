@@ -23,7 +23,7 @@ class CheckEmailsConfirmationCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $commandsService = $this->getContainer()->get('cairn_user.commands');
-        $commandsService->checkCardsActivation();
+        $commandsService->checkEmailsValidation();
         $output->writeln('Checking of emails validation performed!');
     }
 }
