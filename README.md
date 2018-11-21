@@ -49,18 +49,19 @@ Digital Cairn
      * Click next
  4. **System administrator** 
 
-     These are the profile fields and credentials of the main administrator of the application, so fill them
-     carefully.
+     These are the profile fields and credentials of the global administrator on Cyclos-side, so fill them
+     carefully and keep them. This user will not be used in the application, but exists to do configuration that involves all networks. 
+     This is the only user who will be able to access Cyclos via the channel "main web".
      * Name : xxx
-     * Login name : **_$admin-login_**
-     * E-Mail : **_$admin-email_**
-     * Password : **_$admin-password_**
-     * Confirm password : **_$admin-password_**
+     * Login name : **_$global-admin-login_**
+     * E-Mail : **_$global-admin-email_**
+     * Password : **_$global-admin-password_**
+     * Confirm password : **_$global-admin-password_**
      * Click finish
  5. **Basic network information**
 
      * Name : **_$network-name_**
-     * Internal name : xxx (not empty)
+     * Internal name : **_$network-internal-name_**
      * Description : xxx
      * Click next
  6. **Localization**
@@ -69,8 +70,17 @@ Digital Cairn
      * Click next
  7. **Administrator** 
 
-     * create a network administrator : uncheck
-     * click next
+     These are the profile fields of the main administrator in the application (network administrator on Cyclos-side), so customize them 
+     according to your own use. 
+     The password won't be used later on as this user won't be able to access Cyclos via the channel "main web", but as a matter of 
+     security, provide a secured password.
+     * create a network administrator : check
+     * Name : **_$network-admin-name_**
+     * Login name : **_$network-admin-login_**
+     * E-Mail : **_$network-admin-email_**
+     * Password : **_$network-admin-password_**
+     * Confirm password : **_$network-admin-password_**
+     * Click next
  8. **Currency**
 
      * Currency name : **_$currency-name_**
@@ -79,7 +89,7 @@ Digital Cairn
      * click next 
  9. **System accounts**
 
-     * Unlimited account : check and **_$debit-account_**
+     * Unlimited account : check and provide a name **_$debit-account_**
      * System account : **_$system-account_**
      * Additional system account : uncheck
      * Click next
@@ -123,8 +133,20 @@ Digital Cairn
      * Enable transfer number : check
      * Transfer number identifier length : 8
      * WARNING : NO prefix/suffix !
-     * Click save
- 19. **Configure permissions of network administrators' group**
+     * Click Save
+
+ 19. **Create an access client**
+     
+     _Access : System(top tab) / System configuration(bold in left menu) / User identification methods_
+     * Click new
+     * Click "Access client"
+     * Name : **_$access-client-name_**
+     * Plural name : xxx
+     * Internal name : xxx
+     * Description : xxx
+     * Maximum per user : 1
+     * Click Save   
+ 20. **Configure permissions of network administrators' group**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators_
      * Name : **_$network-group-admins_** (by default Network administrators)
@@ -133,7 +155,8 @@ Digital Cairn
      * Click Permissions(top-right tab on group screen)
      * General :
         * My profile fields : enabled/registration/visible/editable : check for full name / login name / email / address
-        * Manage my channels access : check
+        * Manage my channels access : check 
+        * My access clients : enable + view + activate
      * System Accounts : 
         * system accounts : check all
         * system to system payments : check all
@@ -144,6 +167,7 @@ Digital Cairn
         * user registration : check
         * login users via web services : check
         * user channels access : select "manage"
+        * Access clients :  view + manage
      * User Accounts : 
         * access user accounts : check all
         * payments as user to user : check all
@@ -153,7 +177,7 @@ Digital Cairn
         * Accounts balance limits : select "manage"
      * Click save
 
- 20. **Configure an account type and its corresponding transfer types**
+ 21. **Configure an account type and its corresponding transfer types**
 
      _Access : System(top tab) / Account configuration(bold in left menu) / Account types_
      * Click on **_%user-account%_** (defined in step 10)
@@ -163,16 +187,17 @@ Digital Cairn
      * Click on the first transfer type (from **_%user-account%_** to **_%debit-account%_**)
      * internal name : xxx (compulsary) (e.g toDebit)
      * Enabled : check
-     * Channels : check main web + web services + Mobile app
+     * Channels : uncheck main web + check web services 
+     * User identification methods : check **_%access-client-name%_** (defined in step 19)
      * Allow recurring payments : check
      * Allow scheduled payments : check
      * Max installments on scheduled payments : 1
      * Click save
  
- 21. **Repeat step 20 for all transfer types in _%user-account%_ account type**
- 22. **Repeat step 20 and 21 for all account types (_%debit-account%_ / _%system-account%_)**
+ 22. **Repeat step 20 for all transfer types in _%user-account%_ account type**
+ 23. **Repeat step 20 and 21 for all account types (_%debit-account%_ / _%system-account%_)**
 
- 23. **Configure group of members**
+ 24. **Configure group of members**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * Click on group "Users"(unique member group)
@@ -181,12 +206,13 @@ Digital Cairn
      * Internal name : xxx
      * Click save
 
- 24. **Configure the Product associated with user Account Type %_user-account%_**
+ 25. **Configure the Product associated with user Account Type %_user-account%_**
 
      _Access : System(top tab) / User Configuration(bold in left menu) / Products
      * Click on the only product (Members)
      * Name : fill with **_%user-account%_** name
      * Internal name : fil with **_%user-account%_** internal name
+     * General / My access clients : enable + view + activate
      * Accounts 
         * User account : must contain **_%user-account%_**
         * Default negative balance limit :  refill with 0 (sign "-" must be visible)
@@ -195,13 +221,22 @@ Digital Cairn
         * recurring payments : check view + cancel
         * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
      * Click save
- 25. **Check product's assignation to Member group**
+ 26. **Check product's assignation to Member group**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups_
      * click on  **_%network-group-members%_** (defined in step 23)
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
- 26. **Configure Global Administration's channels** 
+
+ 27. **Configure Network's channels** 
+
+       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
+       * Click on "default for **_%network-name_%%" configuration
+       * Click on channels (top-right of configuration screen) 
+       * Click on "web services"
+       * Click on edit logo (little pencil on the same line than "Enabled" under the title "Channel configuration details")
+       * User identification methods : select "Login name" and **_$access-client-name_**
+ 28. **Configure Global Administration's channels** 
 
      * **main web channel**
 
@@ -211,29 +246,29 @@ Digital Cairn
        * Click on "Global default" configuration
        * Click on channels (top-right of configuration screen) 
        * Click on "main web"
-       * session timeout : xxx
+       * User access : select "Enabled by default"
+       * session timeout : xxx (e.g 2 mins)
        * Click save
 
      * **web services channel**
 
        _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
-       * Click on "Global default" configuration
+       * Click on "Global default " configuration
        * Click on channels (top-right of configuration screen) 
        * Click on "web services"
-       * Enabled : check
        * User access : select "Enforced enabled"
-       * session timeout : xxx
+       * session timeout : xxx (e.g 2 mins)
        * Click save
- 27. **Change usernames configuration**
+ 29. **Change usernames configuration**
         
-      For now, the application sets up login name lengths straight in the source code, and is not customizable. If you want to change them, you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
-
+      Here we remove Cyclos custom login validation so that we rely only on our application's validation. This way, we avoid the problem of dissociation between validation between the 3rd-party application  and Cyclos.
       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
       * Click on "Global default" configuration
-      * Login name length : 5 to 16
+      * Regular expression for login name
+      * Login name length : leave boxes empty
       * Click save
 
- 27. **Change password type configuration**
+ 30. **Change password type configuration**
 
       For now, the application sets up password lengths straight in the source code, and is not customizable. If you want to change them, you will have to modify the source code in the UserValidation class (\Cairn\UserBundle\Validator\UserValidator) and use exactly the same values.
 
@@ -244,18 +279,31 @@ Digital Cairn
      * Avoid repeated passwords : uncheck
      * Expires after : 100 years (we don't deal with password expiration)
      * Click save
- 28. **Configure group of global administrators**
+ 31. **Configure group of global administrators**
 
      _Access : System (top tab) / User Configuration(bold in left menu) / Groups_
      * Click on "Global administrators"
      * Name : **_$global-group-admins_** 
      * Click save
- 29. **Save the configuration into a backup file**
+ 32. **Save the configuration into a backup file**
 
      As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
      * `docker exec -i -u postgres cyclos-db pg_dump cyclos > cyclos-dump.sql` 
 
      This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
+
+ 33. **Get Cyclos activation code**
+
+    The activation code will allow us to generate the first installed admin in our application.
+
+     _Access : Switch to **_%network-name%_** (top-side on the screen)_
+     _Access : Personal (top tab) / Settings (bold in left menu) / _%access-client--name%_ _
+     * Click Add
+     * Name : xxx
+     * Click Save
+     * Click Activation code
+     * Click Confirm
+     * Get the activation code **_$activation-code-** displayed right after the sentence 'The activation code for this access client is'
 
 ## Install symfony project
  * `composer install`
@@ -291,11 +339,8 @@ Digital Cairn
      * cyclos_group_pros: **_%network-group-members%_** (step 23)
      * cyclos_group_network_admins: **_%network-group-admins%_** (step 19) 
      * cyclos_group_global_admins: **_%global-group-admins%_** (step 28)
-     * cyclos_network_cairn: **_%network-name%_** (step 5)
+     * cyclos_network_cairn: **_%network-internal-name%_** (step 5)
      * cyclos_currency_cairn: **_%currency-name%_** (step 8)
-     * cyclos_global_admin_username: **_%admin-login%_** (step 4)
-     * cyclos_global_admin_password: **_%admin-password%_** (step 4)
-     * cyclos_global_admin_email: **_%admin-email%_** (step 4)
      * cairn_card_rows: xxx (e.g 5)
      * cairn_card_cols: xxx (e.g 5)
      * cairn_email_technical_services: xxx (e.g services@localhost.fr)
@@ -319,10 +364,13 @@ Digital Cairn
     Import cities with respective zipcodes in Isère (French department). Change entries according to your localization
     * `php bin/console doctrine:database:import web/zipcities.sql`
 
- * **Create initial administrator**
-     * visit "example.com/install". 
-       This creates a user on Doctrine's side with profile fields of cyclos global administrator
-     
+ * **Create a client for OAuth**
+    `php bin/console fos:oauth-server:create-client`
+
+ * **Create the installed administrator (step 7 )**
+    Be careful with the sequence
+    `php bin/console cairn.user:create-install-admin %network-admin-login% %network-admin-password% %activation-code%`
+
  * **Access application with admin credentials**
      * visit "example.com/login"
      * login with installed admin credientials **_%admin-login%_** and **_%admin-password%_** and start browsing !  
@@ -330,10 +378,10 @@ Digital Cairn
 # Testing #
 ## Install ##
  * **Install docker images**
-    * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=%cyclos_user% -e POSTGRES_PASSWORD=%cyclos_password% cyclos/db`
+    * `docker run -d --name=cyclos-db-test --net=cyclos-net --hostname=cyclos-db-test -e POSTGRES_DB=cyclos -e POSTGRES_USER=%cyclos-user% -e POSTGRES_PASSWORD=%cyclos-password% cyclos/db`
     
     The tag '4.8.2' enforces docker to install this specific version. It is chosen because there exists a script to clean the database from users and transactions which works only on this version, pretty useful while testing.
-    * `docker run -d --name=cyclos-app-test -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=%cyclos_user% -e DB_PASSWORD=%cyclos_password% cyclos/cyclos:4.8.2`
+    * `docker run -d --name=cyclos-app-test -p 1235:8080 --net=cyclos-net -e DB_HOST=cyclos-db-test -e DB_NAME=cyclos -e DB_USER=%cyclos-user% -e DB_PASSWORD=%cyclos-password% cyclos/cyclos:4.8.2`
 
  * **Install Symfony test database**
     * `php bin/console doctrine:database:create --env=test`
