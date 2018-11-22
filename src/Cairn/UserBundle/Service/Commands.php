@@ -50,9 +50,8 @@ class Commands
      *
      *@return boolean 
      */ 
-    public function createInstallAdmin($username, $password, $activationCode)
+    public function createInstallAdmin($username, $password)
     {
-        $accessClientManager = new AccessClientManager();
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $main_admin = $userRepo->findOneBy(array('username'=>$username));
@@ -99,24 +98,6 @@ class Commands
             //set auto-referent
             $new_admin->addReferent($new_admin);
 
-//            //set client access token for Cyclos web services
-//            $query = new \stdClass();                                              
-//            $query->user = $newUserCyclosID;                                       
-//            $query->type = $this->container->get('cairn_user_cyclos_accessclient_info')->getPrincipalTypeVO();
-//            $dataForNew = $accessClientManager->getDataForNew($query);       
-//
-//                // create a new Access Client                                          
-//            $dto = $dataForNew->dto;                                               
-//            $dto->name = $user->getName().time();                                  
-//            $id = $accessClientManager->save($dto);                          
-//
-//              // get activation code                                                 
-//            $dto = $accessClientManager->load($id);                          
-//            $code = $accessClientManager->getActivationCode($id);            
-//
-            //activate access client                                               
-            $accessClientDTO = $accessClientManager->activateAccessClient($activationCode,'');
-            $new_admin->setCyclosAccessToken($accessClientDTO->token); 
 
             //ajouter la carte
             $salt = $this->container->get('cairn_user.security')->generateCardSalt($new_admin);
@@ -181,11 +162,6 @@ class Commands
                 $subject = 'Expiration de validation';
                 $body = $this->templating->render('CairnUserBundle:Emails:email_expiration.html.twig',array('diff'=>$diff));
 
-                $params = new \stdClass();                                             
-                $params->status = 'REMOVED';                                           
-                $params->user = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-
-                $this->userManager->changeStatusUser($params);
                 $saveEmail = $user->getEmail();
                 $this->em->remove($user);
                 $this->em->flush();

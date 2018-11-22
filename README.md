@@ -135,17 +135,6 @@ Digital Cairn
      * WARNING : NO prefix/suffix !
      * Click Save
 
- 19. **Create an access client**
-     
-     _Access : System(top tab) / System configuration(bold in left menu) / User identification methods_
-     * Click new
-     * Click "Access client"
-     * Name : **_$access-client-name_**
-     * Plural name : xxx
-     * Internal name : xxx
-     * Description : xxx
-     * Maximum per user : 1
-     * Click Save   
  20. **Configure permissions of network administrators' group**
 
      _Access : System(top tab) / User configuration(bold in left menu) / Groups / Network Administrators_
@@ -156,7 +145,6 @@ Digital Cairn
      * General :
         * My profile fields : enabled/registration/visible/editable : check for full name / login name / email / address
         * Manage my channels access : check 
-        * My access clients : enable + view + activate
      * System Accounts : 
         * system accounts : check all
         * system to system payments : check all
@@ -188,7 +176,6 @@ Digital Cairn
      * internal name : xxx (compulsary) (e.g toDebit)
      * Enabled : check
      * Channels : uncheck main web + check web services 
-     * User identification methods : check **_%access-client-name%_** (defined in step 19)
      * Allow recurring payments : check
      * Allow scheduled payments : check
      * Max installments on scheduled payments : 1
@@ -212,7 +199,6 @@ Digital Cairn
      * Click on the only product (Members)
      * Name : fill with **_%user-account%_** name
      * Internal name : fil with **_%user-account%_** internal name
-     * General / My access clients : enable + view + activate
      * Accounts 
         * User account : must contain **_%user-account%_**
         * Default negative balance limit :  refill with 0 (sign "-" must be visible)
@@ -228,14 +214,6 @@ Digital Cairn
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
- 27. **Configure Network's channels** 
-
-       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
-       * Click on "default for **_%network-name_%%" configuration
-       * Click on channels (top-right of configuration screen) 
-       * Click on "web services"
-       * Click on edit logo (little pencil on the same line than "Enabled" under the title "Channel configuration details")
-       * User identification methods : select "Login name" and **_$access-client-name_**
  28. **Configure Global Administration's channels** 
 
      * **main web channel**
@@ -292,18 +270,6 @@ Digital Cairn
 
      This way, if you have another instance of Cyclos to configure, you may just restore it using this backup file (see here for details https://hub.docker.com/r/cyclos/cyclos/)
 
- 33. **Get Cyclos activation code**
-
-    The activation code will allow us to generate the first installed admin in our application.
-
-     _Access : Switch to **_%network-name%_** (top-side on the screen)_
-     _Access : Personal (top tab) / Settings (bold in left menu) / _%access-client--name%_ _
-     * Click Add
-     * Name : xxx
-     * Click Save
-     * Click Activation code
-     * Click Confirm
-     * Get the activation code **_$activation-code-** displayed right after the sentence 'The activation code for this access client is'
 
 ## Install symfony project
  * `composer install`
@@ -369,7 +335,7 @@ Digital Cairn
 
  * **Create the installed administrator (step 7 )**
     Be careful with the sequence
-    `php bin/console cairn.user:create-install-admin %network-admin-login% %network-admin-password% %activation-code%`
+    `php bin/console cairn.user:create-install-admin %network-admin-login% %network-admin-password% `
 
  * **Access application with admin credentials**
      * visit "example.com/login"

@@ -22,7 +22,6 @@ class CreateInstallAdminCommand extends ContainerAwareCommand
             ->setHelp('This command installs the installed network admin if it does not exist.')
             ->addArgument('username', InputArgument::REQUIRED, 'Username of installed network admin')
             ->addArgument('password', InputArgument::REQUIRED, 'Password of installed network admin')
-            ->addArgument('code', InputArgument::REQUIRED, 'Activation code of installed network admin')
             ; 
     }
 
@@ -31,10 +30,9 @@ class CreateInstallAdminCommand extends ContainerAwareCommand
         $commandsService = $this->getContainer()->get('cairn_user.commands');
 
         $username = $input->getArgument('username');
-        $code = $input->getArgument('code');
         $password = $input->getArgument('password');
 
-        $message = $commandsService->createInstallAdmin($username, $password, $code);
+        $message = $commandsService->createInstallAdmin($username, $password);
         $output->writeln($message);
     }
 }
