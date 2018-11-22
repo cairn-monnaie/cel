@@ -8,22 +8,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 use Cairn\UserBundle\Event\InputCardKeyEvent;
 use Cairn\UserBundle\Event\InputPasswordEvent;
-use Cairn\UserBundle\Event\DisabledUserEvent;
 
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Container;
+
+use Cairn\UserCyclosBundle\Entity\LoginManager;
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
 
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Cairn\UserBundle\Service\Counter;
-use Cairn\UserBundle\Service\AccessPlatform;
-use Cairn\UserBundle\Service\Security;
-use Doctrine\ORM\EntityManager;
-
-use Symfony\Bundle\FrameworkBundle\Routing\Router;
-use Symfony\Component\Security\Core\Encoder\EncoderFactory;
-use Symfony\Bundle\TwigBundle\TwigEngine;
+use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 /**
  * This class contains called functions when events defined in Event\SecurityEvents are dispatched
@@ -31,30 +25,53 @@ use Symfony\Bundle\TwigBundle\TwigEngine;
  */
 class SecurityListener
 {
-    protected $encoderFactory;
-    protected $counter;
-    protected $accessPlatform;
-    protected $tokenStorage;
-    protected $router;
-    protected $em;
-    protected $templating;
-    protected $adminUsername;
-    protected $security;
-    protected $dispatcher;
+    protected $container;
 
-    public function __construct(Router $router, EncoderFactory $encoderFactory, Counter $counter, AccessPlatform $accessPlatform, EntityManager $em, TwigEngine $templating, $adminUsername, Security $security, EventDispatcherInterface $dispatcher)
+    public function __construct(Container $container)
     {
-        $this->router = $router;
-        $this->encoderFactory = $encoderFactory;
-        $this->counter = $counter;
-        $this->accessPlatform = $accessPlatform;
-        $this->em = $em;
-        $this->templating = $templating;
-        $this->adminUsername = $adminUsername;
-        $this->security = $security;
-        $this->dispatcher = $dispatcher;
+        $this->container = $container;
     }
 
+    /**
+     *
+     *@TODO : faire onLogout
+     */
+    public function onLogin(InteractiveLoginEvent $event)
+    {
+        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
+        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+        $loginManager = new LoginManager();
+
+        $request = $event->getRequest();
+
+        $username = $request->request->all()['_username'];
+        $password = $request->request->all()['_password'];
+
+        $session = $request->getSession();
+
+        //get username and password from login request
+        //
+        $credentials = array('username'=>$username,'password'=>$password);
+        $networkInfo->switchToNetwork($networkName,'login',$credentials);
+
+        $dto = new \stdClass();
+        $dto->amount = 10;
+        $dto->field = 'MINUTES';
+        //get cyclos token and set in session
+        $loginResult = $loginManager->login($dto);
+        $session->set('cyclos_session_token',$loginResult->sessionToken); 
+    }
+
+    public function onKernelController(FilterControllerEvent $event)
+    {
+        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
+        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+
+        $session = $event->getRequest()->getSession();
+        $token = $session->get('cyclos_session_token');
+
+        $networkInfo->switchToNetwork($networkName,'session_token',$token);
+    }
 
     /**
      *Deals with maintenance of the application
@@ -64,22 +81,24 @@ class SecurityListener
      */
     public function onMaintenance(GetResponseEvent $event)
     {
+        $security = $this->container->get('cairn_user.security');          
+        $templating = $this->container->get('templating');          
+        $router = $this->container->get('router');          
+
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
-            $event->setResponse($this->templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
+            $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
         }else{
-            $currentUser = $this->security->getCurrentUser();
+            $currentUser = $security->getCurrentUser();
 
             if($currentUser instanceof \Cairn\UserBundle\Entity\User){
                 if(!$currentUser->isEnabled()){
-                    $logoutUrl = $this->router->generate('fos_user_security_logout');
+                    $logoutUrl = $router->generate('fos_user_security_logout');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
             }
 
         }
-
-
     }
 
     /**
@@ -92,11 +111,15 @@ class SecurityListener
      */
     public function onSensibleOperations(GetResponseEvent $event)
     {
+        $security = $this->container->get('cairn_user.security');          
+        $em = $this->container->get('doctrine.orm.entity_manager');          
+        $router = $this->container->get('router');          
+
         $request = $event->getRequest();
 
-        $currentUser = $this->security->getCurrentUser();
+        $currentUser = $security->getCurrentUser();
 
-        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
         $route = $request->get('_route');
 
         $attributes = $request->attributes->all();
@@ -107,8 +130,8 @@ class SecurityListener
         $isExceptionCase = false;
         //check if installed admin is asking for a new security card
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-            if(($currentUser->getUsername() == $this->adminUsername && $route == 'cairn_user_card_generate')){
-                //for itself ? for someone else ?
+            if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_generate')){
+                //for himself ? for someone else ?
                 $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
                 if($toUser === $currentUser){
                     $isExceptionCase = true;
@@ -117,9 +140,9 @@ class SecurityListener
         }
 
         if(!$isExceptionCase){
-            if($this->security->isSensibleOperation($route, $parameters)){
+            if($security->isSensibleOperation($route, $parameters)){
                 if(!$request->getSession()->get('has_input_card_key_valid')){
-                    $cardSecurityLayer = $this->router->generate('cairn_user_card_security_layer',array('url'=>$request->getRequestURI()));
+                    $cardSecurityLayer = $router->generate('cairn_user_card_security_layer',array('url'=>$request->getRequestURI()));
                     $event->setResponse(new RedirectResponse($cardSecurityLayer));
                 }
             }
@@ -139,12 +162,17 @@ class SecurityListener
      */
     public function onCardKeyInput(InputCardKeyEvent $event)
     {
+        $encoderFactory = $this->container->get('security.encoder_factory');          
+        $counter = $this->container->get('cairn_user.counter');          
+        $accessPlatform = $this->container->get('cairn_user.access_platform');          
+        $em = $this->container->get('doctrine.orm.entity_manager');          
+
         $session = $event->getSession();
         $user = $event->getUser();
         $currentCard = $user->getCard();
         $salt = $currentCard->getSalt();                                       
 
-        $encoder = $this->encoderFactory->getEncoder($user);                         
+        $encoder = $encoderFactory->getEncoder($user);                         
 
         $cardKey = $event->getCardKey();
         $position = $event->getPosition();
@@ -158,22 +186,22 @@ class SecurityListener
         $field_value = $fields[$pos_row][$pos_col];
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
-            $this->counter->reinitializeTries($user,'cardKey');
+            $counter->reinitializeTries($user,'cardKey');
             $session->set('has_input_card_key_valid',true);
         }
         else{
             if($user->getCardKeyTries() >= 2){
-                $this->counter->incrementTries($user,'cardKey');
+                $counter->incrementTries($user,'cardKey');
                 $subject = 'Votre espace membre a été bloqué';
                 $body = 'Suite à 3 échecs de validation de votre carte de clés personnelles, votre espace membre a été bloqué par souci de sécurité. \n Veuillez contacter nos services pour plus d\'information';
-                $this->accessPlatform->disable(array($user),$subject,$body);
+                $accessPlatform->disable(array($user),$subject,$body);
                 $event->setRedirect(true);
             }
             else{
-                $this->counter->incrementTries($user,'cardKey');
+                $counter->incrementTries($user,'cardKey');
             }
         }
-        $this->em->flush();
+        $em->flush();
     }
 
 }

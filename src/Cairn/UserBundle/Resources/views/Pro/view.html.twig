@@ -56,15 +56,12 @@
             <a href="{{path('cairn_user_card_home',{'id': user.id})}}">Carte de sécurité Cairn</a>
             <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}">Supprimer le membre</a>
 
-            <div class="accounts_tab">
-                {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
-            </div>
 
             {% if user.hasReferent(app.user) %}
                 {% if user.enabled == true %}
-                    <a href="{{path('cairn_user_users_block',{'id': user.id})}}">Bloquer l'accès à la plateforme</a>
+                    <a class="user_access" href="{{path('cairn_user_users_block',{'id': user.id})}}">Bloquer l'accès à la plateforme</a>
                 {% else %}
-                    <a href="{{path('cairn_user_users_activate',{'id': user.id})}}">Autoriser l'accès à la plateforme</a>
+                    <a class="user_access" href="{{path('cairn_user_users_activate',{'id': user.id})}}">Autoriser l'accès à la plateforme</a>
                 {% endif %}
 
             {% endif %}

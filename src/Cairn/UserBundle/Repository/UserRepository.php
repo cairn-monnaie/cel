@@ -24,9 +24,6 @@ class UserRepository extends EntityRepository
             ->setMaxResults(1);
 
         $result = $qb->getQuery()->getOneOrNullResult();
-        //        if(!$result){
-        //            $result = $this->findAdminWithCity('Grenoble');
-        //        }
         return $result;
     }
 

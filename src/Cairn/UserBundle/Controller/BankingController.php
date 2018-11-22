@@ -80,8 +80,6 @@ class BankingController extends Controller
      */  
     public function accountsOverviewAction(Request $request, User $user, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
@@ -103,8 +101,6 @@ class BankingController extends Controller
      */  
     public function accountOperationsAction(Request $request, $accountID, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
@@ -230,8 +226,6 @@ class BankingController extends Controller
      */  
     public function bankingOperationsAction(Request $request, $type, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         if($_format == 'json'){
             return $this->json(array('type'=>$type));
         }
@@ -326,8 +320,6 @@ class BankingController extends Controller
      */
     public function transactionRequestAction(Request $request, $to, $frequency, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
         $session = $request->getSession();
@@ -460,8 +452,6 @@ class BankingController extends Controller
      */
     public function reconversionRequestAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
         $currentUser = $this->getUser();
@@ -521,8 +511,6 @@ class BankingController extends Controller
      */
     public function conversionRequestAction(Request $request)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
@@ -637,8 +625,6 @@ class BankingController extends Controller
      */
     public function depositRequestAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
@@ -713,8 +699,6 @@ class BankingController extends Controller
      */
     public function withdrawalRequestAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
@@ -807,8 +791,6 @@ class BankingController extends Controller
      */
     public function processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $review = new \stdClass();
@@ -881,8 +863,6 @@ class BankingController extends Controller
      */
     public function confirmOperationAction(Request $request, $type, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $em = $this->getDoctrine()->getManager();
 
         $session = $request->getSession();
@@ -927,8 +907,6 @@ class BankingController extends Controller
      */
     public function executeOccurrenceAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $DTO = new \stdClass();
         $DTO->failureId = $id;
@@ -975,8 +953,6 @@ class BankingController extends Controller
      */
     public function viewOperationsAction(Request $request, $type, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $frequency = $request->get('frequency');
 
@@ -1099,8 +1075,6 @@ class BankingController extends Controller
      */
     public function viewDetailedRecurringTransactionAction(Request $request, $id, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $session->set('recurringID',$id);
 
@@ -1142,8 +1116,6 @@ class BankingController extends Controller
      */
     public function viewTransferAction(Request $request, $type,$id, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 
@@ -1222,8 +1194,6 @@ class BankingController extends Controller
      */
     public function changeStatusScheduledTransactionAction(Request $request, $id, $status)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
 
         $installmentData = $this->get('cairn_user_cyclos_banking_info')->getInstallmentData($id);
@@ -1262,8 +1232,6 @@ class BankingController extends Controller
      */
     public function cancelRecurringTransactionAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
 
         //        $user = $this->getUser();
@@ -1308,8 +1276,6 @@ class BankingController extends Controller
      */
     public function downloadTransferNoticeAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
 
@@ -1344,7 +1310,6 @@ class BankingController extends Controller
      */
     public function downloadRIBAction(Request $request, $id, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
@@ -1417,7 +1382,6 @@ class BankingController extends Controller
      */
     public function downloadAccountsOverviewAction(Request $request)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
 

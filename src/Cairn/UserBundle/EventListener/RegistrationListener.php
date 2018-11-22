@@ -114,9 +114,9 @@ class RegistrationListener
      */
     public function onRegistrationSuccess(FormEvent $event)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $em = $this->container->get('doctrine.orm.entity_manager');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
         $session = $event->getRequest()->getSession();
         $user = $event->getForm()->getData();
 
@@ -126,42 +126,18 @@ class RegistrationListener
             $groupName = $this->container->getParameter('cyclos_group_network_admins');
         }
 
-        //add an equivalent user in cyclos (we retrieve the id only)   
-        $userDTO = new \stdClass();                                    
-        $userDTO->name = $user->getName();                             
-        $userDTO->username = $user->getUsername();                     
-        $userDTO->internalName = $user->getUsername();                 
-        $userDTO->login = $user->getUsername();                        
-        $userDTO->email = $user->getEmail();                           
-
-
-        $password = new \stdClass();                                   
-        $password->assign = true;                                      
-        $password->type = 'login';//in Cyclos : System -> User config -> password types -> click on login Password
-        $password->value = $user->getPlainPassword();                  
-        $password->confirmationValue = $user->getPlainPassword();//control already done in Symfony
-        $userDTO->passwords = $password;                               
-
-
-        $groupVO = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
-
-        //if the webServices channel is not added, it will be impossible to update/remove the cyclos user entity from the code
-        $webServicesChannelVO = $this->container->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
-
-        $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
-
-        $user->setCyclosID($newUserCyclosID);
-
         $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
         $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
         $user->setCard($card);                                         
 
-        //        //finally, deal with logo                                      
-        //        if(!$user->getImage()){                                        
-        //            $imageRepo = $em->getRepository('CairnUserBundle:Image');  
-        //            $unknown = $imageRepo->findOneBy(array('alt'=>'purple-unknown.png'));
-        //            $user->setImage($unknown);                                 
-        //        }
+        //set cyclos ID here to pass the constraint cyclos_id not null
+        $cyclosID = rand(1, 1000000000);
+        $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
+        while($existingUser){
+            $cyclosID = $cyclosID + 1; 
+            $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
+        }
+        $user->setCyclosID($cyclosID);
     }
 
 

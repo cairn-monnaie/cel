@@ -17,6 +17,7 @@ use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
+use Cairn\UserCyclosBundle\Entity\AccessClientManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -66,14 +67,10 @@ class UserController extends Controller
     public function __construct()
     {
         $this->userManager = new UserManager();
-        //        $this->scriptManager = new ScriptManager();
-
     }
 
     public function indexAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $checker = $this->get('security.authorization_checker');
 
         //last users registered
@@ -107,15 +104,6 @@ class UserController extends Controller
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$transactions,'lastUsers'=>$users));
         }
 
-    }
-
-
-    /**
-     * This function os compulsary to login to Cyclos network
-     */
-    private function _login()
-    {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
     }
 
     /**
@@ -181,6 +169,7 @@ class UserController extends Controller
             ->getQuery()->getResult(); 
 
         //all ROLE_ADMIN
+        $ub = $userRepo->createQueryBuilder('u');
         $userRepo->whereRole($ub,'ROLE_ADMIN');
         $listAdmins = $ub->andWhere('u.confirmationToken is NULL')
             ->andWhere('u.enabled = true')
@@ -188,6 +177,7 @@ class UserController extends Controller
             ->getQuery()->getResult(); 
 
         //all ROLE_SUPER_ADMIN
+        $ub = $userRepo->createQueryBuilder('u');
         $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
         $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')
             ->orderBy('u.name','ASC')
@@ -254,10 +244,7 @@ class UserController extends Controller
      */
     public function viewProfileAction(Request $request , User $user, $_format)                           
     {                                                                          
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         if($_format == 'json'){
             $array_user = array('name'=>$user->getName(),
@@ -270,9 +257,9 @@ class UserController extends Controller
                                 'image'=>$user->getImage()
                             );
 
-            return $this->json(array('user'=>$array_user,'accounts'=>$accounts));
+            return $this->json(array('user'=>$array_user));
         }
-        return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user,'accounts'=>$accounts));
+        return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
 
     /**
@@ -335,8 +322,6 @@ class UserController extends Controller
      */
     public function addBeneficiaryAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -440,8 +425,6 @@ class UserController extends Controller
      */
     public function editBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
@@ -567,8 +550,6 @@ class UserController extends Controller
      */
     public function confirmRemoveUserAction(Request $request, User $user, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN'); 
 
         $session = $request->getSession();

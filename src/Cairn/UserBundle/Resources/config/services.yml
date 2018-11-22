@@ -17,6 +17,7 @@ services:
             - "%card_activation_delay%"
             - "%cairn_email_activation_delay%"
             - "@router"
+            - "@service_container"
 
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
@@ -64,20 +65,14 @@ services:
     cairn_user.security.input_listener:
         class: Cairn\UserBundle\EventListener\SecurityListener
         arguments:
-            - "@router"
-            - "@security.encoder_factory" 
-            - "@cairn_user.counter"
-            - "@cairn_user.access_platform"
-            - "@doctrine.orm.entity_manager"
-            - "@templating"
-            - "%cyclos_global_admin_username%"
-            - "@cairn_user.security"
-            - "@event_dispatcher"
+            - "@service_container"
 
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }
             - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
             - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
+            - { name: kernel.event_listener, event: security.interactive_login, method: onLogin }
+            - { name: kernel.event_listener, event: kernel.controller, method: onKernelController }
 
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener

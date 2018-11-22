@@ -55,28 +55,24 @@ class BankingManager
     {
         $parameters = $this->hydrateParameters($paymentData,$amount,$description,$transferType);
 
-        if($environment == 'test'){
-            $parameters->firstOccurrenceDateIsNow = true;
-            $parameters->occurrenceInterval = new \stdClass();
-            $parameters->occurrenceInterval->field = 'MINUTES';
-            $parameters->occurrenceInterval->amount = 1;
-            $parameters->occurrencesCount = 3;
-        }else{
-            $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
-            $monthsDiff = $interval->m;
+        $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
+        $monthsDiff = $interval->m;
 
-            $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
+        $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
 
-            if($parameters->firstOccurrenceDate == date('Y-m-d')){
-                $parameters->firstOccurrenceIsNow = true;
-            }
-
-            $parameters->occurrenceInterval = new \stdClass();
-            $parameters->occurrenceInterval->field = 'MONTHS';
-            $parameters->occurrenceInterval->amount = $timeData->periodicity;
-
-            $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
+        if($parameters->firstOccurrenceDate == date('Y-m-d')){
+            $parameters->firstOccurrenceIsNow = true;
         }
+
+        $parameters->occurrenceInterval = new \stdClass();
+        $parameters->occurrenceInterval->field = 'MONTHS';
+
+        if($environment == 'test'){
+            $parameters->occurrenceInterval->field = 'MINUTES';
+        }
+        $parameters->occurrenceInterval->amount = $timeData->periodicity;
+
+        $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
 
         return $this->recurringPaymentService->preview($parameters);
 
@@ -120,8 +116,17 @@ class BankingManager
             $this->scheduledPaymentService->cancel($DTO);
             $res->validStatus = true;
         }elseif($status == 'execute'){
-            $this->scheduledPaymentService->processInstallment($DTO);
-            $res->validStatus = true;
+            try{
+                $this->scheduledPaymentService->processInstallment($DTO);
+                $res->validStatus = true;
+            }catch(\Exception $e){
+                if($e->errorCode == 'INSUFFICIENT_BALANCE'){
+                    $res->validStatus = false;
+                    $res->message = 'Solde insuffisant. Rechargez votre compte';
+                }else{
+                    throw $e;
+                }   
+            }
         }else{
             $res->validStatus = false;
             $res->message = 'Le statut du paiement en attente indiqué ne correspond à aucune action possible.';

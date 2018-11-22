@@ -139,12 +139,44 @@ class AdminController extends Controller
             if($form->get('save')->isClicked()){
 
                 $this->get('cairn_user.access_platform')->enable(array($user));
-                $em->flush();
 
-                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
 
-                //if first activation : ask if generate card now
+                //if first activation : create user in cyclos and ask if generate card now
                 if($user->getLastLogin() == NULL){
+                    //create cyclos user
+                    $userDTO = new \stdClass();                                    
+                    $userDTO->name = $user->getName();                             
+                    $userDTO->username = $user->getUsername();                     
+                    $userDTO->internalName = $user->getUsername();                 
+                    $userDTO->login = $user->getUsername();                        
+                    $userDTO->email = $user->getEmail();                           
+
+                    $password = new \stdClass();                                   
+                    $password->assign = true;                                      
+                    $password->type = 'login';
+
+                    if($user->hasRole('ROLE_PRO')){                                        
+                        $groupName = $this->getParameter('cyclos_group_pros');  
+                    }else{                                                                 
+                        $groupName = $this->getParameter('cyclos_group_network_admins');
+                    }   
+
+                    //random password on Cyclos-side to prevent main web connexion
+                    $password->value = User::randomPassword();                  
+                    $password->confirmationValue = $password->value;
+                    $userDTO->passwords = $password;                               
+
+                    $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
+
+                    //if the webServices channel is not added, it will be impossible to update/remove the cyclos user entity from the code
+                    $webServicesChannelVO = $this->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
+
+                    $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
+                    $user->setCyclosID($newUserCyclosID);
+
+                    $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
+                    $em->flush();
+
                     if($_format == 'json'){
                         return $this->json(array('user'=>$user,'card'=>$user->getCard()));
                     }

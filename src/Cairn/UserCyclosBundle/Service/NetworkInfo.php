@@ -5,6 +5,7 @@ namespace Cairn\UserCyclosBundle\Service;
 
 //manage Cyclos configuration file                                             
 use Cyclos;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
  *This class contains getters related to networks in Cyclos
@@ -43,33 +44,17 @@ class NetworkInfo
     private $currentRootUrl;
 
     /**
-     * Login of the Platform's global administrator. Set as a global parameter
-     *
-     *@var string $cyclosAdminLogin
-     */
-    private $cyclosAdminLogin;
-
-    /**
-     * Password of the Platform's global administrator. Set as a global parameter
-     *
-     *@var string $cyclosAdminPassword
-     */
-    private $cyclosAdminPassword;
-
-    /**
      * Current environment mode
      *
      *@var string $environment
      */
     private $environment;
 
-    public function __construct($cyclosRootProdUrl,$cyclosRootTestUrl,$cyclosAdminLogin,$cyclosAdminPassword,$environment)
+    public function __construct($cyclosRootProdUrl,$cyclosRootTestUrl,$environment)
     {
         $this->networkService = new Cyclos\NetworkService();
         $this->cyclosRootProdUrl = $cyclosRootProdUrl;
         $this->cyclosRootTestUrl = $cyclosRootTestUrl;
-        $this->cyclosAdminLogin = $cyclosAdminLogin;
-        $this->cyclosAdminPassword = $cyclosAdminPassword;
         $this->environment = $environment;
 
         if($this->environment == 'test' ){
@@ -150,17 +135,18 @@ class NetworkInfo
      *
      * @param string $name Name of the network | global administration
      */
-    public function switchToNetwork($name)
+    public function switchToNetwork($internalName, $method, $credentials)
     {
-        Cyclos\Configuration::setAuthentication($this->cyclosAdminLogin, $this->cyclosAdminPassword); 
+        if($internalName == 'global'){
+            throw new AccessDeniedException('Vous n\'avez pas accès à cette section');
+        }
 
-        if ($name == 'globalAdmin'){                                           
-            $internalName = 'global';                                          
-        }                                                                      
-        else{                                                                  
-            $network = $this->getNetworkData($name);
-            $internalName = $network->dto->internalName;                       
-        }                                                                      
+        if($method == 'login'){
+            Cyclos\Configuration::setAuthentication($credentials['username'],$credentials['password']); 
+        }elseif($method == 'session_token'){
+             Cyclos\Configuration::setSessionToken($credentials); 
+        }
+
         Cyclos\Configuration::setRootUrl($this->currentRootUrl .'/'. $internalName);
     }
 }
