@@ -10,9 +10,6 @@ cairn_user_welcome:
     requirements:
         _format: html|json
 
-cairn_user_install:
-    path:     install/
-    defaults: { _controller: CairnUserBundle:Default:install }
 
 cairn_user_api_current_user:
     path: api/user.{_format}

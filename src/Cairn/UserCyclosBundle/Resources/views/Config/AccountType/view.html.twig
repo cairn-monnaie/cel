@@ -97,7 +97,7 @@
     </a>
     {% if accountType.nature == 'USER' %}
         {% if isAssigned %}
-             <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_remove_confirm', {'id': accountType.id}) }}">
+             <a href="{{ path('cairn_user_cyclos_accountsconfig_accounttype_remove', {'id': accountType.id}) }}">
               Fermer le type de compte
              </a>
 

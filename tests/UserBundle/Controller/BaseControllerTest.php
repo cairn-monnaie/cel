@@ -26,6 +26,7 @@ class BaseControllerTest extends WebTestCase
     public function __construct($name = NULL, array $data = array(), $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
+
         $this->client = static::createClient();
 
         $this->container = $this->client->getContainer();
@@ -44,6 +45,10 @@ class BaseControllerTest extends WebTestCase
         $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
 
         if(!$user){
+//            var_dump(gc_enabled());
+//            gc_enable();
+//            var_dump(gc_enabled());
+
             $memberGroupName = $this->container->getParameter('cyclos_group_pros');
             $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
 
@@ -115,10 +120,6 @@ class BaseControllerTest extends WebTestCase
         $doctrineUser->setDescription('Test user blablablabla');             
 
         $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
-        $today = new \Datetime(date('Y-m-d H:i:s'));
-        $nbDays = 3*$userRank;
-        $creationDate = date_modify(new \Datetime($today->format('Y-m-d H:i:s')),'- '.$nbDays.' days');
-        $card->setCreationDate($creationDate);
         $doctrineUser->setCard($card);
 
         if($doctrineUser->getCity() == $superAdmin->getCity()){

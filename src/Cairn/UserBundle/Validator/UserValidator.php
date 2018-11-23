@@ -40,7 +40,6 @@ class UserValidator extends ConstraintValidator
      * In Cyclos 4, the algorithm is not accessible, but Cyclos3 is open-source. We can see that the algorithm depends on profile fields
      * name / username and email. For this reason, it is pertinent to make this class a class constraint validator (and not simply a 
      * password property validator)
-     * WARNING : for this validation process to be useful, one needs to allow the inner algorithm in Cyclos configuration(password types) 
      *
      */
     public function validate($user, Constraint $constraint)

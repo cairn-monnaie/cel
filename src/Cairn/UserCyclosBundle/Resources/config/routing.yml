@@ -2,7 +2,7 @@
 
 cairn_user_cyclos_config_home:
     path:     /index.{_format}
-    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork, _format: html }
+    defaults: { _controller: CairnUserCyclosBundle:AccountType:index, _format: html }
     requirements:
         _format: html|json
 
@@ -29,12 +29,12 @@ cairn_user_cyclos_sysconfig_home:
 #cairn_user_cyclos_sysconfig_network_view:
 #    path:     /sys/network/view/
 #    defaults: { _controller: CairnUserCyclosBundle:Network:viewNetwork }
-
-cairn_user_cyclos_sysconfig_group_add:
-    path:     /group/add/{type}/
-    defaults: { _controller: CairnUserCyclosBundle:Group:addGroup }
-    requirements:
-        type: MEMBER_GROUP|ADMIN_GROUP
+#
+#cairn_user_cyclos_sysconfig_group_add:
+#    path:     /group/add/{type}/
+#    defaults: { _controller: CairnUserCyclosBundle:Group:addGroup }
+#    requirements:
+#        type: MEMBER_GROUP|ADMIN_GROUP
 #cairn_user_cyclos_sysconfig_group_edit:
 #    path:     /sys/group/edit/{name}/
 #    defaults: { _controller: CairnUserCyclosBundle:Group:editGroup }
@@ -103,31 +103,26 @@ cairn_user_cyclos_accountsconfig_accounttype_list:
         _format: html|json
 
 cairn_user_cyclos_accountsconfig_accounttype_add:
-    path:     /accounts/accounttype/add/{nature}/
+    path:     /accounts/accounttype/add/{nature}
     defaults: { _controller: CairnUserCyclosBundle:AccountType:addAccountType }
     requirements:                                                              
         nature: USER|SYSTEM
 
 cairn_user_cyclos_accountsconfig_accounttype_edit:
-    path:     /accounts/accounttype/edit/{id}/
+    path:     /accounts/accounttype/edit/{id}
     defaults: { _controller: CairnUserCyclosBundle:AccountType:editAccountType }
     requirements:                                                              
         id: "[-]?[0-9]{1,}"
 
-cairn_user_cyclos_accountsconfig_accounttype_remove_confirm:
-    path:     /accounts/accounttype/remove/confirm/{id}/
-    defaults: { _controller: CairnUserCyclosBundle:AccountType:confirmRemoveAccountType }
-    requirements:                                                              
-        id: "[-]?[0-9]{1,}"
 
 cairn_user_cyclos_accountsconfig_accounttype_remove:
-    path:     /accounts/accounttype/remove/{id}/
+    path:     /accounts/accounttype/remove/{id}
     defaults: { _controller: CairnUserCyclosBundle:AccountType:removeAccountType }
     requirements:                                                              
         id: "[-]?[0-9]{1,}"
 
 cairn_user_cyclos_accountsconfig_accounttype_open_confirm:
-    path:     /accounts/accounttype/open/confirm/{id}/
+    path:     /accounts/accounttype/open/confirm/{id}
     defaults: { _controller: CairnUserCyclosBundle:AccountType:assignAccountType }
     requirements:                                                              
         id: "[-]?[0-9]{1,}"
@@ -168,11 +163,11 @@ cairn_user_cyclos_accountsconfig_transfertype_view:
         #    defaults: { _controller: CairnUserCyclosBundle:TransferType:fillTransferType }
         #
 
-cairn_user_cyclos_accountsconfig_transfertype_edit:
-    path:     /accounts/transfertype/edit/{id}/
-    defaults: { _controller: CairnUserCyclosBundle:TransferType:editTransferType }
-    requirements:                                                              
-        id: "[-]?[0-9]{1,}"
+        #cairn_user_cyclos_accountsconfig_transfertype_edit:
+        #    path:     /accounts/transfertype/edit/{id}/
+        #    defaults: { _controller: CairnUserCyclosBundle:TransferType:editTransferType }
+        #    requirements:                                                              
+        #        id: "[-]?[0-9]{1,}"
         
         #cairn_user_cyclos_accountsconfig_transfertype_remove:
         #    path:     /accounts/transfertype/remove/{name}/

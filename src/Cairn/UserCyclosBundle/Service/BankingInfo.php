@@ -168,6 +168,7 @@ class BankingInfo
      *@param string $orderBy Java type: org.cyclos.model.banking.transactions.TransactionOrderBy
      *@param stdClass $period Java type : org.cyclos.model.utils.DatePeriodDTO
      *@param int $pageSize number of responses
+     *@return stdClass Java type: org.cyclos.model.banking.transactions.TransactionVO 
      */
     public function getTransactions($ownerVO,$accountTypesVO,$natures = NULL,$statuses = NULL,$description, $orderBy = NULL, $period = NULL, $pageSize = NULL)
     {

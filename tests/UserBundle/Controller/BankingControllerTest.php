@@ -26,7 +26,7 @@ class BankingControllerTest extends BaseControllerTest
      *@dataProvider provideTransactionData
      */
     public function testTransactionProcess($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$day,$month,$year,
-                                           $frequency,$periodicity, $futureDay,$futureMonth,$futureYear)
+        $frequency,$periodicity, $futureDay,$futureMonth,$futureYear)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -216,6 +216,65 @@ class BankingControllerTest extends BaseControllerTest
     }
 
     /**
+     *@dataProvider provideDataForConversion
+     */
+    public function testConversion($executor, $creditor, $to, $isValid)
+    {
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+
+        $crawler = $this->login($executor, '@@bbccdd');
+
+        $executorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$executor));
+        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
+        $debitorICC = $debitorAccount->id;
+
+        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
+        $creditorICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
+
+        $url = 'banking/conversion/request?to='.$to;
+        $crawler = $this->client->request('GET',$url);
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler, '1111');
+        $crawler = $this->client->followRedirect();
+
+        $form = $crawler->selectButton('cairn_userbundle_simpletransaction_save')->form();
+        $form['cairn_userbundle_simpletransaction[amount]']->setValue(100);
+        $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
+        $form['cairn_userbundle_simpletransaction[description]']->setValue('Test conversion simple');
+
+        $crawler =  $this->client->submit($form);
+
+        if($isValid){
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
+
+            //checker le contenu du récapitulatif
+            $form = $crawler->selectButton('form_save')->form();
+            $crawler = $this->client->submit($form);
+        }else{
+            $this->assertTrue($this->client->getResponse()->isRedirect());
+        }
+    }
+
+
+    public function provideDataForConversion()
+    {
+        $baseOtherData = array('executor'=>'mazouthm','creditor'=>'LaBonnePioche','to'=>'other','isValid'=>true);
+        $baseSelfData = array('executor'=>'LaBonnePioche','creditor'=>'LaBonnePioche','to'=>'self', 'isValid'=>true);
+
+        return array(
+            'sys for other but sys account provided'=>array_replace($baseOtherData,array('creditor'=>'mazouthm','isValid'=>false)),
+            'sys for himself but other account provided'=>array_replace($baseSelfData,array('executor'=>'mazouthm','isValid'=>false)),
+            'user for himself but other account provided'=>array_replace($baseSelfData,array('creditor'=>'MaltOBar','isValid'=>false)),
+            'valid user conversion' => $baseSelfData,
+            'valid self conversion sys' => array_replace($baseSelfData,array('executor'=>'mazouthm','creditor'=>'mazouthm')),
+            'valid other conversion sys' => $baseOtherData,
+            //
+        );
+    }
+
+    /**
      *
      *@todo : change traversing methods when css added. Putting raw values for selectLink method is more prone to errors than a div.class
      *@dataProvider provideDownloadersAndOwners
@@ -256,7 +315,7 @@ class BankingControllerTest extends BaseControllerTest
      *@dataProvider provideDataForAccountsOverview
      */
     public function testDownloadAccountsOverview($downloader,$isLegit,$tick,$format,$isValid,$endDay,$endMonth,$endYear,$pastDay,
-                                                 $pastMonth,$pastYear)
+        $pastMonth,$pastYear)
     {
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
@@ -274,9 +333,9 @@ class BankingControllerTest extends BaseControllerTest
             $form = $crawler->selectButton('form_save')->form();
             $form['form[format]']->select($format);
 
-//            if($tick){
-//                $form['form[accounts][]']->tick();
-//            }
+            //            if($tick){
+            //                $form['form[accounts][]']->tick();
+            //            }
             $form['form[begin][day]']->select($pastDay);
             $form['form[begin][month]']->select($pastMonth);
             $form['form[begin][year]']->select($pastYear);
@@ -324,7 +383,7 @@ class BankingControllerTest extends BaseControllerTest
             'anonym'=>array_replace($baseData,array('downloader'=>'','isLegit'=>false)),
             'today=before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year)),
             'today<before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year,
-                                                          'endDay'=>$pastDay,'endMonth'=>$pastMonth,'endYear'=>$pastYear)),
+            'endDay'=>$pastDay,'endMonth'=>$pastMonth,'endYear'=>$pastYear)),
         );
     }
 

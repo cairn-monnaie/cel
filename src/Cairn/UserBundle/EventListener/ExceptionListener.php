@@ -101,6 +101,12 @@ class ExceptionListener
                     $session->getFlashBag()->add('error','Problème de connexion');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
+                elseif($exception->errorCode == 'PERMISSION_DENIED'){
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $session->getFlashBag()->add('error','Vous n\'avez pas les droits nécessaires');
+                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                }
+
                 else{
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');

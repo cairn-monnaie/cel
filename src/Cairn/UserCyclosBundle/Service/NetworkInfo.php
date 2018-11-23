@@ -127,10 +127,9 @@ class NetworkInfo
     }
 
     /**
-     * Switches the global administrator to the network $name
+     * Switches the user to the network $name
      *
-     * This function is important for the administrator to switch between networks and global administration, depending on the area
-     * involved : a single network/ several networks.. 
+     * This function is important for the user to connect to Cyclos and access web services
      * To do so, we edit the cyclos configuration
      *
      * @param string $name Name of the network | global administration
@@ -145,6 +144,8 @@ class NetworkInfo
             Cyclos\Configuration::setAuthentication($credentials['username'],$credentials['password']); 
         }elseif($method == 'session_token'){
              Cyclos\Configuration::setSessionToken($credentials); 
+        }elseif($method == 'access_client'){
+             Cyclos\Configuration::setAccessClientToken($credentials); 
         }
 
         Cyclos\Configuration::setRootUrl($this->currentRootUrl .'/'. $internalName);

@@ -2,13 +2,13 @@
 
 namespace Cairn\UserBundle\Form;
 
-use Cairn\UserBundle\Form\TransferType;
 
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\AbstractType;
+use Cairn\UserBundle\Form\SimpleTransactionType;
 
-
-class ConversionType extends TransferType
+class ConversionType extends AbstractType
 {
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -21,7 +21,15 @@ class ConversionType extends TransferType
 
     public function getParent()
     {
-         return TransferType::class;
+         return SimpleTransactionType::class;
     }       
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getBlockPrefix()
+    {
+        return 'cairn_userbundle_conversion';
+    }
 
 }

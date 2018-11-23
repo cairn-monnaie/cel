@@ -27,16 +27,14 @@ class Transaction
     private $description;
 
     /**
-     * @var \stdClass
+     * @var array
      *
      */
     private $fromAccount;
 
     /**
-     * @var \stdClass
+     * @var array
      *
-     * @Assert\Valid(traverse = true)
-     *      
      */
     private $toAccount;
 
@@ -93,7 +91,7 @@ class Transaction
     /**
      * Set fromAccount
      *
-     * @param \stdClass $fromAccount
+     * @param array $fromAccount
      *
      * @return Transaction
      */
@@ -107,7 +105,7 @@ class Transaction
     /**
      * Get fromAccount
      *
-     * @return \stdClass
+     * @return array
      */
     public function getFromAccount()
     {
@@ -117,7 +115,7 @@ class Transaction
     /**
      * Set toAccount
      *
-     * @param \stdClass $toAccount
+     * @param array $toAccount
      *
      * @return Transaction
      */
@@ -131,7 +129,7 @@ class Transaction
     /**
      * Get toAccount
      *
-     * @return \stdClass
+     * @return array
      */
     public function getToAccount()
     {

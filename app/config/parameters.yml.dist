@@ -41,9 +41,6 @@ parameters:
     cyclos_network_cairn   : Cdm
     cyclos_root_prod_url : 'http://example-prod:1234/'
     cyclos_root_test_url:  'http://example-test:4321/'
-    cyclos_global_admin_username : admin
-    cyclos_global_admin_password : admin
-    cyclos_global_admin_email : admin@localhost.com
 
 
     cyclos_currency_cairn : cairn

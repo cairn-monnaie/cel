@@ -52,8 +52,6 @@ class TransferTypeController extends Controller
 
     public function listTransferTypesAction(Request $request)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
@@ -100,8 +98,6 @@ class TransferTypeController extends Controller
      */
     public function addTransferTypeAction(Request $request)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
@@ -140,8 +136,6 @@ class TransferTypeController extends Controller
 
     public function fillTransferTypeAction(Request $request)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();

@@ -48,17 +48,11 @@ class GroupController extends Controller
     }
 
 
-    /*
-     *@var $groupType members or Network Admins
-     */
-    public function addGroupAction(Request $request, $groupType)
+    public function addGroupAction(Request $request,$type)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork('Test5');
+        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
-        //récuperer le DTO d'un groupe de type $groupType
-        $groupDTO = $this->get('cairn_user_cyclos_group_info')->getGroupDTO(NULL,$groupType);
+        $groupDTO = $this->get('cairn_user_cyclos_group_info')->getGroupDTO(NULL,$type);
 
         //unset id
         unset($groupDTO->id);
@@ -68,7 +62,6 @@ class GroupController extends Controller
 
         $form = $this->createFormBuilder($groupArray)
             ->add('name'     , TextType::class , array('label' => 'nom du groupe'))                                
-            ->add('nature'   , ChoiceType::class , array('label' => 'Type de groupe', 'choices' => array('Administrateurs du réseau' => 'ADMIN_GROUP' ,'Adhérents' => 'MEMBER_GROUP'))) 
             ->add('save'     , SubmitType::class)                              
             ->getForm()
             ;       
@@ -78,7 +71,7 @@ class GroupController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
                 $groupDTO = (object) $dataForm;
-                $groupDTO->internalName = preg_replace('/\s\s+/', '', $groupDTO->name); 
+                $groupDTO->internalName = preg_replace('/\s/', '', $groupDTO->name); 
 
                 $this->groupManager->editGroup($groupDTO);
                 return $this->render('CairnUserCyclosBundle:Config/Group:index.html.twig');
@@ -91,8 +84,6 @@ class GroupController extends Controller
 
     public function editGroupAction(Request $request, $name)
     {
-        Cyclos\Configuration::setRootUrl("http://localhost:8080/cyclos/global");
-        Cyclos\Configuration::setAuthentication("mazouthm", "admin"); 
         $this->get('cairn_user_cyclos_network_info')->switchToNetwork('Test5');
 
         $groupDTO = $this->get('cairn_user_cyclos_group_info')->getGroupDTO($name);

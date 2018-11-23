@@ -52,7 +52,7 @@ class BridgeToSymfony
                 $to = $this->messageNotificator->getMaintenanceEmail();
 
                 $subject = "Dissociation des bases de données Symfony-Cyclos";
-                $body = 'Entité Cyclos inexistante. ID Symfony valide '.$user->getID(). ' correspondant au membre de login ' .$user->getUsername();
+                $body = 'Entité : User. Equivalent Cyclos inexistant. ID Symfony valide '.$user->getID(). ' correspondant au membre de login ' .$user->getUsername();
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
             }else{
@@ -65,6 +65,7 @@ class BridgeToSymfony
     {
         $symfonyUser = $this->userRepo->findOneBy(array('cyclosID'=>$id));
         if(!$symfonyUser){
+            //if no cyclos user matches $id, exception is thrown
             $cyclosUser = $this->cyclosUserInfo->getUserVO($id);
             $from = $this->messageNotificator->getNoReplyEmail();
             $to = $this->messageNotificator->getMaintenanceEmail();

@@ -97,6 +97,10 @@ class User extends BaseUser
      */
     private $cardKeyTries;
 
+    /**
+     * @ORM\Column(name="cyclos_access_token", type="string", unique=false, nullable = true)
+     */
+    private $cyclosAccessToken;
 
     public function __construct()
     {
@@ -465,6 +469,18 @@ class User extends BaseUser
     public function getNbCards()
     {
         return $this->nbCards;
+    }
+
+    public function getCyclosAccessToken()
+    {
+        return $this->cyclosAccessToken;
+    }
+
+    public function setCyclosAccessToken($token)
+    {
+        $this->cyclosAccessToken = $token;
+
+        return $this;
     }
 
     /**

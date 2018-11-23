@@ -61,7 +61,6 @@ class NetworkController extends Controller
 
     public function viewNetworkAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork('globalAdmin');
         $networkDTO = $this->get('cairn_user_cyclos_network_info')->getNetworkDTO($this->getParameter('cyclos_network_cairn'));
 
         if($_format == 'json'){

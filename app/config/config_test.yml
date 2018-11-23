@@ -1,6 +1,12 @@
 imports:
     - { resource: config_dev.yml }
 
+# No logging on test environment
+monolog:
+    handlers:
+        main:
+            type:   test
+
 framework:
     test: ~
     session:

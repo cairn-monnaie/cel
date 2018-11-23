@@ -120,23 +120,23 @@ class AccountInfo
         $accounts =  $this->accountService->getAccountsSummary($userID, $dateTime);
         $nbAccounts = count($accounts);              
 
-        if($nbAccounts != 0){
-            if($accounts[0]->type->nature == 'USER'){
-                for($index = 0; $index < $nbAccounts; $index++){                   
-                    if(!$this->accountTypeInfo->userHasAssignedProduct($accounts[$index]->type->id,$userID)){            
-                        unset($accounts[$index]);                              
-                    }                                                              
-                }   
-
-            }
-            else{//SYSTEM
-                for($index = 0; $index < $nbAccounts; $index++){                   
-                    if($accounts[$index]->unlimited){            
-                        unset($accounts[$index]);                              
-                    }                                                              
-                }   
-            }
-        }
+//        if($nbAccounts != 0){
+//            if($accounts[0]->type->nature == 'USER'){
+//                for($index = 0; $index < $nbAccounts; $index++){                   
+//                    if(!$this->accountTypeInfo->userHasAssignedProduct($accounts[$index]->type->id,$userID)){            
+//                        unset($accounts[$index]);                              
+//                    }                                                              
+//                }   
+//
+//            }
+//            else{//SYSTEM
+//                for($index = 0; $index < $nbAccounts; $index++){                   
+//                    if($accounts[$index]->unlimited){            
+//                        unset($accounts[$index]);                              
+//                    }                                                              
+//                }   
+//            }
+//        }
 
         return array_values($accounts);
     }

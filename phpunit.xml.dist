@@ -21,8 +21,11 @@
         </testsuite>
         <testsuite name="Order">
             <file>tests/UserBundle/Controller/CardControllerTest.php</file>
+            <file>tests/UserCyclosBundle/Controller/AccountTypeControllerTest.php</file>
             <file>tests/UserBundle/Controller/DefaultControllerTest.php</file>
             <file>tests/UserBundle/Controller/UserControllerTest.php</file>
+            <file>tests/UserBundle/Controller/BankingControllerTest.php</file>
+            <file>tests/UserBundle/Controller/AdminControllerTest.php</file> 
         </testsuite>
     </testsuites>
 

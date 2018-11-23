@@ -1,7 +1,17 @@
-{# src/Cairn/UserCyclosBundle/Resources/views/ExchangeOffice/form.html.twig #}
+{# src/Cairn/UserCyclosBundle/Resources/views/Config/Group/add.html.twig #}
 
-<h3>Formulaire d'annonce</h3>
+{% extends "CairnUserCyclosBundle::layout.html.twig" %}
 
-<div class="well">
-  {{ form(form) }}
-</div>
+
+{% block body %}
+    {{parent()}}
+
+    <h3>Formulaire d'ajout</h3>
+
+    <div class="well">
+      {{ form_start(form) }}
+      {{ form_rest(form) }}
+      {{ form_end(form) }}
+
+    </div>
+{% endblock %}
