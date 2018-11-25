@@ -80,10 +80,13 @@ class AccessPlatform
      *@param string $subject 
      *@param array $users 
      */
-    public function enable($users)
+    public function enable($users, $subject = NULL, $body = NULL)
     {
-        $subject = "Votre espace membre Cairn a été activé";
-        $body = "Votre compte est désormais accessible";
+        if(!$subject){
+            $subject = "Votre espace membre Cairn a été activé";
+            $body = "Votre compte est désormais accessible";
+        }
+
         $from = $this->messageNotificator->getNoReplyEmail();
 
         foreach($users as $user){

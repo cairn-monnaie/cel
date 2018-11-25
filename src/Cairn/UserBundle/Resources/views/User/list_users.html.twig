@@ -51,7 +51,7 @@
             <h3> Les professionnels </h3>
             <ul>
                 {% for user in pendingUsers.pros %}
-                   <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
                 {% else %}  
                     pas <em>encore</em> de professionel en attente !
                 {% endfor %}
@@ -59,7 +59,7 @@
             <h3> Les groupes locaux </h3>
             <ul>
                 {% for user in pendingUsers.admins %}
-                   <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
                 {% else %}  
                     pas <em>encore</em> de groupe local en attente !
                 {% endfor %}

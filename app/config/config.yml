@@ -87,6 +87,9 @@ fos_user:
     profile:
         form:
             type: Cairn\UserBundle\Form\ProfileType
+    change_password:
+        form:
+            type: Cairn\UserBundle\Form\ChangePasswordType
 
     registration:
         form:

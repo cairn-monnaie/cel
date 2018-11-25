@@ -27,9 +27,6 @@ cairn_user_redirect_login:
     path:     login/redirection/{message}/
     defaults: { _controller: CairnUserBundle:Default:redirectToLogin }
 
-cairn_user_password_change:
-    path:     password/new/
-    defaults: { _controller: CairnUserBundle:User:changePassword }
 
 cairn_user_card_security_layer:
     path:     security/card/

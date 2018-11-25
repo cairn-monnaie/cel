@@ -11,9 +11,13 @@ use Cairn\UserBundle\Event\InputPasswordEvent;
 
 use Symfony\Component\DependencyInjection\Container;
 
+use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\LoginManager;
+use Cairn\UserCyclosBundle\Entity\PasswordManager;
+
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
+use FOS\UserBundle\Event\GetResponseNullableUserEvent;
 
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -30,6 +34,35 @@ class SecurityListener
     public function __construct(Container $container)
     {
         $this->container = $container;
+    }
+
+    public function onResetPassword(GetResponseNullableUserEvent $event)
+    {
+        $userManager = new UserManager();
+        $user = $event->getUser();
+        $session = $event->getRequest()->getSession();
+        $router = $this->container->get('router');          
+ 
+        if($user->getLastLogin() == NULL){
+            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car vous ne vous êtes jamais connecté. Attendez une nouvelle validation par un administrateur, un email vous sera envoyé avec votre nouveau mot de passe.');
+            $logoutUrl = $router->generate('fos_user_security_logout');
+            $event->setResponse(new RedirectResponse($logoutUrl));
+
+            $user->setEnabled(false);
+            $this->container->get('doctrine.orm.entity_manager')->flush();
+        }
+    }
+
+    public function onChangePassword(FormEvent $event)
+    {
+        $passwordManager = new PasswordManager();
+        $form = $event->getForm();
+        $user = $form->getData();
+
+        $currentPassword = $form->get('current_password')->getData(); 
+        $newPassword = $user->getPlainPassword();
+
+        $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
     }
 
     /**

@@ -86,6 +86,8 @@ class UserController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($this->getUser());
 
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
+//        var_dump($accounts);
+//        return new Response('ok');
 
         //last operations
         $accountTypes = array();
@@ -199,42 +201,6 @@ class UserController extends Controller
 
 
     /**
-     * Changes the password of the current user
-     *
-     * This action has been duplicated with the FOSUserBundle ChangePasswordController, but we add here our own logic of checking number
-     * of password input failures. If the input is incorrect, user's attribute 'cardKeyTries' or 'passwordTries' is incremented. 
-     * 3 failures leads to disable the user.
-     */
-    public function changePasswordAction(Request $request)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-
-        $currentUser = $this->getUser();
-        $form = $this->createForm(ChangePasswordType::class,$currentUser);
-
-        if($request->isMethod('POST')){ //form filled and submitted
-
-            $form->handleRequest($request);    
-
-            if($form->isValid()){
-                $newPassword = $form->get('plainPassword')->getData();
-
-                $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
-                $encoded = $encoder->encodePassword($currentUser,$newPassword);
-                $currentUser->setPassword($encoded);
-
-                $em->flush();
-                $session->getFlashBag()->add('success','Mot de passe modifié avec succès');
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
-
-            }
-        }
-        return $this->render('CairnUserBundle:Default:change_password.html.twig',array('form'=>$form->createView()));
-    }
-
-
-    /**
      * View the profile of $user
      *
      * What will be displayed on the screen will depend on the current user
@@ -326,6 +292,8 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
+
+
         $possibleUsers = $userRepo->myFindByRole(array('ROLE_PRO'));
         $currentUser = $this->getUser();
 
@@ -547,6 +515,18 @@ class UserController extends Controller
      * If the user to remove is a ROLE_USER, we ensure that all his accounts have a balance to zero
      *
      * @Method("GET")
+     *
+     * Can only be done by an admin on Cyclos side. 
+     * Solution 1 : create a specific screen for all users with attribute "ask_removal = true" and remove them all in once in admin's
+     * action. 
+     *
+     * Problem : If a user asks for removal and is accepted, it means that all his accounts are at 0. But if he receives a payment
+     * between this and validation by admin, his account won't be 0 so he will not be removed. But there is no way to check (from an ICC provided) that the corresponding Symfony User has this attrbute, because an user can't look for the account of soemone else.
+     *
+     * Solution 1 : récupérer un compte via un account_number (configurer un account_number : script de génération +  service d'interception 'création de compte' + visiblité dans les Produits). Ainsi on pourrait récupérer, à partir du account_number, le propriétaire du compte puis son équivalent Symfony pour dire s'il est en instance de suppression ou non. (Long car beaucoup de nouvelles choses à voir)
+     *
+     * Solution 2 : vérifier le message d'erreur à la suppression(ConstraintViolatedOnRemoveException) et, si la suppression ne peut avoir lieu à cause d'un compte non nul, avertir l'utilisateur
+     *
      */
     public function confirmRemoveUserAction(Request $request, User $user, $_format)
     {
@@ -561,10 +541,6 @@ class UserController extends Controller
 
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }
-        if($user->getUsername() == $this->getParameter('cyclos_global_admin_username')){
-            $session->getFlashBag()->add('error','Le membre super administrateur ne peut être supprimé');
-            return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format, 'id'=>$user->getID()));       
         }
 
         //check that account balances are all 0 (for PRO only)

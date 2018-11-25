@@ -36,6 +36,20 @@ class RegistrationListener
         $this->container = $container;
     }       
 
+    public function onProfileEdit(FormEvent $event)
+    {
+        $form = $event->getForm();
+        $user = $form->getData();
+
+        $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
+        $userDTO->name = $user->getName();
+        $userDTO->username = $user->getUsername();
+        $userDTO->email = $user->getEmail();
+
+        $this->userManager->editUser($userDTO);                          
+    }
+
     /**
      * Applies some actions on new registered user at confirmation
      *

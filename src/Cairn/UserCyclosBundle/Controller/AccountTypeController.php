@@ -69,7 +69,6 @@ class AccountTypeController extends Controller
      */
     public function indexAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = new Session();
 
@@ -103,7 +102,6 @@ class AccountTypeController extends Controller
      */
     public function listAccountTypesAction(Request $request, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->getParameter('cyclos_network_cairn'));
 
         $currency = $this->get('cairn_user_cyclos_currency_info')->getCurrencyVO($this->getParameter('cyclos_currency_cairn'));
 
@@ -132,8 +130,6 @@ class AccountTypeController extends Controller
      */
     public function viewAccountTypeAction(Request $request, $id, $_format)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $session = $request->getSession();
         $mailer = $this->get('mailer');
         $accountTypeDTO = $this->get('cairn_user_cyclos_accounttype_info')->getAccountTypeDTOByID($id);
@@ -235,8 +231,8 @@ class AccountTypeController extends Controller
      *
      * Then, we must generate the TransferType objects involving $newAccountType. This means generating all transfertypes from/to 
      * $newAccountType from/to all other existing account types :
-     *  _for transfertypes going from a system accounttype to $newAccountType : direction is USER_TO_SYSTEM
-     *  _for transfertypes going from $newAccountType to a system Account type : direction is SYSTEM_TO_USER
+     *  _for transfertypes going from a system accounttype to $newAccountType : direction is SYSTEM_TO_USER
+     *  _for transfertypes going from $newAccountType to a system Account type : direction is USER_TO_SYSTEM
      *  _for transfertypes going from/to $newAccountType from/to another user accounttype, two transfertypes must be created :
      *      . with direction USER_TO_USER
      *      . with direction USER_TO_SELF
@@ -244,14 +240,13 @@ class AccountTypeController extends Controller
      * Finally, the transfertypes must be added to the products. Products involved : 
      *  _$newProduct which will contain all transfertypes from $newAccountType
      *  _$adminProduct will contain all transfertypes from system account types to $newAccountType
-     *  _$existingProduct( associated to an existing Account Type) will contain transfertypes from $existingAccount to $newAccountType
+     *  _$existingProduct( associated to an unique existing Account Type) will contain transfertypes from $existingAccount to $newAccountType
      *
      * In the end, $newProduct must be assigned to the group of users defined as a global parameter
      *@param string $nature USER|SYSTEM 
      */
     public function addAccountTypeAction(Request $request,  $nature)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
         $messageNotificator = $this->get('cairn_user.message_notificator');
@@ -283,17 +278,25 @@ class AccountTypeController extends Controller
             //'SYSTEM' account types don't have associated Product
             $productDTO = $this->get('cairn_user_cyclos_product_info')->getAccountProductDTO($accountTypeDTO);
         }
-        //3) unset ids
+        //3) unset ids of entities and their dependencies (product and their profile fields products + password products)
         $accountTypeDTO->description = NULL;
+//        var_dump($productDTO->passwordActions);
+//        return new Response('');
         unset($accountTypeDTO->id);
         unset($productDTO->id);
         $profileFields = $productDTO->myProfileFields;
+        $passwordProducts = $productDTO->passwordActions;
         foreach($profileFields as $field){
             if(property_exists($field,'id')){
                 unset($field->id);
             }
         }
-
+        
+        foreach($passwordProducts as $product){
+             if(property_exists($product,'id')){
+                unset($product->id);
+            }
+        }
         $accountTypeDTO->name         = NULL;
         $productDTO->name = NULL;
         $productDTO->systemPayments = array();
@@ -327,7 +330,7 @@ class AccountTypeController extends Controller
                 $dataForm = $form->getData();
 
                 if(!$this->get('cairn_user_cyclos_accounttype_info')->hasAvailableName($dataForm['name'])){
-                    $session->getFlashBag()->add('error','Le nom du compte est déjà utilisé, ou prête à confusion. Choisissez un nom bien distinct des autres types de comptes déjà créés');
+                    $session->getFlashBag()->add('error','Le nom du compte est déjà utilisé, ou prête à confusion. Choisissez un nom bien distinct des autres types de comptes existants');
                     return $this->redirectToRoute('cairn_user_cyclos_accountsconfig_accounttype_add',array('nature'=>$nature));
                 }
 
@@ -368,7 +371,7 @@ class AccountTypeController extends Controller
                         //add self account transactions (accounts must be differents of course)
                         $transferTypeVO = $this->generateTransferType('PAYMENT',$createdAccountTypeVO,$userAccountTypeVO,'USER_TO_SELF',array($channelVO));
                         $productDTO->selfPayments[] = $transferTypeVO;
-                        $adminProductDTO->selfPaymentsAsUser[] = $transferTypeVO;
+//                        $adminProductDTO->selfPaymentsAsUser[] = $transferTypeVO;
 
                         //from all user accounts to new created account
                         $transferTypeVO = $this->generateTransferType('PAYMENT',$userAccountTypeVO,$createdAccountTypeVO,'USER_TO_USER',array($channelVO));
@@ -377,8 +380,11 @@ class AccountTypeController extends Controller
 
                         //add self account transactions
                         $transferTypeVO = $this->generateTransferType('PAYMENT',$userAccountTypeVO,$createdAccountTypeVO,'USER_TO_SELF',array($channelVO));
-                        $productDTO->selfPayments[] = $transferTypeVO;
+                        $existingProductDTO->selfPayments[] = $transferTypeVO;
                         $adminProductDTO->selfPaymentsAsUser[] = $transferTypeVO;
+
+                        //edit the existing product
+                        $this->productManager->editProduct($existingProductDTO);
 
                     }
                 }
@@ -440,7 +446,6 @@ class AccountTypeController extends Controller
      */
     public function editAccountTypeAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
         $accountTypeDTO = $this->get('cairn_user_cyclos_accounttype_info')->getAccountTypeDTOByID($id);
@@ -514,7 +519,6 @@ class AccountTypeController extends Controller
      */
     public function changeAssignationAccountType($id,$assign)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         //for now, only this group is concerned
         $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($this->getParameter('cyclos_group_pros'),'MEMBER_GROUP');
@@ -542,7 +546,6 @@ class AccountTypeController extends Controller
      */
     public function assignAccountTypeAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
 
@@ -579,7 +582,6 @@ class AccountTypeController extends Controller
      */
     public function removeAccountTypeAction(Request $request, $id)
     {
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();

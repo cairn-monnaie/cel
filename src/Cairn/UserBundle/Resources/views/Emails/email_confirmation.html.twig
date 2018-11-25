@@ -4,7 +4,7 @@
 
 {% block body_text %}
     {% autoescape false %}
-        Bonjour {{ user.username }} !
+        Bonjour {{ user.name }} !
 
         Vous avez soumis une demande d'inscription via cette adresse mail. Il vous reste {{cairn_email_activation_delay}} jours pour la confirmer.
         Vous pouvez valider votre adresse mail en cliquant sur ce lien : {{ confirmationUrl }}
@@ -20,7 +20,5 @@
 {% endblock %}
 
 {% block body_html %}
-    Pseudo : {{user.username}}
-    Mot de passe  {{user.plainPassword}}
 
 {% endblock %}

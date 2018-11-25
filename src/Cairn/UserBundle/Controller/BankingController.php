@@ -320,15 +320,18 @@ class BankingController extends Controller
      */
     public function transactionRequestAction(Request $request, $to, $frequency, $_format)
     {
-        $accountService = $this->get('cairn_user_cyclos_account_info');
-
         $session = $request->getSession();
         $currentUser = $this->getUser();
-        $type = 'transaction';
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
+        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
+
         $session->set('frequency',$frequency);
+
+        $accountService = $this->get('cairn_user_cyclos_account_info');
+
+        $type = 'transaction';
 
         $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
         $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
@@ -350,7 +353,14 @@ class BankingController extends Controller
                 return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
-            $beneficiaries = $currentUser->getBeneficiaries();
+            $bb = $beneficiaryRepo->createQueryBuilder('b');
+            $bb->join('b.sources','s')
+                ->where('s.id = :id')
+                ->setParameter('id',$currentUser->getID())
+                ->join('b.user','u')
+                ->addSelect('u');
+            $beneficiaries = $bb->getQuery()->getResult();
+
             if(count($beneficiaries) == 0){
                 $session->getFlashBag()->add('info','Vous n\'avez aucun bénéficiaire enregistré');
                 return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
@@ -360,10 +370,7 @@ class BankingController extends Controller
 
             $toAccounts = array();
             foreach($beneficiaries as $beneficiary){
-                $toAccount = $accountService->getAccountByID($beneficiary->getICC());
-                if($toAccount){
-                    $toAccounts[] = $toAccount;
-                }
+                $toAccounts[] = array('name'=>$beneficiary->getUser()->getName(),'id'=>$beneficiary->getICC());
             }
         }else{
             $session->getFlashBag()->add('error','Type de destinataire non reconnu');
@@ -392,12 +399,21 @@ class BankingController extends Controller
 
                 $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
 
-                if(!$accountService->hasAccount($debitorVO->id,$fromAccount->id)){
-                    $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                    return new RedirectResponse($request->getRequestUri());
-                }
-
                 $toAccount = $transaction->getToAccount();
+
+                $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+
+                $from = array('id'=>$transaction->getFromAccount()['id']);
+                $to = array('id'=>$transaction->getToAccount()['id']);
+
+
+                $paymentData = $bankingService->getPaymentData($from,$to,NULL);
+
+                $amount = $transaction->getAmount();
+                $description = $transaction->getDescription();
+                $transfertype = $paymentData->
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
+
                 if($toAccount['id']){
                     $toAccount = $accountService->getAccountByID($toAccount['id']);
                 }else{//if id not mentioned, then email is necessarily(see Entity Transaction validation)
@@ -407,6 +423,7 @@ class BankingController extends Controller
                 }
 
                 if($to == 'beneficiary'){
+                    //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
                     $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->id));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
@@ -426,8 +443,8 @@ class BankingController extends Controller
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-                $session->set('paymentReview',$review);
-                return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+              $session->set('paymentReview',$review);
+              return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
 
             }
         }

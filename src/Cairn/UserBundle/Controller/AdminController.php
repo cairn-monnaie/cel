@@ -140,54 +140,75 @@ class AdminController extends Controller
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('save')->isClicked()){
 
-                $this->get('cairn_user.access_platform')->enable(array($user));
-
+                $messageNotificator = $this->get('cairn_user.message_notificator');
 
                 //if first activation : create user in cyclos and ask if generate card now
-                if($user->getLastLogin() == NULL){
-                    if(! $this->get('cairn_user_cyclos_user_info')->getUserVOByName($user->getUsername())){
-                        //create cyclos user
-                        $userDTO = new \stdClass();                                    
-                        $userDTO->name = $user->getName();                             
-                        $userDTO->username = $user->getUsername();                     
-                        $userDTO->internalName = $user->getUsername();                 
-                        $userDTO->login = $user->getUsername();                        
-                        $userDTO->email = $user->getEmail();                           
+                if(! $user->getLastLogin()){
+                    try{
+                        $userVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($user->getCyclosID());
 
-                        $password = new \stdClass();                                   
-                        $password->assign = true;                                      
-                        $password->type = 'login';
+                        if($userVO){
+                            //remove cyclos user if one already exists in order to provide new password
+                            //as changing password for current Cyclos user needs current password (we don't know about) 
+                            $params = new \stdClass();
+                            $params->status = 'REMOVED';                                       
+                            $params->user = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+                            $this->userManager->changeStatusUser($params);  
+                        }
 
-                        if($user->hasRole('ROLE_PRO')){                                        
-                            $groupName = $this->getParameter('cyclos_group_pros');  
-                        }else{                                                                 
-                            $groupName = $this->getParameter('cyclos_group_network_admins');
-                        }   
-
-                        //random password on Cyclos-side to prevent main web connexion
-                        $password->value = User::randomPassword();                  
-                        $password->confirmationValue = $password->value;
-                        $userDTO->passwords = $password;                               
-
-                        $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
-
-                        //if webServices channel is not added, it is impossible to update/remove the cyclos user entity from 3rd party app
-                        $webServicesChannelVO = $this->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
-
-                        $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
-                        $user->setCyclosID($newUserCyclosID);
+                    }catch(\Exception $e){
+                        if(! $e->errorCode == 'ENTITY_NOT_FOUND'){
+                            throw $e;
+                        }
                     }
+
+
+                    //create cyclos user
+                    $userDTO = new \stdClass();                                    
+                    $userDTO->name = $user->getName();                             
+                    $userDTO->username = $user->getUsername();                     
+                    $userDTO->internalName = $user->getUsername();                 
+                    $userDTO->login = $user->getUsername();                        
+                    $userDTO->email = $user->getEmail();                           
+
+                    $temporaryPassword = User::randomPassword();
+                    $user->setPlainPassword($temporaryPassword);
+
+                    $password = new \stdClass();                                   
+                    $password->assign = true;                                      
+                    $password->type = 'login';
+                    $password->value = $temporaryPassword;                  
+                    $password->confirmationValue = $password->value;
+                    $userDTO->passwords = $password;                               
+
+                    if($user->hasRole('ROLE_PRO')){                                        
+                        $groupName = $this->getParameter('cyclos_group_pros');  
+                    }else{                                                                 
+                        $groupName = $this->getParameter('cyclos_group_network_admins');
+                    }   
+
+                    $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
+
+                    //if webServices channel is not added, it is impossible to update/remove the cyclos user entity from 3rd party app
+                    $webServicesChannelVO = $this->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
+
+                    $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
+                    $user->setCyclosID($newUserCyclosID);
+
+                    $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',array('user'=>$user));
+                    $subject = 'Plateforme numérique du Cairn';
+                    $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
                     $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
                     $em->flush();
-
-                    if($_format == 'json'){
-                        return $this->json(array('user'=>$user,'card'=>$user->getCard()));
-                    }
                     return $this->render('CairnUserBundle:Card:generate_card.html.twig',array('user'=>$user,'card'=>$user->getCard()));
+
+                }else{
+                    $this->get('cairn_user.access_platform')->enable(array($user));
                 }
             }
 
+            $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }
 

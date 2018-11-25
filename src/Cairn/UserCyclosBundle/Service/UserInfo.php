@@ -69,6 +69,9 @@ class UserInfo
         return $this->userService->load($id);
     }
 
+    /**
+     *WARNING : use this function very carefully ! the option "keywords" meanss that if you have several users with names such that one is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for. That's why, for now, we use it only at installation because there is only one user in the system.
+     */
     public function getUserVOByName($name)
     {
         $query = new \stdClass();

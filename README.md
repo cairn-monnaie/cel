@@ -155,7 +155,6 @@ Digital Cairn
         * user registration : check
         * login users via web services : check
         * user channels access : select "manage"
-        * Access clients :  view + manage
      * User Accounts : 
         * access user accounts : check all
         * payments as user to user : check all
@@ -199,6 +198,7 @@ Digital Cairn
      * Click on the only product (Members)
      * Name : fill with **_%user-account%_** name
      * Internal name : fil with **_%user-account%_** internal name
+     * General / My profile fields : enabled/registration/visible/editable : check for full name / login name / email 
      * Accounts 
         * User account : must contain **_%user-account%_**
         * Default negative balance limit :  refill with 0 (sign "-" must be visible)

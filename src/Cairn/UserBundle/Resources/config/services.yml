@@ -61,18 +61,21 @@ services:
             - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
             - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
+            - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEdit }
 
     cairn_user.security.input_listener:
         class: Cairn\UserBundle\EventListener\SecurityListener
         arguments:
             - "@service_container"
-
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance }
             - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
             - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
             - { name: kernel.event_listener, event: security.interactive_login, method: onLogin }
             - { name: kernel.event_listener, event: kernel.controller, method: onKernelController }
+            - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPassword }
+            - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
+
 
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener

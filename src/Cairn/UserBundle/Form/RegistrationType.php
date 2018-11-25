@@ -36,30 +36,8 @@ class RegistrationType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('name', TextType::class,array('label'=>'Nom de la structure'));
-        if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
-            $builder->remove('plainPassword');
-        }else{
-            $builder->add('plainPassword', RepeatedType::class, array(
-                'constraints'=>array(
-                    new Assert\Length(array(
-                        'min'=>8,
-                        'minMessage'=>'Au moins 8 caractères',
-                        'max'=>25,
-                        'maxMessage'=>'Au maximum 25 caractères'))
-                    ),
-                    'type' => PasswordType::class,
-                    'options' => array(
-                        'translation_domain' => 'FOSUserBundle',
-                        'attr' => array(
-                            'autocomplete' => 'new-password',
-                        ),
-                    ),
-                    'first_options' => array('label' => 'form.password'),
-                    'second_options' => array('label' => 'form.password_confirmation'),
-                    'invalid_message' => 'fos_user.password.mismatch',
-                ));
-        }
+        $builder->add('name', TextType::class,array('label'=>'Nom de la structure'))
+                ->remove('plainPassword');
         $builder->addEventListener(
             FormEvents::POST_SET_DATA,
             function (FormEvent $event) {
@@ -72,9 +50,9 @@ class RegistrationType extends AbstractType
                 if($user->hasRole('ROLE_PRO')){
                     if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
                         $form->add('singleReferent', EntityType::class, array(                       
-//                            'constraints'=>array(
-//                                new Assert\NotNull()
-//                            ),
+                            //                            'constraints'=>array(
+                            //                                new Assert\NotNull()
+                            //                            ),
                             'label'=>'Groupe local référent',
                             'class'=> User::class,                                         
                             'choice_label'=>'name',                                        
