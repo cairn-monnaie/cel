@@ -17,7 +17,6 @@ use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
-use Cairn\UserCyclosBundle\Entity\AccessClientManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;

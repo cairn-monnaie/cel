@@ -13,9 +13,10 @@ use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
-use Cairn\UserCyclosBundle\Entity\AccessClientManager;
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
 use Symfony\Component\DependencyInjection\Container;
+
+use Cyclos;
 
 class Commands
 {
@@ -62,7 +63,7 @@ class Commands
 
             try{
                 $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
-            }catch(\Exception $e){
+            }catch(Cyclos\ServiceException $e){
                 if($e->errorCode == 'LOGIN'){
                     return 'Wrong username or password provided';
                 }
