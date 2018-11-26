@@ -397,22 +397,51 @@ class BankingController extends Controller
                     $dataTime = $transaction->getDate();
                 }
 
-                $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
+                $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['accountNumber']);
 
                 $toAccount = $transaction->getToAccount();
 
                 $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
 
-                $from = array('id'=>$transaction->getFromAccount()['id']);
-                $to = array('id'=>$transaction->getToAccount()['id']);
+                $paymentData = new \stdClass();
+                if($toAccount['accountNumber']){
+                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['accountNumber']);
+                }else{
+                    $creditorUser = $userRepo->findOneBy(array('email'=>$toAccount['email']));
+                    $toUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditorUser);
+                }
 
+                $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toUserVO,NULL);
 
-                $paymentData = $bankingService->getPaymentData($from,$to,NULL);
+                $transferTypes = $paymentData->paymentTypes;
+                $accurateTransferTypes = array();
+                foreach($transferTypes as $transferType){
+                    if($transferType->from->id == $fromAccount->type->id){
+                        $accurateTransferTypes[] = $transferType;
+                    }
+                }
 
+                
+                $paymentData->from = $fromAccount->owner;
+                $paymentData->to = $toUserVO;
                 $amount = $transaction->getAmount();
                 $description = $transaction->getDescription();
-                $transfertype = $paymentData->
-                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
+
+                foreach($accurateTransferTypes as $transferType){
+                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
+                    if($res->toAccount->number == $toAccount['accountNumber']){
+                          $session->set('paymentReview',$res->payment);
+                          return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+
+                    }
+                }
+
+                try{
+                    $paymentData = $bankingService->getPaymentData($from,$to,NULL);
+                    var_dump($paymentData->to);
+                }catch(Cyclos\ServiceException $e) {
+                    var_dump($e->error->validation);
+                }
 
                 if($toAccount['id']){
                     $toAccount = $accountService->getAccountByID($toAccount['id']);
