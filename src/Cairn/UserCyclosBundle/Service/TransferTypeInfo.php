@@ -44,14 +44,14 @@ class TransferTypeInfo
      *@param string $direction Java class: org.cyclos.model.banking.transfertypes.TransferTypeDirection
      *@param string $nature Java class: org.cyclos.model.banking.transfertypes.TransferTypeNature
      */
-    public function getListTransferTypes($fromAccountType,$toAccountType,$direction,$nature)
+    public function getListTransferTypes($fromAccountTypes,$toAccountTypes,$direction,$natures)
     {
         $query = new \stdClass();
-        $query->fromAccountTypes = $fromAccountType;
-        $query->toAccountTypes = $toAccountType;
+        $query->fromAccountTypes = $fromAccountTypes;
+        $query->toAccountTypes = $toAccountTypes;
         $query->includeDisabled = true;
         $query->direction = $direction;
-        $query->natures = $nature;
+        $query->natures = $natures;
         return $this->transferTypeService->search($query)->pageItems;
     }
 

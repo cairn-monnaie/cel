@@ -14,7 +14,29 @@
     </div>
 
     {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':fromAccounts,'type':'debit'})}}
-    {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':toAccounts, 'type' :'credit'})}}
+
+    <table>
+        <tr>
+            <td>
+                <div>
+                <ul>
+                    {% for account in toAccounts %}
+                            <li class="account" id="account"> <em class="account_owner"> 
+                            {% if account.owner.display is defined %}
+                                {{account.owner.display}} 
+                            {% else %}
+                                {{account.owner}} 
+                            {% endif %}
+                            </em> </br> 
+                            <span class="account_id">{{account.number}} </span></li>
+                    {% else %}
+                        Pas encore de compte à créditer
+                    {% endfor %}
+                </ul>
+                </div>
+            </td>
+        </tr>
+    </table>
 
 {% endblock %}
 

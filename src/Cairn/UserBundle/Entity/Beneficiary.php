@@ -40,9 +40,9 @@ class Beneficiary
 
     /**
      * Identifiant Compte Cairn
-     * @var int
+     * @var string
      *
-     * @ORM\Column(name="ICC", type="bigint",unique=true)
+     * @ORM\Column(name="ICC", type="string",unique=true)
      */
     private $ICC;
 

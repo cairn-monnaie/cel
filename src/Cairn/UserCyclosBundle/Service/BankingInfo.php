@@ -143,7 +143,7 @@ class BankingInfo
     public function hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description,$orderBy, $period, $pageSize)
     {
         $query             = new \stdClass();
-        $query->owner       = $ownerVO;
+        $query->by       = $ownerVO;
         $query->accountTypes = $accountTypesVO;
         $query->natures   = $natures; 
         //the array of statuses will be filled in this order : payment request status/recurring payment status/ scheduled payment status

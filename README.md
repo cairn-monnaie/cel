@@ -228,7 +228,7 @@ Digital Cairn
         * Click on "Global default" configuration
         * Account number
            * Enable account number : check
-           * Mask : xxx (e.g ## ### ###)
+           * Mask : xxx (e.g ########) . No space allowed ! (e.g ## ### ###)
         * Click save
 
      * Configure main web's channel

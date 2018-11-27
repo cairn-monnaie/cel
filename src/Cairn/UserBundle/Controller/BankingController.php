@@ -370,7 +370,7 @@ class BankingController extends Controller
 
             $toAccounts = array();
             foreach($beneficiaries as $beneficiary){
-                $toAccounts[] = array('name'=>$beneficiary->getUser()->getName(),'id'=>$beneficiary->getICC());
+                $toAccounts[] = array('unlimited'=>false,'owner'=>$beneficiary->getUser()->getName(),'number'=>$beneficiary->getICC());
             }
         }else{
             $session->getFlashBag()->add('error','Type de destinataire non reconnu');
@@ -466,7 +466,9 @@ class BankingController extends Controller
                                     $review = $res->scheduledPayment;
                                 }else{
                                     $review = $res->payment;
+
                                 }
+
                                 $session->set('paymentReview',$review);
                             }
                         }
@@ -484,11 +486,6 @@ class BankingController extends Controller
 
                 }
 
-
-                if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
-                    $session->getFlashBag()->add('error',$review->error);
-                    return new RedirectResponse($request->getRequestUri());
-                }
 
             }
         }
@@ -1030,7 +1027,6 @@ class BankingController extends Controller
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
-        $debitAccount = $accountService->getDebitAccount();
         $user = $this->getUser();
         $userVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
 
@@ -1049,8 +1045,6 @@ class BankingController extends Controller
 
                 //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
                 $futureInstallments = $bankingService->getInstallments($userVO,$accountTypesVO,array('BLOCKED','SCHEDULED'),$description);
-                //                var_dump($futureInstallments[0]);
-                //                return new Response('ok');
                 if($_format == 'json'){
                     return $this->json(array(
                         'processedTransactions'=>$processedTransactions ,
@@ -1077,53 +1071,54 @@ class BankingController extends Controller
                     array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
 
             }
-        }elseif($type == 'reconversion'){ 
-            $description = $this->getParameter('cairn_default_reconversion_description');
-            $processedTransactions = $bankingService->getTransactions(
-                $userVO,$accountTypesVO,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
+        }
+       // elseif($type == 'reconversion'){ 
+       //     $description = $this->getParameter('cairn_default_reconversion_description');
+       //     $processedTransactions = $bankingService->getTransactions(
+       //         $userVO,$accountTypesVO,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
 
-            if($_format == 'json'){
-                return $this->json(array('processedTransactions'=>$processedTransactions));
-            }
-            return $this->render('CairnUserBundle:Banking:view_reconversions.html.twig',
-                array('processedTransactions'=>$processedTransactions));
+       //     if($_format == 'json'){
+       //         return $this->json(array('processedTransactions'=>$processedTransactions));
+       //     }
+       //     return $this->render('CairnUserBundle:Banking:view_reconversions.html.twig',
+       //         array('processedTransactions'=>$processedTransactions));
 
-        }elseif($type == 'conversion'){
-            $description = $this->getParameter('cairn_default_conversion_description');
-            $processedTransactions = $bankingService->getTransactions(
-                $userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
+       // }elseif($type == 'conversion'){
+       //     $description = $this->getParameter('cairn_default_conversion_description');
+       //     $processedTransactions = $bankingService->getTransactions(
+       //         $userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
 
-            //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
-            $ongoingTransactions = array();
+       //     //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
+       //     $ongoingTransactions = array();
 
-            if($_format == 'json'){
-                return $this->json(array(
-                    'processedTransactions'=>$processedTransactions,
-                    'ongoingTransactions' => $ongoingTransactions));
-            }
-            return $this->render('CairnUserBundle:Banking:view_conversions.html.twig', array(
-                'processedTransactions'=>$processedTransactions,
-                'ongoingTransactions' => $ongoingTransactions));
+       //     if($_format == 'json'){
+       //         return $this->json(array(
+       //             'processedTransactions'=>$processedTransactions,
+       //             'ongoingTransactions' => $ongoingTransactions));
+       //     }
+       //     return $this->render('CairnUserBundle:Banking:view_conversions.html.twig', array(
+       //         'processedTransactions'=>$processedTransactions,
+       //         'ongoingTransactions' => $ongoingTransactions));
 
-        }elseif($type == 'withdrawal'){
-            $description = $this->getParameter('cairn_default_withdrawal_description');
-            $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
+       // }elseif($type == 'withdrawal'){
+       //     $description = $this->getParameter('cairn_default_withdrawal_description');
+       //     $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
 
-            if($_format == 'json'){
-                return $this->json(array('processedTransactions'=>$processedTransactions));
-            }
-            return $this->render('CairnUserBundle:Banking:view_withdrawals.html.twig', 
-                array('processedTransactions'=>$processedTransactions));
+       //     if($_format == 'json'){
+       //         return $this->json(array('processedTransactions'=>$processedTransactions));
+       //     }
+       //     return $this->render('CairnUserBundle:Banking:view_withdrawals.html.twig', 
+       //         array('processedTransactions'=>$processedTransactions));
 
-        }elseif($type == 'deposit'){
-            $description = $this->getParameter('cairn_default_deposit_description');
-            $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
+       // }elseif($type == 'deposit'){
+       //     $description = $this->getParameter('cairn_default_deposit_description');
+       //     $processedTransactions = $bankingService->getTransactions($userVO,$debitAccount->type,array('PAYMENT'),array('PROCESSED',NULL,NULL),$description);
 
-            if($_format == 'json'){
-                return $this->json(array('processedTransactions'=>$processedTransactions));
-            }
-            return $this->render('CairnUserBundle:Banking:view_deposits.html.twig', array('processedTransactions'=>$processedTransactions));
-        }else{
+       //     if($_format == 'json'){
+       //         return $this->json(array('processedTransactions'=>$processedTransactions));
+       //     }
+       //     return $this->render('CairnUserBundle:Banking:view_deposits.html.twig', array('processedTransactions'=>$processedTransactions));
+        else{
             return $this->redirectToRoute('cairn_user_welcome', array('_format'=>$_format));
         }
     }

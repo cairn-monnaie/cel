@@ -27,7 +27,7 @@ class AccountType extends AbstractType
                 $account = $event->getData();
                 $form = $event->getForm();
 
-//                $account['accountNumber'] = preg_replace('/\s/', '', $account['accountNumber']);
+                $account['accountNumber'] = preg_replace('/\s/', '', $account['accountNumber']);
                 $event->setData($account);
             });
     }

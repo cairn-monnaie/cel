@@ -39,6 +39,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;                   
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;                   
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
@@ -298,7 +299,7 @@ class UserController extends Controller
 
         $form = $this->createFormBuilder()
             ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
-            ->add('email', TextType::class, array('label' => 'email du bénéficiaire'))
+            ->add('email', EmailType::class, array('label' => 'email du bénéficiaire'))
             //ICC : IntegerType does not work for bigint : rounding after 14 figures (Account Ids in Cyclos have 19)
             ->add('ICC',   TextType::class,array('label'=>'Identifiant de Compte Cairn(ICC)'))
             ->add('add', SubmitType::class, array('label' => 'Ajouter'))
@@ -309,17 +310,16 @@ class UserController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-                $re_name ='#^[\w\.]+$#' ;
-                $re_ICC = '#^[-]?[0-9]+$#';
-                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
-                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
-                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
+//                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
+//                $re_name ='#^[\w\.]+$#' ;
+//                $re_ICC = '#^[-]?[0-9]+$#';
+//                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
+//                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
+//                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
 
-                if((count($matches_email) >= 1) || (count($matches_name) >= 1)){
-                    $user = $userRepo->findOneBy(array('email'=>$matches_email[0][0]));
+                    $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
                     if(!$user){
-                        $user = $userRepo->findOneBy(array('name'=>$matches_name[0][0]));
+                        $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
                         if(!$user){
                             $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
                             return new RedirectResponse($request->getRequestUri());
@@ -332,18 +332,23 @@ class UserController extends Controller
                             $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
                             return new RedirectResponse($request->getRequestUri());
                         }
-                        $ICC = $matches_ICC[0][0];
+                        $ICC = $dataForm['ICC'];
+
                         //check that ICC exists and corresponds to this user
+                        $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
+                        if(!$toUserVO){
+                             $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
+                             return new RedirectResponse($request->getRequestUri());
+                        }else{
+                            if(! ($user->getUsername() == $toUserVO->username)){
+                                 $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
+                                 return new RedirectResponse($request->getRequestUri());
 
-                        $validity = $this->isValidBeneficiary($user,$ICC);
-                        if(!$validity->account){
-                            $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                            return new RedirectResponse($request->getRequestUri());
-
+                            }
                         }
 
                         //check that beneficiary is not already in database, o.w create new one
-                        $existingBeneficiary = $validity->existingBeneficiary;
+                        $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
 
                         if(!$existingBeneficiary){
                             $beneficiary = new Beneficiary();
@@ -366,11 +371,6 @@ class UserController extends Controller
                         $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                         return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
                     }
-                }
-                else{
-                    $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }       
 
             }
         }
@@ -410,19 +410,28 @@ class UserController extends Controller
             //            $session->remove('formerICC');
             $form->handleRequest($request);                                    
             if($form->isValid()){                                              
-                $validity = $this->isValidBeneficiary($newBeneficiary->getUser(),$newBeneficiary->getICC());
-                if(!$validity->account){
-                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$newBeneficiary->getUser()->getName());
-                    return new RedirectResponse($request->getRequestUri());
-                }
-                if($validity->hasBeneficiary){
-                    $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                }
+                  //check that ICC exists and corresponds to this user
+                  $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($newBeneficiary->getICC());
+                  if(!$toUserVO){
+                       $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
+                       return new RedirectResponse($request->getRequestUri());
+                  }else{
+                      $benefUser = $newBeneficiary->getUser();
+                      if(! ($benefUser->getUsername() == $toUserVO->username)){
+                           $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$benefUser->getName());
+                           return new RedirectResponse($request->getRequestUri());
+                      }
+                  }
 
-                $existingBeneficiary = $validity->existingBeneficiary;
+
+                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$newBeneficiary->getICC()));
                 if($existingBeneficiary){
                     $newBeneficiary = $existingBeneficiary;
+                }
+
+                if($currentUser->hasBeneficiary($newBeneficiary)){
+                    $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
+                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
                 }
 
                 $nbSources = count($formerBeneficiary->getSources()) ;
