@@ -86,6 +86,8 @@ class TransactionValidator extends ConstraintValidator
                             ->atPath('toAccount')                                          
                             ->addViolation();                                              
                     }
+
+                    $creditorUser = $this->userRepo->findOneBy(array('username'=>$toUserVO->username));
                 }
             }
             if($emailTo){
@@ -96,6 +98,12 @@ class TransactionValidator extends ConstraintValidator
                         ->atPath('toAccount')                                          
                         ->addViolation();                                              
                 }
+            }
+
+            if($creditorUser->getRemovalRequest()){
+                $this->context->buildViolation($creditorUser->getName().' est en phase de suppression. Vous ne pouvez donc pas lui faire de virement')
+                    ->atPath('toAccount')                                          
+                    ->addViolation();                                              
             }
             if($toICC && $emailTo){
                 if($toUserVO && $creditorUser){
