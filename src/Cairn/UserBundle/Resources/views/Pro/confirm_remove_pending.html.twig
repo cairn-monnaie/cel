@@ -1,0 +1,36 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/confirm_remove_pending.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
+    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+    <ul>
+        {% for user in listUsers %} 
+                <li> {{user.name }}
+        {% else %}
+            Aucun membre à supprimer !
+        {% endfor %}
+    </ul>
+
+    <div class="body_wrapper">
+        <div id="confirm_action"> <em>Confirmer la suppression de tous ces membres </em> </div>
+        Attention, cette opération est définitive. 
+        {{ form_start(form) }}                                                       
+         {{ form_rest(form) }}                                                        
+        {{form_end(form) }}   
+    </div>
+{% endblock %}              
+
+{% block javascripts %}
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+
+{% endblock %}

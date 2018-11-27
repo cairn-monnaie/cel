@@ -98,9 +98,9 @@ class User extends BaseUser
     private $cardKeyTries;
 
     /**
-     * @ORM\Column(name="cyclos_access_token", type="string", unique=false, nullable = true)
+     * @ORM\Column(name="removal_request", type="boolean", unique=false, nullable=false)
      */
-    private $cyclosAccessToken;
+    private $removalRequest;
 
     public function __construct()
     {
@@ -112,6 +112,7 @@ class User extends BaseUser
         $this->setPasswordTries(0);
         $this->setCardKeyTries(0);
         $this->setNbCards(0);
+        $this->removalRequest = false;
     }
 
     public function getCity()
@@ -471,17 +472,30 @@ class User extends BaseUser
         return $this->nbCards;
     }
 
-    public function getCyclosAccessToken()
+    /**
+     * Set removalRequest
+     *
+     * @param boolean $removalRequest
+     *
+     * @return User
+     */
+    public function setRemovalRequest($removalRequest)
     {
-        return $this->cyclosAccessToken;
-    }
-
-    public function setCyclosAccessToken($token)
-    {
-        $this->cyclosAccessToken = $token;
+        $this->removalRequest = $removalRequest;
 
         return $this;
     }
+
+    /**
+     * Get removalRequest
+     *
+     * @return boolean
+     */
+    public function getRemovalRequest()
+    {
+        return $this->removalRequest;
+    }
+
 
     /**
      * check if referent

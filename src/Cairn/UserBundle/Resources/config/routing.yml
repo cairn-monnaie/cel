@@ -102,6 +102,13 @@ cairn_user_users_remove:
         id: \d+
         _format: html|json
 
+cairn_user_users_remove_pending:
+    path:     user/remove-pending.{_format}
+    defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
 cairn_user_card_home:
     path:     card/home/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Card:cardOperations, _format: html }

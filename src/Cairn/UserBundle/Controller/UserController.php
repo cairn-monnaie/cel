@@ -86,8 +86,6 @@ class UserController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($this->getUser());
 
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
-//        var_dump($accounts);
-//        return new Response('ok');
 
         //last operations
         $accountTypes = array();
@@ -185,6 +183,7 @@ class UserController extends Controller
             ->orderBy('u.name','ASC')
             ->getQuery()->getResult(); 
 
+
         $allUsers = array(
             'validPros'=>$validatedPros, 
             'pendingUsers'=>$pendingUsers,
@@ -214,14 +213,14 @@ class UserController extends Controller
 
         if($_format == 'json'){
             $array_user = array('name'=>$user->getName(),
-                                'username'=>$user->getUsername(),
-                                'email'=>$user->getEmail(),
-                                'street1'=>$user->getAddress()->getStreet1(),
-                                'street2'=>$user->getAddress()->getStreet2(),
-                                'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
-                                'city'=>$user->getCity(),
-                                'image'=>$user->getImage()
-                            );
+                'username'=>$user->getUsername(),
+                'email'=>$user->getEmail(),
+                'street1'=>$user->getAddress()->getStreet1(),
+                'street2'=>$user->getAddress()->getStreet2(),
+                'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
+                'city'=>$user->getCity(),
+                'image'=>$user->getImage()
+            );
 
             return $this->json(array('user'=>$array_user));
         }
@@ -310,67 +309,67 @@ class UserController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-//                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-//                $re_name ='#^[\w\.]+$#' ;
-//                $re_ICC = '#^[-]?[0-9]+$#';
-//                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
-//                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
-//                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
+                //                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
+                //                $re_name ='#^[\w\.]+$#' ;
+                //                $re_ICC = '#^[-]?[0-9]+$#';
+                //                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
+                //                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
+                //                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
 
-                    $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
+                $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
+                if(!$user){
+                    $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
                     if(!$user){
-                        $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
-                        if(!$user){
-                            $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
+                        $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
+                        return new RedirectResponse($request->getRequestUri());
+
+                    }
+                }
+                else{
+                    if($user->getID() == $currentUser->getID())
+                    {
+                        $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+                    $ICC = $dataForm['ICC'];
+
+                    //check that ICC exists and corresponds to this user
+                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
+                    if(!$toUserVO){
+                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
+                        return new RedirectResponse($request->getRequestUri());
+                    }else{
+                        if(! ($user->getUsername() == $toUserVO->username)){
+                            $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
                             return new RedirectResponse($request->getRequestUri());
 
                         }
                     }
-                    else{
-                        if($user->getID() == $currentUser->getID())
-                        {
-                            $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                            return new RedirectResponse($request->getRequestUri());
-                        }
-                        $ICC = $dataForm['ICC'];
 
-                        //check that ICC exists and corresponds to this user
-                        $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
-                        if(!$toUserVO){
-                             $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                             return new RedirectResponse($request->getRequestUri());
-                        }else{
-                            if(! ($user->getUsername() == $toUserVO->username)){
-                                 $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                                 return new RedirectResponse($request->getRequestUri());
+                    //check that beneficiary is not already in database, o.w create new one
+                    $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
 
-                            }
-                        }
-
-                        //check that beneficiary is not already in database, o.w create new one
-                        $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
-
-                        if(!$existingBeneficiary){
-                            $beneficiary = new Beneficiary();
-                            $beneficiary->setUser($user);
-                            $beneficiary->setICC($ICC);
-                        }
-                        else{ 
-                            if($currentUser->hasBeneficiary($existingBeneficiary)){
-                                $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                            }
-                            $beneficiary = $existingBeneficiary;
-                        }
-
-                        $beneficiary->addSource($currentUser);
-                        $currentUser->addBeneficiary($beneficiary);
-                        $em->persist($beneficiary);                    
-                        $em->persist($currentUser);
-                        $em->flush();
-                        $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                        return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
+                    if(!$existingBeneficiary){
+                        $beneficiary = new Beneficiary();
+                        $beneficiary->setUser($user);
+                        $beneficiary->setICC($ICC);
                     }
+                    else{ 
+                        if($currentUser->hasBeneficiary($existingBeneficiary)){
+                            $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
+                            return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
+                        }
+                        $beneficiary = $existingBeneficiary;
+                    }
+
+                    $beneficiary->addSource($currentUser);
+                    $currentUser->addBeneficiary($beneficiary);
+                    $em->persist($beneficiary);                    
+                    $em->persist($currentUser);
+                    $em->flush();
+                    $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
+                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
+                }
 
             }
         }
@@ -410,18 +409,18 @@ class UserController extends Controller
             //            $session->remove('formerICC');
             $form->handleRequest($request);                                    
             if($form->isValid()){                                              
-                  //check that ICC exists and corresponds to this user
-                  $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($newBeneficiary->getICC());
-                  if(!$toUserVO){
-                       $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                       return new RedirectResponse($request->getRequestUri());
-                  }else{
-                      $benefUser = $newBeneficiary->getUser();
-                      if(! ($benefUser->getUsername() == $toUserVO->username)){
-                           $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$benefUser->getName());
-                           return new RedirectResponse($request->getRequestUri());
-                      }
-                  }
+                //check that ICC exists and corresponds to this user
+                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($newBeneficiary->getICC());
+                if(!$toUserVO){
+                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
+                    return new RedirectResponse($request->getRequestUri());
+                }else{
+                    $benefUser = $newBeneficiary->getUser();
+                    if(! ($benefUser->getUsername() == $toUserVO->username)){
+                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$benefUser->getName());
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+                }
 
 
                 $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$newBeneficiary->getICC()));
@@ -543,7 +542,6 @@ class UserController extends Controller
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
-        $factory = $this->get('security.encoder_factory');
 
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
@@ -566,7 +564,7 @@ class UserController extends Controller
 
         $form = $this->createForm(ConfirmationType::class);
         $form->add('current_password', PasswordType::class,array('label'=>'Mot de passe','required'=>false,
-                                                              'constraints'=> new UserPassword() ));
+            'constraints'=> new UserPassword() ));
         if($request->isMethod('POST')){ //form filled and submitted
 
             $form->handleRequest($request);    
@@ -574,12 +572,17 @@ class UserController extends Controller
                 if($form->get('save')->isClicked()){
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
-                    }else{
-                        $redirection = 'fos_user_security_logout';
-                    }
+                        $isRemoved = $this->removeUser($user, $currentUser);
+                        $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
+                    }else{//is ROLE_PRO
+                        $user->setRemovalRequest(true);
+                        $user->setEnabled(false);
 
-                    $this->removeUser($user, $currentUser);
-                    $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
+                        $redirection = 'fos_user_security_logout';
+                        $session->getFlashBag()->add('success','Votre demande de suppression d\'espace membre a été prise en compte');
+                    }
+                    $em->flush();
+
                     return $this->redirectToRoute($redirection, array('_format'=>$_format));
                 }
                 else{
@@ -616,30 +619,103 @@ class UserController extends Controller
         $params->status = 'REMOVED';
         $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
 
-        $this->userManager->changeStatusUser($params);
-        $emailTo = $user->getEmail();
+        try{
+            $this->userManager->changeStatusUser($params);
+            $emailTo = $user->getEmail();
 
-        //remove beneficiaries associated to the user to remove
-        $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
-        foreach($beneficiaries as $beneficiary){
-            $em->remove($beneficiary);
-        }
-        $em->remove($user);
-        $em->flush();
+            //remove beneficiaries associated to the user to remove
+            $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
+            foreach($beneficiaries as $beneficiary){
+                $em->remove($beneficiary);
+            }
+            $em->remove($user);
 
-        $subject = 'Ce n\'est qu\'un au revoir !';
-        $from = $messageNotificator->getNoReplyEmail();
-        $to = $emailTo;
-        $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+            $subject = 'Ce n\'est qu\'un au revoir !';
+            $from = $messageNotificator->getNoReplyEmail();
+            $to = $emailTo;
+            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig');
 
-        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-        $subject = 'Un professionnel a été supprimé de la plateforme';
-        $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
-        foreach($referents as $referent){
-            $to = $referent->getEmail();
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+            $subject = 'Un professionnel a été supprimé de la plateforme';
+            $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
+            foreach($referents as $referent){
+                $to = $referent->getEmail();
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+            }
+
+            return true;
+
+        }catch(Cyclos\ServiceException $e){
+            if($e->errorCode == 'VALIDATION'){
+                $subject = 'Demande de suppression annulée';
+                $from = $messageNotificator->getNoReplyEmail();
+                $to = $user->getEmail();
+                $body = 'Vous avez demandé à supprimer votre espace membre, mais certains de vos comptes ont un solde non nul. Elle n\'a donc pas pu être validée. Mettez vos comptes à 0, et vérifiez que vous ne recevez pas des virements entre la demande et la validation';//$this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                return false;
+
+            }else{
+                throw $e;
+            }
         }
+
+    }
+
+    /**
+     * Removes definitively users that requested to be removed
+     *
+     * @Security("has_role('ROLE_ADMIN')")
+     */
+    public function removePendingUsersAction(Request $request, $_format)
+    {
+        $session = $request->getSession();
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $currentUser = $this->getUser();
+
+        //members on pending removal status
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereReferent($ub, $currentUser->getID());
+        $listUsers = $ub
+            ->andWhere('u.removalRequest = true')
+            ->orderBy('u.name','ASC')
+            ->getQuery()->getResult(); 
+
+        $form = $this->createForm(ConfirmationType::class);
+
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+            if($form->get('save')->isClicked()){
+                $notRemovedUsers = '';
+                foreach($listUsers as $user){
+                    $isRemoved = $this->removeUser($user, $currentUser);
+                    if(!$isRemoved){
+                        $user->setEnabled(true);
+                        $user->setRemovalRequest(false);
+                        $notRemovedUsers = $notRemovedUsers.', '.$user->getName();
+                    }
+                }
+
+                $em->flush();
+
+                if($notRemovedUsers != ''){
+                    $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
+                }else{
+                    $session->getFlashBag()->add('success','Tous les membres ont pas pu être supprimés avec succès'); 
+                }
+                return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
+
+            }else{
+                $session->getFlashBag()->add('info','Opération annulée'); 
+                return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
+            }
+        }
+        return $this->render('CairnUserBundle:Pro:confirm_remove_pending.html.twig',
+            array('form'=>$form->createView(),'listUsers'=>$listUsers));
+
     }
 
 }
