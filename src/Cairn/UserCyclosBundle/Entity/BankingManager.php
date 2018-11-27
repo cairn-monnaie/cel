@@ -25,11 +25,7 @@ class BankingManager
         $parameters->from = $paymentData->from;
         $parameters->to = $paymentData->to;
         $parameters->description = $description; 
-        foreach($paymentData->paymentTypes as $paymentType){//$data->paymentTypes[0] may not be enough : several paymentTypes matching a given tra                                                       nsfer type
-            if($paymentType->internalName == $transferType->internalName){
-                $parameters->type = $paymentType;
-            }
-        }
+        $parameters->type = $transferType;
         $parameters->amount = $amount;
         return $parameters;
     }

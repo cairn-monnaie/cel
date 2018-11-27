@@ -69,7 +69,7 @@ class Commands
                 }
             }   
 
-            $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByName($username);
+            $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($username);
             $id = $userVO->id;
             $userData = $this->container->get('cairn_user_cyclos_user_info')->getProfileData($id);
 

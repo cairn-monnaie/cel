@@ -21,13 +21,13 @@ class AccountType extends AbstractType
         $builder
             ->add('email',   EmailType::class, array('label'=>'Email du bénéficiaire',
                                                     'required'=>false))    
-            ->add('id',       TextType::class, array('label'=>'ICC',
+            ->add('accountNumber',       TextType::class, array('label'=>'Identifiant Compte Cairn',
                                                      'required'=>false))
             ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
                 $account = $event->getData();
                 $form = $event->getForm();
 
-                $account['id'] = preg_replace('/\s/', '', $account['id']);
+//                $account['accountNumber'] = preg_replace('/\s/', '', $account['accountNumber']);
                 $event->setData($account);
             });
     }

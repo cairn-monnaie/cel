@@ -70,9 +70,9 @@ class UserInfo
     }
 
     /**
-     *WARNING : use this function very carefully ! the option "keywords" meanss that if you have several users with names such that one is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for. That's why, for now, we use it only at installation because there is only one user in the system.
+     *WARNING : use this function very carefully ! the option "keywords" means that if you have several users with data such that one is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for. That's why, for now, we use it only at installation because there is only one user in the system. For a given mask for account numbers, this function is safe. Afterwards, if one changes the mask, all account numbers should be generated before using this function
      */
-    public function getUserVOByName($name)
+    public function getUserVOByKeyword($name)
     {
         $query = new \stdClass();
         $query->keywords = $name;

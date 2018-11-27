@@ -398,12 +398,21 @@ class BankingController extends Controller
                 }
 
                 $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['accountNumber']);
-
                 $toAccount = $transaction->getToAccount();
 
-                $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+                if($to == 'beneficiary'){
+                    //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
+                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount['accountNumber']));
+                    if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
+                        $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+                }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id, $toAccount['accountNumber'])){
+                    $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
+                    return new RedirectResponse($request->getRequestUri());
+                }
 
-                $paymentData = new \stdClass();
+
                 if($toAccount['accountNumber']){
                     $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['accountNumber']);
                 }else{
@@ -411,8 +420,10 @@ class BankingController extends Controller
                     $toUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditorUser);
                 }
 
+                $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
                 $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toUserVO,NULL);
 
+                //filter the potential transfer types according to the debitor account type
                 $transferTypes = $paymentData->paymentTypes;
                 $accurateTransferTypes = array();
                 foreach($transferTypes as $transferType){
@@ -421,59 +432,63 @@ class BankingController extends Controller
                     }
                 }
 
-                
-                $paymentData->from = $fromAccount->owner;
-                $paymentData->to = $toUserVO;
                 $amount = $transaction->getAmount();
                 $description = $transaction->getDescription();
 
-                foreach($accurateTransferTypes as $transferType){
-                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
-                    if($res->toAccount->number == $toAccount['accountNumber']){
-                          $session->set('paymentReview',$res->payment);
-                          return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+                if($frequency == 'recurring'){
+
+                    $environment = $this->getParameter('kernel.environment');
+                    if($toAccount['accountNumber']){
+
+                        foreach($accurateTransferTypes as $transferType){
+                            $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferType,$dataTime,$environment);
+                            if($res->toAccount->number == $toAccount['accountNumber']){
+                                $session->set('paymentReview',$res->recurringPayment);
+                            }
+
+                        }
+                    }else{
+                        $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime,$environment);
+                        $session->set('paymentReview',$res->recurringPayment);
 
                     }
-                }
+                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
 
-                try{
-                    $paymentData = $bankingService->getPaymentData($from,$to,NULL);
-                    var_dump($paymentData->to);
-                }catch(Cyclos\ServiceException $e) {
-                    var_dump($e->error->validation);
-                }
+                }elseif($frequency == 'unique'){
 
-                if($toAccount['id']){
-                    $toAccount = $accountService->getAccountByID($toAccount['id']);
-                }else{//if id not mentioned, then email is necessarily(see Entity Transaction validation)
-                    $creditor = $userRepo->findOneBy(array('email'=>$toAccount['email']));
-                    $creditorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditor);
-                    $toAccount = $accountService->getDefaultAccount($creditorVO->id);
-                }
+                    if($toAccount['accountNumber']){
 
-                if($to == 'beneficiary'){
-                    //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
-                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->id));
-                    if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
-                        $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
-                        return new RedirectResponse($request->getRequestUri());
+                        foreach($accurateTransferTypes as $transferType){
+                            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
+
+                            if($res->toAccount->number == $toAccount['accountNumber']){
+                                if(property_exists($res,'installments')){//specific attribute to a scheduled payment
+                                    $review = $res->scheduledPayment;
+                                }else{
+                                    $review = $res->payment;
+                                }
+                                $session->set('paymentReview',$review);
+                            }
+                        }
+                    }else{
+                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime);
+                        if(property_exists($res,'installments')){//specific attribute to a scheduled payment
+                            $review = $res->scheduledPayment;
+                        }else{
+                            $review = $res->payment;
+                        }
+                        $session->set('paymentReview',$review);
+
                     }
-                }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id,$toAccount->id)){
-                    $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
-                    return new RedirectResponse($request->getRequestUri());
+                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+
                 }
 
 
-                $amount = $transaction->getAmount();
-                $description = $transaction->getDescription();
-                $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description);
                 if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
                     $session->getFlashBag()->add('error',$review->error);
                     return new RedirectResponse($request->getRequestUri());
                 }
-
-              $session->set('paymentReview',$review);
-              return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
 
             }
         }

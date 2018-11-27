@@ -202,7 +202,7 @@ class AccountTypeController extends Controller
 
         $transferTypeDTO->allowsRecurringPayments = true;
         $transferTypeDTO->allowsScheduledPayments = true;
-        $transferTypeDTO->maxInstallments = 12;
+        $transferTypeDTO->maxInstallments = 1;
 
         foreach($channels as $channelVO){
             $transferTypeDTO->channels[] = $channelVO;

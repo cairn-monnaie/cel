@@ -144,6 +144,8 @@ Digital Cairn
      * Click Permissions(top-right tab on group screen)
      * General :
         * My profile fields : enabled/registration/visible/editable : check for full name / login name / email / address
+        * My profile fields : enabled/visible : check for Account number 
+        * Passwords : change / at registration : check for Login Password
         * Manage my channels access : check 
      * System Accounts : 
         * system accounts : check all
@@ -154,6 +156,7 @@ Digital Cairn
      * User management :
         * user registration : check
         * login users via web services : check
+        * Passwords : uncheck everything
         * user channels access : select "manage"
      * User Accounts : 
         * access user accounts : check all
@@ -175,6 +178,7 @@ Digital Cairn
      * internal name : xxx (compulsary) (e.g toDebit)
      * Enabled : check
      * Channels : uncheck main web + check web services 
+     * User identification methods : Login name 
      * Allow recurring payments : check
      * Allow scheduled payments : check
      * Max installments on scheduled payments : 1
@@ -198,7 +202,9 @@ Digital Cairn
      * Click on the only product (Members)
      * Name : fill with **_%user-account%_** name
      * Internal name : fil with **_%user-account%_** internal name
-     * General / My profile fields : enabled/registration/visible/editable : check for full name / login name / email 
+     * General
+        * My profile fields : enabled/registration/visible/editable : check for full name / login name / email 
+        * Passwords : Change / at registration : check for Login password
      * Accounts 
         * User account : must contain **_%user-account%_**
         * Default negative balance limit :  refill with 0 (sign "-" must be visible)
@@ -214,28 +220,30 @@ Digital Cairn
      * click on Products (top-right tab of the group screen)
      * check that the created product appears in "Products assigned to Group" table (should be assigned by default)
 
- 28. **Configure Global Administration's channels** 
+ 28. **Configure Global Administration's configuration** 
 
-     * **main web channel**
+     _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
 
-       _Access : Switch to Global administration (top-side on the screen)_
+     * Generate account numbers
+        * Click on "Global default" configuration
+        * Account number
+           * Enable account number : check
+           * Mask : xxx (e.g ## ### ###)
+        * Click save
 
-       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
-       * Click on "Global default" configuration
-       * Click on channels (top-right of configuration screen) 
-       * Click on "main web"
-       * User access : select "Enabled by default"
-       * session timeout : xxx (e.g 2 mins)
-       * Click save
+     * Configure main web's channel
+        * Click on channels (top-right of configuration screen) 
+        * Click on "main web"
+        * User access : select "Enabled by default"
+        * session timeout : xxx (e.g 2 mins)
+        * Click save
 
-     * **web services channel**
-
-       _Access : System (top tab) / System Configurations(bold in left menu) / Configurations_
-       * Click on "Global default " configuration
+     * Configure web services' channel
        * Click on channels (top-right of configuration screen) 
        * Click on "web services"
        * User access : select "Enforced enabled"
        * session timeout : xxx (e.g 2 mins)
+       * Perform payments / User identification methods for performing payments : check Login name / Account number
        * Click save
  29. **Change usernames configuration**
         
@@ -263,6 +271,7 @@ Digital Cairn
      * Click on "Global administrators"
      * Name : **_$global-group-admins_** 
      * Click save
+
  32. **Save the configuration into a backup file**
 
      As you experienced, configuring a Cyclos instance is a really long process, and there are even much more functionalities that are not dealt with in the scope of this application. For this reason, having a backup sql file with the configuration saved is necessary.
