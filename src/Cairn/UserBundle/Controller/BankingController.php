@@ -481,8 +481,11 @@ class BankingController extends Controller
                         $session->set('paymentReview',$res);
 
                     }
+
+                $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
                 $operation->setToAccountNumber($res->toAccount->number);
+                $operation->setUser($creditorUser);
                 $em->persist($operation);
                 $em->flush();
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
@@ -1050,6 +1053,7 @@ class BankingController extends Controller
             ));
         }
 
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
         $session->set('frequency',$frequency);
 
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
@@ -1068,6 +1072,17 @@ class BankingController extends Controller
         if($type == 'transaction'){
             $description = $this->getParameter('cairn_default_transaction_description');
             if($frequency == 'unique'){
+                $accountNumbers = $accountService->getAccountNumbers($userVO->id);
+
+                $ob = $operationRepo->createQueryBuilder('o');
+                $operations = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
+                    ->andWhere('o.paymentID is not NULL')
+                    ->andWhere('o.executionDate <= :date')
+                    ->andWhere('o.type = :type')
+                    ->setParameter('date',new \Datetime())
+                    ->setParameter('type',Operation::$TYPE_TRANSACTION_UNIQUE)
+                    ->orderBy('o.executionDate','ASC')
+                    ->getQuery()->getResult();
                 $processedTransactions = $bankingService->getTransactions(
                     $userVO,$accountTypesVO,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),$description);
 //
@@ -1079,7 +1094,7 @@ class BankingController extends Controller
 //                        'futureInstallments'=> $futureInstallments));
 //                }
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
-                    array('processedTransactions'=>$processedTransactions ,
+                    array('processedTransactions'=>$operations ,
                     'futureInstallments'=> $futureInstallments));
 
             }else{
@@ -1198,7 +1213,7 @@ class BankingController extends Controller
      *@param string $type Type of transaction the transfer belongs to
      *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
      */
-    public function viewTransferAction(Request $request, $type,$id, $_format)
+    public function viewTransferAction(Request $request, $type,Operation $operation, $_format)
     {
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
@@ -1249,8 +1264,9 @@ class BankingController extends Controller
 #            $transfer->dueDate = $transfer->date;
 #            break;
         case 'simple':
-            $transfer = $bankingService->getTransferByTransactionNumber($id);
-            $transfer->dueDate = $transfer->date;
+            $transfer = $operation;
+//            $transfer = $bankingService->getTransferByTransactionNumber($id);
+//            $transfer->dueDate = $transfer->date;
 
             break;
         default:
@@ -1362,17 +1378,17 @@ class BankingController extends Controller
      *
      * @throws Cyclos\ServiceException with errorCode : ENTITY_NOT_FOUND
      */
-    public function downloadTransferNoticeAction(Request $request, $id)
+    public function downloadTransferNoticeAction(Request $request, Operation $operation)
     {
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
 
-        $transferData = $bankingService->getTransferData($id);
-        $description = $transferData->transaction->description;
-        $transfer = $bankingService->getTransferByID($id);
+//        $transferData = $bankingService->getTransferData($id);
+//        $description = $transferData->transaction->description;
+//        $transfer = $bankingService->getTransferByID($id);
 
         $html = $this->renderView('CairnUserBundle:Pdf:operation_notice.html.twig',array(
-            'transfer'=>$transfer,'description'=>$description));
+            'transfer'=>$operation));
 
         $filename = sprintf('avis-operation-cairn-%s.pdf',date('Y-m-d'));
         return new Response(

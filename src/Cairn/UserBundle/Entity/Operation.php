@@ -88,6 +88,13 @@ class Operation
      */
     private $toAccountNumber;
 
+    /**
+     * @var \Cairn\UserBundle\Entity\User
+     *
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
+     *@ORM\JoinColumn(nullable=false)
+     */
+    private $user;
 
     /**
      * @var array
@@ -359,6 +366,30 @@ class Operation
     public function getToAccountNumber()
     {
         return $this->toAccountNumber;
+    }
+
+    /**
+     * Set user
+     *
+     * @param \Cairn\UserBundle\Entity\User $user
+     *
+     * @return User
+     */
+    public function setUser(\Cairn\UserBundle\Entity\User $user)
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * Get user
+     *
+     * @return \Cairn\UserBundle\Entity\User
+     */
+    public function getUser()
+    {
+        return $this->user;
     }
 
     /**

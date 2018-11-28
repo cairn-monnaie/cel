@@ -13,42 +13,22 @@
 
         <h2> Compte à débiter </h2>
             <ul>
-                <li> Nom : {{transfer.from.type.name}}</li>
-                <li> ICC : {{transfer.from.id}}</li>
-                <li> Appartient à : 
-                    {% if transfer.from.owner.display is defined %}
-                        {{transfer.from.owner.display}}
-                    {% else %}
-                        Association Le Cairn
-                    {% endif %}
-                </li>
+                <li> Nom : {{app.user.name}}</li>
+                <li> ICC : {{transfer.fromAccountNumber}}</li>
             </ul>
 
         <h2> Compte à créditer </h2>
             <ul>
-                {% if transfer.from.owner.id == transfer.to.owner.id %}
-                    <li>Nom : {{transfer.to.type.name}}</li>
-                {% endif %}
-                <li> ICC : {{transfer.to.id}}</li>
-                <li> Appartient à : 
-                    {% if transfer.to.owner.display is defined %}
-                        {{transfer.to.owner.display}}
-                    {% else %}
-                        Association Le Cairn
-                    {% endif %}
+                 <li>Nom : {{transfer.user.name}}</li>
+                 <li> ICC : {{transfer.toAccountNumber}}</li>
                 </li>
 
             </ul>
 
-        <em> Date d'exécution demandée : {{transfer.dueDate}} </em> </br>
-        {% if transfer.id is defined %} {# id not defined for future transfer because there is no transfer entity in Cyclos yet #}
-            <em> Date d'exécution effective : {{transfer.date}} </em> </br>
-        {% else %}
-             <em> Date de soumission : {{transfer.date}} </em> </br>
-        {% endif %}
-        <em> Montant : {{transfer.currencyAmount.amount}} </em></br>
-        <em> Devise : {{transfer.currencyAmount.currency.name}} </em></br>
-
-      {# <h3> Description : {{transfer.description}} </h3>#}
+        <em> Date d'exécution demandée : {{transfer.executionDate|date('Y-m-d')}} </em> </br>
+        <em> Date de soumission : {{transfer.submissionDate|date('Y-m-d')}} </em> </br>
+        <em> Montant : {{transfer.amount}} </em></br>
+        <em> Motif : {{transfer.reason}} </em></br>
+        <em> Description : {{transfer.description}} </em></br>
     </div>    
 {% endblock %}

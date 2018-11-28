@@ -35,6 +35,12 @@ class AccountInfo
         $this->accountTypeInfo = $accountTypeInfo;
     }
 
+    public function getAccountByNumber($number)
+    {
+
+
+    }
+
     /**
      *Returns the history of account with ID $accountID during period $period
      *
@@ -151,6 +157,16 @@ class AccountInfo
         return false;
     }
 
+    public function getAccountNumbers($userID)
+    {
+        $numbers = array();
+        $userAccounts = $this->getAccountsSummary($userID,NULL);
+        foreach($userAccounts as $account){
+            $numbers[] = $account->number; 
+        }
+        return $numbers;
+    }
+
     /*
      *  Get the account by its ID
      *
@@ -158,6 +174,9 @@ class AccountInfo
      */
     public function getAccountByID($accountID, $dateTime = NULL)
     {
+        //        $query = new \stdClass();
+        //        $query->number = $accountID;
+        //        return $this->accountService->getAccountWithStatus($query,NULL,NULL);
         return $this->accountService->getAccountWithStatus($accountID,NULL,NULL);
     }
 

@@ -14,7 +14,7 @@
    <table>
         <tbody>
            <td> <strong> Avis d'opération de virement </strong> </td> 
-           <td> Compte-rendu de votre virement, d'ordre n°{{transfer.transactionNumber}}, enregistré le {{transfer.date}} </td>
+           <td> Compte-rendu de votre virement, enregistré le {{transfer.submissionDate|date('Y-m-d')}}} </td>
            <td> Imprimé le {{ 'now'|date('d - m -Y') }} <td>
         </tbody>
     </table> 
@@ -31,9 +31,8 @@
         </thead>
     
         <tbody>
-            <td> {{transfer.currencyAmount.amount}} {{transfer.currencyAmount.currency.suffix}} </td> 
-            <td> {{transfer.date}} </td>
-            {#<td> {{transfer.status}} </td>#}
+            <td> {{transfer.amount}} </td> 
+            <td> {{transfer.executionDate|date('Y-m-d')}} </td>
             <td> Executé </td>
         </tbody>
     </table> 
@@ -43,21 +42,14 @@
         <thead>
             <tr>
                 <th> Compte </th>
-                <th> Description </th>
     
             </tr>
         </thead>
     
         <tbody>
-            <td> {{transfer.from.type.name}} </br>
-                 {{transfer.from.number}} </br>
-                 {% if transfer.from.owner.display is defined %}
-                        {{transfer.from.owner.display}}
-                 {% else %}
-                        Association Le Cairn
-                 {% endif %}
+            <td> {{transfer.fromAccountNumber}} </br>
+                 {{app.user.name}}
              </td> 
-            <td> {{description}} </td>
         </tbody>
     </table> 
 
@@ -67,20 +59,14 @@
         <thead>
             <tr>
                 <th> Compte </th>
-                <th> Description </th>
     
             </tr>
         </thead>
     
         <tbody>
-            <td> {{transfer.to.number}} </br>
-                 {% if transfer.to.owner.display is defined %}
-                        {{transfer.to.owner.display}}
-                 {% else %}
-                        Association Le Cairn
-                 {% endif %}
+            <td> {{transfer.toAccountNumber}} </br>
+                 {{transfer.user.name}}
              </td> 
-            <td> {{description}} </td>
         </tbody>
     </table> 
 
