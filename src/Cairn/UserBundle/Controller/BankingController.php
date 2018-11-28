@@ -12,6 +12,8 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\SimpleTransaction;
 use Cairn\UserBundle\Entity\RecurringTransaction;
+use Cairn\UserBundle\Entity\Operation;
+
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +33,9 @@ use Cairn\UserBundle\Form\SimpleTransactionType;
 use Cairn\UserBundle\Form\RecurringTransactionType;
 use Cairn\UserBundle\Form\RecurringTransferType;
 use Cairn\UserBundle\Form\ConfirmationType;
+use Cairn\UserBundle\Form\OperationType;
+use Cairn\UserBundle\Form\SimpleOperationType;
+
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -378,27 +383,33 @@ class BankingController extends Controller
         }
 
         if($frequency == 'unique'){
-            $transaction = new SimpleTransaction();
-            $form = $this->createForm(SimpleTransactionType::class, $transaction);
-        }else{
-            $transaction = new RecurringTransaction();
-            $form = $this->createForm(RecurringTransactionType::class, $transaction);
+            $operation = new Operation();
+            $form = $this->createForm(SimpleOperationType::class, $operation);
         }
+//        else{
+//            $transaction = new RecurringTransaction();
+//            $form = $this->createForm(RecurringTransactionType::class, $transaction);
+//        }
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $transaction->setDescription($this->editDescription($type, $transaction->getDescription()));
-                if($frequency == 'recurring'){
-                    $dataTime = new \stdClass();
-                    $dataTime->periodicity =         $transaction->getPeriodicity();
-                    $dataTime->firstOccurrenceDate = $transaction->getFirstOccurrenceDate();
-                    $dataTime->lastOccurrenceDate =  $transaction->getLastOccurrenceDate();
+                $operation->setDescription($this->editDescription($type, $operation->getDescription()));
+//                if($frequency == 'recurring'){
+//                    $dataTime = new \stdClass();
+//                    $dataTime->periodicity =         $transaction->getPeriodicity();
+//                    $dataTime->firstOccurrenceDate = $transaction->getFirstOccurrenceDate();
+//                    $dataTime->lastOccurrenceDate =  $transaction->getLastOccurrenceDate();
+//                }else{
+                    $dataTime = $operation->getExecutionDate();
+                if($operation->getExecutionDate()->format('Y-m-d') != $operation->getSubmissionDate()->format('Y-m-d')){
+                    $operation->setType(Operation::$TYPE_TRANSACTION_SCHEDULED);
                 }else{
-                    $dataTime = $transaction->getDate();
+                    $operation->setType(Operation::$TYPE_TRANSACTION_UNIQUE);
                 }
+//                }
 
-                $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['accountNumber']);
-                $toAccount = $transaction->getToAccount();
+                $fromAccount = $accountService->getAccountByID($operation->getFromAccount()['accountNumber']);
+                $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
                     //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
@@ -432,29 +443,29 @@ class BankingController extends Controller
                     }
                 }
 
-                $amount = $transaction->getAmount();
-                $description = $transaction->getDescription();
+                $amount = $operation->getAmount();
+                $description = $operation->getDescription();
 
-                if($frequency == 'recurring'){
-
-                    $environment = $this->getParameter('kernel.environment');
-                    if($toAccount['accountNumber']){
-
-                        foreach($accurateTransferTypes as $transferType){
-                            $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferType,$dataTime,$environment);
-                            if($res->toAccount->number == $toAccount['accountNumber']){
-                                $session->set('paymentReview',$res->recurringPayment);
-                            }
-
-                        }
-                    }else{
-                        $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime,$environment);
-                        $session->set('paymentReview',$res->recurringPayment);
-
-                    }
-                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
-
-                }elseif($frequency == 'unique'){
+//                if($frequency == 'recurring'){
+//
+//                    $environment = $this->getParameter('kernel.environment');
+//                    if($toAccount['accountNumber']){
+//
+//                        foreach($accurateTransferTypes as $transferType){
+//                            $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferType,$dataTime,$environment);
+//                            if($res->toAccount->number == $toAccount['accountNumber']){
+//                                $session->set('paymentReview',$res);
+//                            }
+//
+//                        }
+//                    }else{
+//                        $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime,$environment);
+//                        $session->set('paymentReview',$res);
+//
+//                    }
+//                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+//
+//                }elseif($frequency == 'unique'){
 
                     if($toAccount['accountNumber']){
 
@@ -462,29 +473,22 @@ class BankingController extends Controller
                             $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
                             if($res->toAccount->number == $toAccount['accountNumber']){
-                                if(property_exists($res,'installments')){//specific attribute to a scheduled payment
-                                    $review = $res->scheduledPayment;
-                                }else{
-                                    $review = $res->payment;
-
-                                }
-
-                                $session->set('paymentReview',$review);
+                                $session->set('paymentReview',$res);
                             }
                         }
                     }else{
                         $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime);
-                        if(property_exists($res,'installments')){//specific attribute to a scheduled payment
-                            $review = $res->scheduledPayment;
-                        }else{
-                            $review = $res->payment;
-                        }
-                        $session->set('paymentReview',$review);
+                        $session->set('paymentReview',$res);
 
                     }
-                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
+                $operation->setFromAccountNumber($res->fromAccount->number);
+                $operation->setToAccountNumber($res->toAccount->number);
+                $em->persist($operation);
+                $em->flush();
+                return $this->redirectToRoute('cairn_user_banking_operation_confirm',
+                    array('_format'=>$_format,'id'=>$operation->getID(),'type'=>$type));
 
-                }
+//                }
 
 
             }
@@ -919,12 +923,13 @@ class BankingController extends Controller
      * clearingBankingAccount must be done regularly to clear the guarantee funds(numeric and banknotes)
      * @param string $type type of operation occurring : transaction|conversion|reconversion|deposit|withdrawal 
      */
-    public function confirmOperationAction(Request $request, $type, $_format)
+    public function confirmOperationAction(Request $request, Operation $operation, $type, $_format)
     {
         $em = $this->getDoctrine()->getManager();
 
         $session = $request->getSession();
         $paymentReview = $session->get('paymentReview');
+
         $form = $this->createFormBuilder()
             ->add('cancel',    SubmitType::class, array('label' => 'Annulation'))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
@@ -936,19 +941,41 @@ class BankingController extends Controller
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
                     //according to the given type and amount, adapt the banking operation
-                    if($type == 'reconversion'){
-                        ;
+                    switch ($type){
+                    case 'transaction':
+//                        if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
+//                            $operation->setType(Operation::$TYPE_TRANSACTION_RECURRING);
+//                            $paymentVO = $this->bankingManager->makeRecurringPayment( $paymentReview);
+                        //                        }else
+                        if(property_exists($paymentReview,'scheduledPayment')){ //scheduled payment
+                            $paymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
+
+                        }else{
+                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                        }
+                        break;
+                    case 'conversion':
+                        break;
+                    case 'reconversion':
+                        break;
+                    case 'deposit':
+                        break;
+                    case 'withdrawal':
+                        break;
+                    default:
+                        $session->getFlashBag()->add('error','Undefined operation');
+                        return $this->redirectToRoute('cairn_user_welcome');
                     }
-                    if(property_exists($paymentReview,'untilCanceled')){ //recurring payment
-                        $paymentVO = $this->bankingManager->makeRecurringPayment( $paymentReview);
-                    }
-                    else{
-                        $paymentVO = $this->bankingManager->makePayment( $paymentReview);
-                    }
+
+                   $operation->setPaymentID($paymentVO->id);
+                   $em->flush();
+
                     $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                 }
                 else{//cancel button clicked
+                    $em->remove($operation);
+                    $em->flush();
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                 }
             }
@@ -1011,6 +1038,7 @@ class BankingController extends Controller
      */
     public function viewOperationsAction(Request $request, $type, $_format)
     {
+        $em = $this->getDoctrine()->getManager();
         $session = $request->getSession();
         $frequency = $request->get('frequency');
 
@@ -1042,14 +1070,14 @@ class BankingController extends Controller
             if($frequency == 'unique'){
                 $processedTransactions = $bankingService->getTransactions(
                     $userVO,$accountTypesVO,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),$description);
-
-                //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
+//
+//                //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
                 $futureInstallments = $bankingService->getInstallments($userVO,$accountTypesVO,array('BLOCKED','SCHEDULED'),$description);
-                if($_format == 'json'){
-                    return $this->json(array(
-                        'processedTransactions'=>$processedTransactions ,
-                        'futureInstallments'=> $futureInstallments));
-                }
+//                if($_format == 'json'){
+//                    return $this->json(array(
+//                        'processedTransactions'=>$processedTransactions ,
+//                        'futureInstallments'=> $futureInstallments));
+//                }
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
                     array('processedTransactions'=>$processedTransactions ,
                     'futureInstallments'=> $futureInstallments));
@@ -1189,22 +1217,25 @@ class BankingController extends Controller
             $transaction = $data->transaction;
 
             $debitorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->fromOwner->id);
-            $creditorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->toOwner->id);
+//            $creditorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->toOwner->id);
 
             foreach($debitorAccounts as $account){
                 if($account->type->id == $transaction->type->from->id){
                     $fromAccount = $account;
                 }
             }
-            foreach($creditorAccounts as $account){
-                if($account->type->id == $transaction->type->to->id){
-                    $toAccount = $account;
-                }
-            }
+//            foreach($creditorAccounts as $account){
+//                if($account->type->id == $transaction->type->to->id){
+//                    $toAccount = $account;
+//                }
+//            }
 
+//            var_dump($transaction);
+//            return new Response('ok');
             $transfer = new \stdClass();
             $transfer->from = $fromAccount; 
-            $transfer->to = $toAccount;
+            $transfer->to = new \stdClass();
+            $transfer->to->owner = $transaction->toOwner;
             $transfer->description = $transaction->description;
             $transfer->status = $transaction->installments[0]->status;
             $transfer->date = $transaction->date;
@@ -1212,14 +1243,15 @@ class BankingController extends Controller
             $transfer->currencyAmount = $transaction->dueAmount;
 
             break;
-        case 'recurring':
-            $transfer = $bankingService->getTransferByID($id);
-
-            $transfer->dueDate = $transfer->date;
-            break;
+#        case 'recurring':
+#            $transfer = $bankingService->getTransferByID($id);
+#
+#            $transfer->dueDate = $transfer->date;
+#            break;
         case 'simple':
             $transfer = $bankingService->getTransferByTransactionNumber($id);
             $transfer->dueDate = $transfer->date;
+
             break;
         default:
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(

@@ -186,14 +186,14 @@ cairn_user_banking_transaction_to:
     path:     banking/transaction/new/to/{frequency}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:transactionTo, _format: html }
     requirements:
-        frequency: unique|recurring
+        frequency: unique #|recurring
         _format: html|json
 
 cairn_user_banking_transaction_request:
     path:     banking/transaction/request/{to}-{frequency}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: html}
     requirements:
-        frequency: unique|recurring
+        frequency: unique #|recurring
         to: new|beneficiary|self
         _format: html|json
 
@@ -222,7 +222,7 @@ cairn_user_banking_transaction_request:
 #        _format: html|json
 
 cairn_user_banking_operation_confirm:
-    path:     banking/operation/confirm/{type}.{_format}
+    path:     banking/operation/confirm/{id}-{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
         type: transaction #|conversion|reconversion|deposit|withdrawal
@@ -237,11 +237,11 @@ cairn_user_banking_transaction_scheduled_changestatus:
         status: cancel|open|block|execute
         _format: html|json
 
-cairn_user_banking_transaction_recurring_cancel:
-    path:     banking/transaction/recurring/cancel/{id}/
-    defaults: { _controller: CairnUserBundle:Banking:cancelRecurringTransaction }
-    requirements:
-        id: "[-]?[0-9]{1,}"
+#cairn_user_banking_transaction_recurring_cancel:
+#    path:     banking/transaction/recurring/cancel/{id}/
+#    defaults: { _controller: CairnUserBundle:Banking:cancelRecurringTransaction }
+#    requirements:
+#        id: "[-]?[0-9]{1,}"
 
 
 cairn_user_banking_account_operations:
@@ -251,25 +251,25 @@ cairn_user_banking_account_operations:
         id: "[-]?[0-9]{1,}"
         _format: html|json
 
-cairn_user_banking_transactions_recurring_view_detailed:
-    path:     banking/transactions/recurring/view/detailed/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction, _format: html }
-    requirements:
-        id: "[-]?[0-9]{1,}"
-        _format: html|json
+#cairn_user_banking_transactions_recurring_view_detailed:
+#    path:     banking/transactions/recurring/view/detailed/{id}.{_format}
+#    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction, _format: html }
+#    requirements:
+#        id: "[-]?[0-9]{1,}"
+#        _format: html|json
 
 cairn_user_banking_transfer_view:
     path:     banking/transfer/view/{type}-{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewTransfer, _format: html }
     requirements:
-        type: scheduled.past|scheduled.futur|recurring|simple
+        type: scheduled.past|simple #|recurring
         _format: html|json
 
-cairn_user_banking_transaction_occurrence_execute:
-    path:     banking/transactions/recurring/occurrence/execute/{id}/
-    defaults: { _controller: CairnUserBundle:Banking:executeOccurrence }
-    requirements:
-        id: "[-]?[0-9]{1,}"
+#cairn_user_banking_transaction_occurrence_execute:
+#    path:     banking/transactions/recurring/occurrence/execute/{id}/
+#    defaults: { _controller: CairnUserBundle:Banking:executeOccurrence }
+#    requirements:
+#        id: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview:
     path:     banking/accounts/overview/{id}.{_format}

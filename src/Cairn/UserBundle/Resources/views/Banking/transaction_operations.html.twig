@@ -10,19 +10,15 @@
             <h1> Effectuer un virement </h1>
            <ul>
                 <li><a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}"> Virement unique     </a></li>
-                <li><a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a></li>
+{#                <li><a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a></li>#}
 
-                {#
-                <li><a href="{{path('cairn_user_cyclos_banking_transaction',{'frequency': 'unique'})}}"> Virement unique     </a></li>
-                <li><a href="{{path('cairn_user_cyclos_banking_transaction',{'frequency': 'recurring'})}}"> Virement permanent </a></li>
-                #}
            <ul> 
         </div>
         <div id="transfer_management">
             <h1> Gérer ses virements </h1>
             <ul>
                 <li><a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}"> Virements uniques </a></li>
-                <li><a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a></li>
+{#                <li><a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a></li >#}
                 {% if not is_granted('ROLE_ADMIN') %}
                     <li><a href="{{path('cairn_user_beneficiaries_list')}}"> Mes bénéficiaires </a></li>
                 {% endif %}
