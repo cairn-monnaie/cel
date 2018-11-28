@@ -50,7 +50,7 @@
     
         <tbody>
             <td> {{transfer.from.type.name}} </br>
-                 {{transfer.from.id}} </br>
+                 {{transfer.from.number}} </br>
                  {% if transfer.from.owner.display is defined %}
                         {{transfer.from.owner.display}}
                  {% else %}
@@ -73,7 +73,7 @@
         </thead>
     
         <tbody>
-            <td> {{transfer.to.id}} </br>
+            <td> {{transfer.to.number}} </br>
                  {% if transfer.to.owner.display is defined %}
                         {{transfer.to.owner.display}}
                  {% else %}

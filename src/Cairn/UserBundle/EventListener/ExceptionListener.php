@@ -106,6 +106,16 @@ class ExceptionListener
                     $session->getFlashBag()->add('error','Vous n\'avez pas les droits nécessaires');
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
+                elseif($exception->errorCode == 'LOGGED_OUT'){
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $session->getFlashBag()->add('error','Un problème de session a eu lieu, veuillez vous reconnecter.');
+                    $event->setResponse(new RedirectResponse($logoutUrl));
+                }
+                elseif($exception->errorCode == 'NULL_POINTER'){
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $session->getFlashBag()->add('error','Donnée introuvable');
+                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                }
 
                 else{
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);

@@ -91,6 +91,9 @@ fos_user:
         form:
             type: Cairn\UserBundle\Form\ChangePasswordType
 
+    resetting: 
+        email:
+            template:   CairnUserBundle:Emails:resetting_password_confirmation.html.twig          
     registration:
         form:
             type: Cairn\UserBundle\Form\RegistrationType
