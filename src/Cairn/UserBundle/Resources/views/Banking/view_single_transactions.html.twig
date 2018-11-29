@@ -28,34 +28,21 @@
     <tbody>
     {% for installment in futureInstallments %}
                 <tr>
-                    <td> {{installment.scheduledPayment.date}} </td>
-                    <td> {{installment.dueDate}} </td>
+                    <td> {{installment.submissionDate|date('Y-m-d')}} </td>
+                    <td> {{installment.executionDate|date('Y-m-d')}} </td>
                     <td>
-                        {% if installment.scheduledPayment.relatedOwner.display is defined %}
-                            {{installment.scheduledPayment.relatedOwner.display}}
-                        {% else %}
-                            Association Le Cairn
-                        {% endif %}
+                        {{ app.user.name }}
                     </td>
-                    <td> {{installment.scheduledPayment.description }} </td>  
+                    <td> {{installment.reason }} </td>  
+                    <td> {{installment.description }} </td>  
                     <td> {{installment.amount }} </td>
                     <td> 
-                        {% if installment.status == 'SCHEDULED' %} 
                             En cours
-                        {% elseif installment.status == 'BLOCKED' %}
-                            Bloqué
-                        {% endif %}
                     </td>
                     <td>
-                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'cancel' })}}"> Annuler </a>
+                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'cancel' })}}"> Annuler </a>
                      | 
-                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id,'status' : 'execute' })}}"> Exécuter maintenant </a>
-                     |
-                    {% if installment.status == 'BLOCKED' %}
-                        <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id, 'status':'open' })}}"> Débloquer </a>  </td>
-                    {% elseif  installment.status == 'SCHEDULED' %}
-                        <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.scheduledPayment.id, 'status':'block' })}}"> Bloquer </a>  </td>
-                    {% endif %}
+                         <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'execute' })}}"> Exécuter maintenant </a>
                 </tr>
     {% else %}
         Aucun virement en attente 

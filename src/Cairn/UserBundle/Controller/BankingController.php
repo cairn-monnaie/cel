@@ -401,11 +401,6 @@ class BankingController extends Controller
 //                    $dataTime->lastOccurrenceDate =  $transaction->getLastOccurrenceDate();
 //                }else{
                     $dataTime = $operation->getExecutionDate();
-                if($operation->getExecutionDate()->format('Y-m-d') != $operation->getSubmissionDate()->format('Y-m-d')){
-                    $operation->setType(Operation::$TYPE_TRANSACTION_SCHEDULED);
-                }else{
-                    $operation->setType(Operation::$TYPE_TRANSACTION_UNIQUE);
-                }
 //                }
 
                 $fromAccount = $accountService->getAccountByID($operation->getFromAccount()['accountNumber']);
@@ -442,6 +437,12 @@ class BankingController extends Controller
                         $accurateTransferTypes[] = $transferType;
                     }
                 }
+
+               if($operation->getExecutionDate()->format('Y-m-d') != $operation->getSubmissionDate()->format('Y-m-d')){
+                   $operation->setType(Operation::$TYPE_TRANSACTION_SCHEDULED);
+               }else{
+                   $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+               }
 
                 $amount = $operation->getAmount();
                 $description = $operation->getDescription();
@@ -950,12 +951,14 @@ class BankingController extends Controller
 //                            $operation->setType(Operation::$TYPE_TRANSACTION_RECURRING);
 //                            $paymentVO = $this->bankingManager->makeRecurringPayment( $paymentReview);
                         //                        }else
-                        if(property_exists($paymentReview,'scheduledPayment')){ //scheduled payment
-                            $paymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
+                    if($operation->getType() == Operation::$TYPE_TRANSACTION_SCHEDULED){
+                        $paymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
+                        $operation->setPaymentID($paymentVO->id);
+                    }else{
+                        $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                        $operation->setPaymentID($paymentVO->id);
+                    }
 
-                        }else{
-                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
-                        }
                         break;
                     case 'conversion':
                         break;
@@ -970,7 +973,6 @@ class BankingController extends Controller
                         return $this->redirectToRoute('cairn_user_welcome');
                     }
 
-                   $operation->setPaymentID($paymentVO->id);
                    $em->flush();
 
                     $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
@@ -1075,26 +1077,32 @@ class BankingController extends Controller
                 $accountNumbers = $accountService->getAccountNumbers($userVO->id);
 
                 $ob = $operationRepo->createQueryBuilder('o');
-                $operations = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
+                $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
                     ->andWhere('o.paymentID is not NULL')
                     ->andWhere('o.executionDate <= :date')
                     ->andWhere('o.type = :type')
                     ->setParameter('date',new \Datetime())
-                    ->setParameter('type',Operation::$TYPE_TRANSACTION_UNIQUE)
+                    ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
                     ->orderBy('o.executionDate','ASC')
                     ->getQuery()->getResult();
-                $processedTransactions = $bankingService->getTransactions(
-                    $userVO,$accountTypesVO,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),$description);
+//                $processedTransactions = $bankingService->getTransactions(
+//                    $userVO,$accountTypesVO,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),$description);
 //
 //                //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transactions yet)
-                $futureInstallments = $bankingService->getInstallments($userVO,$accountTypesVO,array('BLOCKED','SCHEDULED'),$description);
-//                if($_format == 'json'){
-//                    return $this->json(array(
-//                        'processedTransactions'=>$processedTransactions ,
-//                        'futureInstallments'=> $futureInstallments));
-//                }
+                //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
+//                $futureInstallments = $bankingService->getInstallments($userVO,$accountTypesVO,array('BLOCKED','SCHEDULED'),$description);
+//                var_dump($futureInstallments);
+//                return new Response('ok');
+               $ob = $operationRepo->createQueryBuilder('o');
+                $futureInstallments = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
+                    ->andWhere('o.paymentID is not NULL')
+                    ->andWhere('o.type = :type')
+                    ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
+                    ->orderBy('o.executionDate','ASC')
+                    ->getQuery()->getResult();
+
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
-                    array('processedTransactions'=>$operations ,
+                    array('processedTransactions'=>$processedTransactions ,
                     'futureInstallments'=> $futureInstallments));
 
             }else{
@@ -1300,11 +1308,19 @@ class BankingController extends Controller
     {
         $session = $request->getSession();
 
-        $installmentData = $this->get('cairn_user_cyclos_banking_info')->getInstallmentData($id);
+//        $installmentData = $this->get('cairn_user_cyclos_banking_info')->getInstallmentData($id);
 
-        $installmentDTO = new \stdClass();
-        $installmentDTO->scheduledPayment = $installmentData->transaction;
-        $installmentDTO->installment = $installmentData->transaction->installments[0]->id;
+        //instance of ScheduledPaymentVO with installments
+        $scheduledPayment = $this->get('cairn_user_cyclos_banking_info')->getTransactionDataByID($id)->transaction;
+
+        //to execute a specific installment, we need to retrieve this specific installment
+        //canceling, blocking or unblocking a given scheduled payment is not possible for a single installment, but for the whole payment
+        if($status == 'execute'){
+            $DTO = new \stdClass();
+            $DTO->installment = $scheduledPayment->installments[0]->id;
+        }else{
+            $DTO->scheduledPayment = $id;
+        }
 
         $form = $this->createForm(ConfirmationType::class);
 
@@ -1372,20 +1388,21 @@ class BankingController extends Controller
 
 
     /**
-     * Downloads a PDF document relating the transfer notice with ID $id
+     * Downloads a PDF document relating the operation notice with ID $id
      *
      * @param int $id transfer ID
      *
-     * @throws Cyclos\ServiceException with errorCode : ENTITY_NOT_FOUND
      */
     public function downloadTransferNoticeAction(Request $request, Operation $operation)
     {
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
 
-//        $transferData = $bankingService->getTransferData($id);
-//        $description = $transferData->transaction->description;
-//        $transfer = $bankingService->getTransferByID($id);
+
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($this->getUser()->getCyclosID());
+        if(! in_array($operation->getFromAccountNumber(), $accountNumbers)){
+            throw new AccessDeniedException('Vous n\'avez pas accès à cette information');
+        }
 
         $html = $this->renderView('CairnUserBundle:Pdf:operation_notice.html.twig',array(
             'transfer'=>$operation));

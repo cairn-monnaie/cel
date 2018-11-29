@@ -71,7 +71,7 @@ class BankingInfo
     }
 
     /**
-     *@see http://documentation.cyclos.org/4.9/ws-api-docs/org/cyclos/services/banking/TransactionService.html#getData(org.cyclos.model.banking.transactions.TransactionVO)
+     *@return TransactionData
      */
     public function getTransactionDataByID($id)
     {
@@ -81,6 +81,7 @@ class BankingInfo
 
     /**
       * @see http://documentation.cyclos.org/4.9/ws-api-docs/org/cyclos/services/banking/TransactionService.html#load(java.lang.Long)
+      * @return TransactionVO (but not children classes like PaymentVO or ScheduledPaymentVO)
      */
     public function getTransactionByID($id)
     {

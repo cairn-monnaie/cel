@@ -106,7 +106,7 @@ class Operation
      */
     private $toAccount;
 
-    public static $TYPE_TRANSACTION_UNIQUE = 0;
+    public static $TYPE_TRANSACTION_EXECUTED = 0;
 #    public static $TYPE_TRANSACTION_RECURRING = 1;
     public static $TYPE_TRANSACTION_SCHEDULED = 2;
     public static $TYPE_CONVERSION = 3;
