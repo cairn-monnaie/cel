@@ -234,7 +234,7 @@ cairn_user_banking_transaction_scheduled_changestatus:
     defaults: { _controller: CairnUserBundle:Banking:changeStatusScheduledTransaction, _format: html}
     requirements:
         id: "[-]?[0-9]{1,}"
-        status: cancel|open|block|execute
+        status: cancel|execute #|open|block
         _format: html|json
 
 #cairn_user_banking_transaction_recurring_cancel:

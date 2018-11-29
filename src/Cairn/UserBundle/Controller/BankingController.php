@@ -1307,16 +1307,22 @@ class BankingController extends Controller
     public function changeStatusScheduledTransactionAction(Request $request, $id, $status)
     {
         $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
-//        $installmentData = $this->get('cairn_user_cyclos_banking_info')->getInstallmentData($id);
+        $operation = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyOperation($id);
+        if(!$operation){
+            return $this->redirectToRoute('cairn_user_banking_operations_view',array('frequency'=>'unique','type'=>'transaction'));
+        }
 
         //instance of ScheduledPaymentVO with installments
         $scheduledPayment = $this->get('cairn_user_cyclos_banking_info')->getTransactionDataByID($id)->transaction;
 
         //to execute a specific installment, we need to retrieve this specific installment
         //canceling, blocking or unblocking a given scheduled payment is not possible for a single installment, but for the whole payment
+        $DTO = new \stdClass();
+
         if($status == 'execute'){
-            $DTO = new \stdClass();
             $DTO->installment = $scheduledPayment->installments[0]->id;
         }else{
             $DTO->scheduledPayment = $id;
@@ -1329,12 +1335,20 @@ class BankingController extends Controller
                 return $this->redirectToRoute('cairn_user_banking_operations_view',array('frequency'=>'unique','type'=>'transaction'));
             }
 
-            $res = $this->bankingManager->changeInstallmentStatus($installmentDTO,$status);
+            $res = $this->bankingManager->changeInstallmentStatus($DTO,$status);
 
             if(!$res->validStatus){
                 $session->getFlashBag()->add('error',$res->message);
             }
             else{
+                if($status == 'execute'){
+                    $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+                    $operation->setExecutionDate(new \Datetime());
+                }elseif($status == 'cancel'){
+                    $em->remove($operation);
+                }
+
+                $em->flush();
                 $session->getFlashBag()->add('success','Le statut de votre virement a été modifié avec succès.');
             }
 
