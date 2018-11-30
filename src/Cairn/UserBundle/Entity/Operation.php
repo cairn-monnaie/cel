@@ -113,6 +113,7 @@ class Operation
     public static $TYPE_RECONVERSION = 4;
     public static $TYPE_DEPOSIT = 5;
     public static $TYPE_WITHDRAWAL = 6;
+    public static $TYPE_SCHEDULED_FAILED = 7;
 
 
     /**

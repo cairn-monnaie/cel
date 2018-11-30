@@ -19,7 +19,7 @@
                 <td>  
                     <a href="{{path('cairn_user_banking_account_operations',{'accountID':account.id}) }}"> {{account.type.name}} </a>
                 </td>
-                <td> {{account.id}} </td>
+                <td> {{account.number}} </td>
                 <td> {{account.status.balance}} </td>
                 <td> 
                     {% if account.unlimited %}

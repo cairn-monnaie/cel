@@ -32,8 +32,10 @@
     <tbody>
     {% for transaction in transactions %}
         <tr>
-            <td>{{ transaction.date}}</td>
-            <td> {{transaction.description }} </td> 
+            <td>{{ transaction.executionDate|date('Y-m-d')}}</td>
+            <td> <em> {{transaction.reason }} </em> </br>
+                 {{transaction.description }}  
+            </td> 
             <td> {{transaction.amount }} </td>
             <td></td>
         </tr>

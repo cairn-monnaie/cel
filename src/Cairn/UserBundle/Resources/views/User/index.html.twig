@@ -32,7 +32,7 @@
                 <a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">
                     <div>
                         {{account.type.name}} </br>
-                        {{account.id}}
+                        {{account.number}}
                     </div>
                     <span> {{account.status.balance}} </span>
                 </a>
@@ -47,10 +47,10 @@
                 {% for transaction in lastTransactions %}
                 <li class="transactions_info">       
                     <div>
-                        {{transaction.date}} </br>
-                        {{transaction.description}}
+                        {{transaction.executionDate|date('Y-m-d')}} </br>
+                        {{transaction.reason}}
                     </div>
-                    <span> {{transaction.amount}} </span>
+                    <span> {{transaction.amount}} cairns</span>
                 </li>
                 {% endfor %}
             </ul>

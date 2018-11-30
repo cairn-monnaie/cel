@@ -15,6 +15,7 @@ use Cairn\UserBundle\Event\InputCardKeyEvent;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
 
@@ -73,8 +74,11 @@ class UserController extends Controller
     {
         $checker = $this->get('security.authorization_checker');
 
+        $em = $this->getDoctrine()->getManager();
         //last users registered
-        $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+
         $qb = $userRepo->createQueryBuilder('u')
             ->orderBy('u.creationDate','DESC')
             ->andWhere('u.enabled = true')
@@ -86,22 +90,26 @@ class UserController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($this->getUser());
 
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($this->getUser()->getCyclosID());
 
         //last operations
-        $accountTypes = array();
-        foreach($accounts as $account){
-            $accountTypes[] = $account->type;
-        }
+        $ob = $operationRepo->createQueryBuilder('o');
+        $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
+            ->andWhere('o.paymentID is not NULL')
+            ->andWhere('o.type = :type')
+            ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
+            ->orderBy('o.executionDate','ASC')
+            ->setMaxResults(15)
+            ->getQuery()->getResult();
 
-        $statuses = array(array('PROCESSED'),array('OPEN','CLOSED','CANCELED'),array('CLOSED'));
-        $transactions = $this->get('cairn_user_cyclos_banking_info')->getTransactions($ownerVO,$accountTypes,array('PAYMENT','SCHEDULED_PAYMENT'),$statuses,NULL,NULL,NULL,20);
+        //last operations
 
         if($checker->isGranted('ROLE_PRO')){
             if($_format == 'json'){
-                $response = array('accounts'=>$accounts,'lastTransactions'=>$transactions, 'lastUsers'=>$users);
+                $response = array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions, 'lastUsers'=>$users);
                 return $this->json($response);
             }
-            return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$transactions,'lastUsers'=>$users));
+            return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastUsers'=>$users));
         }
 
     }
