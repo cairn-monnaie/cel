@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  *
  * @ORM\Table(name="operation")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\OperationRepository")
+ * @ORM\HasLifecycleCallbacks()
  */
 class Operation
 {
@@ -52,6 +53,13 @@ class Operation
      * @ORM\Column(name="executionDate", type="datetime")
      */
     private $executionDate;
+
+   /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="updated_at", type="datetime")
+     */
+    private $updatedAt;
 
     /**
      * @var string
@@ -247,6 +255,31 @@ class Operation
     public function getExecutionDate()
     {
         return $this->executionDate;
+    }
+
+    /**
+     * Set updatedAt
+     *
+     * @ORM\PostLoad
+     *
+     * @param \DateTime $updatedAt
+     * @return Operation
+     */
+    public function setUpdatedAt()
+    {
+        $this->updatedAt = new \Datetime();
+
+        return $this;
+    }
+
+    /**
+     * Get updatedAt
+     *
+     * @return \DateTime
+     */
+    public function getUpdatedAt()
+    {
+        return $this->updatedAt;
     }
 
     /**
