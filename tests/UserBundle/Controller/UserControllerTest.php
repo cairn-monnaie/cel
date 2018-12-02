@@ -28,13 +28,12 @@ class UserControllerTest extends BaseControllerTest
      */
     public function testChangePassword($login,$current, $new, $confirm, $isValid, $expectedMessage)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+        $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
 
-        $crawler = $this->login($login, '@@bbccdd');
 
-        $url = '/password/new/';
+        $url = '/profile/change-password';
         $crawler = $this->client->request('GET',$url);
 
         $card = $currentUser->getCard();
@@ -48,10 +47,10 @@ class UserControllerTest extends BaseControllerTest
         $crawler = $this->inputCardKey($crawler,'1111');
         $crawler = $this->client->followRedirect();
 
-        $form = $crawler->selectButton('change_password_save')->form();
-        $form['change_password[current_password]']->setValue($current);
-        $form['change_password[plainPassword][first]']->setValue($new);
-        $form['change_password[plainPassword][second]']->setValue($confirm);
+        $form = $crawler->selectButton('fos_user_change_password_form_save')->form();
+        $form['fos_user_change_password_form[current_password]']->setValue($current);
+        $form['fos_user_change_password_form[plainPassword][first]']->setValue($new);
+        $form['fos_user_change_password_form[plainPassword][second]']->setValue($confirm);
         $crawler = $this->client->submit($form);
 
         if($isValid){
@@ -102,8 +101,6 @@ class UserControllerTest extends BaseControllerTest
      */
     public function testViewProfile($referent,$target,$isReferent)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($referent, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
@@ -155,10 +152,10 @@ class UserControllerTest extends BaseControllerTest
     }
 
 
-//    public function testListBeneficiaries()
-//    {
-//        ;
-//    }
+    //    public function testListBeneficiaries()
+    //    {
+    //        ;
+    //    }
 
     /**
      *depends testValidateCard
@@ -166,7 +163,6 @@ class UserControllerTest extends BaseControllerTest
      */
     public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid,$expectKey)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -179,7 +175,7 @@ class UserControllerTest extends BaseControllerTest
             ->getQuery()->getOneOrNullResult();
 
         if($creditorUser){
-            $ICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
+            $ICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
             $ICC = ($changeICC) ? $ICC + 1 : $ICC;
         }else{
             $ICC = 123456789;
@@ -224,30 +220,30 @@ class UserControllerTest extends BaseControllerTest
     public function provideBeneficiariesToAdd()
     {
         return array(
-             'self beneficiary'=> array('current'=>'LaBonnePioche','name'=>'La Bonne Pioche','email'=>'labonnepioche@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
-             'user not found'=> array('current'=>'LaBonnePioche','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
-              'ICC not found'=>array('current'=>'LaBonnePioche', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
+            'self beneficiary'=> array('current'=>'LaBonnePioche','name'=>'La Bonne Pioche','email'=>'labonnepioche@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
+            'user not found'=> array('current'=>'LaBonnePioche','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
+            'ICC not found'=>array('current'=>'LaBonnePioche', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
             'valid benef'=>array('current'=>'LaBonnePioche','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
             'valid benef2'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
             'valid benef3'=>array('current'=>'locavore','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-              'already benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+            'already benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
 
         );
     }
-//    /**
-//     *depends testAddBeneficiary
-//     */
-//    public function testEditBeneficiary()
-//    {
-//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-//
-//        $crawler = $this->login($debitor, '@@bbccdd');
-//
-//        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
-//        $creditorUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-//
-//        ;
-//    }
+    //    /**
+    //     *depends testAddBeneficiary
+    //     */
+    //    public function testEditBeneficiary()
+    //    {
+    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+    //
+    //        $crawler = $this->login($debitor, '@@bbccdd');
+    //
+    //        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
+    //        $creditorUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
+    //
+    //        ;
+    //    }
 
     /**
      *@depends testAddBeneficiary
@@ -255,8 +251,6 @@ class UserControllerTest extends BaseControllerTest
      */
     public function testRemoveBeneficiary($current,$beneficiary, $isValid, $benefRemains, $expectKey)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($current, '@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
@@ -293,7 +287,7 @@ class UserControllerTest extends BaseControllerTest
             $crawler = $this->client->followRedirect();
             $this->assertSame(1, $crawler->filter('div.alert-'.$expectKey)->count());    
             $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
-           
+
         }
     }
 
@@ -312,10 +306,8 @@ class UserControllerTest extends BaseControllerTest
      *@depends testRemoveBeneficiary
      *@dataProvider provideUsersToRemove
      */
-    public function testRemoveUser($referent,$target,$isReferent,$nullAccount)
+    public function testRemoveUser($referent,$target,$isLegit,$nullAccount,$isPending)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($referent,'@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
@@ -330,37 +322,33 @@ class UserControllerTest extends BaseControllerTest
         $crawler = $this->inputCardKey($crawler, '1111');
         $crawler = $this->client->followRedirect();
 
-        if($targetUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username')){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1, $crawler->filter('div.alert-error')->count());    
-            $this->assertSame(1,$crawler->filter('html:contains("ne peut être supprimé")')->count());
+        if(! $isLegit){
+            //access denied exception
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }else{
-            if(! $isReferent){
-                //access denied exception
-                $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            if(!$nullAccount){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1,$crawler->filter('html:contains("solde non nul")')->count());
+                $this->assertSame(1,$crawler->filter('div.alert-error')->count());    
             }else{
-                if(!$nullAccount){
-                   $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
-                   $crawler = $this->client->followRedirect();
-                   $this->assertSame(1,$crawler->filter('html:contains("solde non nul")')->count());
-                   $this->assertSame(1,$crawler->filter('div.alert-error')->count());    
-                }else{
                     $this->client->enableProfiler();
 
                     $form = $crawler->selectButton('confirmation_save')->form();
                     $form['confirmation[plainPassword]']->setValue('@@bbccdd');
                     $crawler =  $this->client->submit($form);
 
+
+                if(! $isPending){
                     //assert email sent to referents
                     $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
                     $this->assertTrue($mailCollector->getMessageCount() >= 1);
                     $message = $mailCollector->getMessages()[0];
                     $this->assertInstanceOf('Swift_Message', $message);
-//                    $this->assertContains('Nouvelle carte', $message->getSubject());
+                    //                    $this->assertContains('Nouvelle carte', $message->getSubject());
                     $this->assertContains('supprimé de la plateforme', $message->getBody());
                     $this->assertContains($currentUser->getName(), $message->getBody());
-    
+
                     $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                     $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
@@ -368,22 +356,37 @@ class UserControllerTest extends BaseControllerTest
                     $crawler = $this->client->followRedirect();
 
                     $this->em->refresh($targetUser);
+
                     $this->assertEquals($targetUser,NULL);
                     $this->assertSame(1,$crawler->filter('html:contains("supprimé avec succès")')->count());
                     $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
-                }       
-            }
+                }else{
+                    $this->assertTrue($this->client->getResponse()->isRedirect());
+                    $crawler = $this->client->followRedirect();
+
+                    $this->em->refresh($targetUser);
+
+                    $this->assertNotEquals($targetUser,NULL);
+                    $this->assertEquals($targetUser->getRemovalRequest(),true);
+                    $this->assertEquals($targetUser->isEnabled(),false);
+                    $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
+                }
+            }       
         }
     }
 
+    /**
+     *@TODO : add user removing himself who is under test_admin's responsiblity (and not admin..)
+     */
     public function provideUsersToRemove()
     {
         return array(
-            array('mazouthm','mazouthm',false,false),
-            array('mazouthm','DrDBrew',true,false),
-            array('mazouthm','locavore',true,true),
-            array('mazouthm','cafeEurope',false,true),
+            'non null account' => array($this->testAdmin,'DrDBrew',true,false,false),
+            'valid admin removal' => array($this->testAdmin,'locavore',true,true,false),
+            'not legit' => array($this->testAdmin,'cafeEurope',false,true,false),
+            'user auto-removal' => array('cafeEurope','cafeEurope',true,true,false),
         );
 
     }
+
 }

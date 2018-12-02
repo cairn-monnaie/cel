@@ -35,8 +35,6 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testCardOperations($referent,$target,$isReferent)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($referent, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
@@ -44,8 +42,8 @@ class CardControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
 
-        if($currentUser === $targetUser){//user for himself
-            if($currentUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username')){
+        if($currentUser === $targetUser){
+            if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                 $this->assertSame(4,$crawler->filter('a.operation_link')->count());
             }else{
                 $this->assertSame(3,$crawler->filter('a.operation_link')->count());
@@ -67,14 +65,13 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testValidateCard($login,$key, $expectForm, $expectValid)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
         $crawler = $this->client->request('GET', '/card/validate');
 
         $card = $currentUser->getCard();
+
         if(!$expectForm){
             $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$currentUser->getID()));
             $crawler = $this->client->followRedirect();
@@ -109,9 +106,9 @@ class CardControllerTest extends BaseControllerTest
     public function provideUsersForCardValidation()
     {
         return array(
-            'invalid key'        => array('login'=>'mazouthm','key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
-            'valid key'          => array('login'=>'mazouthm','key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
-            'validated card'     => array('login'=>'mazouthm','key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
+            'invalid key'        => array('login'=>$this->testAdmin,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
+            'valid key'          => array('login'=>$this->testAdmin,'key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
+            'validated card'     => array('login'=>$this->testAdmin,'key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
             'not generated card' => array('login'=>'DrDBrew', 'key'=>'1111','expectForm'=>false,'expectValidKey'=>false),
         );
     }
@@ -123,8 +120,6 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testCardSecurityLayer($login,$expectValid)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
@@ -152,7 +147,7 @@ class CardControllerTest extends BaseControllerTest
     public function provideUsersWithValidatedCard()
     {
         return array(
-            'validated card'     => array('login'=>'mazouthm', 'expectValid'=>true),
+            'validated card'     => array('login'=>$this->testAdmin, 'expectValid'=>true),
             'not validated card' => array('login'=>'LaDourbie','expectValid'=>false),
         );
     }
@@ -169,8 +164,6 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testGenerateCard($current, $target,$expectConfirm,$expectMessage)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($current, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
@@ -181,8 +174,7 @@ class CardControllerTest extends BaseControllerTest
 
         $card = $targetUser->getCard();
 
-        if(! ($targetUser->getUsername() == $this->container->getParameter('cyclos_global_admin_username') 
-            && $targetUser === $currentUser)){
+        if(! ($targetUser->hasRole('ROLE_SUPER_ADMIN') && $targetUser === $currentUser)){
             $crawler = $this->client->followRedirect();
             $crawler = $this->inputCardKey($crawler, '1111');
             $crawler = $this->client->followRedirect();
@@ -219,12 +211,12 @@ class CardControllerTest extends BaseControllerTest
     public function provideUsersForCardGeneration()
     {
         return array(
-               array('current'=>'mazouthm','target'=>'mazouthm','expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
-               array('current'=>'mazouthm','target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>'mazouthm','target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>'mazouthm','target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>'mazouthm','target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>'mazouthm','target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
+               array('current'=>$this->testAdmin,'target'=>$this->testAdmin,'expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
+               array('current'=>$this->testAdmin,'target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$this->testAdmin,'target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$this->testAdmin,'target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$this->testAdmin,'target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
         );
     }
 
@@ -240,10 +232,7 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testRevokeCard($current, $target,$expectForm,$expectMessage)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($current, '@@bbccdd');
-
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
@@ -303,9 +292,9 @@ class CardControllerTest extends BaseControllerTest
     public function provideUsersForCardRevocation()
     {
         return array(
-             'revocation from ref'=> array('current'=>'mazouthm','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'revocation from ref'=> array('current'=>$this->testAdmin,'target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
              'self revocation'=> array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'revoc from non ref'=>array('current'=>'mazouthm','target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'revoc from non ref'=>array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
              'no card to revoke'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'pas encore été créée'),
         );
     }
@@ -322,8 +311,6 @@ class CardControllerTest extends BaseControllerTest
      */
     public function testOrderCard($current,$target,$expectForm, $expectMessage)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($current, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
@@ -386,9 +373,9 @@ class CardControllerTest extends BaseControllerTest
     public function provideUsersForCardOrder()
     {
         return array(
-             'ordered by ref'=> array('current'=>'mazouthm','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'ordered by ref'=> array('current'=>$this->testAdmin,'target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
              'self order'=> array('current'=>'MaltOBar','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'ordered by non ref'=>array('current'=>'mazouthm','target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'ordered by non ref'=>array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
              'no card to order'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'déjà une carte'),
         );
     }

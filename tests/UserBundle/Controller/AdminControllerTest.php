@@ -27,8 +27,6 @@ class AdminControllerTest extends BaseControllerTest
      */
     public function testBlockUser($referent,$target, $isReferent)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($referent, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
@@ -82,9 +80,9 @@ class AdminControllerTest extends BaseControllerTest
     public function provideReferentsAndTargets()
     {
         return array(
-            'valid'           => array('referent'=>'mazouthm','target'=>'DrDBrew','isReferent'=>true),
-           'already blocked' => array('referent'=>'mazouthm','target'=>'DrDBrew','isReferent'=>true),
-            'not referent'    =>array('referent'=>'mazouthm','target'=>'cafeEurope','isReferent'=>false)
+            'valid'           => array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
+           'already blocked' => array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
+            'not referent'    =>array('referent'=>$this->testAdmin,'target'=>'cafeEurope','isReferent'=>false)
         );
     }
 
@@ -94,7 +92,6 @@ class AdminControllerTest extends BaseControllerTest
      */
     public function testActivateUser($referent,$target, $isReferent)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
 
         $crawler = $this->login($referent, '@@bbccdd');
 
@@ -122,6 +119,8 @@ class AdminControllerTest extends BaseControllerTest
 
                 $this->em->refresh($targetUser);
                 $this->assertTrue($targetUser->isEnabled());
+                $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($targetUser);
+                $this->assertNotEquals($userVO, NULL);
 
                 //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -153,9 +152,7 @@ class AdminControllerTest extends BaseControllerTest
      */
     public function testAssignReferent($referent, $target, $isValid, $isPro, $expectKey)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $crawler = $this->login('mazouthm', '@@bbccdd');
+        $crawler = $this->login($this->testAdmin, '@@bbccdd');
 
         //can be null
         $referentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));

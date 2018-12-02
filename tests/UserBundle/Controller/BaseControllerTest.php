@@ -34,54 +34,60 @@ class BaseControllerTest extends WebTestCase
         $this->userManager = new UserManager();
         $this->productManager = new ProductManager();
 
-        $crawler = $this->client->request('GET','/install/');
-        $this->login('mazouthm','@@bbccdd');
-
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        //generate doctrine users or not
         $this->em = $this->container->get('doctrine')->getManager();                          
 
-        $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
+        //same username than the one provided at installation
+        $installedAdmins = $this->em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_SUPER_ADMIN'));
+        if($installedAdmins){
+            $this->testAdmin = $installedAdmins[0]->getUsername();
 
-        if(!$user){
-//            var_dump(gc_enabled());
-//            gc_enable();
-//            var_dump(gc_enabled());
+            $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+                'login',$credentials);
 
-            $memberGroupName = $this->container->getParameter('cyclos_group_pros');
-            $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
+            //generate doctrine users or not
 
-            $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_users.groovy',false));
+            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
 
-            $nb = 0;
-            //            while($nb != 5){ //delay between running script and database update
+            if(!$user){
+                //            var_dump(gc_enabled());
+                //            gc_enable();
+                //            var_dump(gc_enabled());
 
-            $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
-            $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
+                $memberGroupName = $this->container->getParameter('cyclos_group_pros');
+                $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
 
-            $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
-            $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
+                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_users.groovy',false));
 
-            $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
-            $nb = count($cyclosUsers);
-            //          }
+                $nb = 0;
+                //            while($nb != 5){ //delay between running script and database update
 
-            $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'mazouthm'));
+                $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
+                $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
 
-            //            foreach($cyclosAdmins as $cyclosAdmin){
-            //                $this->createUser($cyclosAdmin, $superAdmin);
-            //            }
+                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+                $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
 
-            $userRank = 0;
-            foreach($cyclosMembers as $cyclosMember){
-                $this->createUser($cyclosMember,$superAdmin,$userRank);
-                $userRank = $userRank + 1;
+                $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
+                $nb = count($cyclosUsers);
+                //          }
+
+                $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$this->testAdmin));
+
+                //            foreach($cyclosAdmins as $cyclosAdmin){
+                //                $this->createUser($cyclosAdmin, $superAdmin);
+                //            }
+
+                $userRank = 0;
+                foreach($cyclosMembers as $cyclosMember){
+                    $this->createUser($cyclosMember,$superAdmin,$userRank);
+                    $userRank = $userRank + 1;
+                }
+
+                $this->em->flush();
+                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_payments.groovy',false));
+
             }
-
-            $this->em->flush();
-            $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_payments.groovy',false));
-
         }
     }
 
@@ -132,8 +138,6 @@ class BaseControllerTest extends WebTestCase
 
     public function login($username,$password)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->client->request('GET','/logout');
         $crawler = $this->client->request('GET','/login');
 
@@ -147,11 +151,6 @@ class BaseControllerTest extends WebTestCase
 
     }
 
-    public function testNada(){
-        $this->assertSame(0,0);
-    }
-
-
     public function inputCardKey($crawler, $key)
     {
         $form = $crawler->selectButton('card_save')->form();
@@ -164,10 +163,10 @@ class BaseControllerTest extends WebTestCase
     public function provideReferentsAndTargets()
     {
         return array(
-            array('referent'=>'mazouthm','target'=>'mazouthm','isReferent'=>true),
-            array('referent'=>'mazouthm','target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>'mazouthm','target'=>'MaltOBar','isReferent'=>true),
-            array('referent'=>'mazouthm','target'=>'cafeEurope','isReferent'=>false)
+            array('referent'=>$this->testAdmin,'target'=>$this->testAdmin,'isReferent'=>true),
+            array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
+            array('referent'=>$this->testAdmin,'target'=>'MaltOBar','isReferent'=>true),
+            array('referent'=>$this->testAdmin,'target'=>'cafeEurope','isReferent'=>false)
         );
     }
 

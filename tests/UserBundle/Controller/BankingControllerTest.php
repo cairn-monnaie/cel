@@ -11,6 +11,8 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\SimpleTransaction;
 use Cairn\UserBundle\Entity\RecurringTransaction;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\Operation;
+
 
 use Cyclos;
 
@@ -25,25 +27,18 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideTransactionData
      */
-    public function testTransactionProcess($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$day,$month,$year,
-        $frequency,$periodicity, $futureDay,$futureMonth,$futureYear)
+    public function testTransactionProcess($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$day,$month,$year,$frequency)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($debitor, '@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
 
-        if(!$ownsAccount){
-            $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
-        }
-
         $debitorICC = $debitorAccount->id;
         $previousBalance = $debitorAccount->status->balance;
 
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
+        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
 
         $url = '/banking/transaction/request/'.$to.'-'.$frequency;
         $crawler = $this->client->request('GET',$url);
@@ -62,32 +57,17 @@ class BankingControllerTest extends BaseControllerTest
             $this->assertTrue($this->client->getResponse()->isRedirect());
         }else{
             if($frequency == 'unique'){
-                $form = $crawler->selectButton('cairn_userbundle_simpletransaction_save')->form();
-                $form['cairn_userbundle_simpletransaction[amount]']->setValue($amount);
-                $form['cairn_userbundle_simpletransaction[fromAccount][email]']->setValue($debitorUser->getEmail());
-                $form['cairn_userbundle_simpletransaction[fromAccount][id]']->setValue($debitorICC);
-                $form['cairn_userbundle_simpletransaction[toAccount][email]']->setValue($creditorUser->getEmail());
-                $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
-                $form['cairn_userbundle_simpletransaction[description]']->setValue('Test virement simple');
-                $form['cairn_userbundle_simpletransaction[date][day]']->select($day);
-                $form['cairn_userbundle_simpletransaction[date][month]']->select($month);
-                $form['cairn_userbundle_simpletransaction[date][year]']->select($year);
-            }else{
-                $form = $crawler->selectButton('cairn_userbundle_recurringtransaction_save')->form();
-                $form['cairn_userbundle_recurringtransaction[amount]']->setValue($amount);
-                $form['cairn_userbundle_recurringtransaction[fromAccount][email]']->setValue($debitorUser->getEmail());
-                $form['cairn_userbundle_recurringtransaction[fromAccount][id]']->setValue($debitorICC);
-                $form['cairn_userbundle_recurringtransaction[toAccount][email]']->setValue($creditorUser->getEmail());
-                $form['cairn_userbundle_recurringtransaction[toAccount][id]']->setValue($creditorICC);
-                $form['cairn_userbundle_recurringtransaction[description]']->setValue('Test virement permanent');
-                $form['cairn_userbundle_recurringtransaction[periodicity]']->select($periodicity);
-                $form['cairn_userbundle_recurringtransaction[firstOccurrenceDate][day]']->select($day);
-                $form['cairn_userbundle_recurringtransaction[firstOccurrenceDate][month]']->select($month);
-                $form['cairn_userbundle_recurringtransaction[firstOccurrenceDate][year]']->select($year);
-                $form['cairn_userbundle_recurringtransaction[lastOccurrenceDate][day]']->select($futureDay);
-                $form['cairn_userbundle_recurringtransaction[lastOccurrenceDate][month]']->select($futureMonth);
-                $form['cairn_userbundle_recurringtransaction[lastOccurrenceDate][year]']->select($futureYear);
-            }
+                $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
+                $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
+                $form['cairn_userbundle_simpleoperation[fromAccount][accountNumber]']->setValue($debitorICC);
+                $form['cairn_userbundle_simpleoperation[toAccount][email]']->setValue($creditorUser->getEmail());
+                $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($creditorICC);
+                $form['cairn_userbundle_simpleoperation[reason]']->setValue('Test virement simple');
+                $form['cairn_userbundle_simpleoperation[description]']->setValue('Test virement simple');
+                $form['cairn_userbundle_simpleoperation[executionDate][day]']->select($day);
+                $form['cairn_userbundle_simpleoperation[executionDate][month]']->select($month);
+                $form['cairn_userbundle_simpleoperation[executionDate][year]']->select($year);
+            }            
 
             $crawler =  $this->client->submit($form);
 
@@ -121,7 +101,7 @@ class BankingControllerTest extends BaseControllerTest
         //valid data
         $baseData = array('login'=>'LaBonnePioche','creditor'=>'MaltOBar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
             'isValid'=>true,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year,
-            'frequency'=>'unique','periodicity'=>'1','futureDay'=>$futureDay,'futureMonth'=>$futureMonth,'futureYear'=>$futureYear);
+            'frequency'=>'unique');
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
@@ -130,7 +110,9 @@ class BankingControllerTest extends BaseControllerTest
             'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
             'valid immediate'=>$baseData,
             'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
-            'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
+            'valid scheduled 2'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
+            'valid scheduled 3'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
+//            'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }
 
@@ -141,20 +123,23 @@ class BankingControllerTest extends BaseControllerTest
     public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,
         $periodicity, $isValid)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+        $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+                                                                                 'login',$credentials);
 
         $validator = $this->container->get('validator');
 
         if($frequency == 'unique'){
-            $transaction = new SimpleTransaction();
-            $transaction->setDate($firstDate); 
-        }else{
-            $transaction = new RecurringTransaction();
-            $transaction->setFirstOccurrenceDate($firstDate); 
-            $transaction->setLastOccurrenceDate($lastDate); 
-            $transaction->setPeriodicity($periodicity);
-        }
+            $transaction = new Operation();
+            $transaction->setExecutionDate($firstDate); 
+        }//else{
+         //   $transaction = new RecurringTransaction();
+         //   $transaction->setFirstOccurrenceDate($firstDate); 
+         //   $transaction->setLastOccurrenceDate($lastDate); 
+         //   $transaction->setPeriodicity($periodicity);
+        //}
         $transaction->setAmount($amount); 
+        $transaction->setReason('test Virement');
         $transaction->setDescription($description); 
         $transaction->setFromAccount($fromAccount); 
         $transaction->setToAccount($toAccount); 
@@ -172,13 +157,12 @@ class BankingControllerTest extends BaseControllerTest
     {
         $creditor = 'MaltOBar';
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
-        $creditorICC = $creditorAccount->id;
+        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
 
         $debitor = 'LaBonnePioche';
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
-        $debitorICC = $debitorAccount->id;
+        $debitorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
 
         $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
             'fromAccount'=> array('id'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
@@ -201,78 +185,79 @@ class BankingControllerTest extends BaseControllerTest
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
             'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
             'date before today' =>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-            'first date b4 today' =>array_replace($baseData,array('frequency'=>'recurring',
-            'firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-            'last date b4 first' =>array_replace($baseData,array('frequency'=>'recurring',
-            'lastDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-            'too short interval' =>array_replace($baseData,array('frequency'=>'recurring',
-            'lastDate'=>date_modify(new \Datetime(),'+10 days'),'isValid'=>false)),
-            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
-            'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
+//            'first date b4 today' =>array_replace($baseData,array('frequency'=>'recurring',
+//            'firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+//            'last date b4 first' =>array_replace($baseData,array('frequency'=>'recurring',
+//            'lastDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+//            'too short interval' =>array_replace($baseData,array('frequency'=>'recurring',
+//            'lastDate'=>date_modify(new \Datetime(),'+10 days'),'isValid'=>false)),
+//            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
+//            'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
 
             'valid simple'=> $baseData,
-            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
+            'valid scheduled'=> array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+1 months'),'isValid'=>true)),
+
+//            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
         );
     }
 
-    /**
-     *@dataProvider provideDataForConversion
-     */
-    public function testConversion($executor, $creditor, $to, $isValid)
-    {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $crawler = $this->login($executor, '@@bbccdd');
-
-        $executorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$executor));
-        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
-        $debitorICC = $debitorAccount->id;
-
-        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
-
-        $url = 'banking/conversion/request?to='.$to;
-        $crawler = $this->client->request('GET',$url);
-
-        $crawler = $this->client->followRedirect();
-        $crawler = $this->inputCardKey($crawler, '1111');
-        $crawler = $this->client->followRedirect();
-
-        $form = $crawler->selectButton('cairn_userbundle_simpletransaction_save')->form();
-        $form['cairn_userbundle_simpletransaction[amount]']->setValue(100);
-        $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
-        $form['cairn_userbundle_simpletransaction[description]']->setValue('Test conversion simple');
-
-        $crawler =  $this->client->submit($form);
-
-        if($isValid){
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
-
-            //checker le contenu du récapitulatif
-            $form = $crawler->selectButton('form_save')->form();
-            $crawler = $this->client->submit($form);
-        }else{
-            $this->assertTrue($this->client->getResponse()->isRedirect());
-        }
-    }
-
-
-    public function provideDataForConversion()
-    {
-        $baseOtherData = array('executor'=>'mazouthm','creditor'=>'LaBonnePioche','to'=>'other','isValid'=>true);
-        $baseSelfData = array('executor'=>'LaBonnePioche','creditor'=>'LaBonnePioche','to'=>'self', 'isValid'=>true);
-
-        return array(
-            'sys for other but sys account provided'=>array_replace($baseOtherData,array('creditor'=>'mazouthm','isValid'=>false)),
-            'sys for himself but other account provided'=>array_replace($baseSelfData,array('executor'=>'mazouthm','isValid'=>false)),
-            'user for himself but other account provided'=>array_replace($baseSelfData,array('creditor'=>'MaltOBar','isValid'=>false)),
-            'valid user conversion' => $baseSelfData,
-            'valid self conversion sys' => array_replace($baseSelfData,array('executor'=>'mazouthm','creditor'=>'mazouthm')),
-            'valid other conversion sys' => $baseOtherData,
-            //
-        );
-    }
+//    /**
+//     *@dataProvider provideDataForConversion
+//     */
+//    public function testConversion($executor, $creditor, $to, $isValid)
+//    {
+//
+//        $crawler = $this->login($executor, '@@bbccdd');
+//
+//        $executorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$executor));
+//        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getDebitAccount();
+//        $debitorICC = $debitorAccount->id;
+//
+//        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
+//        $creditorICC = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0]->id;
+//
+//        $url = 'banking/conversion/request?to='.$to;
+//        $crawler = $this->client->request('GET',$url);
+//
+//        $crawler = $this->client->followRedirect();
+//        $crawler = $this->inputCardKey($crawler, '1111');
+//        $crawler = $this->client->followRedirect();
+//
+//        $form = $crawler->selectButton('cairn_userbundle_simpletransaction_save')->form();
+//        $form['cairn_userbundle_simpletransaction[amount]']->setValue(100);
+//        $form['cairn_userbundle_simpletransaction[toAccount][id]']->setValue($creditorICC);
+//        $form['cairn_userbundle_simpletransaction[description]']->setValue('Test conversion simple');
+//
+//        $crawler =  $this->client->submit($form);
+//
+//        if($isValid){
+//            $crawler = $this->client->followRedirect();
+//            $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
+//
+//            //checker le contenu du récapitulatif
+//            $form = $crawler->selectButton('form_save')->form();
+//            $crawler = $this->client->submit($form);
+//        }else{
+//            $this->assertTrue($this->client->getResponse()->isRedirect());
+//        }
+//    }
+//
+//
+//    public function provideDataForConversion()
+//    {
+//        $baseOtherData = array('executor'=>$this->testAdmin,'creditor'=>'LaBonnePioche','to'=>'other','isValid'=>true);
+//        $baseSelfData = array('executor'=>'LaBonnePioche','creditor'=>'LaBonnePioche','to'=>'self', 'isValid'=>true);
+//
+//        return array(
+//            'sys for other but sys account provided'=>array_replace($baseOtherData,array('creditor'=>$this->testAdmin,'isValid'=>false)),
+//            'sys for himself but other account provided'=>array_replace($baseSelfData,array('executor'=>$this->testAdmin,'isValid'=>false)),
+//            'user for himself but other account provided'=>array_replace($baseSelfData,array('creditor'=>'MaltOBar','isValid'=>false)),
+//            'valid user conversion' => $baseSelfData,
+//            'valid self conversion sys' => array_replace($baseSelfData,array('executor'=>$this->testAdmin,'creditor'=>$this->testAdmin)),
+//            'valid other conversion sys' => $baseOtherData,
+//            //
+//        );
+//    }
 
     /**
      *
@@ -281,32 +266,33 @@ class BankingControllerTest extends BaseControllerTest
      */
     public function testDownloadRIB($downloader,$owner,$isLegit)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $downloaderUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$downloader));
-
-        $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$owner));
-        $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
-
         $crawler = $this->login($downloader, '@@bbccdd');
 
-        $crawler = $this->client->request('GET','banking/download/rib/'.$ownerAccount->id);
+        $downloaderUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$downloader));
+        $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$owner));
 
-        if($isLegit){
-            $this->assertTrue($this->client->getResponse()->headers->contains('Content-Type','application/pdf'));
+        $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
+        if(!$isLegit){
+            //assert isRedirect homepage "Donnée introuvable"
+            $this->assertTrue($this->client->getResponse()->isRedirect());
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("Donnée introuvable")')->count());
+
         }else{
-            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            $crawler = $this->client->request('GET','banking/download/rib/'.$ownerAccount->id);
+            $this->assertTrue($this->client->getResponse()->headers->contains('Content-Type','application/pdf'));
         }
+
     }
 
     public function provideDownloadersAndOwners()
     {
         return array(
-            'admin for pro'=>array('downloader'=>'mazouthm','owner'=>'DrDBrew','isLegit'=>true ),
+            'admin for pro'=>array('downloader'=>$this->testAdmin,'owner'=>'DrDBrew','isLegit'=>true ),
             'pro for himself'=>array('downloader'=>'LaBonnePioche','owner'=>'LaBonnePioche','isLegit'=>true ),
             'pro for admin'=>array('downloader'=>'LaBonnePioche','owner'=>'glGrenoble','isLegit'=>false ),
             'pro for pro'=>array('downloader'=>'LaBonnePioche','owner'=>'DrDBrew','isLegit'=>false ),
-            'admin for non referred'=>array('downloader'=>'mazouthm','owner'=>'cafeEurope','isLegit'=>false ),
+            'admin for non referred'=>array('downloader'=>$this->testAdmin,'owner'=>'cafeEurope','isLegit'=>false ),
         );
     }
 
@@ -317,12 +303,9 @@ class BankingControllerTest extends BaseControllerTest
     public function testDownloadAccountsOverview($downloader,$isLegit,$tick,$format,$isValid,$endDay,$endMonth,$endYear,$pastDay,
         $pastMonth,$pastYear)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->login($downloader, '@@bbccdd');
 
         $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$downloader));
-
 
         $url = '/banking/download/accounts/';
         $crawler = $this->client->request('GET',$url);
@@ -379,7 +362,7 @@ class BankingControllerTest extends BaseControllerTest
         return array(
             'pro'=>$baseData,
             'admin'=>array_replace($baseData,array('downloader'=>'glGrenoble','isLegit'=>false)),
-            'super_admin'=>array_replace($baseData,array('downloader'=>'mazouthm','isLegit'=>true,'format'=>'pdf')),
+            'super_admin'=>array_replace($baseData,array('downloader'=>$this->testAdmin,'isLegit'=>true,'format'=>'pdf')),
             'anonym'=>array_replace($baseData,array('downloader'=>'','isLegit'=>false)),
             'today=before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year)),
             'today<before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year,
@@ -388,54 +371,58 @@ class BankingControllerTest extends BaseControllerTest
     }
 
     /**
-     *
-     *depends testSimpleTransactionProcess
+     *@TODO : execute -> test that operation type has changed
+     *        cancel -> test that operation has been removed
+     *If testSimpleTransactionProcess ends correctly, there are two scheduled payments made by LaBonnePioche
+     *@depends testSimpleTransactionProcess
      */
-    public function testChangeScheduledTransactionStatus()
+    public function testChangeScheduledTransactionStatus($newStatus)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $owner = 'LaBonnePioche';
         $crawler = $this->login($owner, '@@bbccdd');
         $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$owner));
         $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
         $accountBalanceBefore = $ownerAccount->status->balance;
-        //block a scheduled transaction
-        $link = $crawler->filter('a[href*="block"]')->eq(0)->link();
-        $crawler = $this->client->click($link);
-        $form = $crawler->selectButton('confirmation_save')->form();
-        $crawler =  $this->client->submit($form);
-        $crawler = $this->client->followRedirect();
-        $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
-        //then, open a scheduled transaction
-        $link = $this->crawler->filter('a[href*="open"]')->eq(0)->link();
-        $crawler = $this->client->click($link);
-        $form = $crawler->selectButton('confirmation_save')->form();
-        $crawler =  $this->client->submit($form);
-        $crawler = $this->client->followRedirect();
-        $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+        $scheduledOperations = $operationRepo->createQueryBuilder('o')
+            ->where('o.fromAccountNumber = :number')
+            ->andWhere('o.paymentID is not NULL')                      
+            ->andWhere('o.type = :type')                               
+            ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
+            ->setParameter('number',$ownerAccount->number)                  
+            ->getQuery()->getResult(); 
 
-        //then, execute a scheduled transaction
-        $link = $crawler->filter('a[href*="execute"]')->eq(0)->link();
-        $crawler = $this->client->click($link);
-        $form = $crawler->selectButton('confirmation_save')->form();
-        $crawler =  $this->client->submit($form);
-        $crawler = $this->client->followRedirect();
-        $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+        $operation = $scheduledOperations[0];
+        if($newStatus == 'execute'){
+            $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
+            $crawler = $this->client->click($link);
+            $form = $crawler->selectButton('confirmation_save')->form();
+            $crawler =  $this->client->submit($form);
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
-        $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
-        $accountBalanceAfter = $ownerAccount->status->balance;
+            $this->em->refresh($operation);
+            $this->assertEquals($operation->getType(), $TYPE_TRANSACTION_EXECUTED);
+            $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
+            $accountBalanceAfter = $ownerAccount->status->balance;
 
-        $this->assertTrue($accountBalanceAfter < $accountBalanceBefore);
+            $this->assertTrue($accountBalanceAfter < $accountBalanceBefore);
+        }else{
+            $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
+            $crawler = $this->client->click($link);
+            $form = $crawler->selectButton('confirmation_save')->form();
+            $crawler =  $this->client->submit($form);
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
+            $this->em->refresh($operation);
+            $this->assertEquals($operation,NULL);
+            $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
+            $accountBalanceAfter = $ownerAccount->status->balance;
+
+            $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
+
+        }
     }
 
-    /**
-     *
-     *@depends testRecurringTransactionProcess 
-     */
-    public function testCancelRecurringTransaction()
-    {
-
-    }
 }

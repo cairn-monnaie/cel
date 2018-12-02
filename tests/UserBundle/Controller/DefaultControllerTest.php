@@ -21,26 +21,11 @@ class DefaultControllerTest extends BaseControllerTest
         parent::__construct($name, $data, $dataName);
     }
 
-    public function testInstall()
-    {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $crawler = $this->client->request('GET','/install/');
-        $this->assertTrue($this->client->getResponse()->isRedirect('/'));
-        $crawler = $this->client->followRedirect();
-
-        $this->assertSame(1, $crawler->filter('div.alert-info')->count());    
-
-    }
-
     /**
      *@dataProvider provideTypeForRegistration
      */
     public function testRegistrationPage($login,$username,$type,$expectValid,$expectMessage)
     {
-
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $crawler = $this->client->request('GET','/logout');
 
         if($login){
@@ -62,8 +47,8 @@ class DefaultControllerTest extends BaseControllerTest
     {
         return array(
             array('login'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>'mazouthm','type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
-            array('login'=>true,'username'=>'mazouthm','type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
+            array('login'=>true,'username'=>$this->testAdmin,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
+            array('login'=>true,'username'=>$this->testAdmin,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
           array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
             array('login'=>false,'username'=>'','type'=>'', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
@@ -78,9 +63,7 @@ class DefaultControllerTest extends BaseControllerTest
     public function testRegistration($type,$email,$username,$name, $street1,$zipCode,$description, $emailConfirmed)
     {
         //registration by administrator
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
-        $login = $this->container->getParameter('cyclos_global_admin_username');
+        $login = $this->testAdmin;
         $password = '@@bbccdd';
         $crawler = $this->login($login, $password);
 
@@ -112,7 +95,7 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->request('GET','/register/informations/confirm/'.$newUser->getConfirmationToken());
 
-            //assert email
+            //assert email of email validation
             $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
             $this->assertSame(1, $mailCollector->getMessageCount());
             $message = $mailCollector->getMessages()[0];
@@ -156,8 +139,6 @@ class DefaultControllerTest extends BaseControllerTest
      */
     public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$description)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
-
         $validator = $this->container->get('validator');
 
         $user = new User();

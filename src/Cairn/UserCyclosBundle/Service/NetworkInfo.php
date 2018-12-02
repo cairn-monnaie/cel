@@ -136,7 +136,7 @@ class NetworkInfo
      */
     public function switchToNetwork($internalName, $method, $credentials)
     {
-        if($internalName == 'global'){
+        if($internalName == 'global' && $this->environment != 'test'){
             throw new AccessDeniedException('Vous n\'avez pas accès à cette section');
         }
 

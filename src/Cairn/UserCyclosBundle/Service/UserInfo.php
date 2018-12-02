@@ -72,10 +72,10 @@ class UserInfo
     /**
      *WARNING : use this function very carefully ! the option "keywords" means that if you have several users with data such that one is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for. That's why, for now, we use it only at installation because there is only one user in the system. For a given mask for account numbers, this function is safe. Afterwards, if one changes the mask, all account numbers should be generated before using this function
      */
-    public function getUserVOByKeyword($name)
+    public function getUserVOByKeyword($keyword)
     {
         $query = new \stdClass();
-        $query->keywords = $name;
+        $query->keywords = $keyword;
 
         $users = $this->userService->search($query)->pageItems;
         $user = (count($users) == 0) ? NULL : $users[0];
@@ -117,9 +117,9 @@ class UserInfo
      *@param string $userName
      *@return bool
      */
-    public function isInGroup($groupName, $userName)
+    public function isInGroup($groupName, $userID)
     {
-        return ($groupName == $this->getUserData($userName)->dto->group->name);
+        return ($groupName == $this->getUserDTO($userID)->group->name);
     }
 
     /*
