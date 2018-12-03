@@ -133,14 +133,23 @@ class BankingController extends Controller
         $begin = date_modify(new \Datetime(),'-2 months');
         $end = date_modify(new \Datetime(),'+1 days');
 
+
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
-        $executedTransactions = $ob->where('o.fromAccountNumber = :number')
+        $executedTransactions = $ob->where(
+             $ob->expr()->orX(
+                 $ob->expr()->andX(
+                     'o.fromAccountNumber = :number',
+                     $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                 ),
+                 $ob->expr()->andX(
+                     'o.toAccountNumber = :number',
+                     $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                 )
+             ))
             ->andWhere('o.paymentID is not NULL')
-            ->andWhere('o.type = :type')
             ->andWhere('o.executionDate BETWEEN :begin AND :end')
             ->orderBy('o.executionDate','ASC')
-            ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
             ->setParameter('number',$account->number)
             ->setParameter('begin',$begin)
             ->setParameter('end',$end)
@@ -202,9 +211,18 @@ class BankingController extends Controller
                 $end = date_modify($end,'+1 days');
 
                 $ob = $operationRepo->createQueryBuilder('o');
-                $ob->where('o.fromAccountNumber = :number')
+                $ob->where(
+                    $ob->expr()->orX(
+                        $ob->expr()->andX(
+                            'o.fromAccountNumber = :number',
+                            $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                        ),
+                        $ob->expr()->andX(
+                            'o.toAccountNumber = :number',
+                            $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                        )
+                    ))
                     ->andWhere('o.paymentID is not NULL')
-                    ->andWhere('o.type = :type')
                     ->andWhere('o.executionDate BETWEEN :begin AND :end');
                 if($minAmount){
                     $ob->andWhere('o.amount > :min')
@@ -228,7 +246,6 @@ class BankingController extends Controller
                 }
 
                 $ob->orderBy('o.executionDate',$orderBy)
-                    ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
                     ->setParameter('number',$account->number)
                     ->setParameter('begin',$begin)
                     ->setParameter('end',$end);
@@ -713,7 +730,9 @@ class BankingController extends Controller
     {
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
-        $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
         $currentUser = $this->getUser();
         $type = 'deposit';
         $direction = 'SYSTEM_TO_USER';
@@ -721,8 +740,9 @@ class BankingController extends Controller
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
 
-        $transaction = new SimpleTransaction();
-        $transaction->setFromAccount(json_decode(json_encode($debitAccount),true));
+        $transaction = new Operation();
+        $transaction->setType(Operation::$TYPE_DEPOSIT);
+        $transaction->setReason('Dépôt Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
 
         $formUser = $this->createFormBuilder()
             ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
@@ -730,7 +750,7 @@ class BankingController extends Controller
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $formDeposit = $this->createForm(DepositType::class, $transaction);
+        $formDeposit = $this->createForm(SimpleOperationType::class, $transaction);
 
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
@@ -752,22 +772,29 @@ class BankingController extends Controller
         $formDeposit->handleRequest($request);
         if($formDeposit->isSubmitted() && $formDeposit->isValid()){
             $amount = $transaction->getAmount();
-            $description = $currentUser->getName() .' ' . $currentUser->getCity();
-            $description = $this->editDescription($type,$description);
+            $description = $this->editDescription($type,$transaction->getDescription());
 
-            $dataTime = $transaction->getDate();
-            $fromAccount = $debitAccount; 
-            $toAccount = $accountService->getAccountByID($toAccount['id']);
+            $dataTime = $transaction->getExecutionDate();
+            $toAccount = $accountService->getAccountByNumber($transaction->getToAccount()['accountNumber']);
 
-            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
+            //get transfer type. Here we have a list, but with such precise arguments there is only one transfer type
+            $transferType = $this->get('cairn_user_cyclos_transfertype_info')->getListTransferTypes($debitAccount->type,$toAccount->type,$direction,'PAYMENT')[0];
 
-            if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
-                $session->getFlashBag()->add('error',$review->error);
-                return new RedirectResponse($request->getRequestUri());
-            }
+            //process Cyclos review
+            $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+            $paymentData = $bankingService->getPaymentData($debitAccount->owner,$toAccount->owner,$transferType);
+            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-            $session->set('paymentReview',$review);
-            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('type'=>$type));
+            $transaction->setFromAccountNumber($debitAccount->id);
+            $transaction->setToAccountNumber($res->toAccount->number);
+
+            $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
+            $transaction->setUser($userToCredit);
+            $em->persist($transaction);
+            $em->flush();
+
+            $session->set('paymentReview',$res);
+            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('id'=>$transaction->getID(),'type'=>$type));
         }
 
         return $this->render('CairnUserBundle:Banking:deposit.html.twig',array('formUser'=>$formUser->createView(),'formDeposit'=>$formDeposit->createView(),'accounts'=>$involvedAccounts));
@@ -978,13 +1005,14 @@ class BankingController extends Controller
                             $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                             $operation->setPaymentID($paymentVO->id);
                         }
-
                         break;
                     case 'conversion':
                         break;
                     case 'reconversion':
                         break;
                     case 'deposit':
+                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                            $operation->setPaymentID($paymentVO->id);
                         break;
                     case 'withdrawal':
                         break;

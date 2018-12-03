@@ -85,14 +85,14 @@ class Operation
     /**
      * @var string
      *
-     * @ORM\Column(name="fromAccountNumber", type="string", length=10)
+     * @ORM\Column(name="fromAccountNumber", type="string", length=25)
      */
     private $fromAccountNumber;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="toAccountNumber", type="string", length=10)
+     * @ORM\Column(name="toAccountNumber", type="string", length=25)
      */
     private $toAccountNumber;
 
@@ -123,6 +123,15 @@ class Operation
     public static $TYPE_WITHDRAWAL = 6;
     public static $TYPE_SCHEDULED_FAILED = 7;
 
+    public static function getFromOperationTypes()
+    {
+        return array(self::$TYPE_TRANSACTION_EXECUTED,self::$TYPE_WITHDRAWAL,self::$TYPE_RECONVERSION);
+    }
+
+    public static function getToOperationTypes()
+    {
+        return array(self::$TYPE_DEPOSIT,self::$TYPE_CONVERSION);
+    }
 
     /**
      *

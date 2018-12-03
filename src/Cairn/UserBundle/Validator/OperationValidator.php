@@ -34,7 +34,7 @@ class OperationValidator extends ConstraintValidator
             $this->context->buildViolation('Le compte n\'a pas été sélectionné')
                 ->atPath($path)                                        
                 ->addViolation();                                              
-        }else{ //fromICC provided
+        }else{ //ICC provided
             try{
                 $account = $this->accountInfo->getAccountByNumber($ICC);
                 if(!$account){

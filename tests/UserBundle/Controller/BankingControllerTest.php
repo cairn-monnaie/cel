@@ -209,6 +209,65 @@ class BankingControllerTest extends BaseControllerTest
         );
     }
 
+    /**
+     *
+     *@dataProvider provideDataForDepositAndWithdrawal
+     */
+    public function testDepositAndWithdrawal($operation,$creditor,$changeICC,$amount,$isValid,$message)
+    {
+        $adminUsername = $this->getAdminUsername();
+        $crawler = $this->login($adminUsername, '@@bbccdd');
+
+        $url = '/banking/'.$operation.'/request';
+        $crawler = $this->client->request('GET',$url);
+        $crawler = $this->client->followRedirect();
+
+        $crawler = $this->inputCardKey($crawler, '1111');
+        $crawler = $this->client->followRedirect();
+
+        $ICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
+
+        if($changeICC){
+            $ICC = $ICC + 1;
+        }
+
+        $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
+        $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
+        $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($ICC);
+        $form['cairn_userbundle_simpleoperation[description]']->setValue('Test '.$operation);
+        $crawler =  $this->client->submit($form);
+
+        if($isValid){
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
+
+            //checker le contenu du récapitulatif
+            $form = $crawler->selectButton('form_save')->form();
+            $crawler = $this->client->submit($form);
+            
+            //@todo : tester que l'opération a bien eu lieu
+        }else{
+            $this->assertSame(1, $crawler->filter('div#cairn_userbundle_simpleoperation')->count());    
+            $this->assertContains($message,$this->client->getResponse()->getContent());
+        }
+    }
+
+    public function provideDataForDepositAndWithdrawal()
+    {
+        return array(
+            'valid deposit'=>array('operation'=>'deposit','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,'isValid'=>true,
+                                   'message'=>'xxx'),
+            'invalid deposit ICC'=>array('operation'=>'deposit','creditor'=>'LaBonnePioche','changeICC'=>true,'amount'=>10,
+                                         'isValid'=>false,'message'=>'Compte introuvable'),
+//            'valid withdrawal'=>array('operation'=>'withdrawal','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,
+//                                      'isValid'=>true,'message'=>'xxx'),
+//            'insufficient balance'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>false,'amount'=>10000000,
+//                                          'isValid'=>false,'message'=>'rechargez votre compte'),
+//            'invalid withdrawal ICC'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>true,
+//                                            'amount'=>10,'isValid'=>false,'message'=>'Compte introuvable'),
+        );
+    }
+
 //    /**
 //     *@dataProvider provideDataForConversion
 //     */

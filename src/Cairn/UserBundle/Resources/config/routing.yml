@@ -172,14 +172,14 @@ cairn_user_banking_operations:
     path:     banking/operations/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
     requirements:
-        type: transaction #|conversion|reconversion|deposit|withdrawal
+        type: transaction|deposit #|conversion |reconversion|withdrawal
         _format: html|json
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewOperations, _format: html }
     requirements:
-        type: transaction #|conversion|reconversion|deposit|withdrawal
+        type: transaction|deposit #|conversion #|reconversion|withdrawal
         _format: html|json
 
 cairn_user_banking_transaction_to:
@@ -203,29 +203,29 @@ cairn_user_banking_transaction_request:
 #    requirements:
 #        _format: html|json
 #
-#cairn_user_banking_deposit_request:
-#    path:     banking/deposit/request.{_format}
-#    defaults: { _controller: CairnUserBundle:Banking:depositRequest, _format: html }
-#    requirements:
-#        _format: html|json
-#
+cairn_user_banking_deposit_request:
+    path:     banking/deposit/request.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:depositRequest, _format: html }
+    requirements:
+        _format: html|json
+
 #cairn_user_banking_reconversion_request:
 #    path:     banking/reconversion/request.{_format}
 #    defaults: { _controller: CairnUserBundle:Banking:reconversionRequest, _format: html }
 #    requirements:
 #        _format: html|json
 #
-#cairn_user_banking_conversion_request:
-#    path:     banking/conversion/request.{_format}
-#    defaults: { _controller: CairnUserBundle:Banking:conversionRequest, _format: html }
-#    requirements:
-#        _format: html|json
+cairn_user_banking_conversion_request:
+    path:     banking/conversion/request.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:conversionRequest, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_banking_operation_confirm:
     path:     banking/operation/confirm/{id}-{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
-        type: transaction #|conversion|reconversion|deposit|withdrawal
+        type: transaction|deposit #|conversion|reconversion|withdrawal
         _format: html|json
 
 

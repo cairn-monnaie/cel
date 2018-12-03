@@ -5,6 +5,19 @@
 {% block stylesheets %} {{parent()}} {% endblock %}
 {% block body %}
         {{parent()}}
+
+        {% if operationReview.fromAccount.type.nature == 'USER' %}
+            {% set fromID = operationReview.fromAccount.number %}
+        {% else %}
+            {% set fromID = operationReview.fromAccount.id %}
+        {% endif %}
+
+        {% if operationReview.toAccount.type.nature == 'USER' %}
+            {% set toID = operationReview.toAccount.number %}
+        {% else %}
+            {% set toID = operationReview.toAccount.id %}
+        {% endif %}
+
     <h1>Récapitulatif du paiement en cours </h1>
     
     <li>
@@ -14,7 +27,7 @@
             Association Le Cairn
         {% endif %}
         {{ operationReview.fromAccount.type.name }}
-        {{ operationReview.fromAccount.number }}
+        {{ fromID }}
 
     </li>
     <li>
@@ -23,7 +36,7 @@
         {% else %}
             Association Le Cairn
         {% endif %}
-        {{ operationReview.toAccount.number }}
+        {{ toID }}
     </li>
     <li>{{ operationReview.totalAmount.amount }}</li>
     
