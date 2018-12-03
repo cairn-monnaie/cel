@@ -22,6 +22,7 @@ services:
         class: Cairn\UserCyclosBundle\Service\AccountInfo
         arguments:
             - "@cairn_user_cyclos_accounttype_info"
+            - "@cairn_user_cyclos_user_info"
 
     cairn_user_cyclos_accounttype_info:
         class: Cairn\UserCyclosBundle\Service\AccountTypeInfo

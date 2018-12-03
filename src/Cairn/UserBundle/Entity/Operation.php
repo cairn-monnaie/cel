@@ -149,6 +149,7 @@ class Operation
         $today = new \Datetime();
         $this->setSubmissionDate($today);
         $this->setExecutionDate($today);
+        $this->setType(self::$TYPE_TRANSACTION_EXECUTED);
     }
 
     /**

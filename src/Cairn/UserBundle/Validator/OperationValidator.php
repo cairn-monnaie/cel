@@ -10,6 +10,7 @@ use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Service\AccountInfo;
 use Cairn\UserCyclosBundle\Service\UserInfo;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Entity\Operation;
 
 class OperationValidator extends ConstraintValidator
 {
@@ -25,9 +26,104 @@ class OperationValidator extends ConstraintValidator
         $this->accountInfo = $accountInfo;
     }
 
+    private function validateActiveAccount($account,$path)
+    {
+
+        $ICC = $account['accountNumber'];
+        if(!$ICC){                                    
+            $this->context->buildViolation('Le compte n\'a pas été sélectionné')
+                ->atPath($path)                                        
+                ->addViolation();                                              
+        }else{ //fromICC provided
+            try{
+                $account = $this->accountInfo->getAccountByNumber($ICC);
+                if(!$account){
+                    $this->context->buildViolation('Compte introuvable')
+                        ->atPath($path)                                        
+                        ->addViolation();                                              
+                }
+            }catch(\Exception $e){
+                if($e->errorCode == 'ENTITY_NOT_FOUND' || $e->errorCode == 'NULL_POINTER'){
+                    $this->context->buildViolation('Compte introuvable')
+                        ->atPath($path)                                        
+                        ->addViolation();                                              
+                }else{
+                    throw $e;
+                }
+            }
+        }
+    }
+
+    private function validatePassiveAccount($account,$path){
+        $email = $account['email'];
+        $ICC = $account['accountNumber']; 
+
+        if(! ($ICC || $email)){ 
+            $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
+                ->atPath($path)                                          
+                ->addViolation();                                              
+        }else{ //email and ICC provided
+            if($ICC){
+                $userVO = $this->userInfo->getUserVOByKeyword($ICC);
+
+                if(!$userVO){
+                    $this->context->buildViolation('ICC introuvable')
+                        ->atPath($path)                                          
+                        ->addViolation();                                              
+                }else{
+//                    if($fromICC == $toICC){
+//                        $this->context->buildViolation('Les comptes débiteur et créditeur sont identiques')
+//                            ->atPath($path)                                          
+//                            ->addViolation();                                              
+//                    }
+
+                    $user = $this->userRepo->findOneBy(array('username'=>$userVO->username));
+                }
+            }
+            if($email){
+                $user = $this->userRepo->findOneBy(array('email'=>$email));
+
+                if(!$user){//invalid email
+                    $this->context->buildViolation('Aucun membre avec email '.$email)
+                        ->atPath($path)                                          
+                        ->addViolation();                                              
+                }
+            }
+
+            if($user && $user->getRemovalRequest()){
+                $this->context->buildViolation($user->getName().' est en phase de suppression. Vous ne pouvez donc pas effectuer cette opération')
+                    ->atPath($path)                                          
+                    ->addViolation();                                              
+            }
+            if($ICC && $email){
+                if($userVO && $user){
+                    if(! ($user->getUsername() == $userVO->username)){//email not provided so we use username instead
+                        $this->context->buildViolation('email et ICC ne correspondent pas')
+                            ->atPath($path)                                          
+                            ->addViolation();                                              
+                    }
+
+
+                }
+            }
+        }
+
+    }
+
+    private function validateBalance($account,$amount)
+    {
+        if(!$account->unlimited){
+            if($account->status->availableBalance < $amount){
+                $this->context->buildViolation('Montant trop élevé : modifiez-le ou rechargez votre compte.')
+                    ->atPath('amount')
+                    ->addViolation();
+            }
+        }
+    }
+
     /**
      * Validates the provided operation information
-     *
+     *@todo : case if fromICC == toICC
      */
     public function validate($operation, Constraint $constraint)
     {
@@ -37,85 +133,28 @@ class OperationValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        $fromICC = $operation->getFromAccount()['accountNumber'];
-        $emailTo = $operation->getToAccount()['email'];
-        $toICC = $operation->getToAccount()['accountNumber']; 
+        $array_debitor = array(Operation::$TYPE_TRANSACTION_EXECUTED,Operation::$TYPE_TRANSACTION_SCHEDULED,Operation::$TYPE_WITHDRAWAL);
 
-        //check debitor account
-        if(!$fromICC){                                    
-            $this->context->buildViolation('Le compte débiteur n\'a pas été sélectionné')
-                ->atPath('fromAccount')                                        
-                ->addViolation();                                              
-        }else{ //fromICC provided
-            try{
-                $account = $this->accountInfo->getAccountByID($fromICC);
-                if(!$account->unlimited){
-                    if($account->status->availableBalance < $operation->getAmount()){
-                        $this->context->buildViolation('Montant trop élevé : modifiez-le ou rechargez votre compte.')
-                            ->atPath('amount')
-                            ->addViolation();
-                    }
-                }
-            }catch(\Exception $e){
-                if($e->errorCode == 'ENTITY_NOT_FOUND' || $e->errorCode == 'NULL_POINTER'){
-                    $this->context->buildViolation('Le compte débiteur n\'existe pas ou ne vous appartient pas')
-                        ->atPath('fromAccount')                                        
-                        ->addViolation();                                              
-                }else{
-                    throw $e;
-                }
+        if(in_array($operation->getType(),$array_debitor)){
+            $this->validateActiveAccount($operation->getFromAccount(),'fromAccount');
+            if(count($this->context->getViolations()) == 0){
+                $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
+                $this->validateBalance($account,$operation->getAmount());
             }
-        }
-
-        //check creditor account
-        if(! ($toICC || $emailTo)){ 
-            $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
-                ->atPath('toAccount')                                          
-                ->addViolation();                                              
-        }else{ //email and ICC provided
-            if($toICC){
-                $toUserVO = $this->userInfo->getUserVOByKeyword($toICC);
-
-                if(!$toUserVO){
-                    $this->context->buildViolation('ICC introuvable')
-                        ->atPath('toAccount')                                          
-                        ->addViolation();                                              
-                }else{
-                    if($fromICC == $toICC){
-                        $this->context->buildViolation('Les comptes débiteur et créditeur sont identiques')
-                            ->atPath('toAccount')                                          
-                            ->addViolation();                                              
-                    }
-
-                    $creditorUser = $this->userRepo->findOneBy(array('username'=>$toUserVO->username));
-                }
-            }
-            if($emailTo){
-                $creditorUser = $this->userRepo->findOneBy(array('email'=>$emailTo));
-
-                if(!$creditorUser){//invalid email
-                    $this->context->buildViolation('Aucun membre avec email '.$emailTo)
-                        ->atPath('toAccount')                                          
-                        ->addViolation();                                              
-                }
+            if(! ($operation->getType() == Operation::$TYPE_WITHDRAWAL)){
+                $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
             }
 
-            if($creditorUser && $creditorUser->getRemovalRequest()){
-                $this->context->buildViolation($creditorUser->getName().' est en phase de suppression. Vous ne pouvez donc pas lui faire de virement')
-                    ->atPath('toAccount')                                          
-                    ->addViolation();                                              
+        }else{
+            $this->validateActiveAccount($operation->getToAccount(),'toAccount');
+            if(count($this->context->getViolations()) == 0){
+                $account = $this->accountInfo->getAccountByNumber($operation->getToAccount()['accountNumber']);
+                $this->validateBalance($account,$operation->getAmount());
             }
-            if($toICC && $emailTo){
-                if($toUserVO && $creditorUser){
-                    if(! ($creditorUser->getUsername() == $toUserVO->username)){//email not provided so we use username instead
-                        $this->context->buildViolation('email et ICC ne correspondent pas')
-                            ->atPath('toAccount')                                          
-                            ->addViolation();                                              
-                    }
-
-
-                }
+            if(! ($operation->getType() == Operation::$TYPE_DEPOSIT)){
+                $this->validatePassiveAccount($operation->getFromAccount(),'fromAccount');
             }
+
         }
     } 
 

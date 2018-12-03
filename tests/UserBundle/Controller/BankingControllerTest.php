@@ -37,7 +37,7 @@ class BankingControllerTest extends BaseControllerTest
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
 
-        $debitorICC = $debitorAccount->id;
+        $debitorICC = $debitorAccount->number;
         $previousBalance = $debitorAccount->status->balance;
 
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));

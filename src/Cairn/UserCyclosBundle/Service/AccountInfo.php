@@ -7,6 +7,8 @@ namespace Cairn\UserCyclosBundle\Service;
 use Cyclos;
 
 use Cairn\UserCyclosBundle\Service\AccountTypeInfo;
+use Cairn\UserCyclosBundle\Service\UserInfo;
+
 
 /**
  *This class contains getters related to accounts in Cyclos
@@ -29,15 +31,33 @@ class AccountInfo
      */
     private $accountTypeInfo;
 
-    public function __construct(AccountTypeInfo $accountTypeInfo)
+    /**                                                                        
+     * UserCyclosBundle service containing getters related to users 
+     *@var UserInfo $userInfo
+     */
+    private $userInfo;
+
+    public function __construct(AccountTypeInfo $accountTypeInfo, UserInfo $userInfo)
     {
         $this->accountService = new Cyclos\AccountService();
         $this->accountTypeInfo = $accountTypeInfo;
+        $this->userInfo = $userInfo;
     }
 
     public function getAccountByNumber($number)
     {
-
+        $userVO = $this->userInfo->getUserVOByKeyword($number);
+        if(!$userVO){
+            return NULL;
+        }else{
+            $accounts = $this->getAccountsSummary($userVO->id,NULL);
+            foreach($accounts as $account){
+                if($account->number == $number){
+                    return $account;
+                }
+            }
+            return NULL;
+        }
 
     }
 
@@ -129,6 +149,7 @@ class AccountInfo
         if($nbAccounts != 0){
             if($accounts[0]->type->nature == 'SYSTEM'){
                 for($index = 0; $index < $nbAccounts; $index++){                   
+                    $accounts[$index]->number = $accounts[$index]->id;
                     if($accounts[$index]->unlimited){            
                         unset($accounts[$index]);                              
                     }                                                              
@@ -162,7 +183,11 @@ class AccountInfo
         $numbers = array();
         $userAccounts = $this->getAccountsSummary($userID,NULL);
         foreach($userAccounts as $account){
-            $numbers[] = $account->number; 
+            if($account->type->nature == 'SYSTEM'){
+                $numbers[] = $account->id;
+            }else{
+                $numbers[] = $account->number; 
+            }
         }
         return $numbers;
     }

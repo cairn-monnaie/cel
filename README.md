@@ -152,7 +152,7 @@ Digital Cairn
         * system to system payments : check all
         * system to user payments : check all
         * system recurring payments : check view + cancel
-        * system scheduled payments : check view + cancel + block + unblock + process installment + settle installment
+        * system scheduled payments : check view + cancel + process installment
      * User management :
         * Profile fields of other users
            * Login name : check Visible/User filter/User List
@@ -168,6 +168,9 @@ Digital Cairn
         * recurring payments : check view + cancel
         * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
         * Accounts balance limits : select "manage"
+     * Messages
+        * Notifications : uncheck
+        * Send messages to groups : uncheck
      * Click save
 
  21. **Configure an account type and its corresponding transfer types**
@@ -217,7 +220,10 @@ Digital Cairn
         * system payments : check all
         * user payments : check all
         * recurring payments : check view + cancel
-        * scheduled payments : check  view + cancel + block + unblock + process installment + settle installment
+        * scheduled payments : check  view + cancel + process installment 
+     * Messages & Notifications 
+        * Messages : uncheck view
+        * Notifications : uncheck everything
      * Click save
  26. **Check product's assignation to Member group**
 
@@ -351,6 +357,15 @@ Digital Cairn
  * **Create the installed administrator (step 7 )**
     Be careful with the sequence
     `php bin/console cairn.user:create-install-admin %network-admin-login% %network-admin-password% `
+
+    This install command, containing an important password, is in plain-text in your history, so we remove it
+    `history | tail -n 10`
+
+    Note the line's number in history corresponding to the install command
+    `history -d %number`
+
+    Make sure the line has been removed
+    `history | tail -n 10`
 
  * **Access application with admin credentials**
      * visit "example.com/login"
