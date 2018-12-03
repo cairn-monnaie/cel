@@ -17,8 +17,11 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class DefaultControllerTest extends BaseControllerTest
 {
-    function __construct($name = NULL, array $data = array(), $dataName = ''){
+
+    public function __construct($name = NULL, array $data = array(), $dataName = '')
+    {
         parent::__construct($name, $data, $dataName);
+
     }
 
     /**
@@ -45,10 +48,12 @@ class DefaultControllerTest extends BaseControllerTest
 
     public function provideTypeForRegistration()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
             array('login'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>$this->testAdmin,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
-            array('login'=>true,'username'=>$this->testAdmin,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
+            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
+            array('login'=>true,'username'=>$adminUsername,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
           array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
             array('login'=>false,'username'=>'','type'=>'', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
@@ -62,8 +67,10 @@ class DefaultControllerTest extends BaseControllerTest
      */
     public function testRegistration($type,$email,$username,$name, $street1,$zipCode,$description, $emailConfirmed)
     {
+        $adminUsername = $this->getAdminUsername();
+
         //registration by administrator
-        $login = $this->testAdmin;
+        $login = $adminUsername;
         $password = '@@bbccdd';
         $crawler = $this->login($login, $password);
 

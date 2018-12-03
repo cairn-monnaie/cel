@@ -111,8 +111,6 @@ class AdminController extends Controller
     /**
      * Set the enabled attribute of user with provided ID to true
      *
-     * The ParamConverter is not used to retrieve the User object because this action is preceded by the card security layer
-     * in Cairn/UserBundle/CardController/InputCardKey, which needs explicitely all the query parameters in the query array
      * An email is sent to the user being (re)activated
      *
      * @throws  AccessDeniedException Current user trying to activate access is not a referent of the user being involved
@@ -205,6 +203,7 @@ class AdminController extends Controller
 
                 }else{
                     $this->get('cairn_user.access_platform')->enable(array($user));
+                    $em->flush();
                 }
             }
 

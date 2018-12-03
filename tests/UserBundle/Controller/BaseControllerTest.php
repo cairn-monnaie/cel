@@ -22,6 +22,7 @@ class BaseControllerTest extends WebTestCase
     protected $productManager;
 
     protected $em;
+    protected $testAdmin;
 
     public function __construct($name = NULL, array $data = array(), $dataName = '')
     {
@@ -32,63 +33,8 @@ class BaseControllerTest extends WebTestCase
         $this->container = $this->client->getContainer();
         $this->scriptManager = new ScriptManager();
         $this->userManager = new UserManager();
-        $this->productManager = new ProductManager();
 
-        $this->em = $this->container->get('doctrine')->getManager();                          
-
-        //same username than the one provided at installation
-        $installedAdmins = $this->em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_SUPER_ADMIN'));
-        if($installedAdmins){
-            $this->testAdmin = $installedAdmins[0]->getUsername();
-
-            $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
-                'login',$credentials);
-
-            //generate doctrine users or not
-
-            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
-
-            if(!$user){
-                //            var_dump(gc_enabled());
-                //            gc_enable();
-                //            var_dump(gc_enabled());
-
-                $memberGroupName = $this->container->getParameter('cyclos_group_pros');
-                $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
-
-                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_users.groovy',false));
-
-                $nb = 0;
-                //            while($nb != 5){ //delay between running script and database update
-
-                $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
-                $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
-
-                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
-                $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
-
-                $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
-                $nb = count($cyclosUsers);
-                //          }
-
-                $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$this->testAdmin));
-
-                //            foreach($cyclosAdmins as $cyclosAdmin){
-                //                $this->createUser($cyclosAdmin, $superAdmin);
-                //            }
-
-                $userRank = 0;
-                foreach($cyclosMembers as $cyclosMember){
-                    $this->createUser($cyclosMember,$superAdmin,$userRank);
-                    $userRank = $userRank + 1;
-                }
-
-                $this->em->flush();
-                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_payments.groovy',false));
-
-            }
-        }
+        $this->em = $this->container->get('doctrine.orm.entity_manager');                          
     }
 
     /**
@@ -158,15 +104,26 @@ class BaseControllerTest extends WebTestCase
         return $this->client->submit($form);
     }
 
+    public function getAdminUsername()
+    {
+        $installedAdmins = $this->em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_SUPER_ADMIN'));
+        if($installedAdmins){
+            return $installedAdmins[0]->getUsername();
+        }
+
+        return NULL;
+    }
 
 
     public function provideReferentsAndTargets()
     {
+
+        $adminUsername = $this->getAdminUsername();
         return array(
-            array('referent'=>$this->testAdmin,'target'=>$this->testAdmin,'isReferent'=>true),
-            array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>$this->testAdmin,'target'=>'MaltOBar','isReferent'=>true),
-            array('referent'=>$this->testAdmin,'target'=>'cafeEurope','isReferent'=>false)
+            array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
+            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
+            array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
+            array('referent'=>$adminUsername,'target'=>'cafeEurope','isReferent'=>false)
         );
     }
 

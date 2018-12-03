@@ -100,7 +100,7 @@ class OperationValidator extends ConstraintValidator
                 }
             }
 
-            if($creditorUser->getRemovalRequest()){
+            if($creditorUser && $creditorUser->getRemovalRequest()){
                 $this->context->buildViolation($creditorUser->getName().' est en phase de suppression. Vous ne pouvez donc pas lui faire de virement')
                     ->atPath('toAccount')                                          
                     ->addViolation();                                              

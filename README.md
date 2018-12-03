@@ -154,6 +154,9 @@ Digital Cairn
         * system recurring payments : check view + cancel
         * system scheduled payments : check view + cancel + block + unblock + process installment + settle installment
      * User management :
+        * Profile fields of other users
+           * Login name : check Visible/User filter/User List
+           * Account number : check Visible/User List/User keywords
         * user registration : check
         * login users via web services : check
         * Passwords : uncheck everything
@@ -202,6 +205,9 @@ Digital Cairn
      * Click on the only product (Members)
      * Name : fill with **_%user-account%_** name
      * Internal name : fil with **_%user-account%_** internal name
+     * Profile fields of other users 
+        * Login name : check Visible/User filter/User List
+        * Account number : check Visible/User List/ User keywords
      * General
         * My profile fields : enabled/registration/visible/editable : check for full name / login name / email 
         * Passwords : Change / at registration : check for Login password

@@ -16,12 +16,10 @@
         <testsuite name="Project">
             <directory>tests</directory>
         </testsuite>
-        <testsuite name="set_database">
-            <file>tests/UserBundle/Controller/BaseControllerTest.php</file>
-        </testsuite>
         <testsuite name="Order">
+            <file>tests/UserBundle/Command/CreateInstallAdminCommandTest.php</file>
+            <file>tests/UserBundle/Controller/SystemSetUpControllerTest.php</file>
             <file>tests/UserBundle/Controller/CardControllerTest.php</file>
-            <file>tests/UserCyclosBundle/Controller/AccountTypeControllerTest.php</file>
             <file>tests/UserBundle/Controller/DefaultControllerTest.php</file>
             <file>tests/UserBundle/Controller/UserControllerTest.php</file>
             <file>tests/UserBundle/Controller/BankingControllerTest.php</file>

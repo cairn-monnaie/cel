@@ -75,6 +75,7 @@ class UserController extends Controller
         $checker = $this->get('security.authorization_checker');
 
         $em = $this->getDoctrine()->getManager();
+        $currentUser = $this->getUser();
         //last users registered
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
@@ -87,10 +88,11 @@ class UserController extends Controller
         $users =  $qb->getQuery()->getResult();
 
         //accounts of current user
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($this->getUser());
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
 
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
-        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($this->getUser()->getCyclosID());
+
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');

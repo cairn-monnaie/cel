@@ -17,10 +17,9 @@ use Cyclos;
 class CardControllerTest extends BaseControllerTest
 {
 
-    function __construct($name = NULL, array $data = array(), $dataName = ''){
+    public function __construct($name = NULL, array $data = array(), $dataName = ''){
         parent::__construct($name, $data, $dataName);
     }
-
 
     /**
      * @TODO : tester directement la présence des urls
@@ -31,7 +30,7 @@ class CardControllerTest extends BaseControllerTest
      *                          .isGranted ROLE_ADMIN : 
      *                              *if $referent is referent of $target : revoke / order / generate
      *                              *otherwise : nothing(should not even see card_operations) 
-     * @dataProvider provideReferentsAndTargets
+     * @dataProvider provideCardOperationsData
      */
     public function testCardOperations($referent,$target,$isReferent)
     {
@@ -57,6 +56,17 @@ class CardControllerTest extends BaseControllerTest
             }
         }
 
+    }
+
+    public function provideCardOperationsData()
+    {
+        $adminUsername = $this->getAdminUsername();
+        return array(
+            array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
+//            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
+//            array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
+//            array('referent'=>$adminUsername,'target'=>'cafeEurope','isReferent'=>false)
+        );
     }
 
     /**
@@ -105,10 +115,12 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardValidation()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-            'invalid key'        => array('login'=>$this->testAdmin,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
-            'valid key'          => array('login'=>$this->testAdmin,'key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
-            'validated card'     => array('login'=>$this->testAdmin,'key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
+            'invalid key'        => array('login'=>$adminUsername,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
+            'valid key'          => array('login'=>$adminUsername,'key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
+            'validated card'     => array('login'=>$adminUsername,'key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
             'not generated card' => array('login'=>'DrDBrew', 'key'=>'1111','expectForm'=>false,'expectValidKey'=>false),
         );
     }
@@ -146,8 +158,10 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersWithValidatedCard()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-            'validated card'     => array('login'=>$this->testAdmin, 'expectValid'=>true),
+            'validated card'     => array('login'=>$adminUsername, 'expectValid'=>true),
             'not validated card' => array('login'=>'LaDourbie','expectValid'=>false),
         );
     }
@@ -210,13 +224,15 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardGeneration()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-               array('current'=>$this->testAdmin,'target'=>$this->testAdmin,'expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
-               array('current'=>$this->testAdmin,'target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$this->testAdmin,'target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$this->testAdmin,'target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$this->testAdmin,'target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
+               array('current'=>$adminUsername,'target'=>$adminUsername,'expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
+               array('current'=>$adminUsername,'target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$adminUsername,'target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$adminUsername,'target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$adminUsername,'target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
+               array('current'=>$adminUsername,'target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
         );
     }
 
@@ -263,7 +279,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->client->enableProfiler();
 
                 $form = $crawler->selectButton('confirmation_save')->form();
-                $form['confirmation[password]']->setValue('@@bbccdd');
+                $form['confirmation[current_password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
 
@@ -291,10 +307,12 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardRevocation()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-             'revocation from ref'=> array('current'=>$this->testAdmin,'target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'revocation from ref'=> array('current'=>$adminUsername,'target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
              'self revocation'=> array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'revoc from non ref'=>array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
              'no card to revoke'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'pas encore été créée'),
         );
     }
@@ -342,7 +360,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->client->enableProfiler();
 
                 $form = $crawler->selectButton('confirmation_save')->form();
-                $form['confirmation[password]']->setValue('@@bbccdd');
+                $form['confirmation[current_password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
 
                 //assert card
@@ -372,10 +390,12 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardOrder()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-             'ordered by ref'=> array('current'=>$this->testAdmin,'target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'ordered by ref'=> array('current'=>$adminUsername,'target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
              'self order'=> array('current'=>'MaltOBar','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'ordered by non ref'=>array('current'=>$this->testAdmin,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'ordered by non ref'=>array('current'=>$adminUsername,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
              'no card to order'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'déjà une carte'),
         );
     }

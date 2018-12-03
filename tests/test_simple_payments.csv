@@ -1,4 +1,3 @@
 from,to,type,amount,description
 SYSTEM,LaBonnePioche,debitAccount.toMember,100,Virement Cairn test imports
-SYSTEM,DrDBrew,debitAccount.toMember,100,Virement Cairn test imports
 SYSTEM,MaltOBar,debitAccount.toMember,100,Virement Cairn test imports

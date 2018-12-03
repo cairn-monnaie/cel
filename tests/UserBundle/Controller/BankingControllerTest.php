@@ -20,9 +20,12 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class BankingControllerTest extends BaseControllerTest
 {
-    function __construct($name = NULL, array $data = array(), $dataName = ''){
+
+    public function __construct($name = NULL, array $data = array(), $dataName = '')
+    {
         parent::__construct($name, $data, $dataName);
     }
+
 
     /**
      *@dataProvider provideTransactionData
@@ -75,7 +78,7 @@ class BankingControllerTest extends BaseControllerTest
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
 
-                //checker le contenu du récapitulatif
+                //todo : checker le contenu du récapitulatif
                 $form = $crawler->selectButton('form_save')->form();
                 $crawler = $this->client->submit($form);
             }else{
@@ -105,9 +108,9 @@ class BankingControllerTest extends BaseControllerTest
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
-            'no beneficiary'=>array_replace($baseData,array('login'=>'DrDBrew', 'to'=>'beneficiary','expectForm'=>false)),
+            'no beneficiary'=>array_replace($baseData,array('login'=>'MaltOBar', 'to'=>'beneficiary','expectForm'=>false)),
             'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
-            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'DrDBrew','isValid'=>false)),
+            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'LaDourbie','isValid'=>false)),
             'valid immediate'=>$baseData,
             'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
             'valid scheduled 2'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
@@ -120,10 +123,9 @@ class BankingControllerTest extends BaseControllerTest
      *
      *@dataProvider provideTransactionDataForValidation
      */
-    public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,
-        $periodicity, $isValid)
+    public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,$periodicity, $isValid)
     {
-        $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
+        $credentials = array('username'=>'LaBonnePioche','password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
                                                                                  'login',$credentials);
 
@@ -155,32 +157,39 @@ class BankingControllerTest extends BaseControllerTest
 
     public function provideTransactionDataForValidation()
     {
+        $credentials = array('username'=>'LaBonnePioche','password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+                                                                                 'login',$credentials);
+
         $creditor = 'MaltOBar';
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
 
         $debitor = 'LaBonnePioche';
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
-        $debitorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+        $debitorICC = $debitorAccount->number;
 
         $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
-            'fromAccount'=> array('id'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
-            'toAccount'=> array('id'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
+            'fromAccount'=> array('accountNumber'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
+            'toAccount'=> array('accountNumber'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
             'firstDate'=> new \Datetime(),'lastDate'=>date_modify(new \Datetime(),'+1 months') ,'periodicity'=>'1', 'isValid'=>true );
 
         return array(
             'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
             'undersize amount'=>array_replace($baseData,array('amount'=>'0.0099','isValid'=>false)),
-            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('id'=>$debitorICC + 1),'isValid'=>false)),
-            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>$creditorICC + 1),'isValid'=>false)),
-            'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>'','email'=>'test@test.com'),
-            'isValid'=>false)),
-            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>'','email'=>''),'isValid'=>false)),
-            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('id'=>''))),
-            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('id'=>''),'isValid'=>false)),
+            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('accountNumber'=>$debitorICC + 1),
+                                                                                              'isValid'=>false)),
+            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>$creditorICC + 1),
+                                                                                             'isValid'=>false)),
+            'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>'',
+                                                                            'email'=>'test@test.com'),'isValid'=>false)),
+            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>'','email'=>''),
+                                                                        'isValid'=>false)),
+            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>''))),
+            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('accountNumber'=>''),'isValid'=>false)),
             'identical accounts'=>array_replace($baseData,array(
-                'toAccount'=>array('id'=>$debitorAccount->id,'email'=>$debitorUser->getEmail()),
+                'toAccount'=>array('accountNumber'=>$debitorAccount->id,'email'=>$debitorUser->getEmail()),
                 'isValid'=>false)),
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
             'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
@@ -196,7 +205,6 @@ class BankingControllerTest extends BaseControllerTest
 
             'valid simple'=> $baseData,
             'valid scheduled'=> array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+1 months'),'isValid'=>true)),
-
 //            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
         );
     }
@@ -245,15 +253,15 @@ class BankingControllerTest extends BaseControllerTest
 //
 //    public function provideDataForConversion()
 //    {
-//        $baseOtherData = array('executor'=>$this->testAdmin,'creditor'=>'LaBonnePioche','to'=>'other','isValid'=>true);
+//        $baseOtherData = array('executor'=>$adminUsername,'creditor'=>'LaBonnePioche','to'=>'other','isValid'=>true);
 //        $baseSelfData = array('executor'=>'LaBonnePioche','creditor'=>'LaBonnePioche','to'=>'self', 'isValid'=>true);
 //
 //        return array(
-//            'sys for other but sys account provided'=>array_replace($baseOtherData,array('creditor'=>$this->testAdmin,'isValid'=>false)),
-//            'sys for himself but other account provided'=>array_replace($baseSelfData,array('executor'=>$this->testAdmin,'isValid'=>false)),
+//            'sys for other but sys account provided'=>array_replace($baseOtherData,array('creditor'=>$adminUsername,'isValid'=>false)),
+//            'sys for himself but other account provided'=>array_replace($baseSelfData,array('executor'=>$adminUsername,'isValid'=>false)),
 //            'user for himself but other account provided'=>array_replace($baseSelfData,array('creditor'=>'MaltOBar','isValid'=>false)),
 //            'valid user conversion' => $baseSelfData,
-//            'valid self conversion sys' => array_replace($baseSelfData,array('executor'=>$this->testAdmin,'creditor'=>$this->testAdmin)),
+//            'valid self conversion sys' => array_replace($baseSelfData,array('executor'=>$adminUsername,'creditor'=>$adminUsername)),
 //            'valid other conversion sys' => $baseOtherData,
 //            //
 //        );
@@ -264,35 +272,47 @@ class BankingControllerTest extends BaseControllerTest
      *@todo : change traversing methods when css added. Putting raw values for selectLink method is more prone to errors than a div.class
      *@dataProvider provideDownloadersAndOwners
      */
-    public function testDownloadRIB($downloader,$owner,$isLegit)
+    public function testDownloadRIB($downloader,$owner,$isCyclosLegit, $isLegit)
     {
-        $crawler = $this->login($downloader, '@@bbccdd');
+        //connect with admin to get owner's account ids (not possible with member for another one)
+        $credentials = array('username'=>$this->getAdminUsername(),'password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+                                                                                 'login',$credentials);
 
         $downloaderUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$downloader));
         $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$owner));
 
         $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
-        if(!$isLegit){
+
+
+        $crawler = $this->login($downloader, '@@bbccdd');
+        $crawler = $this->client->request('GET','banking/download/rib/'.$ownerAccount->id);
+
+        if(!$isCyclosLegit){
             //assert isRedirect homepage "Donnée introuvable"
             $this->assertTrue($this->client->getResponse()->isRedirect());
             $crawler = $this->client->followRedirect();
             $this->assertSame(1,$crawler->filter('html:contains("Donnée introuvable")')->count());
-
         }else{
-            $crawler = $this->client->request('GET','banking/download/rib/'.$ownerAccount->id);
-            $this->assertTrue($this->client->getResponse()->headers->contains('Content-Type','application/pdf'));
+            if($isLegit){
+                $this->assertTrue($this->client->getResponse()->headers->contains('Content-Type','application/pdf'));
+            }else{
+                $this->assertSame(1,$crawler->filter('html:contains("droits nécessaires")')->count());
+            }
         }
 
     }
 
     public function provideDownloadersAndOwners()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-            'admin for pro'=>array('downloader'=>$this->testAdmin,'owner'=>'DrDBrew','isLegit'=>true ),
-            'pro for himself'=>array('downloader'=>'LaBonnePioche','owner'=>'LaBonnePioche','isLegit'=>true ),
-            'pro for admin'=>array('downloader'=>'LaBonnePioche','owner'=>'glGrenoble','isLegit'=>false ),
-            'pro for pro'=>array('downloader'=>'LaBonnePioche','owner'=>'DrDBrew','isLegit'=>false ),
-            'admin for non referred'=>array('downloader'=>$this->testAdmin,'owner'=>'cafeEurope','isLegit'=>false ),
+            'admin for pro'=>array('downloader'=>$adminUsername,'owner'=>'LaBonnePioche','isCyclosLegit'=>true,'isLegit'=>true ),
+            'pro for himself'=>array('downloader'=>'LaBonnePioche','owner'=>'LaBonnePioche','isCyclosLegit'=>true,'isLegit'=>true ),
+            'pro for admin'=>array('downloader'=>'LaBonnePioche','owner'=>$adminUsername,'isCyclosLegit'=>false,'isLegit'=>false ),
+            'pro for pro'=>array('downloader'=>'LaBonnePioche','owner'=>'MaltOBar','isCyclosLegit'=>false,'isLegit'=>false ),
+            'admin for non referred'=>array('downloader'=>$adminUsername,'owner'=>'cafeEurope','isCyclosLegit'=>true,'isLegit'=>false ),
         );
     }
 
@@ -359,10 +379,12 @@ class BankingControllerTest extends BaseControllerTest
             'pastDay'=>$pastDay,'pastMonth'=>$pastMonth,'pastYear'=>$pastYear,
         );
 
+        $adminUsername = $this->getAdminUsername();
+
         return array(
             'pro'=>$baseData,
             'admin'=>array_replace($baseData,array('downloader'=>'glGrenoble','isLegit'=>false)),
-            'super_admin'=>array_replace($baseData,array('downloader'=>$this->testAdmin,'isLegit'=>true,'format'=>'pdf')),
+            'super_admin'=>array_replace($baseData,array('downloader'=>$adminUsername,'isLegit'=>true,'format'=>'pdf')),
             'anonym'=>array_replace($baseData,array('downloader'=>'','isLegit'=>false)),
             'today=before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year)),
             'today<before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year,
@@ -373,17 +395,21 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@TODO : execute -> test that operation type has changed
      *        cancel -> test that operation has been removed
-     *If testSimpleTransactionProcess ends correctly, there are two scheduled payments made by LaBonnePioche
-     *@depends testSimpleTransactionProcess
+     *If testTransactionProcess ends correctly, there are two scheduled payments made by LaBonnePioche
+     *@depends testTransactionProcess
      */
     public function testChangeScheduledTransactionStatus($newStatus)
     {
         $owner = 'LaBonnePioche';
         $crawler = $this->login($owner, '@@bbccdd');
+        $url = '/banking/view/operations/transaction?frequency=unique';
+        $crawler = $this->client->request('GET',$url);
+
         $ownerUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$owner));
         $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
         $accountBalanceBefore = $ownerAccount->status->balance;
 
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
         $scheduledOperations = $operationRepo->createQueryBuilder('o')
             ->where('o.fromAccountNumber = :number')
             ->andWhere('o.paymentID is not NULL')                      
@@ -393,6 +419,8 @@ class BankingControllerTest extends BaseControllerTest
             ->getQuery()->getResult(); 
 
         $operation = $scheduledOperations[0];
+
+
         if($newStatus == 'execute'){
             $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
             $crawler = $this->client->click($link);
@@ -408,14 +436,15 @@ class BankingControllerTest extends BaseControllerTest
 
             $this->assertTrue($accountBalanceAfter < $accountBalanceBefore);
         }else{
-            $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
+            $paymentID = $operation->getPaymentID();
+            $link = $crawler->filter('a[href*="'.$paymentID.'-'.$newStatus.'"]')->eq(0)->link();
             $crawler = $this->client->click($link);
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
             $crawler = $this->client->followRedirect();
             $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
-            $this->em->refresh($operation);
+            $operation = $operationRepo->findOneBy(array('paymentID'=>$paymentID));
             $this->assertEquals($operation,NULL);
             $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
             $accountBalanceAfter = $ownerAccount->status->balance;

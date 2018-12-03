@@ -17,9 +17,12 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class AdminControllerTest extends BaseControllerTest
 {
-    function __construct($name = NULL, array $data = array(), $dataName = ''){
+
+    public function __construct($name = NULL, array $data = array(), $dataName = '')
+    {
         parent::__construct($name, $data, $dataName);
     }
+
 
     /**
      * depends testValidateCard
@@ -79,10 +82,12 @@ class AdminControllerTest extends BaseControllerTest
 
     public function provideReferentsAndTargets()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-            'valid'           => array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
-           'already blocked' => array('referent'=>$this->testAdmin,'target'=>'DrDBrew','isReferent'=>true),
-            'not referent'    =>array('referent'=>$this->testAdmin,'target'=>'cafeEurope','isReferent'=>false)
+            'valid'           => array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
+           'already blocked' => array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
+            'not referent'    =>array('referent'=>$adminUsername,'target'=>'cafeEurope','isReferent'=>false)
         );
     }
 
@@ -119,6 +124,7 @@ class AdminControllerTest extends BaseControllerTest
 
                 $this->em->refresh($targetUser);
                 $this->assertTrue($targetUser->isEnabled());
+
                 $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($targetUser);
                 $this->assertNotEquals($userVO, NULL);
 
@@ -152,7 +158,8 @@ class AdminControllerTest extends BaseControllerTest
      */
     public function testAssignReferent($referent, $target, $isValid, $isPro, $expectKey)
     {
-        $crawler = $this->login($this->testAdmin, '@@bbccdd');
+        $adminUsername = $this->getAdminUsername();
+        $crawler = $this->login($adminUsername, '@@bbccdd');
 
         //can be null
         $referentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));

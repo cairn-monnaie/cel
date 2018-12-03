@@ -55,7 +55,8 @@ class RegistrationListener
      *
      * By default, at email confirmation, the user is enabled. We want an explicit authorization from referents,so we disable the user.
      * Plus, we add default referents(super_admin) and notify them of this new registration
-     *@todo Send email to user's referent 
+     *@TODO Send email to user's referent 
+     *@TODO : if new user is ROLE_SUPER_ADMIN : assign as referent of all ROLE_PRO and ROLE_ADMIN
      */
     public function onRegistrationConfirm(GetResponseUserEvent $event)
     {

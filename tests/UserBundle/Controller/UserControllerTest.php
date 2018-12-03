@@ -16,7 +16,8 @@ use Cyclos;
 class UserControllerTest extends BaseControllerTest
 {
 
-    function __construct($name = NULL, array $data = array(), $dataName = ''){
+    public function __construct($name = NULL, array $data = array(), $dataName = '')
+    {
         parent::__construct($name, $data, $dataName);
     }
 
@@ -63,7 +64,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('html:contains("Espace Professionnel")')->count());
             $this->assertSame(1, $crawler->filter('li#id_welcome')->count());    
         }else{
-            $this->assertSame(1, $crawler->filter('input#change_password_current_password')->count());    
+            $this->assertSame(1, $crawler->filter('input#fos_user_change_password_form_current_password')->count());    
             $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
         }
     }
@@ -175,7 +176,13 @@ class UserControllerTest extends BaseControllerTest
             ->getQuery()->getOneOrNullResult();
 
         if($creditorUser){
-            $ICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+            if($creditorUser === $debitorUser){
+                $account = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
+                $ICC = $account->number;
+            }else{
+                $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername());
+                $ICC = $test->accountNumber;
+            }
             $ICC = ($changeICC) ? $ICC + 1 : $ICC;
         }else{
             $ICC = 123456789;
@@ -223,7 +230,7 @@ class UserControllerTest extends BaseControllerTest
             'self beneficiary'=> array('current'=>'LaBonnePioche','name'=>'La Bonne Pioche','email'=>'labonnepioche@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
             'user not found'=> array('current'=>'LaBonnePioche','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
             'ICC not found'=>array('current'=>'LaBonnePioche', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
-            'valid benef'=>array('current'=>'LaBonnePioche','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+          'valid benef'=>array('current'=>'LaBonnePioche','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
             'valid benef2'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
             'valid benef3'=>array('current'=>'locavore','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
             'already benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
@@ -335,7 +342,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->client->enableProfiler();
 
                     $form = $crawler->selectButton('confirmation_save')->form();
-                    $form['confirmation[plainPassword]']->setValue('@@bbccdd');
+                    $form['confirmation[current_password]']->setValue('@@bbccdd');
                     $crawler =  $this->client->submit($form);
 
 
@@ -361,7 +368,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertSame(1,$crawler->filter('html:contains("supprimé avec succès")')->count());
                     $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
                 }else{
-                    $this->assertTrue($this->client->getResponse()->isRedirect());
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
                     $crawler = $this->client->followRedirect();
 
                     $this->em->refresh($targetUser);
@@ -380,11 +387,13 @@ class UserControllerTest extends BaseControllerTest
      */
     public function provideUsersToRemove()
     {
+        $adminUsername = $this->getAdminUsername();
+
         return array(
-            'non null account' => array($this->testAdmin,'DrDBrew',true,false,false),
-            'valid admin removal' => array($this->testAdmin,'locavore',true,true,false),
-            'not legit' => array($this->testAdmin,'cafeEurope',false,true,false),
-            'user auto-removal' => array('cafeEurope','cafeEurope',true,true,false),
+            'non null account' => array($adminUsername,'LaBonnePioche',true,false,false),
+            'valid admin removal' => array($adminUsername,'DrDBrew',true,true,false),
+            'not legit' => array($adminUsername,'cafeEurope',false,true,false),
+            'user auto-removal' => array('locavore','locavore',true,true,true),
         );
 
     }
