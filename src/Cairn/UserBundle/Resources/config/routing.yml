@@ -172,14 +172,14 @@ cairn_user_banking_operations:
     path:     banking/operations/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
     requirements:
-        type: transaction|deposit|withdrawal #|conversion |reconversion
+        type: transaction|deposit|withdrawal|conversion #|reconversion
         _format: html|json
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewOperations, _format: html }
     requirements:
-        type: transaction|deposit|withdrawal #|conversion #|reconversion
+        type: transaction|deposit|withdrawal|conversion #|reconversion
         _format: html|json
 
 cairn_user_banking_transaction_to:
@@ -225,7 +225,7 @@ cairn_user_banking_operation_confirm:
     path:     banking/operation/confirm/{id}-{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
-        type: transaction|deposit|withdrawal #|conversion|reconversion
+        type: transaction|deposit|withdrawal|conversion #|reconversion
         _format: html|json
 
 

@@ -9,12 +9,13 @@
         <div id="conversion_action">
             <h1> Effectuer une conversion </h1>
            <ul>
-                {% if is_granted('ROLE_SUPER_ADMIN') %}
+{#                {% if is_granted('ROLE_SUPER_ADMIN') %}
                     <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'self'})}}"> Vers un compte de l'Association</a></li>
                     <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'other'})}}"> Vers un professionnel </a></li> 
                 {% else %}
                      <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'self'})}}"> Effectuer une conversion</a></li>
-                {% endif %}
+                {% endif %}   #}
+                <li><a href="{{path('cairn_user_banking_conversion_request',{'to': 'other'})}}"> Vers un professionnel </a></li> 
 
            <ul> 
         </div>

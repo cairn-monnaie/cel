@@ -5,17 +5,16 @@
 {% block body %}
     {{parent()}}
 
-    {% if to == 'other' %}
     <div class="well">
       {{ form_start(formUser) }}
       {{ form_rest(formUser) }}
       {{ form_end(formUser) }}
 
     </div>
-    {% endif %}
 
     <div class="well">
       {{ form_start(formConversion) }}
+      {{ form_widget(formConversion) }}
       {{ form_widget(formConversion.toAccount, {'attr': {'class':'hidden-row'} }) }}
       {{ form_rest(formConversion) }}
       {{ form_end(formConversion) }}

@@ -602,118 +602,88 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:reconversion.html.twig',array('form'=>$form->createView(),'accounts'=>$selfAccounts));
     }
 
-
     /**
-     * Requests for a conversion from euros to local currency
+     * Requests for a conversion on a user's account
      *
-     * On the cyclos-side, the transfer occurring is to the requested user account and from the debitAccount(which is a specific system 
-     * account with unlimited balance to justify credit/debit of the user's account).
+     * On the cyclos-side, the transfer occurring is to the requested user account  and from the debitAccount(which is a specific 
+     * system account &with unlimited balance to justify credit/debit of the user's account).
      * Any credit/debit on an account in Cyclos must be compensated by the opposite operation on another one.
-     * The conversion can be done by a pro himself (debiting its banking account) or by an admin : the pro comes with banknotes
-     * and the admin credits its cyclos account
+     * The operation must be done by an admin : a pro comes with banknotes, and admin credits account
+     * @Security("has_role('ROLE_ADMIN')")
      */
-    public function conversionRequestAction(Request $request)
+    public function conversionRequestAction(Request $request, $_format)
     {
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
-        $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
+
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
         $currentUser = $this->getUser();
         $type = 'conversion';
-        $to = $request->query->get('to');
+        $direction = 'SYSTEM_TO_USER';
 
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
 
+        $transaction = new Operation();
+        $transaction->setType(Operation::$TYPE_CONVERSION);
+        $transaction->setReason('Conversion Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
+
         $formUser = $this->createFormBuilder()
             ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
-            ->add('email', TextType::class,array('label'=>'Email','required'=>false))
+            ->add('email', EmailType::class,array('label'=>'Email','required'=>false))
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $conversion = new SimpleTransaction();
-        $data = array('id'=>$debitAccount->id);
-        $conversion->setFromAccount($data);
-        $formConversion = $this->createForm(ConversionType::class,$conversion);
+        $formConversion = $this->createForm(SimpleOperationType::class, $transaction);
 
-        if($currentUser->hasRole('ROLE_PRO')){
-            $direction = 'SYSTEM_TO_USER';
-            $userToCredit = $currentUser;
-
-            $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
-            $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
-            $session->set('userToCredit',$userToCreditVO);
-        }else{
-            if($to == 'self'){
-                $direction = 'SYSTEM_TO_SYSTEM';
-                $userToCredit = $currentUser;
-                $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
-                $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
-                $session->set('userToCredit',$userToCreditVO);
-            }
-            elseif($to == 'other'){
-                $direction = 'SYSTEM_TO_USER';
-                $formUser->handleRequest($request);
-                if($formUser->isSubmitted() && $formUser->isValid()){
-                    $data = $formUser->getData();
-                    $userToCredit = $userRepo->findOneBy(array('email'=>$data['email']));
-                    if(!$userToCredit){
-                        $userToCredit = $userRepo->findOneBy(array('username'=>$data['username']));
-                        if(!$userToCredit){
-                            $session->getFlashBag()->add('error','Aucun professionnel trouvé');
-                            return new RedirectResponse($request->getRequestUri());
-                        }
-                    }
-                    $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
-                    $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
-                    $session->set('userToCredit',$userToCreditVO);
-
-                    return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts,'to'=>$to));
-
+        $formUser->handleRequest($request);
+        if($formUser->isSubmitted() && $formUser->isValid()){
+            $data = $formUser->getData();
+            $userToCredit = $userRepo->findOneBy(array('email'=>$data['email']));
+            if(!$userToCredit){
+                $userToCredit = $userRepo->findOneBy(array('username'=>$data['username']));
+                if(!$userToCredit){
+                    $session->getFlashBag()->add('error','Aucun professionnel trouvé');
+                    return new RedirectResponse($request->getRequestUri());
                 }
             }
-            else{
-                $session->getFlashBag()->add('error','destinataire ambigü');
-                return $this->redirectToRoute('cairn_user_banking_operations_view',array('type'=>'conversion'));
-            }
+            $userToCreditVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToCredit);
+
+            $involvedAccounts = $accountService->getAccountsSummary($userToCreditVO->id);
+            return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts));
         }
 
         $formConversion->handleRequest($request);
         if($formConversion->isSubmitted() && $formConversion->isValid()){
-            $amount = $conversion->getAmount();
-            $dataTime = $conversion->getDate();
-            $description = $this->editDescription($type,$conversion->getDescription());
-            $fromAccount = $debitAccount; 
+            $amount = $transaction->getAmount();
+            $description = $this->editDescription($type,$transaction->getDescription());
 
-            $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
-            $userToCreditVO = $session->get('userToCredit');
-            if(!$userToCreditVO){
-                $session->getFlashBag()->add('error','Passez par le formulaire de sélection du membre');
-                return new RedirectResponse($request->getRequestUri());
-            }
+            $dataTime = $transaction->getExecutionDate();
+            $toAccount = $accountService->getAccountByNumber($transaction->getToAccount()['accountNumber']);
 
-            $toAccount = $accountService->getAccountByID($conversion->getToAccount()['id']);
+            //get transfer type. Here we have a list, but with such precise arguments there is only one transfer type
+            $transferType = $this->get('cairn_user_cyclos_transfertype_info')->getListTransferTypes($debitAccount->type,$toAccount->type,$direction,'PAYMENT')[0];
 
-            if(($userToCreditVO->id == $currentUser->getCyclosID()) && 
-                !$accountService->hasAccount($currentUserVO->id, $toAccount->id)){
+            //process Cyclos review
+            $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+            $paymentData = $bankingService->getPaymentData($debitAccount->owner,$toAccount->owner,$transferType);
+            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-                $session->getFlashBag()->add('error','Ce compte n\'existe pas ou ne vous appartient pas.');
-                return new RedirectResponse($request->getRequestUri());
-            }
+            $transaction->setFromAccountNumber($debitAccount->id);
+            $transaction->setToAccountNumber($res->toAccount->number);
 
+            $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
+            $transaction->setUser($userToCredit);
+            $em->persist($transaction);
+            $em->flush();
 
-            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
-            if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
-                $session->getFlashBag()->add('error',$review->error);
-                return new RedirectResponse($request->getRequestUri());
-            }
-
-            $session->set('paymentReview',$review);
-            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('type'=>$type));
-
-
+            $session->set('paymentReview',$res);
+            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('id'=>$transaction->getID(),'type'=>$type));
         }
 
-        return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts,'to'=>$to));
+        return $this->render('CairnUserBundle:Banking:conversion.html.twig',array('formUser'=>$formUser->createView(),'formConversion'=>$formConversion->createView(),'accounts'=>$involvedAccounts));
     }
 
 
@@ -1007,6 +977,8 @@ class BankingController extends Controller
                         }
                         break;
                     case 'conversion':
+                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                            $operation->setPaymentID($paymentVO->id);
                         break;
                     case 'reconversion':
                         break;
@@ -1571,8 +1543,8 @@ class BankingController extends Controller
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
         $currentUser = $this->getUser();
-        if($currentUser->hasRole('ROLE_ADMIN')){
-            throw new AccessDeniedException('En tant que groupe local, vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
+        if(! $currentUser->hasRole('ROLE_PRO')){
+            throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
         }
 
         $accountTypesVO = array();
@@ -1636,7 +1608,7 @@ class BankingController extends Controller
 
                             // Add the header of the CSV file
                             fputcsv($handle, array('Situation de votre compte ' . $account->type->name .' '. $account->owner->display . ' (Cairn) au '. $period['end']),';');
-                            fputcsv($handle,array('RIB Cairn : ' . $account->id),';');
+                            fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
                             fputcsv($handle, array('Date', 'Description', 'Débit', 'Crédit','Solde'),';');
