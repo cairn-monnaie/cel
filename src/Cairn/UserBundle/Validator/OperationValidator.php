@@ -151,7 +151,7 @@ class OperationValidator extends ConstraintValidator
                 $account = $this->accountInfo->getAccountByNumber($operation->getToAccount()['accountNumber']);
                 $this->validateBalance($account,$operation->getAmount());
             }
-            if(! ($operation->getType() == Operation::$TYPE_DEPOSIT)){
+            if(! (in_array($operation->getType(), Operation::getToOperationTypes()) )){
                 $this->validatePassiveAccount($operation->getFromAccount(),'fromAccount');
             }
 
