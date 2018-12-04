@@ -800,21 +800,22 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:deposit.html.twig',array('formUser'=>$formUser->createView(),'formDeposit'=>$formDeposit->createView(),'accounts'=>$involvedAccounts));
     }
 
-
     /**
      * Requests for a withdrawal from a user's account
      *
-     * On the cyclos-side, the transfer occurring is from the requested user account to the debitAccount(which is a specific 
+     * On the cyclos-side, the transfer occurring is to the requested user account  and from the debitAccount(which is a specific 
      * system account &with unlimited balance to justify credit/debit of the user's account).
      * Any credit/debit on an account in Cyclos must be compensated by the opposite operation on another one.
-     * The operation must be done by an admin : a pro comes with banknotes, and admin debits account
+     * The operation must be done by an admin : a pro comes with banknotes, and admin credits account
      * @Security("has_role('ROLE_ADMIN')")
      */
     public function withdrawalRequestAction(Request $request, $_format)
     {
         $accountService = $this->get('cairn_user_cyclos_account_info');
         $session = $request->getSession();
-        $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
         $currentUser = $this->getUser();
         $type = 'withdrawal';
         $direction = 'USER_TO_SYSTEM';
@@ -822,9 +823,9 @@ class BankingController extends Controller
         $debitAccount = $accountService->getDebitAccount();
         $involvedAccounts = array();
 
-        $transaction = new SimpleTransaction();
-        $transaction->setDate(new \Datetime());
-        $transaction->setToAccount(json_decode(json_encode($debitAccount),true));
+        $transaction = new Operation();
+        $transaction->setType(Operation::$TYPE_WITHDRAWAL);
+        $transaction->setReason('Retrait Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
 
         $formUser = $this->createFormBuilder()
             ->add('username', TextType::class,array('label'=>'Pseudo','required'=>false))
@@ -832,7 +833,7 @@ class BankingController extends Controller
             ->add('save', SubmitType::class,array('label'=>'Rechercher les comptes'))
             ->getForm();
 
-        $formWithdrawal = $this->createForm(WithdrawalType::class, $transaction);
+        $formWithdrawal = $this->createForm(SimpleOperationType::class, $transaction);
 
         $formUser->handleRequest($request);
         if($formUser->isSubmitted() && $formUser->isValid()){
@@ -848,36 +849,35 @@ class BankingController extends Controller
             $userToDebitVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($userToDebit);
 
             $involvedAccounts = $accountService->getAccountsSummary($userToDebitVO->id);
-            return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array(
-                'formUser'=>$formUser->createView(),
-                'formWithdrawal'=>$formWithdrawal->createView(),
-                'accounts'=>$involvedAccounts
-            ));
-
+            return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array('formUser'=>$formUser->createView(),'formWithdrawal'=>$formWithdrawal->createView(),'accounts'=>$involvedAccounts));
         }
 
         $formWithdrawal->handleRequest($request);
         if($formWithdrawal->isSubmitted() && $formWithdrawal->isValid()){
             $amount = $transaction->getAmount();
-            $description = $currentUser->getName() . ' ' . $currentUser->getCity();
-            $description = $this->editDescription($type,$description);
+            $description = $this->editDescription($type,$transaction->getDescription());
 
-            $dataTime = $transaction->getDate();
-            $toAccount = $debitAccount; 
+            $dataTime = $transaction->getExecutionDate();
+            $fromAccount = $accountService->getAccountByNumber($transaction->getFromAccount()['accountNumber']);
 
-            $fromAccount = $accountService->getAccountByID($transaction->getFromAccount()['id']);
+            //get transfer type. Here we have a list, but with such precise arguments there is only one transfer type
+            $transferType = $this->get('cairn_user_cyclos_transfertype_info')->getListTransferTypes($fromAccount->type,$debitAccount->type,$direction,'PAYMENT')[0];
 
-            $review = $this->processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,'unique',$dataTime,$description);
+            //process Cyclos review
+            $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+            $paymentData = $bankingService->getPaymentData($fromAccount->owner,$debitAccount->owner,$transferType);
+            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-            if(property_exists($review,'error')){//differenciate with cyclos exceptions that should not be catched
-                $session->getFlashBag()->add('error',$review->error);
-                return new RedirectResponse($request->getRequestUri());
-            }
+            $transaction->setToAccountNumber($debitAccount->id);
+            $transaction->setFromAccountNumber($res->fromAccount->number);
 
-            $session->set('paymentReview',$review);
-            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('type'=>$type));
+            $userToDebit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($fromAccount->owner->id);
+            $transaction->setUser($userToDebit);
+            $em->persist($transaction);
+            $em->flush();
 
-
+            $session->set('paymentReview',$res);
+            return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('id'=>$transaction->getID(),'type'=>$type));
         }
 
         return $this->render('CairnUserBundle:Banking:withdrawal.html.twig',array('formUser'=>$formUser->createView(),'formWithdrawal'=>$formWithdrawal->createView(),'accounts'=>$involvedAccounts));
@@ -1015,6 +1015,8 @@ class BankingController extends Controller
                             $operation->setPaymentID($paymentVO->id);
                         break;
                     case 'withdrawal':
+                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                            $operation->setPaymentID($paymentVO->id);
                         break;
                     default:
                         $session->getFlashBag()->add('error','Undefined operation');

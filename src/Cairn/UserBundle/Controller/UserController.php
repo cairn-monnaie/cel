@@ -104,7 +104,22 @@ class UserController extends Controller
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
-        //last operations
+        $ob = $operationRepo->createQueryBuilder('o');
+        $processedTransactions = $ob->where(
+             $ob->expr()->orX(
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                 ),
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.toAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                 )
+             ))
+            ->andWhere('o.paymentID is not NULL')
+            ->orderBy('o.executionDate','ASC')
+            ->setMaxResults(15)
+            ->getQuery()->getResult();
 
         if($checker->isGranted('ROLE_PRO')){
             if($_format == 'json'){

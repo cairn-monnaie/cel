@@ -233,7 +233,12 @@ class BankingControllerTest extends BaseControllerTest
 
         $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
         $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
-        $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($ICC);
+
+        if($operation == 'deposit'){
+            $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($ICC);
+        }else{//withdrawal
+            $form['cairn_userbundle_simpleoperation[fromAccount][accountNumber]']->setValue($ICC);
+        }
         $form['cairn_userbundle_simpleoperation[description]']->setValue('Test '.$operation);
         $crawler =  $this->client->submit($form);
 
@@ -259,12 +264,12 @@ class BankingControllerTest extends BaseControllerTest
                                    'message'=>'xxx'),
             'invalid deposit ICC'=>array('operation'=>'deposit','creditor'=>'LaBonnePioche','changeICC'=>true,'amount'=>10,
                                          'isValid'=>false,'message'=>'Compte introuvable'),
-//            'valid withdrawal'=>array('operation'=>'withdrawal','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,
-//                                      'isValid'=>true,'message'=>'xxx'),
-//            'insufficient balance'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>false,'amount'=>10000000,
-//                                          'isValid'=>false,'message'=>'rechargez votre compte'),
-//            'invalid withdrawal ICC'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>true,
-//                                            'amount'=>10,'isValid'=>false,'message'=>'Compte introuvable'),
+            'valid withdrawal'=>array('operation'=>'withdrawal','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,
+                                      'isValid'=>true,'message'=>'xxx'),
+            'insufficient balance'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>false,'amount'=>10000000,
+                                          'isValid'=>false,'message'=>'rechargez votre compte'),
+            'invalid withdrawal ICC'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>true,
+                                            'amount'=>10,'isValid'=>false,'message'=>'Compte introuvable'),
         );
     }
 
