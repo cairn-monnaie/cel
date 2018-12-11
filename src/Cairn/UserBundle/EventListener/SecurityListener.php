@@ -84,7 +84,6 @@ class SecurityListener
         $session = $request->getSession();
 
         //get username and password from login request
-        //
         $credentials = array('username'=>$username,'password'=>$password);
         $networkInfo->switchToNetwork($networkName,'login',$credentials);
 

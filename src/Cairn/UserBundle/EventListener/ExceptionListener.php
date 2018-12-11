@@ -108,7 +108,7 @@ class ExceptionListener
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Un problème de session a eu lieu, veuillez vous reconnecter.');
+                    $session->getFlashBag()->add('error','Votre session a expiré. Veuillez vous reconnecter.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){
@@ -133,7 +133,7 @@ class ExceptionListener
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                 //will redirect to maintenance page
-                $event->setResponse(new RedirectResponse($welcomeUrl));
+                $event->setResponse(new RedirectResponse($logoutUrl));
             }
 //            else{//not cyclos error, instance of \Exception
 //                $subject = 'Erreur technique Symfony';
