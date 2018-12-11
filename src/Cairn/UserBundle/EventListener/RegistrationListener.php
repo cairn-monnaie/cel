@@ -85,8 +85,7 @@ class RegistrationListener
         $subject = 'Validation de l\'administrateur';                      
         $from = $messageNotificator->getNoReplyEmail();                    
         $to = $user->getEmail();                                                      
-        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:pending_validation.html.twig',
-            array('user'=>$user));
+        $body = $this->renderView('CairnUserBundle:Emails:pending_validation.html.twig',array('user'=>$user));
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
         $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée.');
@@ -155,5 +154,25 @@ class RegistrationListener
         $user->setCyclosID($cyclosID);
     }
 
+    /**
+     * Returns a rendered view.
+     *
+     * @param string $view The view name
+     * @param array $parameters An array of parameters to pass to the view
+     *
+     * @return string The rendered view
+     * @throws \Exception
+     */
+    protected function renderView($view, array $parameters = array())
+    {
+        if ($this->container->has('templating')) {
+            return $this->container->get('templating')->render($view, $parameters);
+        }
 
+        if (!$this->container->has('twig')) {
+            throw new \LogicException('You can not use the "renderView" method if the Templating Component or the Twig Bundle are not available.');
+        }
+
+        return $this->container->get('twig')->render($view, $parameters);
+    }
 } 

@@ -193,7 +193,9 @@ class AdminController extends Controller
                     $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
                     $user->setCyclosID($newUserCyclosID);
 
-                    $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',array('user'=>$user));
+                    $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',
+                        array('user'=>$user,
+                            'login_url'=>$this->get('router')->generate('fos_user_security_login')));
                     $subject = 'Plateforme numérique du Cairn';
                     $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
