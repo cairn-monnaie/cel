@@ -23,6 +23,7 @@ use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
+
 /**
  * This class contains called functions when events defined in Event\SecurityEvents are dispatched
  *
@@ -42,7 +43,7 @@ class SecurityListener
         $user = $event->getUser();
         $session = $event->getRequest()->getSession();
         $router = $this->container->get('router');          
- 
+
         if($user->getLastLogin() == NULL){
             $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car vous ne vous êtes jamais connecté. Attendez une nouvelle validation par un administrateur, un email vous sera envoyé avec votre nouveau mot de passe.');
             $logoutUrl = $router->generate('fos_user_security_logout');
@@ -114,24 +115,28 @@ class SecurityListener
      */
     public function onMaintenance(GetResponseEvent $event)
     {
-        $security = $this->container->get('cairn_user.security');          
         $templating = $this->container->get('templating');          
-        $router = $this->container->get('router');          
 
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
             $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
-        }else{
-            $currentUser = $security->getCurrentUser();
-
-            if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-                if(!$currentUser->isEnabled()){
-                    $logoutUrl = $router->generate('fos_user_security_logout');
-                    $event->setResponse(new RedirectResponse($logoutUrl));
-                }
-            }
-
         }
+    }
+
+    public function onDisabledUser(GetResponseEvent $event)
+    {
+        $security = $this->container->get('cairn_user.security');          
+        $router = $this->container->get('router');          
+
+        $currentUser = $security->getCurrentUser();
+
+        if($currentUser instanceof \Cairn\UserBundle\Entity\User){
+            if(!$currentUser->isEnabled()){
+                $logoutUrl = $router->generate('fos_user_security_logout');
+                $event->setResponse(new RedirectResponse($logoutUrl));
+            }
+        }
+
     }
 
     /**
@@ -217,6 +222,9 @@ class SecurityListener
         $pos_row = intdiv($position,$rows);                                 
         $pos_col = $position % $rows;                                       
         $field_value = $fields[$pos_row][$pos_col];
+
+
+//        echo substr($encoder->encodePassword($cardKey,$salt),0,4);
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');

@@ -128,6 +128,11 @@ class Operation
         return array(self::$TYPE_TRANSACTION_EXECUTED,self::$TYPE_WITHDRAWAL,self::$TYPE_RECONVERSION);
     }
 
+    public static function getDebitOperationTypes()
+    {
+        return array(self::$TYPE_WITHDRAWAL,self::$TYPE_RECONVERSION);
+    }
+
     public static function getToOperationTypes()
     {
         return array(self::$TYPE_DEPOSIT,self::$TYPE_CONVERSION);

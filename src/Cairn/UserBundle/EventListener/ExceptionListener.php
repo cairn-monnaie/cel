@@ -126,7 +126,7 @@ class ExceptionListener
             elseif($exception instanceof Cyclos\ConnectionException){
                 $subject = 'Maintenance automatique : ConnectionException Cyclos';
 
-                //maintenance state 
+                //maintenance state : file written in web directory 
                file_put_contents("maintenance.txt", '');
 
                 $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');

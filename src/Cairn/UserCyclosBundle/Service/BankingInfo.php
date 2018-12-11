@@ -59,7 +59,6 @@ class BankingInfo
         $this->recurringPaymentService = new Cyclos\RecurringPaymentService();
         $this->paymentService = new Cyclos\PaymentService();
         $this->transferService = new Cyclos\TransferService();
-
     }
 
     /**
