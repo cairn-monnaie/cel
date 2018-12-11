@@ -14,7 +14,7 @@ header
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid black;
+    /*border: 1px solid black;*/
 }
 
 .top-left
@@ -24,7 +24,7 @@ header
     align-items: center;
     width: 500px;
     height: 120px;
-    border: 1px solid black;
+    /*border: 1px solid black;*/
 }
 
 .top-left img
@@ -32,8 +32,10 @@ header
     width: 100px;
     height:100px;
 }
-
-#title 
+#titles{
+    text-decoration: none;
+}
+#title
 {
     display: flex;
     flex-direction: column;
@@ -84,7 +86,7 @@ header
 
 body nav
 {
-    border : 1px solid black;
+   /* border : 1px solid black; */
 }
 
 body nav ul
@@ -126,4 +128,9 @@ body nav a:hover
 footer
 {
 
+}
+
+.center{
+    margin: auto;
+    text-align: center;
 }

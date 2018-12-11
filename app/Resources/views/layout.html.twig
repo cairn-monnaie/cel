@@ -16,16 +16,16 @@
         <div id="main_wrapper">
             <header>
                 <div class="top-left">
-                    <img src="{{asset('apple-touch-icon.png')}}" alt="Logo du Cairn">
-                    <div id="titles">
+                    <img src="{{asset('cairn.png')}}" alt="Logo du Cairn">
+                    <a href="{{ path('cairn_user_welcome') }}" id="titles">
                         <h1> Le Cairn </h1>
                         <h2> Monnaie Locale Complémentaire </h2>
-                    </div>
+                    </a>
                 </div>
                 <div class="top-right">
                     <div id="logo_user">
                         <div class="notifications">
-                            <img  src="{{asset('apple-touch-icon.png')}}" alt="Notifications">
+                            <img  src="{{asset('cairn.png')}}" alt="Notifications">
                         </div>
                         {% if app.user.image.url is defined %}
                             <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}"> 
@@ -40,7 +40,7 @@
                             Connecté en tant que {{ app.user.username }}
                             -
                             <a href="{{ path('fos_user_security_logout') }}">
-                                <img src="{{asset('apple-touch-icon.png')}}" alt="Déconnexion"></a>
+                                <img src="{{asset('cairn.png')}}" alt="Déconnexion"></a>
                         {% else %}
                             <a href="{{ path('fos_user_security_login') }}">Connexion</a>
                         {% endif %}
@@ -55,15 +55,14 @@
             <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
         {% endblock %}
     </body>
-    <footer>
-        <nav>
-            <ul>
-                <li><a class=menu-item href="#"> Nos permanences <img src="{{asset('apple-touch-icon.png')}}"></a></li>
-                <li><a class=menu-item href="#"> Site du Cairn <img src="{{asset('apple-touch-icon.png')}}"></a></li>
-                <li><a class=menu-item href="#"> Réseaux sociaux <img src="{{asset('apple-touch-icon.png')}}"></a></li>
-                <li><a class=menu-item href="#"> Contacts <img src="{{asset('apple-touch-icon.png')}}"></a></li>
-            </ul>
-        </nav>
-
-    </footer>
+    {#<footer>#}
+        {#<nav>#}
+            {#<ul>#}
+                {#<li><a class=menu-item href="#"> Nos permanences <img src="{{asset('cairn.png')}}"></a></li>#}
+                {#<li><a class=menu-item href="#"> Site du Cairn <img src="{{asset('cairn.png')}}"></a></li>#}
+                {#<li><a class=menu-item href="#"> Réseaux sociaux <img src="{{asset('cairn.png')}}"></a></li>#}
+                {#<li><a class=menu-item href="#"> Contacts <img src="{{asset('cairn.png')}}"></a></li>#}
+            {#</ul>#}
+        {#</nav>#}
+    {#</footer>#}
 </html>

@@ -80,12 +80,10 @@ class MessageNotificator
      */
     public function notifyByEmail($subject,$from,$to,$body)
     {
-        $message = \Swift_Message::newInstance()
-            ->setSubject($subject)
+        $message = (new \Swift_Message($subject))
             ->setFrom($from)
             ->setTo($to)
-            ->setBody($body)
-            ;
+            ->setBody($body,'text/html');
         $this->mailer->send($message);
     }
 }
