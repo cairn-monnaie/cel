@@ -84,7 +84,7 @@ class MessageNotificator
             ->setSubject($subject)
             ->setFrom($from)
             ->setTo($to)
-            ->setBody($body)
+            ->setBody($body,'text/html')
             ;
         $this->mailer->send($message);
     }
