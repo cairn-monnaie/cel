@@ -120,7 +120,11 @@ class BankingController extends Controller
         $account = $accountService->getAccountByID($accountID);
 
         //$user is account owner : if system account, any ADMIN works. O.w, get user from account owner cyclos id
-        $user = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($account->owner->id);
+        if($account->owner != 'SYSTEM'){
+            $user = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($account->owner->id);
+        }else{
+            $user = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($currentUser->getCyclosID());
+        }
 
         //to see the content, check that currentUser is owner or currentUser is referent
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
@@ -133,6 +137,11 @@ class BankingController extends Controller
         $begin = date_modify(new \Datetime(),'-2 months');
         $end = date_modify(new \Datetime(),'+1 days');
 
+        if($account->type->nature == 'SYSTEM'){
+            $id = $accountID;
+        }else{
+            $id = $account->number;
+        }
 
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
@@ -150,7 +159,7 @@ class BankingController extends Controller
             ->andWhere('o.paymentID is not NULL')
             ->andWhere('o.executionDate BETWEEN :begin AND :end')
             ->orderBy('o.executionDate','ASC')
-            ->setParameter('number',$account->number)
+            ->setParameter('number',$id)
             ->setParameter('begin',$begin)
             ->setParameter('end',$end)
             ->getQuery()->getResult();
@@ -159,7 +168,7 @@ class BankingController extends Controller
         $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
         $query->setParameter('type', Operation::$TYPE_TRANSACTION_SCHEDULED)
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
-            ->setParameter('number',$account->number);
+            ->setParameter('number',$id);
 
         $totalAmount = $query->getSingleScalarResult();
 
@@ -246,7 +255,7 @@ class BankingController extends Controller
                 }
 
                 $ob->orderBy('o.executionDate',$orderBy)
-                    ->setParameter('number',$account->number)
+                    ->setParameter('number',$id)
                     ->setParameter('begin',$begin)
                     ->setParameter('end',$end);
                 $executedTransactions =  $ob->getQuery()->getResult();
@@ -1484,7 +1493,7 @@ class BankingController extends Controller
                 throw new AccessDeniedException('Ce compte ne vous appartient pas ou n\'existe pas.');
             }
             else{
-                $owner = $userRepo->findOneBy(array('username'=>$this->getParameter('cyclos_global_admin_username')));
+                $owner = $currentUser;
             }
         }
         else{//check that owner exists, o.w maintenance must be warned(an account with owner without Doctrine association 
@@ -1543,7 +1552,7 @@ class BankingController extends Controller
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
         $currentUser = $this->getUser();
-        if(! $currentUser->hasRole('ROLE_PRO')){
+        if(! ($currentUser->hasRole('ROLE_PRO') || $currentUser->hasRole('ROLE_SUPER_ADMIN')) ){
             throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
         }
 
@@ -1650,7 +1659,12 @@ class BankingController extends Controller
 
                     $html = '';
                     foreach($accounts as $account){
-                        $history = $accountService->getAccountHistory($account->id,$period);
+                        if($account->type->nature == 'SYSTEM'){
+                            $id = $account->id;
+                        }else{
+                            $id = $account->number;
+                        }
+                        $history = $accountService->getAccountHistory($id,$period);
 
                         $html = $html . $this->renderView('CairnUserBundle:Pdf:accounts_statement.html.twig',
                             array('account'=>$account,'history'=>$history,'period'=>$period));

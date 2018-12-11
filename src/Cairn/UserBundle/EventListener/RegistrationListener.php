@@ -132,14 +132,7 @@ class RegistrationListener
         $em = $this->container->get('doctrine.orm.entity_manager');
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
-        $session = $event->getRequest()->getSession();
         $user = $event->getForm()->getData();
-
-        if($user->hasRole('ROLE_PRO')){
-            $groupName = $this->container->getParameter('cyclos_group_pros');
-        }else{
-            $groupName = $this->container->getParameter('cyclos_group_network_admins');
-        }
 
         $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
         $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);

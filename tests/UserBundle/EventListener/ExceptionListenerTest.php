@@ -155,7 +155,6 @@ class ExceptionListenerTest extends KernelTestCase
         $event = new GetResponseForExceptionEvent(self::$kernel, $request, HttpKernelInterface::MASTER_REQUEST, $exception);
         $this->eventDispatcher->dispatch(KernelEvents::EXCEPTION,$event); 
         $this->assertTrue($event->getResponse() == NULL);
-
     }
 
 

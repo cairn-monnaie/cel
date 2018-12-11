@@ -3,60 +3,108 @@
 
 namespace Tests\UserBundle\EventListener;
 
-use FOS\UserBundle\Event\FilterUserResponseEvent;
-use FOS\UserBundle\FOSUserEvents;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
+use Cyclos;
+
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+use Cairn\UserBundle\Repository\UserRepository;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\Common\Persistence\ObjectManager;
 
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Card;
 
-class RegistrationListenerTest extends TestCase
+use Cairn\UserBundle\EventListener\RegistrationListener;
+
+use FOS\UserBundle\Event\FilterUserResponseEvent;
+use FOS\UserBundle\FOSUserEvents;
+use FOS\UserBundle\Event\FormEvent;
+use Cairn\UserBundle\Event\InputCardKeyEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Security\Http\SecurityEvents;
+use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
+use FOS\UserBundle\Event\GetResponseNullableUserEvent;
+
+use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\Security\Core\Encoder\PlaintextPasswordEncoder;
+
+
+class RegistrationListenerTest extends KernelTestCase
 {
 
-    public function testProfileEdit()
+    private $eventDispatcher;
+
+    protected static $kernel;
+
+    private $container;
+
+    public function __construct()
     {
-        $container = $this->getMockBuilder('Symfony\Component\DependencyInjection\Container')->getMock();
-        $user = $container->get('doctrine')->getManager()->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'locavore'));
+        self::$kernel = static::createKernel();                                      
+        self::$kernel->boot();                                                       
+        $this->container = self::$kernel->getContainer();
 
+        $this->eventDispatcher = new EventDispatcher();
+    }
 
-        $newName = 'John Doe';
-        $newUsername = 'john_doe';
-        $newEmail = 'john_doe@cairn-monnaie.com';
-        
-        $user->setName($newName);
-        $user->setUsername($newUsername);
-        $user->setEmail($newEmail);
+    public function testOnRegistrationInitialize()
+    {
+        $listener = new RegistrationListener($this->container);
+        $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_SUCCESS, array($listener, 'onRegistrationSuccess'));
 
-        //mock the repository
-        $userRepo = $this->getMockBuilder('Cairn\UserBundle\Repository\UserRepository')->getMock();
-        $userRepo->expects($this->any())
-                        ->method('find')
-                        ->willReturn($user);
-        
-        $objectManager = $this->createMock(ObjectManager::class);
-        $objectManager->expects($this->any())
-                        ->method('getRepository')
-                        ->willReturn($userRepo);
+//        //we use a client to retrieve a real instance of Request, filled with necessary attributes and parameters
+//        $client = $this->container->get('test.client');                 
+//        $client->setServerParameters(array());
+//
+//        $client->request('GET','/inscription');
 
-        $request = $this->getMockBuilder('Symfony\Component\HttpFoundation\Request')->getMock();
-        $form = $this->getMockBuilder('Symfony\Component\Form\FormInterface')->getMock();
-        $event = new FormEvent($form,$request);
-
-        $eventDispatcher = $this->getMockBuilder('Symfony\Component\EventDispatcher\EventDispatcher')->getMock();
-        $eventDispatcher
-            ->expects($this->once())
-            ->method('dispatch');
-
-        $eventDispatcher->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS,$event); 
-
-        //test how the user has changed on Cyclos side
-        //get userVO
-        $this->assertEquals($userVO->name, $newName);
-        $this->assertEquals($userVO->username, $newUserName);
-        $this->assertEquals($userVO->email, $newEmail);
+        $user = new User();
+        $request = new Request();
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('registration_type','pro');
+        $request->setSession($session);
 
     }
+
+    public function testOnRegistrationSuccess()
+    {
+        $listener = new RegistrationListener($this->container);
+        $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_SUCCESS, array($listener, 'onRegistrationSuccess'));
+
+//        //we use a client to retrieve a real instance of Request, filled with necessary attributes and parameters
+//        $client = $this->container->get('test.client');                 
+//        $client->setServerParameters(array());
+//
+//        $client->request('GET','/inscription');
+
+        $user = new User();
+        $request = new Request();
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+
+        $form = $this->getMockBuilder('Symfony\Component\Form\FormInterface')->disableOriginalConstructor()->getMock();
+        $form->expects($this->any())
+            ->method('getData')
+            ->willReturn($user);
+
+        $event = new FormEvent($form, $request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_SUCCESS,$event); 
+
+        //necessary to pass the constraint "cannot be null"
+        $this->assertTrue($user->getCard() != NULL);
+        $this->assertTrue($user->getCyclosID() != NULL);
+
+    }
+
+
 }
