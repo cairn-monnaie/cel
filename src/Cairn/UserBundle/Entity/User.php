@@ -102,6 +102,11 @@ class User extends BaseUser
      */
     private $removalRequest;
 
+    /**
+     * @ORM\Column(name="first_login", type="boolean", unique=false, nullable=false)
+     */
+    private $firstLogin;
+
     public function __construct()
     {
         parent::__construct();
@@ -113,6 +118,7 @@ class User extends BaseUser
         $this->setCardKeyTries(0);
         $this->setNbCards(0);
         $this->removalRequest = false;
+        $this->firstLogin = true;
     }
 
     public function getCity()
@@ -496,6 +502,29 @@ class User extends BaseUser
         return $this->removalRequest;
     }
 
+    /**
+     * Set firstLogin
+     *
+     * @param boolean $firstLogin
+     *
+     * @return User
+     */
+    public function setFirstLogin($firstLogin)
+    {
+        $this->firstLogin = $firstLogin;
+
+        return $this;
+    }
+
+    /**
+     * Get firstLogin
+     *
+     * @return boolean
+     */
+    public function isFirstLogin()
+    {
+        return $this->firstLogin;
+    }
 
     /**
      * check if referent

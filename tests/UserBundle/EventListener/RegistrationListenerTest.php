@@ -34,6 +34,8 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
+use FOS\UserBundle\Event\GetResponseUserEvent;
+use FOS\UserBundle\Event\UserEvent;
 
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Security\Core\Encoder\PlaintextPasswordEncoder;
@@ -60,19 +62,33 @@ class RegistrationListenerTest extends KernelTestCase
     public function testOnRegistrationInitialize()
     {
         $listener = new RegistrationListener($this->container);
-        $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_SUCCESS, array($listener, 'onRegistrationSuccess'));
+        $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_INITIALIZE, array($listener, 'onRegistrationInitialize'));
 
-//        //we use a client to retrieve a real instance of Request, filled with necessary attributes and parameters
-//        $client = $this->container->get('test.client');                 
-//        $client->setServerParameters(array());
-//
-//        $client->request('GET','/inscription');
-
+        //PRO is registering
         $user = new User();
         $request = new Request();
         $session = new Session(new MockArraySessionStorage());
         $session->set('registration_type','pro');
         $request->setSession($session);
+
+        $event = new UserEvent($user,$request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_INITIALIZE,$event); 
+        $this->assertTrue($user->hasRole('ROLE_PRO'));
+        $this->assertFalse($user->hasRole('ROLE_ADMIN'));
+        $this->assertFalse($user->hasRole('ROLE_SUPER_ADMIN'));
+
+        //local group is registering
+        $user = new User();
+        $request = new Request();
+        $session = new Session(new MockArraySessionStorage());
+        $session->set('registration_type','localGroup');
+        $request->setSession($session);
+
+        $event = new UserEvent($user,$request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_INITIALIZE,$event); 
+        $this->assertFalse($user->hasRole('ROLE_PRO'));
+        $this->assertTrue($user->hasRole('ROLE_ADMIN'));
+        $this->assertFalse($user->hasRole('ROLE_SUPER_ADMIN'));
 
     }
 
@@ -80,12 +96,6 @@ class RegistrationListenerTest extends KernelTestCase
     {
         $listener = new RegistrationListener($this->container);
         $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_SUCCESS, array($listener, 'onRegistrationSuccess'));
-
-//        //we use a client to retrieve a real instance of Request, filled with necessary attributes and parameters
-//        $client = $this->container->get('test.client');                 
-//        $client->setServerParameters(array());
-//
-//        $client->request('GET','/inscription');
 
         $user = new User();
         $request = new Request();
@@ -106,5 +116,22 @@ class RegistrationListenerTest extends KernelTestCase
 
     }
 
+    public function testOnRegistrationConfirm()
+    {
+        $listener = new RegistrationListener($this->container);
+        $this->eventDispatcher->addListener(FOSUserEvents::REGISTRATION_CONFIRM, array($listener, 'onRegistrationConfirm'));
+
+        $user = new User();
+        $request = new Request();
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+
+        $event = new GetResponseUserEvent($user, $request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_CONFIRM,$event); 
+
+        $this->assertFalse($user->isEnabled());
+        $this->assertTrue($session->getFlashBag()->has('success'));
+
+    }
 
 }

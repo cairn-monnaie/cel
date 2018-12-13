@@ -20,6 +20,7 @@ use FOS\UserBundle\Event\FormEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
 
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
@@ -64,6 +65,9 @@ class SecurityListener
         $newPassword = $user->getPlainPassword();
 
         $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
+        if($user->isFirstLogin()){
+            $user->setFirstLogin(false);
+        }
     }
 
     /**
@@ -74,6 +78,7 @@ class SecurityListener
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName=$this->container->getParameter('cyclos_network_cairn');          
+
         $loginManager = new LoginManager();
 
         $request = $event->getRequest();
@@ -93,7 +98,9 @@ class SecurityListener
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
         $session->set('cyclos_session_token',$loginResult->sessionToken); 
+
     }
+
 
     public function onKernelController(FilterControllerEvent $event)
     {
@@ -119,6 +126,21 @@ class SecurityListener
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
             $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
+        }
+    }
+
+    public function onFirstLogin(FilterResponseEvent $event)
+    {
+        $security = $this->container->get('cairn_user.security');          
+        $router = $this->container->get('router');          
+
+        $currentUser = $security->getCurrentUser();
+
+        if($currentUser instanceof \Cairn\UserBundle\Entity\User){
+            if($currentUser->isFirstLogin() && ($event->getRequest()->get('_route') != 'fos_user_change_password')){
+                $editPwdUrl = $router->generate('fos_user_change_password');
+                $event->setResponse(new RedirectResponse($editPwdUrl));
+            }
         }
     }
 
@@ -223,7 +245,7 @@ class SecurityListener
         $field_value = $fields[$pos_row][$pos_col];
 
 
-//        echo substr($encoder->encodePassword($cardKey,$salt),0,4);
+        //        echo substr($encoder->encodePassword($cardKey,$salt),0,4);
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');

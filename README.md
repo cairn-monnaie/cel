@@ -85,7 +85,6 @@ Digital Cairn
 
      * Currency name : **_$currency-name_**
      * Currency symbol : xxx
-     * Currency symbol : xxx
      * click next 
  9. **System accounts**
 
@@ -255,7 +254,7 @@ Digital Cairn
        * Click on "web services"
        * User access : select "Enforced enabled"
        * session timeout : xxx (e.g 2 mins)
-       * Perform payments / User identification methods for performing payments : check Login name / Account number
+       * Perform payments / User identification methods for performing payments : check Login name 
        * Click save
  29. **Change usernames configuration**
         

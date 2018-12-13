@@ -28,6 +28,7 @@ use Cairn\UserBundle\Event\InputCardKeyEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Http\SecurityEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
 
@@ -59,7 +60,8 @@ class SecurityListenerTest extends KernelTestCase
     public function setUp()
     {
         $this->user = new User();
-//        $this->user->setUsername($this->username);
+        $this->user->setUsername('LaBonnePioche');
+        $this->user->setFirstLogin(true);
 //        $this->user->setName($this->userData->name);
 //        $this->user->setEmail($this->userData->email);
 //        $this->user->setCyclosID($id);
@@ -69,6 +71,11 @@ class SecurityListenerTest extends KernelTestCase
 //        $this->user->setPlainPassword($password);
         $this->user->setEnabled(true);
 
+    }
+
+    public function testEventsPriority()
+    {
+        ;
     }
 
     /*
@@ -184,7 +191,6 @@ class SecurityListenerTest extends KernelTestCase
 
     public function testOnLogin()
     {
-
         $listener = new SecurityListener($this->container);
         $this->eventDispatcher->addListener(SecurityEvents::INTERACTIVE_LOGIN, array($listener, 'onLogin'));
 
@@ -198,12 +204,14 @@ class SecurityListenerTest extends KernelTestCase
         $session = new Session(new MockArraySessionStorage());
         $request->setSession($session);
 
-        $request->request->set('_username','LaBonnePioche');
+        $request->request->set('_username',$this->user->getUsername());
         $request->request->set('_password','@@bbccdd');
 
         $event = new InteractiveLoginEvent($request,$token);
         $this->eventDispatcher->dispatch(SecurityEvents::INTERACTIVE_LOGIN,$event); 
         $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
+
+        $this->assertTrue($this->eventDispatcher->hasListeners(\Cairn\UserBundle\Event\SecurityEvents::FIRST_LOGIN));
 
         //wrong password
         $session = new Session(new MockArraySessionStorage());
@@ -221,14 +229,47 @@ class SecurityListenerTest extends KernelTestCase
 
     }
 
-//    /**
-//     *
-//     *@depends testOnLogin 
-//     */
-//    public function testOnKernelController()
-//    {
-//
-//    }
+    public function testOnFirstLogin()
+    {
+        $security = $this->getMockBuilder('Cairn\UserBundle\Service\Security')->disableOriginalConstructor()->getMock();
+        $security->expects($this->any())
+            ->method('getCurrentUser')
+            ->willReturn($this->user);
+
+        $this->container->set('cairn_user.security',$security);
+
+        $listener = new SecurityListener($this->container);
+        $this->eventDispatcher->addListener(KernelEvents::RESPONSE, array($listener, 'onFirstLogin'));
+
+        //we use a client to retrieve a real instance of Request, filled with necessary attributes and parameters
+        $client = $this->container->get('test.client');                 
+        $client->setServerParameters(array());
+
+        //request is not change password
+        $client->request('GET','/');
+        $request = $client->getRequest();//$this->getMockBuilder('Symfony\Component\HttpFoundation\Request')->getMock();
+
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+
+        $event = new FilterResponseEvent(self::$kernel, $request, HttpKernelInterface::MASTER_REQUEST,new Response());
+
+        $this->eventDispatcher->dispatch(KernelEvents::RESPONSE,$event); 
+        $this->assertTrue($event->getResponse()->isRedirect('/profile/change-password'));
+
+        //request is change password
+        $client->request('GET','/profile/change-password');
+        $request = $client->getRequest();//$this->getMockBuilder('Symfony\Component\HttpFoundation\Request')->getMock();
+
+        $session = new Session(new MockArraySessionStorage());
+        $request->setSession($session);
+
+        $event = new FilterResponseEvent(self::$kernel, $request, HttpKernelInterface::MASTER_REQUEST,new Response());
+
+        $this->eventDispatcher->dispatch(KernelEvents::RESPONSE,$event); 
+        $this->assertFalse($event->getResponse()->isRedirect());
+
+    }
 
 
     public function testOnResetPassword()
