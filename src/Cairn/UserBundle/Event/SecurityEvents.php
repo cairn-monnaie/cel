@@ -19,6 +19,7 @@ final class SecurityEvents
      */
     const INPUT_CARD_KEY = 'cairn_user.input_card_key';
 
+
     /**
      * List of all routes considered as sensible. An input card key will be required before accessing them. Then, if you think another
      * route in development will need to be preceded by a security card layer, just add the route to this list.
@@ -38,7 +39,6 @@ final class SecurityEvents
         'cairn_user_users_remove_pending',
         'cairn_user_cyclos_config_home',
         'cairn_user_cyclos_accountsconfig_account_edit',
-        'cairn_user_password_change',
         'fos_user_change_password'
     ];
 

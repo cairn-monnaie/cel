@@ -66,6 +66,19 @@ class UserValidator extends ConstraintValidator
                 ->atPath('name')
                 ->addViolation();
         }
+
+        if(strlen($user->getName()) > 30){
+            $this->context->buildViolation('Le nom doit contenir moins de 30 caractères.')
+                ->atPath('name')
+                ->addViolation();
+        }
+
+        if(strlen($user->getName()) > 150){
+            $this->context->buildViolation('La description doit contenir moins de 150 caractères.')
+                ->atPath('description')
+                ->addViolation();
+        }
+
         if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
             $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
                 ->atPath('plainPassword')
@@ -98,6 +111,7 @@ class UserValidator extends ConstraintValidator
                 ->atPath('email')
                 ->addViolation();
         }
+
 
         //WARNING with commented code below : creates duplicated users in cyclos database. It is a problem for network and global admins if they want to change their password
         //if no violation, it necessarily means that a validation error would come from password

@@ -106,6 +106,11 @@ class Image
         return $this->file;
     }
 
+//    public function __toString()
+//    {
+//        return $this->file->getClientOriginalName();
+//    }
+//
     public function setFile(UploadedFile $file = null)
     {
         $this->file = $file;
@@ -183,5 +188,11 @@ class Image
         // chemin relatif vers répertoire web
         return __DIR__.'/../../../../web/'.$this->getUploadDir();
     }
+
+    public function getWebPath()
+    {
+        return $this->getUploadDir().'/'.$this->getId().'.'.$this->getUrl();
+    }
+
 }
 

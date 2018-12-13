@@ -70,7 +70,7 @@ class RegistrationType extends AbstractType
         );
         $builder->add('address', AddressType::class)
             ->add('description',TextareaType::class)
-            ->add('image', ImageType::class,array('required'=>false));
+            ->add('image', ImageType::class);
 
     }
 

@@ -73,11 +73,6 @@ class SecurityListenerTest extends KernelTestCase
 
     }
 
-    public function testEventsPriority()
-    {
-        ;
-    }
-
     /*
      *As user is not connected during this unit test, the real Security service will never be tested. To simulate that an user is connecte
      * we mock the security service and make it return an instance of User
@@ -211,8 +206,6 @@ class SecurityListenerTest extends KernelTestCase
         $this->eventDispatcher->dispatch(SecurityEvents::INTERACTIVE_LOGIN,$event); 
         $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
 
-        $this->assertTrue($this->eventDispatcher->hasListeners(\Cairn\UserBundle\Event\SecurityEvents::FIRST_LOGIN));
-
         //wrong password
         $session = new Session(new MockArraySessionStorage());
         $request->setSession($session);
@@ -265,7 +258,11 @@ class SecurityListenerTest extends KernelTestCase
         $request->setSession($session);
 
         $event = new FilterResponseEvent(self::$kernel, $request, HttpKernelInterface::MASTER_REQUEST,new Response());
+        $this->eventDispatcher->dispatch(KernelEvents::RESPONSE,$event); 
+        $this->assertFalse($event->getResponse()->isRedirect());
 
+        //not first login
+        $this->user->setFirstLogin(false);
         $this->eventDispatcher->dispatch(KernelEvents::RESPONSE,$event); 
         $this->assertFalse($event->getResponse()->isRedirect());
 
@@ -295,7 +292,6 @@ class SecurityListenerTest extends KernelTestCase
         $this->assertFalse($event->getUser()->isEnabled());
         $logout = '/logout';
         $this->assertTrue($event->getResponse()->isRedirect($logout));
-
     }
 
 

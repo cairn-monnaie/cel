@@ -33,7 +33,7 @@ class ProfileType extends AbstractType
                 'constraints'=>new UserPassword() ))
             ->add('description', TextareaType::class)
             ->add('address' , AddressType::class)
-            ->add('image', ImageType::class,array('required'=>false));
+            ->add('image', ImageType::class);
         $builder->addEventListener(
             FormEvents::SUBMIT,
             function (FormEvent $event) {
