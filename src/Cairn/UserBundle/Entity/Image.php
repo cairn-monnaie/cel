@@ -106,11 +106,6 @@ class Image
         return $this->file;
     }
 
-//    public function __toString()
-//    {
-//        return $this->file->getClientOriginalName();
-//    }
-//
     public function setFile(UploadedFile $file = null)
     {
         $this->file = $file;

@@ -34,7 +34,7 @@ class CreateInstallAdminCommandTest extends KernelTestCase
     /**
      *@dataProvider provideInstallData
      */
-    public function testExecuteInstallAdminCommand($login, $password, $message, $isInstalled, $cardGenerated)
+    public function testExecuteInstallAdminCommand($login, $password, $message, $isInstalled, $firstLogin, $cardGenerated)
     {
         $kernel = static::createKernel();
         $kernel->boot();
@@ -73,9 +73,26 @@ class CreateInstallAdminCommandTest extends KernelTestCase
             $form['_password']->setValue($password);                               
             $crawler = $client->submit($form);                               
 
-            $crawler =  $client->followRedirect();
+            $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));   
 
-            $this->assertSame(1, $crawler->filter('li#id_welcome')->count());
+            if($firstLogin){     
+                $this->assertTrue($admin->isFirstLogin());
+
+                //check that, after first login, user is redirected to password change
+                $this->assertTrue($client->getResponse()->isRedirect('/profile/change-password'));
+                $crawler =  $client->followRedirect();
+
+                //change password
+                $form = $crawler->selectButton('fos_user_change_password_form_save')->form();
+                $form['fos_user_change_password_form[current_password]']->setValue('@@bbccdd');
+                $form['fos_user_change_password_form[plainPassword][first]']->setValue('@@bbccdd');
+                $form['fos_user_change_password_form[plainPassword][second]']->setValue('@@bbccdd');
+                $crawler = $client->submit($form);
+                $crawler =  $client->followRedirect();
+
+                $em->refresh($admin);
+                $this->assertFalse($admin->isFirstLogin());
+            }
 
             if(!$cardGenerated){
                 //test card generation
@@ -85,7 +102,8 @@ class CreateInstallAdminCommandTest extends KernelTestCase
                 $crawler =  $client->submit($form);                          
                 $crawler = $client->followRedirect(); 
 
-                $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));        
+//                $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));        
+                $em->refresh($admin);
                 $card = $admin->getCard();
                 $this->assertTrue($card->isGenerated());
             }else{
@@ -103,12 +121,14 @@ class CreateInstallAdminCommandTest extends KernelTestCase
     public function provideInstallData()
     {
         return array(
-            array('username'=>'test_admin','password'=>'@bcdefgh','message'=>'Wrong','isInstalled'=>false,'cardGenerated'=>false),
-            array('username'=>'admin','password'=>'@@bbccdd','message'=>'Wrong','isInstalled'=>false,'cardGenerated'=>false),
-            array('username'=>'test_admin','password'=>'@@bbccdd','message'=>'created successfully','isInstalled'=>true,
-            'cardGenerated'=>false),
-            array('username'=>'test_admin','password'=>'@@bbccdd','message'=>'already been created','isInstalled'=>true,
-            'cardGenerated'=>true),
+            'wrong pwd'=>array('username'=>'admin_network','password'=>'@bcdefgh',
+            'message'=>'Wrong','isInstalled'=>false,'firstLogin'=>true,'cardGenerated'=>false),
+            'wrong login'=>array('username'=>'test_admin','password'=>'@@bbccdd',
+            'message'=>'Wrong','isInstalled'=>false,'firstLogin'=>true,'cardGenerated'=>false),
+            'success'=>array('username'=>'admin_network','password'=>'@@bbccdd',
+            'message'=>'created successfully','isInstalled'=>true,'firstLogin'=>true,'cardGenerated'=>false),
+            'already installed'=>array('username'=>'admin_network','password'=>'@@bbccdd',
+            'message'=>'already been created','isInstalled'=>true,'firstLogin'=>false,'cardGenerated'=>true),
         );
     }
 }

@@ -165,7 +165,7 @@ class AdminController extends Controller
                     $userDTO = new \stdClass();                                    
                     $userDTO->name = $user->getName();                             
                     $userDTO->username = $user->getUsername();                     
-                    $userDTO->internalName = $user->getUsername();                 
+//                    $userDTO->internalName = $user->getUsername();                 
                     $userDTO->login = $user->getUsername();                        
                     $userDTO->email = $user->getEmail();                           
 

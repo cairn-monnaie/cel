@@ -73,7 +73,7 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if(strlen($user->getName()) > 150){
+        if(strlen($user->getDescription()) > 150){
             $this->context->buildViolation('La description doit contenir moins de 150 caractères.')
                 ->atPath('description')
                 ->addViolation();

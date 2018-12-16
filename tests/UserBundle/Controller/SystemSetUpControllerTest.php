@@ -29,34 +29,22 @@ class SystemSetUpControllerTest extends BaseControllerTest
                 'login',$credentials);
 
             //generate doctrine users or not
-
             $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'MaltOBar'));
 
             if(!$user){
                 //            var_dump(gc_enabled());
                 //            gc_enable();
                 //            var_dump(gc_enabled());
-
                 $memberGroupName = $this->container->getParameter('cyclos_group_pros');
                 $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
-
-                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_users.groovy',false));
-
-                $nb = 0;
-                //            while($nb != 5){ //delay between running script and database update
 
                 $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
                 $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName,'ADMIN_GROUP');
 
-                $cyclosMembers = array();
-                while(count($cyclosMembers) != 6){
-                    $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
-                }
+                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
                 $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
 
                 $cyclosUsers = array_merge($cyclosMembers, $cyclosAdmins);
-                $nb = count($cyclosUsers);
-                //          }
 
                 $superAdmin  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$adminUsername));
 
@@ -67,7 +55,6 @@ class SystemSetUpControllerTest extends BaseControllerTest
                 }
 
                 $this->em->flush();
-                $scriptResult = $this->scriptManager->runScript(file_get_contents($this->container->getParameter('kernel.project_dir').'/tests/script_import_payments.groovy',false));
 
             }
         }

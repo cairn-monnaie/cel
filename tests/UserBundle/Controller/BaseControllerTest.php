@@ -46,6 +46,7 @@ class BaseControllerTest extends WebTestCase
         $doctrineUser = new User();
 
         $cyclosUserData = $this->container->get('cairn_user_cyclos_user_info')->getProfileData($cyclosUser->id);
+
         $doctrineUser->setCyclosID($cyclosUserData->id);                                      
         $doctrineUser->setUsername($cyclosUserData->username);                           
         $doctrineUser->setName($cyclosUserData->name);
@@ -66,7 +67,7 @@ class BaseControllerTest extends WebTestCase
         $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('city'=>$cyclosAddress->city));
         $address = new Address();                                          
         $address->setZipCity($zip);                                        
-        $address->setStreet1('10 rue de la Ciotat');
+        $address->setStreet1($cyclosAddress->addressLine1);
 
         $doctrineUser->setAddress($address);                                  
         $doctrineUser->setDescription('Test user blablablabla');             

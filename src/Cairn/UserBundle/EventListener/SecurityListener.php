@@ -196,6 +196,10 @@ class SecurityListener
                     $isExceptionCase = true;
                 }
             }
+            if(($currentUser->isFirstLogin() && $route == 'fos_user_change_password')){
+                $isExceptionCase = true;
+            }
+
         }
 
         if(!$isExceptionCase){
