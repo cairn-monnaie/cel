@@ -21,6 +21,20 @@ class CardControllerTest extends BaseControllerTest
         parent::__construct($name, $data, $dataName);
     }
 
+    public function setUp()
+    {
+        //superAdmin a une carte générée mais non validée
+        //DrDBrew a une carte non générée
+        //recycleco a une carte déjà validée
+        //lib_colibri a une carte à supprimer
+        //la_mandragore n a pas de carte
+    }
+
+    public function setUpAfterClass()
+    {
+
+    }
+
     /**
      * @TODO : tester directement la présence des urls
      *_$referent wants card action for himself :
@@ -60,12 +74,11 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideCardOperationsData()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
         return array(
             array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
-//            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
-//            array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
-//            array('referent'=>$adminUsername,'target'=>'cafeEurope','isReferent'=>false)
+            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
+            array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false)
         );
     }
 
@@ -115,7 +128,7 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardValidation()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'invalid key'        => array('login'=>$adminUsername,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
@@ -158,7 +171,7 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersWithValidatedCard()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'validated card'     => array('login'=>$adminUsername, 'expectValid'=>true),
@@ -224,15 +237,15 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardGeneration()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
-               array('current'=>$adminUsername,'target'=>$adminUsername,'expectConfirm'=>false,'expectMessage'=>'déjà été générée'),             
-               array('current'=>$adminUsername,'target'=>'LaBonnePioche','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$adminUsername,'target'=>'DrDBrew','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$adminUsername,'target'=>'MaltOBar','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$adminUsername,'target'=>'locavore','expectConfirm'=>true,'expectMessage'=>'xxx'),             
-               array('current'=>$adminUsername,'target'=>'cafeEurope','expectConfirm'=>false,'expectMessage'=>'pas référent'),             
+            'card already generated' => array('current'=>$adminUsername,'target'=>$adminUsername,'expectConfirm'=>false,
+                                              'expectMessage'=>'déjà été générée'),             
+            'successful generation' => array('current'=>$adminUsername,'target'=>'LaBonnePioche','expectConfirm'=>true,
+                                             'expectMessage'=>'xxx'),             
+            'not referent'          =>array('current'=>$adminUsername,'target'=>'cafeEurope','expectConfirm'=>false,
+                                            'expectMessage'=>'pas référent'),             
         );
     }
 
@@ -307,7 +320,7 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardRevocation()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
              'revocation from ref'=> array('current'=>$adminUsername,'target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
@@ -390,7 +403,7 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardOrder()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
              'ordered by ref'=> array('current'=>$adminUsername,'target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 

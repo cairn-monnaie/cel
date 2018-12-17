@@ -2417,8 +2417,8 @@ logger.info('Attention! Si vous ne suivez pas les indications, ou rentrez des do
 logger.info('Le nom doit contenir entre 3 et 30 caractères. Pour simplifier : seulement des chiffres et des lettres, sinon le parseur râle')
 admin_name = raw_input("Nom de l'administrateur: ")
 
-logger.info('Le login doit contenir entre 5 et 16 caractères, tous alphanumériques : lettres, nombres, underscore et .')
-admin_login = raw_input("Login de l'administrateur : ")
+#logger.info('Le login doit contenir entre 5 et 16 caractères, tous alphanumériques : lettres, nombres, underscore et .')
+#admin_login = raw_input("Login de l'administrateur : ")
 
 logger.info('L\'adresse email doit avoir un format cohérent')
 admin_email = raw_input("Email de l'administrateur : ")
@@ -2427,7 +2427,7 @@ admin_email = raw_input("Email de l'administrateur : ")
 create_user_with_password(
     group=ID_GROUPE_NETWORK_ADMINS,
     name= admin_name,
-    login= admin_login,
+    login= 'admin_network',
     email= admin_email,
     password= '@@bbccdd'
 )

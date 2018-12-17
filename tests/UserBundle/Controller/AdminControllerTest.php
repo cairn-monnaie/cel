@@ -82,7 +82,7 @@ class AdminControllerTest extends BaseControllerTest
 
     public function provideReferentsAndTargets()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'valid'           => array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
@@ -158,7 +158,7 @@ class AdminControllerTest extends BaseControllerTest
      */
     public function testAssignReferent($referent, $target, $isValid, $isPro, $expectKey)
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
         $crawler = $this->login($adminUsername, '@@bbccdd');
 
         //can be null

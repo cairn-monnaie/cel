@@ -215,7 +215,7 @@ class BankingControllerTest extends BaseControllerTest
      */
     public function testDepositAndWithdrawal($operation,$creditor,$changeICC,$amount,$isValid,$message)
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
         $crawler = $this->login($adminUsername, '@@bbccdd');
 
         $url = '/banking/'.$operation.'/request';
@@ -339,7 +339,7 @@ class BankingControllerTest extends BaseControllerTest
     public function testDownloadRIB($downloader,$owner,$isCyclosLegit, $isLegit)
     {
         //connect with admin to get owner's account ids (not possible with member for another one)
-        $credentials = array('username'=>$this->getAdminUsername(),'password'=>'@@bbccdd');
+        $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
                                                                                  'login',$credentials);
 
@@ -369,7 +369,7 @@ class BankingControllerTest extends BaseControllerTest
 
     public function provideDownloadersAndOwners()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'admin for pro'=>array('downloader'=>$adminUsername,'owner'=>'LaBonnePioche','isCyclosLegit'=>true,'isLegit'=>true ),
@@ -443,7 +443,7 @@ class BankingControllerTest extends BaseControllerTest
             'pastDay'=>$pastDay,'pastMonth'=>$pastMonth,'pastYear'=>$pastYear,
         );
 
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'pro'=>$baseData,

@@ -48,7 +48,7 @@ class DefaultControllerTest extends BaseControllerTest
 
     public function provideTypeForRegistration()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             array('login'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
@@ -67,7 +67,7 @@ class DefaultControllerTest extends BaseControllerTest
      */
     public function testRegistration($type,$email,$username,$name, $street1,$zipCode,$description, $emailConfirmed)
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         //registration by administrator
         $login = $adminUsername;

@@ -13,13 +13,5 @@ php bin/console doctrine:database:create --env=test
 php bin/console doctrine:schema:update --env=test --force                      
 php bin/console doctrine:database:import --env=test web/zipcities.sql          
 
-echo "$(tput setaf 3)Copy CSV file with members into docker container$(tput sgr 0)"
-docker cp tests/test_members.csv cyclos-app-test:/usr/local/cyclos/            
-echo "$(tput setaf 2)CSV file copied"
-
-echo "$(tput setaf 3)Copy CSV file with payments into docker container$(tput sgr 0)"
-docker cp tests/test_simple_payments.csv cyclos-app-test:/usr/local/cyclos/    
-echo "$(tput setaf 2)CSV file copied"
-
 echo "$(tput setaf 3)Start testing$(tput sgr 0)"
-./vendor/bin/simple-phpunit --testsuite=Order --stop-on-error
+#./vendor/bin/simple-phpunit --testsuite=Order --stop-on-error

@@ -3,6 +3,7 @@
 namespace Tests\UserBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\ProductManager;
@@ -35,53 +36,9 @@ class BaseControllerTest extends WebTestCase
         $this->userManager = new UserManager();
 
         $this->em = $this->container->get('doctrine.orm.entity_manager');                          
+        $this->testAdmin = 'admin_network';
     }
 
-    /**
-     *
-     *$userRank is used to generate card creation dates at fixed intervals
-     */
-    public function createUser($cyclosUser, $superAdmin, $userRank)
-    {
-        $doctrineUser = new User();
-
-        $cyclosUserData = $this->container->get('cairn_user_cyclos_user_info')->getProfileData($cyclosUser->id);
-
-        $doctrineUser->setCyclosID($cyclosUserData->id);                                      
-        $doctrineUser->setUsername($cyclosUserData->username);                           
-        $doctrineUser->setName($cyclosUserData->name);
-        $doctrineUser->setEmail($cyclosUserData->email);
-
-        $creationDate = new \Datetime($cyclosUserData->activities->userActivationDate);
-        $doctrineUser->setCreationDate($creationDate);            
-        $doctrineUser->setPlainPassword('@@bbccdd');                      
-        $doctrineUser->setEnabled(true);                                      
-
-        if($cyclosUserData->group->nature == 'MEMBER_GROUP'){
-            $doctrineUser->addRole('ROLE_PRO');   
-        }else{
-            $doctrineUser->addRole('ROLE_ADMIN');   
-        }                
-
-        $cyclosAddress = $cyclosUserData->addressListData->addresses[0];
-        $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('city'=>$cyclosAddress->city));
-        $address = new Address();                                          
-        $address->setZipCity($zip);                                        
-        $address->setStreet1($cyclosAddress->addressLine1);
-
-        $doctrineUser->setAddress($address);                                  
-        $doctrineUser->setDescription('Test user blablablabla');             
-
-        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
-        $doctrineUser->setCard($card);
-
-        if($doctrineUser->getCity() == $superAdmin->getCity()){
-            $doctrineUser->addReferent($superAdmin);
-        }
-
-        $this->em->persist($doctrineUser);
-
-    }
 
     public function login($username,$password)
     {
@@ -105,21 +62,11 @@ class BaseControllerTest extends WebTestCase
         return $this->client->submit($form);
     }
 
-    public function getAdminUsername()
-    {
-        $installedAdmins = $this->em->getRepository('CairnUserBundle:User')->myFindByRole(array('ROLE_SUPER_ADMIN'));
-        if($installedAdmins){
-            return $installedAdmins[0]->getUsername();
-        }
-
-        return NULL;
-    }
-
 
     public function provideReferentsAndTargets()
     {
 
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
         return array(
             array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
             array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),

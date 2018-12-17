@@ -387,7 +387,7 @@ class UserControllerTest extends BaseControllerTest
      */
     public function provideUsersToRemove()
     {
-        $adminUsername = $this->getAdminUsername();
+        $adminUsername = $this->testAdmin;
 
         return array(
             'non null account' => array($adminUsername,'LaBonnePioche',true,false,false),

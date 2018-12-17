@@ -2,6 +2,7 @@ Digital Cairn
 =======
 
 # Requirements
+ * PHP 7.1
  * composer https://getcomposer.org/download/
  * git
  * docker
