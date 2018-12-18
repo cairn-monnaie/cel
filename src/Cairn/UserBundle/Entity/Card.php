@@ -139,7 +139,7 @@ class Card
     public function generateCard($env)
     {
 //        $this->setCreationDate(new \Datetime());
-        $card = array();
+        $matrix = array();
         for($row = 0; $row < $this->getRows(); $row++){
             $line = array();
             for($col =0; $col < $this->getCols();$col++){
@@ -150,10 +150,11 @@ class Card
                     $line[] =  rand(1000,9999);
                 }
             }
-            $card[] = $line;
+            $matrix[] = $line;
         }
 
-        $this->setFields(serialize($card));
+        $this->setFields(serialize($matrix));
+        return $this->getFields();
 
     }
 

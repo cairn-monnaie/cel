@@ -64,7 +64,10 @@ class CardControllerTest extends BaseControllerTest
         return array(
             array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
             array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false)
+            array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false),
+            array('referent'=>'vie_integrative','target'=>'vie_integrative','isReferent'=>false),
+            array('referent'=>'vie_integrative','target'=>'DrDBrew','isReferent'=>false)
+
         );
     }
 
@@ -104,11 +107,11 @@ class CardControllerTest extends BaseControllerTest
                 $this->em->refresh($currentUser);
                 $this->em->refresh($card);
     
+
                 $this->assertSame(0,$currentUser->getCardKeyTries());
                 $this->assertTrue($card->isEnabled());
                 $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
             }
-
         }
     }
 
@@ -119,7 +122,7 @@ class CardControllerTest extends BaseControllerTest
         return array(
             'invalid key'        => array('login'=>$adminUsername,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
             'valid key'          => array('login'=>$adminUsername,'key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
-            'validated card'     => array('login'=>$adminUsername,'key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
+            'validated card'     => array('login'=>'vie_integrative','key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
             'not generated card' => array('login'=>'DrDBrew', 'key'=>'1111','expectForm'=>false,'expectValidKey'=>false),
         );
     }

@@ -71,7 +71,7 @@ class Commands
 
         $ob = $operationRepo->createQueryBuilder('o');                 
         $scheduledFailedTransactions = $ob->where('o.paymentID is NULL')                      
-                                          ->getQuery()->getResult();
+            ->getQuery()->getResult();
 
         foreach($scheduledFailedTransactions as $transaction){
             $this->em->remove($transaction);
@@ -145,17 +145,21 @@ class Commands
             $new_admin->setAddress($address);
             $new_admin->setDescription('Administrateur de l\'application');
 
-            //set auto-referent
-            $new_admin->addReferent($new_admin);
-
 
             //ajouter la carte
             $salt = $this->container->get('cairn_user.security')->generateCardSalt($new_admin);
             $card = new Card($new_admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
             $new_admin->setCard($card);
-
-
             $this->em->persist($new_admin);
+
+            //set admin has referent of all users including himself
+            $allUsers = $userRepo->findAll();
+
+            $new_admin->addReferent($new_admin);
+            foreach($allUsers as $user){
+                $user->addReferent($new_admin);
+            }
+
             $this->em->flush();
 
             return 'admin user has been created successfully !';
@@ -274,7 +278,7 @@ class Commands
         }
     }
 
-    public function createUser($cyclosUser)
+    public function createUser($cyclosUser, $admin)
     {
         $doctrineUser = new User();
 
@@ -284,7 +288,7 @@ class Commands
         $doctrineUser->setUsername($cyclosUserData->username);                           
         $doctrineUser->setName($cyclosUserData->name);
         $doctrineUser->setEmail($cyclosUserData->email);
-        $doctrineUser->isFirstLogin(false);
+        $doctrineUser->setFirstLogin(false);
 
         $creationDate = new \Datetime($cyclosUserData->activities->userActivationDate);
         $doctrineUser->setCreationDate($creationDate);
@@ -307,8 +311,25 @@ class Commands
         $doctrineUser->setDescription('Test user blablablabla');             
 
         $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
-        $doctrineUser->setCard($card);
+        $fields = unserialize($card->generateCard($this->container->getParameter('kernel.environment')));
 
+        //encoder la carte                                                     
+        $encoder = $this->container->get('security.encoder_factory')->getEncoder($doctrineUser);  
+
+        $nbRows = $card->getRows();                                            
+        $nbCols = $card->getCols();                                            
+
+        for($row = 0; $row < $nbRows; $row++){                                 
+            for($col = 0; $col < $nbCols; $col++){                             
+                $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
+                $fields[$row][$col] = substr($encoded_field,0,4);              
+            }                                                                  
+        }                                                                      
+
+        $card->setFields(serialize($fields));
+        $card->setGenerated(true);
+        $doctrineUser->setCard($card);
+        $doctrineUser->addReferent($admin);
         $this->em->persist($doctrineUser);
 
     }
@@ -319,7 +340,7 @@ class Commands
         $adminUsername = $login;
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
-        $users = $userRepo->findAll();
+        $users = $userRepo->myFindByRole(array('ROLE_PRO'));
 
         if(!$users){
             $credentials = array('username'=>$adminUsername,'password'=>$password);
@@ -340,25 +361,27 @@ class Commands
                 }
             }   
 
+            $admin = $userRepo->findOneByUsername('admin_network');
+
             //basic user creation : create entity using data from Cyclos + add a card for all users
             foreach($cyclosMembers as $cyclosMember){
-                $this->createUser($cyclosMember);
+                $this->createUser($cyclosMember,$admin);
             }
             $this->em->flush();
 
-            //here, we set specific elements for testing different contexts and data
+            //here, we set specific attributes to each user in order to test different contexts and data
 
-            //card is generated and is validated
+            $admin->setFirstLogin(false);
+            $admin->getCard()->setGenerated(true);
+
+            //vie_integrative has generated(default at user creation in createUser function) and validated card + admin is not referent
             $user = $userRepo->findOneByUsername('vie_integrative'); 
+            $user->removeReferent($admin);
             $card  = $user->getCard();
-            $card->generateCard('test');
-            $card->setGenerated(true);
             $card->setEnabled(true);
 
             $user = $userRepo->findOneByUsername('labonnepioche'); 
             $card  = $user->getCard();
-            $card->generateCard('test');
-            $card->setGenerated(true);
             $card->setEnabled(true);
 
             //card is generated and is NOT validated
@@ -368,11 +391,21 @@ class Commands
             $card->setGenerated(true);
             $card->setEnabled(false);
 
+            //card is not generated
+
             //user has NO card
             $user = $userRepo->findOneByUsername('episol'); 
             $card  = $user->getCard();
             $this->em->remove($card);
 
+            //user has beneficiary benef1
+            $user = $userRepo->findOneByUsername('fil_chantant'); 
+            $card  = $user->getCard();
+            $this->em->remove($card);
+
+            //user2 has beneficiary benef1
+
+            $this->em->flush();
 
             return 'Database successfully generated !';
         }else{

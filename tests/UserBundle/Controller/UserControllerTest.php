@@ -383,6 +383,7 @@ class UserControllerTest extends BaseControllerTest
 
     /**
      *@TODO : add user removing himself who is under test_admin's responsiblity (and not admin..)
+     * only pros from Grenoble have non null accounts
      */
     public function provideUsersToRemove()
     {
