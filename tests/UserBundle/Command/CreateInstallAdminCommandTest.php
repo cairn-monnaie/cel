@@ -34,7 +34,7 @@ class CreateInstallAdminCommandTest extends KernelTestCase
     /**
      *@dataProvider provideInstallData
      */
-    public function testExecuteInstallAdminCommand($login, $password, $message, $isInstalled, $firstLogin, $cardGenerated)
+    public function testExecuteInstallAdminCommand($login, $password, $message, $isInstalled, $generateCard)
     {
         $kernel = static::createKernel();
         $kernel->boot();
@@ -48,6 +48,12 @@ class CreateInstallAdminCommandTest extends KernelTestCase
         $application = new Application($kernel);
         $application->add(new CreateInstallAdminCommand());
 
+        if(! $isInstalled){
+            $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'admin_network'));        
+            $em->remove($admin);
+            $em->flush();
+        }
+
         $command = $application->find('cairn.user:create-install-admin');
         $commandTester = new CommandTester($command);
         $commandTester->execute(array(
@@ -60,11 +66,8 @@ class CreateInstallAdminCommandTest extends KernelTestCase
         $output = $commandTester->getDisplay();
         $this->assertContains($message, $output);
 
-        $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));        
 
         if($isInstalled){
-            $this->assertTrue($admin != NULL);
-
             //test a connection
             $crawler = $client->request('GET','/login');                     
 
@@ -75,26 +78,24 @@ class CreateInstallAdminCommandTest extends KernelTestCase
 
             $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));   
 
-            if($firstLogin){     
-                $this->assertTrue($admin->isFirstLogin());
+            $this->assertTrue($admin->isFirstLogin());
 
-                //check that, after first login, user is redirected to password change
-                $this->assertTrue($client->getResponse()->isRedirect('/profile/change-password'));
-                $crawler =  $client->followRedirect();
+            //check that, after first login, user is redirected to password change
+            $this->assertTrue($client->getResponse()->isRedirect('/profile/change-password'));
+            $crawler =  $client->followRedirect();
 
-                //change password
-                $form = $crawler->selectButton('fos_user_change_password_form_save')->form();
-                $form['fos_user_change_password_form[current_password]']->setValue('@@bbccdd');
-                $form['fos_user_change_password_form[plainPassword][first]']->setValue('@@bbccdd');
-                $form['fos_user_change_password_form[plainPassword][second]']->setValue('@@bbccdd');
-                $crawler = $client->submit($form);
-                $crawler =  $client->followRedirect();
+            //change password
+            $form = $crawler->selectButton('fos_user_change_password_form_save')->form();
+            $form['fos_user_change_password_form[current_password]']->setValue('@@bbccdd');
+            $form['fos_user_change_password_form[plainPassword][first]']->setValue('@@bbccdd');
+            $form['fos_user_change_password_form[plainPassword][second]']->setValue('@@bbccdd');
+            $crawler = $client->submit($form);
+            $crawler =  $client->followRedirect();
 
-                $em->refresh($admin);
-                $this->assertFalse($admin->isFirstLogin());
-            }
+            $em->refresh($admin);
+            $this->assertFalse($admin->isFirstLogin());
 
-            if(!$cardGenerated){
+            if(!$generateCard){
                 //test card generation
                 $crawler = $client->request('GET','/card/generate/'.$admin->getID());
 
@@ -102,33 +103,28 @@ class CreateInstallAdminCommandTest extends KernelTestCase
                 $crawler =  $client->submit($form);                          
                 $crawler = $client->followRedirect(); 
 
-//                $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));        
                 $em->refresh($admin);
                 $card = $admin->getCard();
                 $this->assertTrue($card->isGenerated());
-            }else{
-                $card = $admin->getCard();
-                $this->assertTrue($card->isGenerated());
             }
-        }else{
-            $this->assertTrue($admin == NULL);
         }
         //assert the emails sent
 
         //assert the content of the database with respect to the setup
+        $kernel->shutDown();
     }
 
     public function provideInstallData()
     {
         return array(
             'wrong pwd'=>array('username'=>'admin_network','password'=>'@bcdefgh',
-            'message'=>'Wrong','isInstalled'=>false,'firstLogin'=>true,'cardGenerated'=>false),
+            'message'=>'Wrong','isInstalled'=>false,'generateCard'=>false),
             'wrong login'=>array('username'=>'test_admin','password'=>'@@bbccdd',
-            'message'=>'Wrong','isInstalled'=>false,'firstLogin'=>true,'cardGenerated'=>false),
+            'message'=>'Wrong','isInstalled'=>false,'generateCard'=>false),
             'success'=>array('username'=>'admin_network','password'=>'@@bbccdd',
-            'message'=>'created successfully','isInstalled'=>true,'firstLogin'=>true,'cardGenerated'=>false),
+            'message'=>'created successfully','isInstalled'=>false,'generateCard'=>false),
             'already installed'=>array('username'=>'admin_network','password'=>'@@bbccdd',
-            'message'=>'already been created','isInstalled'=>true,'firstLogin'=>false,'cardGenerated'=>true),
+            'message'=>'already been created','isInstalled'=>true,'generateCard'=>true),
         );
     }
 }

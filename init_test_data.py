@@ -10,6 +10,7 @@ from datetime import timedelta
 
 import requests
 import yaml  # PyYAML
+from slugify import slugify
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -21,6 +22,11 @@ def check_request_status(r):
     else:
         logger.error(r.text)
         r.raise_for_status()
+
+def get_internal_name(name):
+    name = name.replace('€', 'euro')
+    slug = slugify(name)
+    return slug.replace('-', '_')
 
 # Récupération des constantes
 logger.info('Récupération des constantes depuis le YAML')
@@ -42,6 +48,15 @@ LOCAL_CURRENCY_INTERNAL_NAME = str(APP_CONSTANTS['parameters']['cyclos_currency_
 LOCAL_CURRENCY_NAME = LOCAL_CURRENCY_INTERNAL_NAME
 url = str(APP_CONSTANTS['parameters']['cyclos_root_test_url'])
 EMAIL_DELAY = APP_CONSTANTS['parameters']['cairn_email_activation_delay']
+
+#category for yaml file : users
+constants_by_category = {}
+
+def add_constant(category, name, value):
+    if category not in constants_by_category.keys():
+        constants_by_category[category] = {}
+    internal_name = get_internal_name(name)
+    constants_by_category[category][internal_name] = value
 
 # Arguments à fournir dans la ligne de commande
 parser = argparse.ArgumentParser()
@@ -134,6 +149,7 @@ def create_user(group, name, login, email, city,  custom_values=None):
     logger.debug('result = %s', r.json()['result'])
     user_id = r.json()['result']['user']['id']
     logger.debug('user_id = %s', user_id)
+    add_constant('parameters',name, user_id)
     return user_id
 
 #create_user(
@@ -286,7 +302,7 @@ with open("cyclos_constants.yml", 'r') as cyclos_stream:
 
 #creation des premiers virements
 
-logger.info('Virements initiaux de 100 u.c en ' + LOCAL_CURRENCY_INTERNAL_NAME + '... Terminé !')
+logger.info('Virements initiaux de 1000 u.c en ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois...')
 
 for pro in pros:
     if pro[3] == 'Grenoble':
@@ -299,6 +315,7 @@ for pro in pros:
                               'from': 'SYSTEM',
                               'to': pro[0],
                           })
+logger.info('Virements initiaux de 1000 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois... Terminé !')
 
 ## Impression billets eusko
 #logger.info('Impression billets mlc...')
@@ -318,5 +335,5 @@ for pro in pros:
 #                  })
 #
 #logger.info('Impression billets ' + LOCAL_CURRENCY_INTERNAL_NAME + '... Terminé !')
-logger.debug(r.json())
+########################################################################
 logger.info('Fin du script !')

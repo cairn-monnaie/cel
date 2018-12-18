@@ -135,7 +135,7 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             array('localGroup','gl_grenoble@cairn-monnaie.com','glGrenoble','Groupe Local Grenoble','7 rue Très Cloîtres','38000','Groupe Local de Grenoble',true),
             array('localGroup','gl_voiron@cairn-monnaie.com','glVoiron','Groupe Local Voiron','12 rue Mainssieux','38500','Groupe Local de Voiron',true),
-            array('pro','apogee_du_vin@cairn-monnaie.com','ApogeeDuVin','L\'apogée du Vin','8 rue Lesdiguères','38000','Cave à vins',false),
+            array('pro','lib_harry_morgan@test.com','HarryMorgan','Librairie Harry Morgan','10 rue Millet','38000','Librairie',false),
         );
     }
 
@@ -194,7 +194,6 @@ class DefaultControllerTest extends BaseControllerTest
             'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
             'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
             //            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
-            //
             'too short username'                                      => array_replace($baseData, array('username'=>'test')),
             'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
             'username with special character'                         => array_replace($baseData, array('username'=>'test@')),

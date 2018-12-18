@@ -10,6 +10,11 @@ if(isset($_ENV['BOOTSTRAP_GEN_DB_ENV']) && $_ENV['BOOTSTRAP_GEN_DB_ENV'] == 'tes
         __DIR__,
         $_ENV['BOOTSTRAP_GEN_DB_ENV']
     ));
+    passthru(sprintf(
+        'php "%s/../bin/console" cairn.user:create-install-admin --env=test admin_network @@bbccdd',
+        __DIR__
+    ));
+
 }
 
 require __DIR__.'/../vendor/autoload.php';

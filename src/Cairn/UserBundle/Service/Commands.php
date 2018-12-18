@@ -11,6 +11,7 @@ use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\Operation;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -46,6 +47,40 @@ class Commands
         $this->container = $container;
     }
 
+    public function updateOperations()
+    {
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+        $ob = $operationRepo->createQueryBuilder('o');                 
+        $scheduledTransactions = $ob->where('o.paymentID is not NULL')                      
+            ->andWhere('o.executionDate <= :date')                     
+            ->andWhere('o.type = :type')                               
+            ->setParameter('date',new \Datetime())                     
+            ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
+            ->orderBy('o.executionDate','ASC')                         
+            ->getQuery()->getResult();
+
+        foreach($scheduledTransactions as $transaction){
+            $scheduledPaymentVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosOperation($transaction);
+            if($scheduledPaymentVO->installments[0]->status == 'FAILED'){
+                $transaction->setType(Operation::$TYPE_SCHEDULED_FAILED);
+            }elseif($scheduledPaymentVO->installments[0]->status == 'PROCESSED'){
+                $transaction->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+            }
+
+        }
+
+        $ob = $operationRepo->createQueryBuilder('o');                 
+        $scheduledFailedTransactions = $ob->where('o.paymentID is NULL')                      
+                                          ->getQuery()->getResult();
+
+        foreach($scheduledFailedTransactions as $transaction){
+            $this->em->remove($transaction);
+        }
+
+        $this->em->flush();
+    }
+
+
     /**
      *Returns true and creates admin if he does not exist yet, returns false otherwise
      *
@@ -55,21 +90,38 @@ class Commands
     {
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
-        $main_admin = $userRepo->findOneBy(array('username'=>$username));
+        $ub = $userRepo->createQueryBuilder('u')
+            ->where('u.username = :username')
+            ->setParameter('username',$username);
+        $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
+        $main_admin = $ub->getQuery()->getOneOrNullResult();
+
         if (!$main_admin){
 
             //get cyclos reference
             $credentials = array('username'=>$username,'password'=>$password);
 
+            $network = $this->container->getParameter('cyclos_network_cairn');
+            $group = $this->container->getParameter('cyclos_group_network_admins');
+
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
+
             try{
-                $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+                $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($username);
+
+                $isInAdminGroup = $this->container->get('cairn_user_cyclos_user_info')->isInGroup($group ,$userVO->id);
+
+                if(!$isInAdminGroup){
+                    return 'This user can\'t be installed as an admin in the application';
+                }
             }catch(Cyclos\ServiceException $e){
                 if($e->errorCode == 'LOGIN'){
                     return 'Wrong username or password provided';
+                }else{
+                    throw $e;
                 }
             }   
 
-            $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($username);
             $id = $userVO->id;
             $userData = $this->container->get('cairn_user_cyclos_user_info')->getProfileData($id);
 
@@ -80,9 +132,6 @@ class Commands
             $new_admin->setCyclosID($id);
 
 
-            if($this->container->getParameter('kernel.environment') == 'test'){
-                $password = '@@bbccdd';
-            }
             $new_admin->setPlainPassword($password);
             $new_admin->setEnabled(true);
 
@@ -128,7 +177,7 @@ class Commands
 
         $ub = $userRepo->createQueryBuilder('u');
         $ub->where('u.enabled = false')
-           ->andWhere('u.lastLogin is NULL')
+            ->andWhere('u.lastLogin is NULL')
             ->andWhere('u.confirmationToken is not NULL')
             ;
 
@@ -225,4 +274,110 @@ class Commands
         }
     }
 
+    public function createUser($cyclosUser)
+    {
+        $doctrineUser = new User();
+
+        $cyclosUserData = $this->container->get('cairn_user_cyclos_user_info')->getProfileData($cyclosUser->id);
+
+        $doctrineUser->setCyclosID($cyclosUserData->id);                                      
+        $doctrineUser->setUsername($cyclosUserData->username);                           
+        $doctrineUser->setName($cyclosUserData->name);
+        $doctrineUser->setEmail($cyclosUserData->email);
+        $doctrineUser->isFirstLogin(false);
+
+        $creationDate = new \Datetime($cyclosUserData->activities->userActivationDate);
+        $doctrineUser->setCreationDate($creationDate);
+        $doctrineUser->setPlainPassword('@@bbccdd');                      
+        $doctrineUser->setEnabled(true);                                      
+
+        if($cyclosUserData->group->nature == 'MEMBER_GROUP'){
+            $doctrineUser->addRole('ROLE_PRO');   
+        }else{
+            $doctrineUser->addRole('ROLE_ADMIN');   
+        }                
+
+        $cyclosAddress = $cyclosUserData->addressListData->addresses[0];
+        $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('city'=>$cyclosAddress->city));
+        $address = new Address();                                          
+        $address->setZipCity($zip);                                        
+        $address->setStreet1($cyclosAddress->addressLine1);
+
+        $doctrineUser->setAddress($address);                                  
+        $doctrineUser->setDescription('Test user blablablabla');             
+
+        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
+        $doctrineUser->setCard($card);
+
+        $this->em->persist($doctrineUser);
+
+    }
+
+    public function generateDatabaseFromCyclos($login, $password)
+    {
+        //same username than the one provided at installation
+        $adminUsername = $login;
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $users = $userRepo->findAll();
+
+        if(!$users){
+            $credentials = array('username'=>$adminUsername,'password'=>$password);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+
+            //generate doctrine users 
+            $memberGroupName = $this->container->getParameter('cyclos_group_pros');
+            $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
+
+            try{
+                $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
+                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+            }catch(Cyclos\ServiceException $e){
+                if($e->errorCode == 'LOGIN'){
+                    return 'Wrong username or password provided';
+                }else{
+                    throw $e;
+                }
+            }   
+
+            //basic user creation : create entity using data from Cyclos + add a card for all users
+            foreach($cyclosMembers as $cyclosMember){
+                $this->createUser($cyclosMember);
+            }
+            $this->em->flush();
+
+            //here, we set specific elements for testing different contexts and data
+
+            //card is generated and is validated
+            $user = $userRepo->findOneByUsername('vie_integrative'); 
+            $card  = $user->getCard();
+            $card->generateCard('test');
+            $card->setGenerated(true);
+            $card->setEnabled(true);
+
+            $user = $userRepo->findOneByUsername('labonnepioche'); 
+            $card  = $user->getCard();
+            $card->generateCard('test');
+            $card->setGenerated(true);
+            $card->setEnabled(true);
+
+            //card is generated and is NOT validated
+            $user = $userRepo->findOneByUsername('recycleco'); 
+            $card  = $user->getCard();
+            $card->generateCard('test');
+            $card->setGenerated(true);
+            $card->setEnabled(false);
+
+            //user has NO card
+            $user = $userRepo->findOneByUsername('episol'); 
+            $card  = $user->getCard();
+            $this->em->remove($card);
+
+
+            return 'Database successfully generated !';
+        }else{
+            return 'The database is not empty ! It can\'t be generated';
+        }
+
+    }
 }

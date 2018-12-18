@@ -21,20 +21,6 @@ class CardControllerTest extends BaseControllerTest
         parent::__construct($name, $data, $dataName);
     }
 
-    public function setUp()
-    {
-        //superAdmin a une carte générée mais non validée
-        //DrDBrew a une carte non générée
-        //recycleco a une carte déjà validée
-        //lib_colibri a une carte à supprimer
-        //la_mandragore n a pas de carte
-    }
-
-    public function setUpAfterClass()
-    {
-
-    }
-
     /**
      * @TODO : tester directement la présence des urls
      *_$referent wants card action for himself :

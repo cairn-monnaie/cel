@@ -71,7 +71,7 @@ class UserControllerTest extends BaseControllerTest
 
     public function providePasswordData()
     {
-        $login = 'locavore';
+        $login = 'vie_integrative';
         $new = '@@bbccdd';
         //valid data
         $baseData = array('login'=>$login,
@@ -164,7 +164,6 @@ class UserControllerTest extends BaseControllerTest
      */
     public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid,$expectKey)
     {
-
         $crawler = $this->login($current, '@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
