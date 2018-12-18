@@ -452,28 +452,12 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_card_home', array('_format'=> $format, 'id'=>$card->getUser()->getID()));
         }
 
-        $fields = unserialize($fields);
-
         $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
             array('card'=>$card,'fields'=>$fields));
 
         $card->setGenerated(true);
 
-        //encoder la carte
-        $encoder = $this->get('security.encoder_factory')->getEncoder($user);
-
-        $nbRows = $card->getRows();
-        $nbCols = $card->getCols();
-
-        for($row = 0; $row < $nbRows; $row++){
-            for($col = 0; $col < $nbCols; $col++){
-                $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
-                $fields[$row][$col] = substr($encoded_field,0,4);
-            }
-        }
-
-        $card->setFields(serialize($fields));
-
+        $this->get('cairn_user.security')->encodeCard($card);
         $em->flush();
         $filename = sprintf('carte-sécurité-cairn-'.$card->getNumber().'-%s.pdf',$user->getUserName());
 

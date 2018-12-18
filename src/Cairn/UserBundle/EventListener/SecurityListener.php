@@ -241,15 +241,13 @@ class SecurityListener
         $position = $event->getPosition();
 
 
-        $fields = unserialize($currentCard->getFields());                             
+        $fields = $currentCard->getFields();                             
         $rows = $currentCard->getRows();                                              
 
         $pos_row = intdiv($position,$rows);                                 
         $pos_col = $position % $rows;                                       
         $field_value = $fields[$pos_row][$pos_col];
 
-
-        //        echo substr($encoder->encodePassword($cardKey,$salt),0,4);
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');

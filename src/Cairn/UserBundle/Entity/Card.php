@@ -138,7 +138,6 @@ class Card
      */
     public function generateCard($env)
     {
-//        $this->setCreationDate(new \Datetime());
         $matrix = array();
         for($row = 0; $row < $this->getRows(); $row++){
             $line = array();
@@ -153,7 +152,7 @@ class Card
             $matrix[] = $line;
         }
 
-        $this->setFields(serialize($matrix));
+        $this->setFields($matrix);
         return $this->getFields();
 
     }
@@ -168,7 +167,7 @@ class Card
     public function setFields($fields)
     {
 
-        $this->fields = $fields;
+        $this->fields = serialize($fields);
 
         return $this;
     }
@@ -180,7 +179,7 @@ class Card
      */
     public function getFields()
     {
-        return $this->fields;
+        return unserialize($this->fields);
     }
 
     /**

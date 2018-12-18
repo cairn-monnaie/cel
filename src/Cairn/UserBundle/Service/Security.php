@@ -6,6 +6,7 @@ namespace Cairn\UserBundle\Service;
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Card;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
@@ -107,4 +108,23 @@ class Security
         }                    
         return $salt;
     }
+
+    public function encodeCard(Card $card)
+    {
+        $encoder = $this->encoderFactory->getEncoder($card->getUser());  
+
+        $fields = $card->getFields();
+        $nbRows = $card->getRows();                                            
+        $nbCols = $card->getCols();                                            
+
+        for($row = 0; $row < $nbRows; $row++){                                 
+            for($col = 0; $col < $nbCols; $col++){                             
+                $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
+                $fields[$row][$col] = substr($encoded_field,0,4);              
+            }                                                                  
+        }  
+
+        $card->setFields($fields);
+    }
+
 }

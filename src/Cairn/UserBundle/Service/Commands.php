@@ -311,22 +311,10 @@ class Commands
         $doctrineUser->setDescription('Test user blablablabla');             
 
         $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
-        $fields = unserialize($card->generateCard($this->container->getParameter('kernel.environment')));
+        $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
-        //encoder la carte                                                     
-        $encoder = $this->container->get('security.encoder_factory')->getEncoder($doctrineUser);  
-
-        $nbRows = $card->getRows();                                            
-        $nbCols = $card->getCols();                                            
-
-        for($row = 0; $row < $nbRows; $row++){                                 
-            for($col = 0; $col < $nbCols; $col++){                             
-                $encoded_field = $encoder->encodePassword($fields[$row][$col],$card->getSalt());
-                $fields[$row][$col] = substr($encoded_field,0,4);              
-            }                                                                  
-        }                                                                      
-
-        $card->setFields(serialize($fields));
+        //encode user's card
+        $this->container->get('cairn_user.security')->encodeCard($card);
         $card->setGenerated(true);
         $doctrineUser->setCard($card);
         $doctrineUser->addReferent($admin);
@@ -371,7 +359,10 @@ class Commands
 
             //here, we set specific attributes to each user in order to test different contexts and data
 
+            //admin has a generated card too, by default
             $admin->setFirstLogin(false);
+            $admin->getCard()->generateCard($this->container->getParameter('kernel.environment'));
+            $this->container->get('cairn_user.security')->encodeCard($admin->getCard());
             $admin->getCard()->setGenerated(true);
 
             //vie_integrative has generated(default at user creation in createUser function) and validated card + admin is not referent
@@ -387,11 +378,12 @@ class Commands
             //card is generated and is NOT validated
             $user = $userRepo->findOneByUsername('recycleco'); 
             $card  = $user->getCard();
-            $card->generateCard('test');
-            $card->setGenerated(true);
             $card->setEnabled(false);
 
             //card is not generated
+            $user = $userRepo->findOneByUsername('DrDBrew'); 
+            $card  = $user->getCard();
+            $card->setGenerated(false);
 
             //user has NO card
             $user = $userRepo->findOneByUsername('episol'); 
