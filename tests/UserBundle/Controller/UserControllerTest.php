@@ -72,7 +72,7 @@ class UserControllerTest extends BaseControllerTest
     public function providePasswordData()
     {
         $login = 'vie_integrative';
-        $new = '@@bbccdd';
+        $new = '@bcdefgh';
         //valid data
         $baseData = array('login'=>$login,
             'current'=>'@@bbccdd',
@@ -159,7 +159,6 @@ class UserControllerTest extends BaseControllerTest
     //    }
 
     /**
-     *depends testValidateCard
      *@dataProvider provideBeneficiariesToAdd
      */
     public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid,$expectKey)
@@ -226,16 +225,15 @@ class UserControllerTest extends BaseControllerTest
     public function provideBeneficiariesToAdd()
     {
         return array(
-            'self beneficiary'=> array('current'=>'LaBonnePioche','name'=>'La Bonne Pioche','email'=>'labonnepioche@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
-            'user not found'=> array('current'=>'LaBonnePioche','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
-            'ICC not found'=>array('current'=>'LaBonnePioche', 'name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
-          'valid benef'=>array('current'=>'LaBonnePioche','name'=>'Malt’O’Bar','email'=>'maltobar@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'valid benef2'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'valid benef3'=>array('current'=>'locavore','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'already benef'=>array('current'=>'LaBonnePioche','name'=>'La Dourbie','email'=>'dourbie@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
+            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
+            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
+            'valid benef'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
 
         );
     }
+
     //    /**
     //     *depends testAddBeneficiary
     //     */
@@ -251,16 +249,13 @@ class UserControllerTest extends BaseControllerTest
     //        ;
     //    }
 
-    /**
-     *@depends testAddBeneficiary
-     *@dataProvider provideBeneficiariesToRemove
-     */
-    public function testRemoveBeneficiary($current,$beneficiary, $isValid, $benefRemains, $expectKey)
+    public function removeBeneficiaryAction($current,$beneficiary,$isValid)
     {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $crawler = $this->login($current, '@@bbccdd');
 
-        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
-        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$beneficiary));
+        $debitorUser = $userRepo->findOneBy(array('username'=>$current));
+        $creditorUser = $userRepo->findOneBy(array('username'=>$beneficiary));
 
         $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
 
@@ -269,47 +264,56 @@ class UserControllerTest extends BaseControllerTest
         if($isValid){
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
-
-            $this->assertFalse($debitorUser->hasBeneficiary($beneficiary));
-
-            $this->em->refresh($beneficiary);
-            $this->em->refresh($creditorUser);
-            $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
-
-            if($benefRemains){
-                //check that beneficiary entity still exists but is not in list of $debitor
-                $this->assertNotEquals($beneficiary,NULL);
-            }else{//check that entity has been removed from db
-                $this->assertEquals($beneficiary,NULL);
-
-            }
-
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1, $crawler->filter('div.alert-'.$expectKey)->count());    
-
-        }else{
-            $beneficiary2 = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
-            $this->assertTrue($beneficiary === $beneficiary2);
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1, $crawler->filter('div.alert-'.$expectKey)->count());    
-            $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
-
         }
+
+        return $crawler;
     }
 
-    public function provideBeneficiariesToRemove()
+    /**
+     * Here we test the removeBeneficiary controller action with, as testing data, a beneficiary with two sources. This way, we test that
+     * after the first removal, the entity is still there, then is removed once the second removal from the second source is done. If a 
+     * beneficiary has no source, it must be removed from the database
+     */
+    public function testRemoveBeneficiary()
     {
-        return array(
-            array('current'=>'LaBonnePioche','beneficiary'=>'LaDourbie','isValid'=>true,'benefRemains'=>true,'expectKey'=>'success'),
-            array('current'=>'locavore','beneficiary'=>'MaltOBar','isValid'=>false,'benefRemains'=>true,'expectKey'=>'error'),
-            array('current'=>'locavore','beneficiary'=>'LaDourbie','isValid'=>true,'benefRemains'=>false,'expectKey'=>'success'),
-        );
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $benefRepo = $this->em->getRepository('CairnUserBundle:Beneficiary');
+        // ---------- first valid removal from a source ------------
+        $crawler = $this->removeBeneficiaryAction('nico_faus_prod','labonnepioche',true);
+
+        $creditorUser = $userRepo->findOneBy(array('username'=>'labonnepioche'));
+        $beneficiary = $benefRepo->findOneBy(array('user'=>$creditorUser));
+
+        //check that beneficiary entity still exists but is not in list of $debitor
+        $this->assertNotEquals($beneficiary,NULL);
+        $this->assertEquals(count($beneficiary->getSources()),1);
+
+        $crawler = $this->client->followRedirect();
+        $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
+        // ---------- second valid removal from a source ------------
+        $crawler = $this->removeBeneficiaryAction('le_marque_page','labonnepioche',true);
+
+        $creditorUser = $userRepo->findOneBy(array('username'=>'labonnepioche'));
+        $beneficiary = $benefRepo->findOneBy(array('user'=>$creditorUser));
+
+        //check that beneficiary entity has been removed because its number of sources is 0
+        $this->assertEquals($beneficiary,NULL);
+        $crawler = $this->client->followRedirect();
+        $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
+        //test invalid removal : beneficiary exists but current user is not a source
+        $crawler = $this->removeBeneficiaryAction('nico_faus_prod','ferme_bressot',false);
+        $crawler = $this->client->followRedirect();
+        $this->assertSame(1, $crawler->filter('div.alert-error')->count());    
+        $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
+
     }
+
 
     /**
      *@todo : try to remove a ROLE_ADMIN
      *@todo :check that all beneficiaries with user $target have been removed
-     *@depends testRemoveBeneficiary
      *@dataProvider provideUsersToRemove
      */
     public function testRemoveUser($referent,$target,$isLegit,$nullAccount,$isPending)
@@ -338,11 +342,11 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertSame(1,$crawler->filter('html:contains("solde non nul")')->count());
                 $this->assertSame(1,$crawler->filter('div.alert-error')->count());    
             }else{
-                    $this->client->enableProfiler();
+                $this->client->enableProfiler();
 
-                    $form = $crawler->selectButton('confirmation_save')->form();
-                    $form['confirmation[current_password]']->setValue('@@bbccdd');
-                    $crawler =  $this->client->submit($form);
+                $form = $crawler->selectButton('confirmation_save')->form();
+                $form['confirmation[current_password]']->setValue('@@bbccdd');
+                $crawler =  $this->client->submit($form);
 
 
                 if(! $isPending){
@@ -382,18 +386,18 @@ class UserControllerTest extends BaseControllerTest
     }
 
     /**
-     *@TODO : add user removing himself who is under test_admin's responsiblity (and not admin..)
-     * only pros from Grenoble have non null accounts
+     *@TODO : add user removing himself who is under admin's responsiblity (and not admin..)
+     * only pros from Grenoble have non null accounts (see script to generate users and initial payments : init_test_data.py)
      */
     public function provideUsersToRemove()
     {
         $adminUsername = $this->testAdmin;
 
         return array(
-            'non null account' => array($adminUsername,'LaBonnePioche',true,false,false),
-            'valid admin removal' => array($adminUsername,'DrDBrew',true,true,false),
-            'not legit' => array($adminUsername,'cafeEurope',false,true,false),
-            'user auto-removal' => array('locavore','locavore',true,true,true),
+//            'non null account' => array($adminUsername,'atelier_eltilo',true,false,false),
+//            'valid admin removal' => array($adminUsername,'la_belle_verte',true,true,false),
+//            'not legit' => array($adminUsername,'NaturaVie',false,true,false),
+            'user auto-removal' => array('lib_colibri','lib_colibri',true,true,true),
         );
 
     }

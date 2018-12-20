@@ -51,7 +51,7 @@ class DefaultControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            array('login'=>true,'username'=>'LaBonnePioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
+            array('login'=>true,'username'=>'labonnepioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
             array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
             array('login'=>true,'username'=>$adminUsername,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
@@ -78,7 +78,7 @@ class DefaultControllerTest extends BaseControllerTest
         $crawler = $this->client->request('GET','/inscription?type='.$type);
         $crawler = $this->client->followRedirect();
 
-        $form = $crawler->selectButton('registration.submit')->form();
+        $form = $crawler->selectButton('Inscription')->form();
         $form['fos_user_registration_form[email]']->setValue($email);
         $form['fos_user_registration_form[username]']->setValue($username);
         $form['fos_user_registration_form[name]']->setValue($name);
@@ -141,7 +141,6 @@ class DefaultControllerTest extends BaseControllerTest
 
     /**
      *
-     *@depends testRegistration
      *@dataProvider provideRegistrationData
      */
     public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$description)

@@ -142,14 +142,15 @@ def create_user(group, name, login, email, city,  custom_values=None):
 #                value_key: value,
 #            })
     logger.debug('create_user : json = %s', user_registration)
-    r = requests.post(network_web_services + 'user/registerByMember',
+    r = requests.post(network_web_services + 'user/register',
                       headers=headers,
                       json=user_registration)
     check_request_status(r)
     logger.debug('result = %s', r.json()['result'])
     user_id = r.json()['result']['user']['id']
+
     logger.debug('user_id = %s', user_id)
-    add_constant('parameters',name, user_id)
+#    add_constant('users',name, user_id)
     return user_id
 
 #create_user(
@@ -290,21 +291,26 @@ for pro in pros:
 #        login=login,
 #    )
 
-# Récupération des constantes
-
-logger.info('Récupération des constantes depuis le YAML...')
-CYCLOS_CONSTANTS = None
 with open("cyclos_constants.yml", 'r') as cyclos_stream:
     try:
         CYCLOS_CONSTANTS = yaml.load(cyclos_stream)
     except yaml.YAMLError as exc:
         assert False, exc
 
-#creation des premiers virements
+#creation des premiers virements et génération des numéros de compte dans le fichier yaml
 
 logger.info('Virements initiaux de 1000 u.c en ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois...')
 
 for pro in pros:
+#    r = requests.get(network_web_services + 'user/search',
+#            headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'admin:admin').decode('utf-8'))},
+#            json={
+#                'keywords': pro[0]
+#            })
+#    check_request_status(r)
+#    user = r.json()['result']['pageItems'][0]
+#    add_constant('account_numbers',pro[1],user['id'])
+#
     if pro[3] == 'Grenoble':
         r = requests.post(network_web_services + 'payment/perform',
                           headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'admin:admin').decode('utf-8'))},
@@ -317,6 +323,14 @@ for pro in pros:
                           })
 logger.info('Virements initiaux de 1000 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois... Terminé !')
 
+### write account numbers and ids in a file
+#with open("cyclos_constants.yml", 'w') as cyclos_stream:
+#    for category in sorted(constants_by_category.keys()):
+#        cyclos_stream.write(category + ':\n')
+#        constants = constants_by_category[category]
+#        for name in sorted(constants.keys()):
+#            cyclos_stream.write('  ' + name + ': ' + constants[name] + '\n')
+#cyclos_stream.close()
 ## Impression billets eusko
 #logger.info('Impression billets mlc...')
 #logger.debug(str(CYCLOS_CONSTANTS['payment_types']['impression_de_billets_' + LOCAL_CURRENCY_INTERNAL_NAME]) + "\r\n" +

@@ -32,7 +32,7 @@ class CardControllerTest extends BaseControllerTest
      *                              *otherwise : nothing(should not even see card_operations) 
      * @dataProvider provideCardOperationsData
      */
-    public function testCardOperations($referent,$target,$isReferent)
+    public function testCardOperations($referent,$target,$isReferent,$nbLinks)
     {
         $crawler = $this->login($referent, '@@bbccdd');
 
@@ -41,19 +41,10 @@ class CardControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
 
-        if($currentUser === $targetUser){
-            if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
-                $this->assertSame(4,$crawler->filter('a.operation_link')->count());
-            }else{
-                $this->assertSame(3,$crawler->filter('a.operation_link')->count());
-            }
-        }else{ //user for someone else
-            if($isReferent){
-                $this->assertSame(3,$crawler->filter('a.operation_link')->count());
-            }
-            else{
+        if($currentUser !== $targetUser && !$isReferent){
                 $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-            }
+        }else{
+                $this->assertSame($nbLinks,$crawler->filter('a.operation_link')->count());
         }
 
     }
@@ -62,12 +53,13 @@ class CardControllerTest extends BaseControllerTest
     {
         $adminUsername = $this->testAdmin;
         return array(
-            array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false),
-            array('referent'=>'vie_integrative','target'=>'vie_integrative','isReferent'=>false),
-            array('referent'=>'vie_integrative','target'=>'DrDBrew','isReferent'=>false)
-
+            'superadmin for himself'=>array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true,2),
+            'referent for non generated card'=>array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true,3),
+            'non referent'=> array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,0),
+            'pro for himself'=> array('referent'=>'vie_integrative','target'=>'vie_integrative','isReferent'=>false,1),
+            'non referent'=>array('referent'=>'vie_integrative','target'=>'DrDBrew','isReferent'=>false,0),
+            'pro with not generated card'=>array('referent'=>'DrDBrew','target'=>'DrDBrew','isReferent'=>false,1),
+            'pro with no card'=>array('referent'=>'episol','target'=>'episol','isReferent'=>false,1)
         );
     }
 
@@ -117,11 +109,9 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideUsersForCardValidation()
     {
-        $adminUsername = $this->testAdmin;
-
         return array(
-            'invalid key'        => array('login'=>$adminUsername,'key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
-            'valid key'          => array('login'=>$adminUsername,'key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
+            'invalid key'        => array('login'=>'recycleco','key'=>'5555','expectForm'=>true,'expectValidKey'=>false),
+            'valid key'          => array('login'=>'recycleco','key'=>'1111','expectForm'=>true,'expectValidKey'=>true),
             'validated card'     => array('login'=>'vie_integrative','key'=>'1111','expectForm'=>false,'expectValidKey'=>true),
             'not generated card' => array('login'=>'DrDBrew', 'key'=>'1111','expectForm'=>false,'expectValidKey'=>false),
         );
@@ -129,7 +119,6 @@ class CardControllerTest extends BaseControllerTest
 
     /**
      *Tests if card intermediate step is reached for a  sensible operation
-     *@depends testValidateCard
      *@dataProvider provideUsersWithValidatedCard
      */
     public function testCardSecurityLayer($login,$expectValid)
@@ -164,7 +153,7 @@ class CardControllerTest extends BaseControllerTest
 
         return array(
             'validated card'     => array('login'=>$adminUsername, 'expectValid'=>true),
-            'not validated card' => array('login'=>'LaDourbie','expectValid'=>false),
+            'not validated card' => array('login'=>'recycleco','expectValid'=>false),
         );
     }
 
@@ -175,7 +164,6 @@ class CardControllerTest extends BaseControllerTest
      * if $current does not have active card : redirection
      * if $target has a generated card : redirection
      *
-     *@depends testCardSecurityLayer
      *@dataProvider provideUsersForCardGeneration
      */
     public function testGenerateCard($current, $target,$expectConfirm,$expectMessage)
@@ -229,12 +217,15 @@ class CardControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            'card already generated' => array('current'=>$adminUsername,'target'=>$adminUsername,'expectConfirm'=>false,
+            'card already generated' => array('current'=>'labonnepioche','target'=>'labonnepioche','expectConfirm'=>false,
                                               'expectMessage'=>'déjà été générée'),             
-            'successful generation' => array('current'=>$adminUsername,'target'=>'LaBonnePioche','expectConfirm'=>true,
+            'successful generation' => array('current'=>$adminUsername,'target'=>'DrDBrew','expectConfirm'=>true,
                                              'expectMessage'=>'xxx'),             
-            'not referent'          =>array('current'=>$adminUsername,'target'=>'cafeEurope','expectConfirm'=>false,
+            'not referent'          =>array('current'=>$adminUsername,'target'=>'vie_integrative','expectConfirm'=>false,
                                             'expectMessage'=>'pas référent'),             
+            'no card'          =>array('current'=>$adminUsername,'target'=>'episol','expectConfirm'=>false,
+                                            'expectMessage'=>'pas de carte de sécurité'),             
+
         );
     }
 
@@ -246,7 +237,6 @@ class CardControllerTest extends BaseControllerTest
      *                                                      . success password : session message with key "success" + card exists
      *                                                      . wrong password : try again
      *@dataProvider provideUsersForCardRevocation 
-     *@depends testGenerateCard
      */
     public function testRevokeCard($current, $target,$expectForm,$expectMessage)
     {
@@ -312,10 +302,10 @@ class CardControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-             'revocation from ref'=> array('current'=>$adminUsername,'target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'), 
-             'self revocation'=> array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
-             'no card to revoke'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'pas encore été créée'),
+             'revocation from ref'=> array('current'=>$adminUsername,'target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'self revocation'=> array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx'),             
+             'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'vie_integrative','expectForm'=>false,'expectMessage'=>'pas référent'),
+             'no card to revoke'=>array('current'=>'episol','target'=>'episol','expectForm'=>false,'expectMessage'=>'déjà été révoquée'),
         );
     }
 
@@ -327,7 +317,6 @@ class CardControllerTest extends BaseControllerTest
      *                                                      . success password : session message with key "success" + card exists
      *                                                      . wrong password : try again
      * @dataProvider provideUsersForCardOrder
-     * @depends testRevokeCard
      */
     public function testOrderCard($current,$target,$expectForm, $expectMessage)
     {
@@ -395,10 +384,16 @@ class CardControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-             'ordered by ref'=> array('current'=>$adminUsername,'target'=>'DrDBrew','expectForm'=>true,'expectMessage'=>'xxx'), 
-             'self order'=> array('current'=>'MaltOBar','target'=>'MaltOBar','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'ordered by non ref'=>array('current'=>$adminUsername,'target'=>'cafeEurope','expectForm'=>false,'expectMessage'=>'pas référent'),
-             'no card to order'=>array('current'=>'LaDourbie','target'=>'LaDourbie','expectForm'=>false,'expectMessage'=>'déjà une carte'),
+             'ordered by ref'=> array('current'=>$adminUsername,'target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx'), 
+             'self order'=> array('current'=>'episol','target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx'),             
+             'ordered by non ref'=>array('current'=>$adminUsername,'target'=>'NaturaVie','expectForm'=>false,
+                                         'expectMessage'=>'pas référent'),
+             'card already ordered'=>array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>false,'expectMessage'=>'déjà commandé'),
+             'generated card'=>array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>false,
+                                     'expectMessage'=>'carte courante est active'),
+             'not generated card'=>array('current'=>'recycleco','target'=>'recycleco','expectForm'=>false,
+                                     'expectMessage'=>'déjà une carte courante'),
+
         );
     }
 

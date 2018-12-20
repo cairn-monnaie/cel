@@ -70,8 +70,7 @@ class BaseControllerTest extends WebTestCase
         return array(
             array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
             array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'MaltOBar','isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'cafeEurope','isReferent'=>false)
+            array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false)
         );
     }
 

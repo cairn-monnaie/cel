@@ -9,6 +9,7 @@ use Cairn\UserBundle\Service\MessageNotificator;
 
 //UserBundle Entities
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
@@ -359,11 +360,12 @@ class Commands
 
             //here, we set specific attributes to each user in order to test different contexts and data
 
-            //admin has a generated card too, by default
+            //admin has a generated and validated card too, by default
             $admin->setFirstLogin(false);
             $admin->getCard()->generateCard($this->container->getParameter('kernel.environment'));
             $this->container->get('cairn_user.security')->encodeCard($admin->getCard());
             $admin->getCard()->setGenerated(true);
+            $admin->getCard()->setEnabled(true);
 
             //vie_integrative has generated(default at user creation in createUser function) and validated card + admin is not referent
             $user = $userRepo->findOneByUsername('vie_integrative'); 
@@ -371,7 +373,12 @@ class Commands
             $card  = $user->getCard();
             $card->setEnabled(true);
 
+            //users have generated(default at user creation in createUser function) and validated card
             $user = $userRepo->findOneByUsername('labonnepioche'); 
+            $card  = $user->getCard();
+            $card->setEnabled(true);
+
+            $user = $userRepo->findOneByUsername('lib_colibri'); 
             $card  = $user->getCard();
             $card->setEnabled(true);
 
@@ -385,17 +392,55 @@ class Commands
             $card  = $user->getCard();
             $card->setGenerated(false);
 
-            //user has NO card
+            //episol has NO card
             $user = $userRepo->findOneByUsername('episol'); 
             $card  = $user->getCard();
             $this->em->remove($card);
 
-            //user has beneficiary benef1
-            $user = $userRepo->findOneByUsername('fil_chantant'); 
+            //NaturaVie has NO card and admin not referent
+            $user = $userRepo->findOneByUsername('NaturaVie'); 
+            $user->removeReferent($admin);
             $card  = $user->getCard();
             $this->em->remove($card);
 
-            //user2 has beneficiary benef1
+            //nico_faus_prod has beneficiary labonnepioche
+            $debitor = $userRepo->findOneByUsername('nico_faus_prod'); 
+            $debitor->getCard()->setEnabled(true);
+            $creditor = $userRepo->findOneByUsername('labonnepioche'); 
+
+            $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
+            $ICC = $benef->number;
+            $beneficiary = new Beneficiary();
+            $beneficiary->setICC($ICC);
+            $beneficiary->setUser($creditor);
+            $debitor->addBeneficiary($beneficiary);
+            $beneficiary->addSource($debitor);
+
+            //le_marque_page has beneficiary labonnepioche
+            $debitor = $userRepo->findOneByUsername('le_marque_page'); 
+            $debitor->addBeneficiary($beneficiary);
+            $beneficiary->addSource($debitor);
+
+            //pain_beauvoir has beneficiary ferme_bressot
+            $debitor = $userRepo->findOneByUsername('pain_beauvoir'); 
+            $creditor = $userRepo->findOneByUsername('ferme_bressot'); 
+
+            $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
+            $ICC = $benef->number;
+            $beneficiary = new Beneficiary();
+            $beneficiary->setICC($ICC);
+            $beneficiary->setUser($creditor);
+
+            $debitor->addBeneficiary($beneficiary);
+            $beneficiary->addSource($debitor);
+
+            //user has requested a removal and has null account balance on Cyclos-side
+            $user = $userRepo->findOneByUsername('Biocoop'); 
+            $user->setRemovalRequest(true);
+
+            //user has requested a removal and has non-null account balance on Cyclos-side
+            $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
+            $user->setRemovalRequest(true);
 
             $this->em->flush();
 
