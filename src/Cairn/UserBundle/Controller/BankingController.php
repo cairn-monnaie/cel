@@ -401,7 +401,7 @@ class BankingController extends Controller
             $toAccounts = $selfAccounts;
             if(count($toAccounts) == 1){
                 $session->getFlashBag()->add('info','Vous n\'avez qu\'un compte.'); 
-                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
+                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
             $bb = $beneficiaryRepo->createQueryBuilder('b');
@@ -414,7 +414,7 @@ class BankingController extends Controller
 
             if(count($beneficiaries) == 0){
                 $session->getFlashBag()->add('info','Vous n\'avez aucun bénéficiaire enregistré');
-                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
+                return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
             }
 
             $direction = $directionPrefix.'_TO_USER';
@@ -425,7 +425,7 @@ class BankingController extends Controller
             }
         }else{
             $session->getFlashBag()->add('error','Type de destinataire non reconnu');
-            return $this->redirectToRoute('cairn_user_banking_transaction_to',array('_format'=>$_format, 'frequency'=>$frequency));
+            return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
         }
 
         if($frequency == 'unique'){
@@ -449,7 +449,7 @@ class BankingController extends Controller
                 $dataTime = $operation->getExecutionDate();
                 //                }
 
-                $fromAccount = $accountService->getAccountByID($operation->getFromAccount()['accountNumber']);
+                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()['accountNumber']);
                 $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
@@ -1615,8 +1615,10 @@ class BankingController extends Controller
 
                             $handle = fopen('php://output', 'r+');
 
+                            $userService = $this->get('cairn_user_cyclos_user_info');
+
                             // Add the header of the CSV file
-                            fputcsv($handle, array('Situation de votre compte ' . $account->type->name .' '. $account->owner->display . ' (Cairn) au '. $period['end']),';');
+                            fputcsv($handle, array('Situation de votre compte ' . $account->type->name .' '. $userService->getOwnerName($account->owner) . ' (Cairn) au '. $period['end']),';');
                             fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
@@ -1655,16 +1657,11 @@ class BankingController extends Controller
 
                     return $response; 
                 }
-                else{//html
+                else{//pdf
 
                     $html = '';
                     foreach($accounts as $account){
-                        if($account->type->nature == 'SYSTEM'){
-                            $id = $account->id;
-                        }else{
-                            $id = $account->number;
-                        }
-                        $history = $accountService->getAccountHistory($id,$period);
+                        $history = $accountService->getAccountHistory($account->id,$period);
 
                         $html = $html . $this->renderView('CairnUserBundle:Pdf:accounts_statement.html.twig',
                             array('account'=>$account,'history'=>$history,'period'=>$period));

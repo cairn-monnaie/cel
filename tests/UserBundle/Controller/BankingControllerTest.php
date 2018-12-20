@@ -57,7 +57,7 @@ class BankingControllerTest extends BaseControllerTest
         }
 
         if(!$expectForm){
-            $this->assertTrue($this->client->getResponse()->isRedirect());
+            $this->assertTrue($this->client->getResponse()->isRedirect('/banking/transaction/new/to/'.$frequency));
         }else{
             if($frequency == 'unique'){
                 $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
@@ -75,6 +75,7 @@ class BankingControllerTest extends BaseControllerTest
             $crawler =  $this->client->submit($form);
 
             if($isValid){
+
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("Récapitulatif")')->count());
 
@@ -82,7 +83,7 @@ class BankingControllerTest extends BaseControllerTest
                 $form = $crawler->selectButton('form_save')->form();
                 $crawler = $this->client->submit($form);
             }else{
-                $this->assertTrue($this->client->getResponse()->isRedirect());
+                $this->assertTrue($this->client->getResponse()->isRedirect('/banking/transaction/request/'.$to.'-'.$frequency));
             }
         }
     }
@@ -102,20 +103,18 @@ class BankingControllerTest extends BaseControllerTest
         $futureYear = $future->format('Y');
 
         //valid data
-        $baseData = array('login'=>'LaBonnePioche','creditor'=>'MaltOBar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
+        $baseData = array('login'=>'labonnepioche','creditor'=>'maltobar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
             'isValid'=>true,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year,
             'frequency'=>'unique');
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
-            'no beneficiary'=>array_replace($baseData,array('login'=>'MaltOBar', 'to'=>'beneficiary','expectForm'=>false)),
-            'debitor does not own account'=>array_replace($baseData,array('ownsAccount'=>false,'isValid'=>false)),
-            'not beneficiary'=>array_replace($baseData,array('to'=>'beneficiary','creditor'=>'LaDourbie','isValid'=>false)),
+            'no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
+            'not beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary','creditor'=>'maltobar',
+                                                           'isValid'=>false)),
             'valid immediate'=>$baseData,
             'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
-            'valid scheduled 2'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
-            'valid scheduled 3'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
-//            'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
+ //           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }
 
@@ -125,7 +124,7 @@ class BankingControllerTest extends BaseControllerTest
      */
     public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,$periodicity, $isValid)
     {
-        $credentials = array('username'=>'LaBonnePioche','password'=>'@@bbccdd');
+        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
                                                                                  'login',$credentials);
 
@@ -157,15 +156,16 @@ class BankingControllerTest extends BaseControllerTest
 
     public function provideTransactionDataForValidation()
     {
-        $credentials = array('username'=>'LaBonnePioche','password'=>'@@bbccdd');
+        $debitor = 'labonnepioche';
+
+        $credentials = array('username'=>$debitor,'password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
                                                                                  'login',$credentials);
 
-        $creditor = 'MaltOBar';
+        $creditor = 'maltobar';
         $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
         $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
 
-        $debitor = 'LaBonnePioche';
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
         $debitorICC = $debitorAccount->number;
@@ -210,10 +210,9 @@ class BankingControllerTest extends BaseControllerTest
     }
 
     /**
-     *@TODO : tester l'absence d'id du formulaire correspondant au debitAccount + date d'exec
      *@dataProvider provideDataForDepositAndWithdrawal
      */
-    public function testDepositAndWithdrawal($operation,$creditor,$changeICC,$amount,$isValid,$message)
+    public function testDepositAndWithdrawal($operation,$actor,$changeICC,$amount,$isValid,$message)
     {
         $adminUsername = $this->testAdmin;
         $crawler = $this->login($adminUsername, '@@bbccdd');
@@ -225,7 +224,7 @@ class BankingControllerTest extends BaseControllerTest
         $crawler = $this->inputCardKey($crawler, '1111');
         $crawler = $this->client->followRedirect();
 
-        $ICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
+        $ICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($actor)->accountNumber;
 
         if($changeICC){
             $ICC = $ICC + 1;
@@ -260,15 +259,15 @@ class BankingControllerTest extends BaseControllerTest
     public function provideDataForDepositAndWithdrawal()
     {
         return array(
-            'valid deposit'=>array('operation'=>'deposit','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,'isValid'=>true,
+            'valid deposit'=>array('operation'=>'deposit','actor'=>'labonnepioche','changeICC'=>false,'amount'=>10,'isValid'=>true,
                                    'message'=>'xxx'),
-            'invalid deposit ICC'=>array('operation'=>'deposit','creditor'=>'LaBonnePioche','changeICC'=>true,'amount'=>10,
+            'invalid deposit ICC'=>array('operation'=>'deposit','actor'=>'labonnepioche','changeICC'=>true,'amount'=>10,
                                          'isValid'=>false,'message'=>'Compte introuvable'),
-            'valid withdrawal'=>array('operation'=>'withdrawal','creditor'=>'LaBonnePioche','changeICC'=>false,'amount'=>10,
+            'valid withdrawal'=>array('operation'=>'withdrawal','actor'=>'labonnepioche','changeICC'=>false,'amount'=>10,
                                       'isValid'=>true,'message'=>'xxx'),
-            'insufficient balance'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>false,'amount'=>10000000,
+            'insufficient balance'=>array('operation'=>'withdrawal','actor'=>'NaturaVie','changeICC'=>false,'amount'=>10000000,
                                           'isValid'=>false,'message'=>'rechargez votre compte'),
-            'invalid withdrawal ICC'=>array('operation'=>'withdrawal','creditor'=>'cafeEurope','changeICC'=>true,
+            'invalid withdrawal ICC'=>array('operation'=>'withdrawal','actor'=>'NaturaVie','changeICC'=>true,
                                             'amount'=>10,'isValid'=>false,'message'=>'Compte introuvable'),
         );
     }
@@ -372,11 +371,11 @@ class BankingControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            'admin for pro'=>array('downloader'=>$adminUsername,'owner'=>'LaBonnePioche','isCyclosLegit'=>true,'isLegit'=>true ),
-            'pro for himself'=>array('downloader'=>'LaBonnePioche','owner'=>'LaBonnePioche','isCyclosLegit'=>true,'isLegit'=>true ),
-            'pro for admin'=>array('downloader'=>'LaBonnePioche','owner'=>$adminUsername,'isCyclosLegit'=>false,'isLegit'=>false ),
-            'pro for pro'=>array('downloader'=>'LaBonnePioche','owner'=>'MaltOBar','isCyclosLegit'=>false,'isLegit'=>false ),
-            'admin for non referred'=>array('downloader'=>$adminUsername,'owner'=>'cafeEurope','isCyclosLegit'=>true,'isLegit'=>false ),
+            'admin for pro'=>array('downloader'=>$adminUsername,'owner'=>'labonnepioche','isCyclosLegit'=>true,'isLegit'=>true ),
+            'pro for himself'=>array('downloader'=>'labonnepioche','owner'=>'labonnepioche','isCyclosLegit'=>true,'isLegit'=>true ),
+            'pro for admin'=>array('downloader'=>'labonnepioche','owner'=>$adminUsername,'isCyclosLegit'=>false,'isLegit'=>false ),
+            'pro for pro'=>array('downloader'=>'labonnepioche','owner'=>'maltobar','isCyclosLegit'=>false,'isLegit'=>false ),
+            'admin for non referred'=>array('downloader'=>$adminUsername,'owner'=>'NaturaVie','isCyclosLegit'=>true,'isLegit'=>false ),
         );
     }
 
@@ -438,7 +437,7 @@ class BankingControllerTest extends BaseControllerTest
         $pastYear = $past->format('Y');
 
         //valid Data
-        $baseData = array('downloader'=>'LaBonnePioche','isLegit'=>true,'tick'=>true,'format'=>'csv','isValid'=>true,
+        $baseData = array('downloader'=>'labonnepioche','isLegit'=>true,'tick'=>true,'format'=>'csv','isValid'=>true,
             'endDay'=>$day,'endMonth'=>$month,'endYear'=>$year,
             'pastDay'=>$pastDay,'pastMonth'=>$pastMonth,'pastYear'=>$pastYear,
         );
@@ -447,12 +446,12 @@ class BankingControllerTest extends BaseControllerTest
 
         return array(
             'pro'=>$baseData,
-            'admin'=>array_replace($baseData,array('downloader'=>'glGrenoble','isLegit'=>false)),
+//            'admin'=>array_replace($baseData,array('downloader'=>'glGrenoble','isLegit'=>false)),
             'super_admin'=>array_replace($baseData,array('downloader'=>$adminUsername,'isLegit'=>true,'format'=>'pdf')),
-            'anonym'=>array_replace($baseData,array('downloader'=>'','isLegit'=>false)),
+            'super_admin'=>array_replace($baseData,array('downloader'=>$adminUsername,'isLegit'=>true,'format'=>'csv')),
             'today=before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year)),
             'today<before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year,
-            'endDay'=>$pastDay,'endMonth'=>$pastMonth,'endYear'=>$pastYear)),
+                                                          'endDay'=>$pastDay,'endMonth'=>$pastMonth,'endYear'=>$pastYear)),
         );
     }
 
@@ -464,7 +463,7 @@ class BankingControllerTest extends BaseControllerTest
      */
     public function testChangeScheduledTransactionStatus($newStatus)
     {
-        $owner = 'LaBonnePioche';
+        $owner = 'labonnepioche';
         $crawler = $this->login($owner, '@@bbccdd');
         $url = '/banking/view/operations/transaction?frequency=unique';
         $crawler = $this->client->request('GET',$url);

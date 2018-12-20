@@ -33,16 +33,8 @@ class UserControllerTest extends BaseControllerTest
 
         $currentUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
 
-
         $url = '/profile/change-password';
         $crawler = $this->client->request('GET',$url);
-
-        $card = $currentUser->getCard();
-        if(!$card->isEnabled()){
-            $crawler = $this->client->request('GET', '/card/validate');
-            $crawler = $this->inputCardKey($crawler,'1111');
-            $crawler = $this->client->request('GET',$url);
-        }
 
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler,'1111');
@@ -72,7 +64,10 @@ class UserControllerTest extends BaseControllerTest
     public function providePasswordData()
     {
         $login = 'vie_integrative';
-        $new = '@bcdefgh';
+
+        //keep the same password as the new one, because the password value is rolled back on MySQL BDD, but not on Cyclos side.
+        //This would result in a dissociation of passwords
+        $new = '@@bbccdd';
         //valid data
         $baseData = array('login'=>$login,
             'current'=>'@@bbccdd',
@@ -173,27 +168,15 @@ class UserControllerTest extends BaseControllerTest
             ->setParameter('email',$email)
             ->getQuery()->getOneOrNullResult();
 
-        if($creditorUser){
-            if($creditorUser === $debitorUser){
-                $account = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
-                $ICC = $account->number;
-            }else{
-                $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername());
-                $ICC = $test->accountNumber;
-            }
-            $ICC = ($changeICC) ? $ICC + 1 : $ICC;
-        }else{
+        if(!$creditorUser){
             $ICC = 123456789;
+        }else{
+            $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername());
+            $ICC = $test->accountNumber;
+            $ICC = ($changeICC) ? $ICC + 1 : $ICC;
         }
 
         $crawler = $this->client->request('GET','/user/beneficiaries/add');
-
-        $card = $debitorUser->getCard();
-        if(!$card->isEnabled()){
-            $crawler = $this->client->request('GET', '/card/validate');
-            $crawler = $this->inputCardKey($crawler,'1111');
-            $crawler = $this->client->request('GET','/user/beneficiaries/add');
-        }
 
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler,'1111');
@@ -348,7 +331,6 @@ class UserControllerTest extends BaseControllerTest
                 $form['confirmation[current_password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
 
-
                 if(! $isPending){
                     //assert email sent to referents
                     $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -379,6 +361,8 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertNotEquals($targetUser,NULL);
                     $this->assertEquals($targetUser->getRemovalRequest(),true);
                     $this->assertEquals($targetUser->isEnabled(),false);
+
+                    //this assertion is false because login and logout don t display session flash messages
                     $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
                 }
             }       

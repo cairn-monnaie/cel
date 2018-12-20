@@ -106,16 +106,16 @@ class UserController extends Controller
 
         $ob = $operationRepo->createQueryBuilder('o');
         $processedTransactions = $ob->where(
-             $ob->expr()->orX(
-                 $ob->expr()->andX(
-                     $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getFromOperationTypes())
-                 ),
-                 $ob->expr()->andX(
-                     $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getToOperationTypes())
-                 )
-             ))
+            $ob->expr()->orX(
+                $ob->expr()->andX(
+                    $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
+                    $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                ),
+                $ob->expr()->andX(
+                    $ob->expr()->in('o.toAccountNumber', $accountNumbers),
+                    $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                )
+            ))
             ->andWhere('o.paymentID is not NULL')
             ->orderBy('o.executionDate','ASC')
             ->setMaxResults(15)
@@ -350,51 +350,49 @@ class UserController extends Controller
 
                     }
                 }
-                else{
-                    if($user->getID() == $currentUser->getID())
-                    {
-                        $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                        return new RedirectResponse($request->getRequestUri());
-                    }
-                    $ICC = $dataForm['ICC'];
-
-                    //check that ICC exists and corresponds to this user
-                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
-                    if(!$toUserVO){
-                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                        return new RedirectResponse($request->getRequestUri());
-                    }else{
-                        if(! ($user->getUsername() == $toUserVO->username)){
-                            $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                            return new RedirectResponse($request->getRequestUri());
-
-                        }
-                    }
-
-                    //check that beneficiary is not already in database, o.w create new one
-                    $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
-
-                    if(!$existingBeneficiary){
-                        $beneficiary = new Beneficiary();
-                        $beneficiary->setUser($user);
-                        $beneficiary->setICC($ICC);
-                    }
-                    else{ 
-                        if($currentUser->hasBeneficiary($existingBeneficiary)){
-                            $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                            return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                        }
-                        $beneficiary = $existingBeneficiary;
-                    }
-
-                    $beneficiary->addSource($currentUser);
-                    $currentUser->addBeneficiary($beneficiary);
-                    $em->persist($beneficiary);                    
-                    $em->persist($currentUser);
-                    $em->flush();
-                    $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
+                if($user->getID() == $currentUser->getID())
+                {
+                    $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
+                    return new RedirectResponse($request->getRequestUri());
                 }
+                $ICC = $dataForm['ICC'];
+
+                //check that ICC exists and corresponds to this user
+                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
+                if(!$toUserVO){
+                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
+                    return new RedirectResponse($request->getRequestUri());
+                }else{
+                    if(! ($user->getUsername() == $toUserVO->username)){
+                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
+                        return new RedirectResponse($request->getRequestUri());
+
+                    }
+                }
+
+                //check that beneficiary is not already in database, o.w create new one
+                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
+
+                if(!$existingBeneficiary){
+                    $beneficiary = new Beneficiary();
+                    $beneficiary->setUser($user);
+                    $beneficiary->setICC($ICC);
+                }
+                else{ 
+                    if($currentUser->hasBeneficiary($existingBeneficiary)){
+                        $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
+                        return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
+                    }
+                    $beneficiary = $existingBeneficiary;
+                }
+
+                $beneficiary->addSource($currentUser);
+                $currentUser->addBeneficiary($beneficiary);
+                $em->persist($beneficiary);                    
+                $em->persist($currentUser);
+                $em->flush();
+                $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
+                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
 
             }
         }
@@ -608,7 +606,7 @@ class UserController extends Controller
                     }
                     $em->flush();
 
-                    return $this->redirectToRoute($redirection, array('_format'=>$_format));
+                    return $this->redirectToRoute($redirection);
                 }
                 else{
                     $session->getFlashBag()->add('info','La demande de suppression a été annulée.');

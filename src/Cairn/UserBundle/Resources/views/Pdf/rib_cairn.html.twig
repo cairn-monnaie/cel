@@ -13,13 +13,8 @@
         </thead>
         <tbody>
              <tr>
-                <td>{% if account.type.nature == 'SYSTEM' %}
-                         {{account.id}} 
-                    {% else %}
-                         {{account.number}} 
-                    {% endif %}
-                </td>
-                <td> {{account.currency.suffix}} </td>
+                <td> {{account.number}} </td> 
+{#                <td> {{account.currency.suffix}} </td> #}
             </tr>
             <tr> 
                 {% if account.type.nature == 'SYSTEM' %}

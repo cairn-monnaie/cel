@@ -144,6 +144,11 @@ r = requests.get(
 )
 check_request_status(r)
 login_password_config = r.json()['result']
+login_password_config['blockTime'] = {
+        'amount': 0,
+        'field': 'SECONDS'
+}
+
 login_password_config['length'] = {
         'min': 8,
         'max':25
