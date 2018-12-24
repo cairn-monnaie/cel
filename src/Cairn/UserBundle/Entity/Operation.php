@@ -102,7 +102,7 @@ class Operation
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
      *@ORM\JoinColumn(nullable=false)
      */
-    private $user;
+    private $stakeholder;
 
     /**
      * @var array
@@ -424,9 +424,9 @@ class Operation
      *
      * @return User
      */
-    public function setUser(\Cairn\UserBundle\Entity\User $user)
+    public function setStakeholder(\Cairn\UserBundle\Entity\User $user)
     {
-        $this->user = $user;
+        $this->stakeholder = $user;
 
         return $this;
     }
@@ -436,9 +436,9 @@ class Operation
      *
      * @return \Cairn\UserBundle\Entity\User
      */
-    public function getUser()
+    public function getStakeholder()
     {
-        return $this->user;
+        return $this->stakeholder;
     }
 
     /**

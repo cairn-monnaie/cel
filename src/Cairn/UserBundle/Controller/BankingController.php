@@ -532,7 +532,7 @@ class BankingController extends Controller
                 $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
                 $operation->setToAccountNumber($res->toAccount->number);
-                $operation->setUser($creditorUser);
+                $operation->setStakeholder($creditorUser);
                 $em->persist($operation);
                 $em->flush();
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
@@ -680,11 +680,11 @@ class BankingController extends Controller
             $paymentData = $bankingService->getPaymentData($debitAccount->owner,$toAccount->owner,$transferType);
             $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-            $transaction->setFromAccountNumber($debitAccount->id);
+            $transaction->setFromAccountNumber($debitAccount->number);
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setUser($userToCredit);
+            $transaction->setStakeholder($userToCredit);
             $em->persist($transaction);
             $em->flush();
 
@@ -764,11 +764,11 @@ class BankingController extends Controller
             $paymentData = $bankingService->getPaymentData($debitAccount->owner,$toAccount->owner,$transferType);
             $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-            $transaction->setFromAccountNumber($debitAccount->id);
+            $transaction->setFromAccountNumber($debitAccount->number);
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setUser($userToCredit);
+            $transaction->setStakeholder($userToCredit);
             $em->persist($transaction);
             $em->flush();
 
@@ -847,11 +847,11 @@ class BankingController extends Controller
             $paymentData = $bankingService->getPaymentData($fromAccount->owner,$debitAccount->owner,$transferType);
             $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
 
-            $transaction->setToAccountNumber($debitAccount->id);
+            $transaction->setToAccountNumber($debitAccount->number);
             $transaction->setFromAccountNumber($res->fromAccount->number);
 
             $userToDebit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($fromAccount->owner->id);
-            $transaction->setUser($userToDebit);
+            $transaction->setStakeholder($userToDebit);
             $em->persist($transaction);
             $em->flush();
 

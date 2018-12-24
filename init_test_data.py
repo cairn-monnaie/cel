@@ -222,8 +222,7 @@ today = datetime.now()
 def date_modify(nb_days):
     today = datetime.now()
     date = today + timedelta(days=nb_days)
-    return [date.strftime("%m"),date.strftime("%d"),date.strftime("%Y")]
-
+    return date.strftime("%Y")+ '-' + date.strftime("%m")+'-'+date.strftime("%d")
 
 
 pros = [
@@ -313,15 +312,36 @@ for pro in pros:
 #
     if pro[3] == 'Grenoble':
         r = requests.post(network_web_services + 'payment/perform',
-                          headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'admin:admin').decode('utf-8'))},
+                # on utilise ici les identifiants de l'administrateur réseau créé dans le script de config : setup_cairn_app.py
+                          headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'admin_network:@@bbccdd').decode('utf-8'))},
                           json={
                               'type': CYCLOS_CONSTANTS['payment_types']['credit_du_compte'],
                               'amount': 1000,
                               'currency': CYCLOS_CONSTANTS['currencies'][LOCAL_CURRENCY_INTERNAL_NAME],
                               'from': 'SYSTEM',
                               'to': pro[0],
+                              'description': 'dépôt'
                           })
 logger.info('Virements initiaux de 1000 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois... Terminé !')
+
+logger.info('Virements futurs de 1 u.c en ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour 1 pro : labonnepioche vers alter_mag')
+
+for i in range(1,10):
+    r = requests.post(network_web_services + 'scheduledPayment/perform',
+                      headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'labonnepioche:@@bbccdd').decode('utf-8'))},
+                      json={
+                          'type': CYCLOS_CONSTANTS['payment_types']['virement_inter_adherent'],
+                          'amount': 1,
+                          'currency': CYCLOS_CONSTANTS['currencies'][LOCAL_CURRENCY_INTERNAL_NAME],
+                          'from': 'labonnepioche',
+                          'to': 'alter_mag',
+                          'firstInstallmentDate': date_modify(1),
+                          'installmentsCount': 1,
+                          'description': 'virement futur'
+                      })
+    check_request_status(r)
+
+logger.info('Virements futurs de 1 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' réalisés par labonnepioche... Terminé !')
 
 ### write account numbers and ids in a file
 #with open("cyclos_constants.yml", 'w') as cyclos_stream:

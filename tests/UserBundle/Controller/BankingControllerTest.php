@@ -456,10 +456,15 @@ class BankingControllerTest extends BaseControllerTest
     }
 
     /**
-     *@TODO : execute -> test that operation type has changed
-     *        cancel -> test that operation has been removed
-     *If testTransactionProcess ends correctly, there are two scheduled payments made by LaBonnePioche
-     *@depends testTransactionProcess
+     * WARNING : in all tests, the database is rolled back to the initial stable state once the test has finished.                         
+     * We cannot do that for this specific test, as the action impacts a payment on cyclos-side, which can not be rolled back.
+     * In order for this test to be consistent and reiterable several times, we must commit modifications on DB
+     *
+     * At some point, if this test is reiterated too many times, there will not be scheduled payment to test, which will result in a test
+     * error. The whole testing process will need to be restarted (cleaning Cyclos db, generating testing db) in order to refill the db
+     * with Operation objects with type = TYPE_TRANSACTION_SCHEDULED
+     *
+     * @dataProvider providePaymentStatus 
      */
     public function testChangeScheduledTransactionStatus($newStatus)
     {
@@ -493,7 +498,8 @@ class BankingControllerTest extends BaseControllerTest
             $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
             $this->em->refresh($operation);
-            $this->assertEquals($operation->getType(), $TYPE_TRANSACTION_EXECUTED);
+            $this->assertEquals($operation->getType(), Operation::$TYPE_TRANSACTION_EXECUTED);
+
             $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
             $accountBalanceAfter = $ownerAccount->status->balance;
 
@@ -515,6 +521,21 @@ class BankingControllerTest extends BaseControllerTest
             $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
 
         }
+
+        //committing modifications
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
+
+        //Right after, we begin a new transaction in order to avoid the execption from PDO "there is no active transaction" which occurs
+        //on rollBack (automatically called after each test by DoctrineTestBundle listener) to keep a stable state of the DB
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::beginTransaction();
+
     }
 
+    public function providePaymentStatus()
+    {
+        return array(
+            array('status'=>'execute'),
+            array('status'=>'cancel')
+        );
+    }
 }
