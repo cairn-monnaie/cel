@@ -267,6 +267,10 @@ pros = [
         ['trankilou', 'Le Trankilou', 'trankilou@test.com','Grenoble']
 ]
 
+admins = [
+        ['gl_grenoble', 'Groupe Local Grenoble', 'gl_grenoble@test.com','Grenoble'],
+        ['gl_voiron', 'Groupe Local Voiron', 'gl_voiron@test.com','Voiron']
+]
 
 for pro in pros:
     create_user(
@@ -276,6 +280,15 @@ for pro in pros:
         pro[2],
         pro[3],
     )
+
+#for admin in admins:
+#    create_user(
+#        NAME_GROUP_NETWORK_ADMINS,
+#        admin[1],
+#        admin[0],
+#        admin[2],
+#        admin[3],
+#    )
 
 #porteurs = {
 #    'P001': 'Porteur 1',

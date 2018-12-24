@@ -323,6 +323,39 @@ class Commands
 
     }
 
+    public function createOperation($entryVO, $type)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+
+        if($type == Operation::$TYPE_DEPOSIT){
+            $dueDate = $entryVO->date;
+            $transactionVO = $bankingService->getTransactionByID($entryVO->id);
+        }else{
+            $dueDate = $entryVO->dueDate;
+            $transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+        }
+
+        $operation = new Operation();
+        $operation->setType($type);
+        $operation->setPaymentID($transactionVO->id);
+        $operation->setAmount($transactionVO->currencyAmount->amount);
+        $operation->setReason('Motif du virement de test');
+        $operation->setDescription('description du virement de test');
+        $operation->setExecutionDate(new \Datetime($dueDate));
+
+        $debitorAccountVO = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($transactionVO->fromOwner);
+        $operation->setFromAccountNumber($debitorAccountVO->number);
+
+        $creditorAccountVO = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($transactionVO->toOwner);
+        $stakeholder = $userRepo->findOneByUsername($transactionVO->toOwner->shortDisplay);
+        $operation->setToAccountNumber($creditorAccountVO->number);
+        $operation->setStakeHolder($stakeholder);
+
+        $this->em->persist($operation);
+    }
+
     public function generateDatabaseFromCyclos($login, $password)
     {
         //same username than the one provided at installation
@@ -342,6 +375,11 @@ class Commands
             try{
                 $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
                 $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+
+//                $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName ,'ADMIN_GROUP');
+//                $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
+//
+//                $cyclosUsers = array_merge($cyclosMembers,$cyclosAdmins);
             }catch(Cyclos\ServiceException $e){
                 if($e->errorCode == 'LOGIN'){
                     return 'Wrong username or password provided';
@@ -353,10 +391,42 @@ class Commands
             $admin = $userRepo->findOneByUsername('admin_network');
 
             //basic user creation : create entity using data from Cyclos + add a card for all users
-            foreach($cyclosMembers as $cyclosMember){
-                $this->createUser($cyclosMember,$admin);
+            foreach($cyclosMembers as $cyclosUser){
+                $this->createUser($cyclosUser,$admin);
             }
+
             $this->em->flush();
+
+            ////// payments creation : foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+            $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+            $accountTypeVO = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER')[0];
+
+
+            //instances of TransactionEntryVO
+            $processedTransactions = $bankingService->getTransactions(
+                $admin->getCyclosID(),$accountTypeVO->id,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
+
+            foreach($processedTransactions as $transaction){
+                $this->createOperation($transaction,Operation::$TYPE_DEPOSIT);
+            }
+            //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
+            //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
+            //in init_data_test.py script, future transactions are made by labonnepioche
+            $user = $userRepo->findOneByUsername('labonnepioche'); 
+
+            $credentials = array('username'=>'labonnepioche','password'=>$password);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+
+            $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$accountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement futur');
+
+            $credentials = array('username'=>'admin_network','password'=>$password);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+
+            var_dump(count($futureInstallments));
+            
+            foreach($futureInstallments as $installment){
+                $this->createOperation($installment,Operation::$TYPE_TRANSACTION_SCHEDULED);
+            }
 
             //here, we set specific attributes to each user in order to test different contexts and data
 
@@ -441,6 +511,20 @@ class Commands
             //user has requested a removal and has non-null account balance on Cyclos-side
             $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
             $user->setRemovalRequest(true);
+
+            //user is blocked
+            $user = $userRepo->findOneByUsername('tout_1_fromage'); 
+            $user->setEnabled(false);
+
+//            //users have ROLE_ADMIN as referent
+//            $user1 = $userRepo->findOneByUsername('atelier_eltilo'); 
+//            $user2 = $userRepo->findOneByUsername('mon_vrac'); 
+//
+//            $admin1 = $userRepo->findOneByUsername('gl_grenoble'); 
+//            $admin2  = $userRepo->findOneByUsername('gl_voiron'); 
+//
+//            $user1->addReferent($admin1);
+//            $user2->addReferent($admin2);
 
             $this->em->flush();
 

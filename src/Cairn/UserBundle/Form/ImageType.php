@@ -19,7 +19,7 @@ class ImageType extends AbstractType
             ->add('file', FileType::class,array('label'=>'image','required'=>false,
                 'constraints'=>array(
                     new Assert\File(array(
-                        'maxSize'=>'1M',
+                        'maxSize'=>'200k',
                         'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}'
                     )),
                     new Assert\Image(array(

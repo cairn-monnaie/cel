@@ -79,7 +79,7 @@ class AdminController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }elseif(!$user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -95,7 +95,7 @@ class AdminController extends Controller
                 $em->flush();
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
 
         }
 

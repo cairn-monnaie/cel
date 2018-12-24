@@ -2021,6 +2021,8 @@ def set_admin_group_permissions(
     product['systemPaymentsAsUser'] = payments_as_user_to_system
     product['selfPaymentsAsUser'] = payments_as_user_to_self
     product['chargebackPaymentsToUser'] = chargeback_of_payments_to_user
+    product['userScheduledPayments'] = ['VIEW','CANCEL','PROCESS_INSTALLMENT']
+
     # Enregistrement du produit modifié
     r = requests.post(network_web_services + 'product/save',
                       headers=headers,
@@ -2326,6 +2328,7 @@ set_admin_group_permissions(
         'LOGIN_NAME',
         'EMAIL',
         'ACCOUNT_NUMBER',
+        'ADDRESS',
     ],
     password_actions=[
         'login',
