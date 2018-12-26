@@ -81,7 +81,7 @@ fos_user:
     user_class:    Cairn\UserBundle\Entity\User # La classe de l'entité User que nous utilisons
     from_email:
         address: '%cairn_email_noreply%'
-        sender_name: Le Cairn, Monnaie Locale et Citoyenne
+        sender_name: Cairn - noreply
     profile:
         form:
             type: Cairn\UserBundle\Form\ProfileType

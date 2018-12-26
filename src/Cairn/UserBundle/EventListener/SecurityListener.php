@@ -57,9 +57,14 @@ class SecurityListener
 
     public function onChangePassword(FormEvent $event)
     {
+
+
         $passwordManager = new PasswordManager();
         $form = $event->getForm();
         $user = $form->getData();
+
+        $router = $this->container->get('router');          
+        $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
 
         $currentPassword = $form->get('current_password')->getData(); 
         $newPassword = $user->getPlainPassword();
@@ -68,6 +73,7 @@ class SecurityListener
         if($user->isFirstLogin()){
             $user->setFirstLogin(false);
         }
+        $event->setResponse(new RedirectResponse($profileUrl));
     }
 
     /**

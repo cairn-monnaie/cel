@@ -183,7 +183,7 @@ class CardController extends Controller
                 if($card->isGenerated()){
                     $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
                 }else{
-                    $session->getFlashBag()->add('info','Vous avez déjà commandé une nouvelle carte, mais elle ne vous a pas encore été envoyée.');
+                    $session->getFlashBag()->add('info','Vous avez déjà une carte commandée en cours, mais elle ne vous a pas encore été envoyée.');
                 }
             }
             return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
