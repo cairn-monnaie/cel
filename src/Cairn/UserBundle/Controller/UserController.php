@@ -355,7 +355,7 @@ class UserController extends Controller
                     $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
                     return new RedirectResponse($request->getRequestUri());
                 }
-                $ICC = $dataForm['ICC'];
+                $ICC = preg_replace('/\s+/', '', $dataForm['ICC']);
 
                 //check that ICC exists and corresponds to this user
                 $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
@@ -632,6 +632,8 @@ class UserController extends Controller
     {
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $referents = $user->getReferents();
@@ -651,6 +653,13 @@ class UserController extends Controller
             foreach($beneficiaries as $beneficiary){
                 $em->remove($beneficiary);
             }
+
+            //set Operations with user to remove as stakeholder to NULL
+            $operations = $operationRepo->findBy(array('stakeholder'=>$user));
+            foreach($operations as $operation){
+                $operation->setStakeholder(NULL);
+            }
+
             $em->remove($user);
 
             $subject = 'Ce n\'est qu\'un au revoir !';

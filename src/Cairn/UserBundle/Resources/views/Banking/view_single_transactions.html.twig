@@ -68,7 +68,11 @@
                 <tr>
                     <td> {{transaction.executionDate|date('Y-m-d')}} </td>
                     <td>
-                        {{transaction.stakeholder.name}}
+                        {% if transaction.stakeholder is defined %}
+                            <a href="{{path('cairn_user_profile_view', {'id' : transaction.stakeholder.id})}}"> {{transaction.stakeholderName}} </a>
+                        {% else %}
+                            {{transaction.stakeholderName}}
+                        {% endif %}
                     </td>
                     <td> {{transaction.reason }} </td>  
                     <td> {{transaction.amount }} </td>

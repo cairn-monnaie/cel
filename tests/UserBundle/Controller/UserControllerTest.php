@@ -297,12 +297,14 @@ class UserControllerTest extends BaseControllerTest
     /**
      *@todo : try to remove a ROLE_ADMIN
      *@todo :check that all beneficiaries with user $target have been removed
+     *@todo : try to remove user who is stakeholder of a given operation
      *@dataProvider provideUsersToRemove
      */
     public function testRemoveUser($referent,$target,$isLegit,$nullAccount,$isPending)
     {
         $crawler = $this->login($referent,'@@bbccdd');
 
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
@@ -327,6 +329,8 @@ class UserControllerTest extends BaseControllerTest
             }else{
                 $this->client->enableProfiler();
 
+                $saveName = $targetUser->getName();
+
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $form['confirmation[current_password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
@@ -338,20 +342,29 @@ class UserControllerTest extends BaseControllerTest
                     $message = $mailCollector->getMessages()[0];
                     $this->assertInstanceOf('Swift_Message', $message);
                     //                    $this->assertContains('Nouvelle carte', $message->getSubject());
-                    $this->assertContains('supprimé de la plateforme', $message->getBody());
-                    $this->assertContains($currentUser->getName(), $message->getBody());
-
-                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
-                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
-
+//                    $this->assertContains('supprimé de la plateforme', $message->getBody());
+//                    $this->assertContains($currentUser->getName(), $message->getBody());
+//
+//                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+//                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+//
                     $this->assertTrue($this->client->getResponse()->isRedirect());
                     $crawler = $this->client->followRedirect();
+
+                    $operations = $operationRepo->findBy(array('stakeholderName'=>$saveName));
+                    $this->assertTrue( count($operations) != 0);
+
+                    foreach($operations as $operation){
+                        $this->assertEquals($operation->getStakeholder(),NULL);
+                    }
 
                     $this->em->refresh($targetUser);
 
                     $this->assertEquals($targetUser,NULL);
                     $this->assertSame(1,$crawler->filter('html:contains("supprimé avec succès")')->count());
                     $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
+
+                    //check that operations involving removed user as stakeholder do still exist with stakeholder = NULL and stakeholderName with value
                 }else{
                     $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
                     $crawler = $this->client->followRedirect();
@@ -378,9 +391,9 @@ class UserControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-//            'non null account' => array($adminUsername,'atelier_eltilo',true,false,false),
-//            'valid admin removal' => array($adminUsername,'la_belle_verte',true,true,false),
-//            'not legit' => array($adminUsername,'NaturaVie',false,true,false),
+            'non null account' => array($adminUsername,'atelier_eltilo',true,false,false),
+            'valid admin removal, user as operation stakeholder' => array($adminUsername,'trankilou',true,true,false),
+            'not legit' => array($adminUsername,'NaturaVie',false,true,false),
             'user auto-removal' => array('lib_colibri','lib_colibri',true,true,true),
         );
 

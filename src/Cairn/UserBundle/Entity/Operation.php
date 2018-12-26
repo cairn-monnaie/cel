@@ -96,13 +96,20 @@ class Operation
      */
     private $toAccountNumber;
 
-    /**
+     /**
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(nullable=true)
      */
     private $stakeholder;
+
+    /**
+     * @var string
+     *
+     *@ORM\Column(name="stakeholderName", type="string", length=50)
+     */
+    private $stakeholderName;
 
     /**
      * @var array
@@ -418,27 +425,55 @@ class Operation
     }
 
     /**
-     * Set user
+     * Set stakeholder
      *
      * @param \Cairn\UserBundle\Entity\User $user
      *
-     * @return User
+     * @return Operation
      */
-    public function setStakeholder(\Cairn\UserBundle\Entity\User $user)
+    public function setStakeholder(\Cairn\UserBundle\Entity\User $user = NULL)
     {
         $this->stakeholder = $user;
+
+        if($user){
+            $this->stakeholderName = $user->getName();
+        }
 
         return $this;
     }
 
     /**
-     * Get user
+     * Get stakeholder
      *
      * @return \Cairn\UserBundle\Entity\User
      */
     public function getStakeholder()
     {
         return $this->stakeholder;
+    }
+
+    /**
+     * Set stakeholder's name
+     *
+     * @param string
+     *
+     * @return Operation
+     */
+    public function setStakeholderName($name)
+    {
+        $this->stakeholderName = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get name
+     *
+     * @return string
+     */
+    public function getStakeholderName()
+    {
+        return $this->stakeholderName;
     }
 
     /**

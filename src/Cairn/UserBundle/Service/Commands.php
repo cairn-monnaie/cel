@@ -329,7 +329,7 @@ class Commands
 
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
 
-        if($type == Operation::$TYPE_DEPOSIT){
+        if($type == Operation::$TYPE_DEPOSIT || $type == Operation::$TYPE_TRANSACTION_EXECUTED){
             $dueDate = $entryVO->date;
             $transactionVO = $bankingService->getTransactionByID($entryVO->id);
         }else{
@@ -342,7 +342,7 @@ class Commands
         $operation->setPaymentID($transactionVO->id);
         $operation->setAmount($transactionVO->currencyAmount->amount);
         $operation->setReason('Motif du virement de test');
-        $operation->setDescription('description du virement de test');
+        $operation->setDescription($transactionVO->description);
         $operation->setExecutionDate(new \Datetime($dueDate));
 
         $debitorAccountVO = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($transactionVO->fromOwner);
@@ -403,12 +403,24 @@ class Commands
 
 
             //instances of TransactionEntryVO
-            $processedTransactions = $bankingService->getTransactions(
+            $processedDeposits = $bankingService->getTransactions(
                 $admin->getCyclosID(),$accountTypeVO->id,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
 
-            foreach($processedTransactions as $transaction){
+            foreach($processedDeposits as $transaction){
                 $this->createOperation($transaction,Operation::$TYPE_DEPOSIT);
             }
+
+            //instances of TransactionEntryVO
+            //in init_data_test.py script, trankilou makes transaction in order to have a null account balance
+            $user = $userRepo->findOneByUsername('trankilou'); 
+
+            $processedTransactions = $bankingService->getTransactions(
+                $user->getCyclosID(),$accountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'remise à 0');
+
+            foreach($processedTransactions as $transaction){
+                $this->createOperation($transaction,Operation::$TYPE_TRANSACTION_EXECUTED);
+            }
+
             //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
             //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
             //in init_data_test.py script, future transactions are made by labonnepioche

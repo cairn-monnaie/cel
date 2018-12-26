@@ -335,7 +335,31 @@ for pro in pros:
                               'to': pro[0],
                               'description': 'dépôt'
                           })
+        check_request_status(r)
+
 logger.info('Virements initiaux de 1000 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour les grenoblois... Terminé !')
+
+logger.info('')
+logger.info('')
+
+logger.info('trankilou réalise un virement vers montagne_arts remettant son solde à 0')
+r = requests.post(network_web_services + 'payment/perform',
+        # on utilise ici les identifiants de l'administrateur réseau créé dans le script de config : setup_cairn_app.py
+                  headers={'Authorization': 'Basic {}'.format(base64.standard_b64encode(b'admin_network:@@bbccdd').decode('utf-8'))},
+                  json={
+                      'type': CYCLOS_CONSTANTS['payment_types']['virement_inter_adherent'],
+                      'amount': 1000,
+                      'currency': CYCLOS_CONSTANTS['currencies'][LOCAL_CURRENCY_INTERNAL_NAME],
+                      'from': 'trankilou',
+                      'to': 'montagne_arts',
+                      'description': 'remise à 0 du solde'
+                  })
+check_request_status(r)
+
+logger.info('Remise du solde à 0... Terminé !')
+
+logger.info('')
+logger.info('')
 
 logger.info('Virements futurs de 1 u.c en ' + LOCAL_CURRENCY_INTERNAL_NAME + ' pour 1 pro : labonnepioche vers alter_mag')
 
