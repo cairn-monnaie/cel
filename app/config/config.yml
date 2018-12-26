@@ -27,8 +27,8 @@ framework:
         # https://symfony.com/doc/current/reference/configuration/framework.html#handler-id
         handler_id: session.handler.native_file
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
-        gc_maxlifetime: 300
-        cookie_lifetime: 300
+        gc_maxlifetime: 1500
+        cookie_lifetime: 1500
     fragments: ~
     http_method_override: true
     assets: ~
@@ -79,8 +79,6 @@ fos_user:
     db_driver:     orm                       # Le type de BDD à utiliser, nous utilisons l'ORM Doctrine depuis le début
     firewall_name: main                      # Le nom du firewall derrière lequel on utilisera ces utilisateurs
     user_class:    Cairn\UserBundle\Entity\User # La classe de l'entité User que nous utilisons
-    service:
-        mailer: fos_user.mailer.twig_swift
     from_email:
         address: '%cairn_email_noreply%'
         sender_name: Le Cairn, Monnaie Locale et Citoyenne
