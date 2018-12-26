@@ -200,7 +200,12 @@ class Commands
                 $body = $this->templating->render('CairnUserBundle:Emails:email_expiration.html.twig');
 
                 $saveEmail = $user->getEmail();
+
+                //the user cannot be removed on Symfony and Cyclos side as there is no user connected to request this command (this is 
+                //a command to activate regularly
                 $user->setRemovalRequest(true);
+
+                //the user won't be able anymore to confirm his email
                 $user->setConfirmationToken(NULL);
                 $this->em->flush();
                 $this->messageNotificator->notifyByEmail($subject,$from,$saveEmail,$body);
