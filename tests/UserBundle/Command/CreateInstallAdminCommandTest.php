@@ -14,23 +14,6 @@ use Cyclos;
 class CreateInstallAdminCommandTest extends KernelTestCase
 {
 
-    //  /**
-    //   *
-    //   *provide users with cards activated/unactivated at different creation dates to see how the command behaves
-    //   */
-    //    public function __construct()
-    //    {
-    //        $kernel = self::bootKernel();
-    //        $this->application = new Application($kernel);
-    //        $this->container = $kernel->getContainer(); 
-    //    }
-    //
-    //    protected function setUp()
-    //    {
-    //        self::runCommand('doctrine:fixtures:load --append --env=test --fixtures=src/Cairn/UserBundle/DataFixtures/ORM/LoadUser.php --no-interaction');
-    //
-    //    }
-
     /**
      *@dataProvider provideInstallData
      */

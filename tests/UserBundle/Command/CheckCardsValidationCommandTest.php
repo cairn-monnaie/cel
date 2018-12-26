@@ -17,37 +17,32 @@ class CheckCardsValidationCommandTest extends KernelTestCase
     protected $application;
     protected $container;
 
-//  /**
-//   *
-//   *provide users with cards activated/unactivated at different creation dates to see how the command behaves
-//   */
-//    public function __construct()
-//    {
-//        $kernel = self::bootKernel();
-//        $this->application = new Application($kernel);
-//        $this->container = $kernel->getContainer(); 
-//    }
-//
-//    protected function setUp()
-//    {
-//        self::runCommand('doctrine:fixtures:load --append --env=test --fixtures=src/Cairn/UserBundle/DataFixtures/ORM/LoadUser.php --no-interaction');
-//
-//    }
 
-    protected static function runCommand($application,$command)
-    {
-        $command = sprintf('%s', $command);
-        return $application->run(new StringInput($command));
-    }
-
-    public function testExecuteCardsValidationCommand()
+    /**
+     * WARNING : User used for this test MUST HAVE a not validated card
+     *
+     *@dataProvider provideDataForCards
+     */
+    public function testCardsValidationCommand($date,$emailSent,$hasCard,$content)
     {
         $kernel = static::createKernel();
         $kernel->boot();
 
-        $application = new Application($kernel);
-        self::runCommand($application,'doctrine:fixtures:load --append --env=test --fixtures=src/Cairn/UserBundle/DataFixtures/ORM/LoadUser.php --no-interaction');
+        $container = $kernel->getContainer();
+        $userRepo = $container->get('doctrine.orm.entity_manager')->getRepository('CairnUserBundle:User');
 
+
+        $activationDelay = $container->getParameter('card_activation_delay');
+        $limitDate = date_modify(new \Datetime(), '-'.$activationDelay.' days');
+        $creationDate = date_modify($limitDate, $date);                
+
+        $user = $userRepo->findOneByUsername('recycleco');
+        $card  = $user->getCard();                                         
+        $card->setCreationDate($creationDate);
+
+        $container->get('doctrine.orm.entity_manager')->flush();
+
+        $application = new Application($kernel);
         $application->add(new CheckCardsValidationCommand());
 
         $command = $application->find('cairn.user:check-cards-validation');
@@ -58,11 +53,43 @@ class CheckCardsValidationCommandTest extends KernelTestCase
 
         // assert the output of the command in the console
         $output = $commandTester->getDisplay();
-        $this->assertContains('performed', $output);
+        $this->assertContains('performed successfully', $output);
 
-        //assert the emails sent
+        //assert the email sent
+        $messageLogger = $container->get('swiftmailer.mailer.default.plugin.messagelogger');
 
+        if($emailSent){
+            $this->assertEquals(count($messageLogger->getMessages()),1);
+            $message = $messageLogger->getMessages()[0];
+
+            $this->assertInstanceOf('Swift_Message', $message);        
+            $this->assertContains($content, $message->getBody());
+
+            $this->assertSame($container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+            $this->assertSame($user->getEmail(), key($message->getTo()));
+        }else{
+            $this->assertEquals(count($messageLogger->getMessages()),0);
+        }
         //assert the content of the database with respect to the setup
+        if($hasCard){
+            $this->assertTrue($user->getCard() instanceOf \Cairn\UserBundle\Entity\Card);
+        }else{
+            $this->assertEquals($user->getCard(), NULL);
+        }
+    }
+
+    public function provideDataForCards()
+    {
+        return array(
+            array('date'=>'+1 days','emailSent'=>true,'hasCard'=>true,'content'=>'en attente d\'activation'),
+            array('date'=>'+2 days','emailSent'=>true,'hasCard'=>true,'content'=>'en attente d\'activation'),
+            array('date'=>'+3 days','emailSent'=>false,'hasCard'=>true,'content'=>'en attente d\'activation'),
+            array('date'=>'+5 days','emailSent'=>true,'hasCard'=>true,'content'=>'en attente d\'activation'),
+            array('date'=>'+0 days','emailSent'=>true,'hasCard'=>false,'content'=>'été automatiquement révoquée'),
+            array('date'=>'-1 days','emailSent'=>true,'hasCard'=>false,'content'=>'été automatiquement révoquée'),
+            array('date'=>'-10 days','emailSent'=>true,'hasCard'=>false,'content'=>'été automatiquement révoquée'),
+            array('date'=>'-2 months','emailSent'=>true,'hasCard'=>false,'content'=>'été automatiquement révoquée'),
+        );
     }
 
 }

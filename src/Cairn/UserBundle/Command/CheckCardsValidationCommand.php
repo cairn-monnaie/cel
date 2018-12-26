@@ -26,6 +26,6 @@ class CheckCardsValidationCommand extends ContainerAwareCommand
     {
         $commandsService = $this->getContainer()->get('cairn_user.commands');
         $commandsService->checkCardsActivation();
-        $output->writeln('Checking of cards activation performed!');
+        $output->writeln('Checking of cards activation performed successfully!');
     }
 }

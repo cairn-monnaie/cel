@@ -20,6 +20,7 @@ web_profiler:
     intercept_redirects: false
 
 swiftmailer:
+    logging: true
     #    disable_delivery: true
 
 

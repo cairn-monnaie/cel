@@ -342,12 +342,12 @@ class UserControllerTest extends BaseControllerTest
                     $message = $mailCollector->getMessages()[0];
                     $this->assertInstanceOf('Swift_Message', $message);
                     //                    $this->assertContains('Nouvelle carte', $message->getSubject());
-//                    $this->assertContains('supprimé de la plateforme', $message->getBody());
-//                    $this->assertContains($currentUser->getName(), $message->getBody());
-//
-//                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
-//                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
-//
+                    $this->assertContains('supprimé de la plateforme', $message->getBody());
+                    $this->assertContains($currentUser->getName(), $message->getBody());
+
+                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+
                     $this->assertTrue($this->client->getResponse()->isRedirect());
                     $crawler = $this->client->followRedirect();
 

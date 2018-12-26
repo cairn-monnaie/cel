@@ -51,24 +51,6 @@ class Commands
     public function updateOperations()
     {
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
-        $ob = $operationRepo->createQueryBuilder('o');                 
-        $scheduledTransactions = $ob->where('o.paymentID is not NULL')                      
-            ->andWhere('o.executionDate <= :date')                     
-            ->andWhere('o.type = :type')                               
-            ->setParameter('date',new \Datetime())                     
-            ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
-            ->orderBy('o.executionDate','ASC')                         
-            ->getQuery()->getResult();
-
-        foreach($scheduledTransactions as $transaction){
-            $scheduledPaymentVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosOperation($transaction);
-            if($scheduledPaymentVO->installments[0]->status == 'FAILED'){
-                $transaction->setType(Operation::$TYPE_SCHEDULED_FAILED);
-            }elseif($scheduledPaymentVO->installments[0]->status == 'PROCESSED'){
-                $transaction->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
-            }
-
-        }
 
         $ob = $operationRepo->createQueryBuilder('o');                 
         $scheduledFailedTransactions = $ob->where('o.paymentID is NULL')                      
@@ -176,7 +158,7 @@ class Commands
      * reminded to validate it 5/2 and 1 day before the deadline
      *
      */
-    public function checkEmailsValidation()
+    public function checkEmailsConfirmation()
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
@@ -214,11 +196,12 @@ class Commands
                 }
             }
             else{
-                $subject = 'Expiration de validation';
-                $body = $this->templating->render('CairnUserBundle:Emails:email_expiration.html.twig',array('diff'=>$diff));
+                $subject = 'Confirmation de mot de passe expirée';
+                $body = $this->templating->render('CairnUserBundle:Emails:email_expiration.html.twig');
 
                 $saveEmail = $user->getEmail();
-                $this->em->remove($user);
+                $user->setRemovalRequest(true);
+                $user->setConfirmationToken(NULL);
                 $this->em->flush();
                 $this->messageNotificator->notifyByEmail($subject,$from,$saveEmail,$body);
 
@@ -237,7 +220,6 @@ class Commands
      */
     public function checkCardsActivation()
     {
-
         $cardRepo = $this->em->getRepository('CairnUserBundle:Card');
 
         $cb = $cardRepo->createQueryBuilder('c');
@@ -269,7 +251,7 @@ class Commands
             }
             else{
                 $subject = 'Expiration de votre carte de sécurité Cairn';
-                $body = $this->templating->render('CairnUserBundle:Emails:expiration_card.html.twig',array('card'=>$card,'diff'=>$diff));
+                $body = $this->templating->render('CairnUserBundle:Emails:expiration_card.html.twig');
                 $card->getUser()->setCard(NULL);
                 $saveEmail = $card->getUser()->getEmail();
                 $this->em->remove($card);
@@ -323,6 +305,9 @@ class Commands
 
     }
 
+    /**
+     * Here we create an operation and its aborted copy (paymentID is NULL)
+     */
     public function createOperation($entryVO, $type)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
@@ -353,7 +338,11 @@ class Commands
         $operation->setToAccountNumber($creditorAccountVO->number);
         $operation->setStakeHolder($stakeholder);
 
+        $abortedOperation = Operation::copyFrom($operation);
+
         $this->em->persist($operation);
+        $this->em->persist($abortedOperation);
+
     }
 
     public function generateDatabaseFromCyclos($login, $password)
@@ -440,7 +429,7 @@ class Commands
                 $this->createOperation($installment,Operation::$TYPE_TRANSACTION_SCHEDULED);
             }
 
-            //here, we set specific attributes to each user in order to test different contexts and data
+//********* Here, we set specific attributes to each user in order to test different contexts and data *******************************
 
             //admin has a generated and validated card too, by default
             $admin->setFirstLogin(false);
@@ -463,11 +452,6 @@ class Commands
             $user = $userRepo->findOneByUsername('lib_colibri'); 
             $card  = $user->getCard();
             $card->setEnabled(true);
-
-            //card is generated and is NOT validated
-            $user = $userRepo->findOneByUsername('recycleco'); 
-            $card  = $user->getCard();
-            $card->setEnabled(false);
 
             //card is not generated
             $user = $userRepo->findOneByUsername('DrDBrew'); 

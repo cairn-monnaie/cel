@@ -173,6 +173,24 @@ class Operation
         $this->setType(self::$TYPE_TRANSACTION_EXECUTED);
     }
 
+    // same idea than a copy constructor
+    public function copyFrom(Operation $operation)
+    {
+        $copy = new self();
+        $copy->setAmount($operation->getAmount());                  
+        $copy->setReason($operation->getReason());          
+        $copy->setDescription($operation->getDescription());          
+        $copy->setFromAccountNumber($operation->getFromAccountNumber());          
+        $copy->setToAccountNumber($operation->getToAccountNumber());          
+        $copy->setStakeholder($operation->getStakeholder());          
+        $copy->setStakeholderName($operation->getStakeholderName());  
+        $copy->setExecutionDate($operation->getExecutionDate());
+        $copy->setSubmissionDate($operation->getSubmissionDate());
+        $copy->setType($operation->getType());
+        $copy->setPaymentID(NULL);
+
+        return $copy;        
+    } 
     /**
      * Get id
      *
