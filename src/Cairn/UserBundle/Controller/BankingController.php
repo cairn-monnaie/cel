@@ -234,11 +234,11 @@ class BankingController extends Controller
                     ->andWhere('o.paymentID is not NULL')
                     ->andWhere('o.executionDate BETWEEN :begin AND :end');
                 if($minAmount){
-                    $ob->andWhere('o.amount > :min')
+                    $ob->andWhere('o.amount >= :min')
                         ->setParameter('min',$minAmount);
                 }
                 if($maxAmount){
-                    $ob->andWhere('o.amount < :max')
+                    $ob->andWhere('o.amount <= :max')
                         ->setParameter('max',$maxAmount);
                 }
                 if($dataForm['keywords']){
@@ -263,11 +263,9 @@ class BankingController extends Controller
             }
         }
 
-
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
             array('form' => $form->createView(),
             'transactions'=>$executedTransactions,'futureAmount' => $totalAmount,'account'=>$account));
-
     }
 
     /*
@@ -468,8 +466,7 @@ class BankingController extends Controller
                 if($toAccount['accountNumber']){
                     $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['accountNumber']);
                 }else{
-                    $creditorUser = $userRepo->findOneBy(array('email'=>$toAccount['email']));
-                    $toUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($creditorUser);
+                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['email']);
                 }
 
                 $bankingService = $this->get('cairn_user_cyclos_banking_info'); 

@@ -63,6 +63,8 @@ class OperationValidator extends ConstraintValidator
                 ->atPath($path)                                          
                 ->addViolation();                                              
         }else{ //email and ICC provided
+
+            $user = NULL;
             if($ICC){
                 $userVO = $this->userInfo->getUserVOByKeyword($ICC);
 

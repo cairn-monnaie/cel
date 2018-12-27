@@ -30,18 +30,17 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideTransactionData
      */
-    public function testTransactionProcess($debitor,$creditor,$to,$expectForm,$ownsAccount,$isValid,$amount,$day,$month,$year,$frequency)
+    public function testTransactionProcess($debitor,$to,$expectForm,$ownsAccount,$isValid,$email,$ICC,$amount,$day,$month,$year,$frequency)
     {
         $crawler = $this->login($debitor, '@@bbccdd');
 
-        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $debitorUser = $userRepo->findOneBy(array('username'=>$debitor));
         $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
 
         $debitorICC = $debitorAccount->number;
         $previousBalance = $debitorAccount->status->balance;
-
-        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
 
         $url = '/banking/transaction/request/'.$to.'-'.$frequency;
         $crawler = $this->client->request('GET',$url);
@@ -63,8 +62,8 @@ class BankingControllerTest extends BaseControllerTest
                 $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
                 $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
                 $form['cairn_userbundle_simpleoperation[fromAccount][accountNumber]']->setValue($debitorICC);
-                $form['cairn_userbundle_simpleoperation[toAccount][email]']->setValue($creditorUser->getEmail());
-                $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($creditorICC);
+                $form['cairn_userbundle_simpleoperation[toAccount][email]']->setValue($email);
+                $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($ICC);
                 $form['cairn_userbundle_simpleoperation[reason]']->setValue('Test virement simple');
                 $form['cairn_userbundle_simpleoperation[description]']->setValue('Test virement simple');
                 $form['cairn_userbundle_simpleoperation[executionDate][day]']->select($day);
@@ -102,9 +101,20 @@ class BankingControllerTest extends BaseControllerTest
         $futureMonth = intval($future->format('m'));
         $futureYear = $future->format('Y');
 
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $creditorUser = $userRepo->findOneBy(array('username'=>'maltobar'));
+        $creditorEmail = $creditorUser->getEmail();
+
+        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+                                                                                 'login',$credentials);
+
+        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+
         //valid data
-        $baseData = array('login'=>'labonnepioche','creditor'=>'maltobar','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
-            'isValid'=>true,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year,
+        $baseData = array('login'=>'labonnepioche','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
+            'isValid'=>true,'email'=>$creditorEmail,'ICC'=>$creditorICC,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year,
             'frequency'=>'unique');
 
         return array(
@@ -113,6 +123,8 @@ class BankingControllerTest extends BaseControllerTest
             'not beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary','creditor'=>'maltobar',
                                                            'isValid'=>false)),
             'valid immediate'=>$baseData,
+            'valid with email only'=>array_replace($baseData,array('ICC'=>'')),
+            'valid with ICC only'=>array_replace($baseData,array('email'=>'')),
             'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
  //           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
@@ -189,7 +201,7 @@ class BankingControllerTest extends BaseControllerTest
             'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>''))),
             'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('accountNumber'=>''),'isValid'=>false)),
             'identical accounts'=>array_replace($baseData,array(
-                'toAccount'=>array('accountNumber'=>$debitorAccount->id,'email'=>$debitorUser->getEmail()),
+                'toAccount'=>array('accountNumber'=>$debitorAccount->number,'email'=>$debitorUser->getEmail()),
                 'isValid'=>false)),
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
             'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
@@ -203,7 +215,9 @@ class BankingControllerTest extends BaseControllerTest
 //            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
 //            'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
 
-            'valid simple'=> $baseData,
+            'valid simple email + ICC'=> $baseData,
+            'valid simple ICC only'=> array_replace_recursive($baseData, array('toAccount'=>array('email'=>''))),
+            'valid simple email only'=> array_replace_recursive($baseData, array('toAccount'=>array('ICC'=>''))),
             'valid scheduled'=> array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+1 months'),'isValid'=>true)),
 //            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
         );
