@@ -99,6 +99,10 @@ class BridgeToSymfony
         return $symfonyUser;
     }
 
+    /**
+     *
+     *@return org.cyclos.model.banking.transactions.TransactionVO
+     */
     public function fromSymfonyToCyclosOperation(Operation $operation)
     {
          try{

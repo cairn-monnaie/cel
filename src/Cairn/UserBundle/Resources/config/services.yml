@@ -66,7 +66,7 @@ services:
             - "@cairn_user_cyclos_banking_info"
             - "@cairn_user.bridge_symfony"
         tags:
-            - { name: doctrine.orm.entity_listener, event: postLoad, lazy: true }
+            - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
 
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener

@@ -29,24 +29,24 @@ class OperationListener
         $this->bridgeToSymfony = $bridgeToSymfony;
     }
 
-    public function postLoad(LifecycleEventArgs $args)
+    public function postLoad(Operation $operation, LifecycleEventArgs $args)
     {
-        $entity = $args->getEntity();
-
-        if(!$entity instanceof Operation){
+        if(!$operation instanceof Operation){
             return;
         }
 
         $entityManager = $args->getEntityManager();
 
-        if($entity->getType() == Operation::$TYPE_TRANSACTION_SCHEDULED){
-            $interval = $entity->getExecutionDate()->diff($entity->getUpdatedAt());                                        
+        if($operation->getType() == Operation::$TYPE_TRANSACTION_SCHEDULED){
+            $operation->setUpdatedAt(new \Datetime());
+
+            $interval = $operation->getExecutionDate()->diff($operation->getUpdatedAt());                                        
             if($interval->invert == 0){
-                $scheduledPaymentVO = $this->bridgeToSymfony->fromSymfonyToCyclosOperation($entity);
+                $scheduledPaymentVO = $this->bridgeToSymfony->fromSymfonyToCyclosOperation($operation);
                 if($scheduledPaymentVO->installments[0]->status == 'FAILED'){
-                    $entity->setType(Operation::$TYPE_SCHEDULED_FAILED);
+                    $operation->setType(Operation::$TYPE_SCHEDULED_FAILED);
                 }elseif($scheduledPaymentVO->installments[0]->status == 'PROCESSED'){
-                    $entity->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+                    $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
                 }
 
                 $entityManager->flush();

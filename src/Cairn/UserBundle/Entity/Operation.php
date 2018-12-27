@@ -12,7 +12,6 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  *
  * @ORM\Table(name="operation")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\OperationRepository")
- * @ORM\HasLifecycleCallbacks()
  */
 class Operation
 {
@@ -300,7 +299,6 @@ class Operation
     /**
      * Set updatedAt
      *
-     * @ORM\PostLoad
      *
      * @param \DateTime $updatedAt
      * @return Operation
