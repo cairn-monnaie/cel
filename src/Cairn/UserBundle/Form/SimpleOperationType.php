@@ -25,7 +25,7 @@ class SimpleOperationType extends AbstractType
                 $operation = $event->getData();
                 $form = $event->getForm();
 
-                $transactionTypes = array(Operation::$TYPE_TRANSACTION_EXECUTED,Operation::$TYPE_TRANSACTION_SCHEDULED);
+                $transactionTypes = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
                 if(in_array($operation->getType(),$transactionTypes)){ 
                     $form->add('executionDate',     DateType::class          , array('label'=> 'Date d\'exécution'));
                 }

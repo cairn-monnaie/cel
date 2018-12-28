@@ -319,7 +319,7 @@ class Commands
 
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
 
-        if($type == Operation::$TYPE_DEPOSIT || $type == Operation::$TYPE_TRANSACTION_EXECUTED){
+        if($type == Operation::TYPE_DEPOSIT || $type == Operation::TYPE_TRANSACTION_EXECUTED){
             $dueDate = $entryVO->date;
             $transactionVO = $bankingService->getTransactionByID($entryVO->id);
         }else{
@@ -401,7 +401,7 @@ class Commands
                 $admin->getCyclosID(),$accountTypeVO->id,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
 
             foreach($processedDeposits as $transaction){
-                $this->createOperation($transaction,Operation::$TYPE_DEPOSIT);
+                $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
             }
 
             //instances of TransactionEntryVO
@@ -412,7 +412,7 @@ class Commands
                 $user->getCyclosID(),$accountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'remise à 0');
 
             foreach($processedTransactions as $transaction){
-                $this->createOperation($transaction,Operation::$TYPE_TRANSACTION_EXECUTED);
+                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
             }
 
             //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
@@ -431,7 +431,7 @@ class Commands
             var_dump(count($futureInstallments));
             
             foreach($futureInstallments as $installment){
-                $this->createOperation($installment,Operation::$TYPE_TRANSACTION_SCHEDULED);
+                $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
             }
 
 //********* Here, we set specific attributes to each user in order to test different contexts and data *******************************

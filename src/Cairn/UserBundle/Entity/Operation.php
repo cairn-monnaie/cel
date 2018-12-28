@@ -120,28 +120,28 @@ class Operation
      */
     private $toAccount;
 
-    public static $TYPE_TRANSACTION_EXECUTED = 0;
-#    public static $TYPE_TRANSACTION_RECURRING = 1;
-    public static $TYPE_TRANSACTION_SCHEDULED = 2;
-    public static $TYPE_CONVERSION = 3;
-    public static $TYPE_RECONVERSION = 4;
-    public static $TYPE_DEPOSIT = 5;
-    public static $TYPE_WITHDRAWAL = 6;
-    public static $TYPE_SCHEDULED_FAILED = 7;
+    const TYPE_TRANSACTION_EXECUTED = 0;
+#    const TYPE_TRANSACTION_RECURRING = 1;
+    const TYPE_TRANSACTION_SCHEDULED = 2;
+    const TYPE_CONVERSION = 3;
+    const TYPE_RECONVERSION = 4;
+    const TYPE_DEPOSIT = 5;
+    const TYPE_WITHDRAWAL = 6;
+    const TYPE_SCHEDULED_FAILED = 7;
 
     public static function getFromOperationTypes()
     {
-        return array(self::$TYPE_TRANSACTION_EXECUTED,self::$TYPE_WITHDRAWAL,self::$TYPE_RECONVERSION);
+        return array(self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getDebitOperationTypes()
     {
-        return array(self::$TYPE_WITHDRAWAL,self::$TYPE_RECONVERSION);
+        return array(self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getToOperationTypes()
     {
-        return array(self::$TYPE_DEPOSIT,self::$TYPE_CONVERSION);
+        return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
     }
 
     /**
@@ -169,7 +169,7 @@ class Operation
         $today = new \Datetime();
         $this->setSubmissionDate($today);
         $this->setExecutionDate($today);
-        $this->setType(self::$TYPE_TRANSACTION_EXECUTED);
+        $this->setType(self::TYPE_TRANSACTION_EXECUTED);
     }
 
     // same idea than a copy constructor

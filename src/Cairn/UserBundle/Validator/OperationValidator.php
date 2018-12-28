@@ -135,7 +135,7 @@ class OperationValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        $array_debitor = array(Operation::$TYPE_TRANSACTION_EXECUTED,Operation::$TYPE_TRANSACTION_SCHEDULED,Operation::$TYPE_WITHDRAWAL);
+        $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_WITHDRAWAL);
 
         if(in_array($operation->getType(),$array_debitor)){
 
@@ -149,7 +149,7 @@ class OperationValidator extends ConstraintValidator
 
             //if not a withdrawal, make sure that creditor account exists (account number provided handly)
             //if withdrawal, the creditor account is debit account by default, so no need to validate it
-            if(! ($operation->getType() == Operation::$TYPE_WITHDRAWAL)){
+            if(! ($operation->getType() == Operation::TYPE_WITHDRAWAL)){
                 $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
             }
 

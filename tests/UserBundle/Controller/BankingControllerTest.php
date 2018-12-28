@@ -496,7 +496,7 @@ class BankingControllerTest extends BaseControllerTest
             ->where('o.fromAccountNumber = :number')
             ->andWhere('o.paymentID is not NULL')                      
             ->andWhere('o.type = :type')                               
-            ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
+            ->setParameter('type',Operation::TYPE_TRANSACTION_SCHEDULED)
             ->setParameter('number',$ownerAccount->number)                  
             ->getQuery()->getResult(); 
 
@@ -512,7 +512,7 @@ class BankingControllerTest extends BaseControllerTest
             $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
             $this->em->refresh($operation);
-            $this->assertEquals($operation->getType(), Operation::$TYPE_TRANSACTION_EXECUTED);
+            $this->assertEquals($operation->getType(), Operation::TYPE_TRANSACTION_EXECUTED);
 
             $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerUser->getCyclosID())[0];
             $accountBalanceAfter = $ownerAccount->status->balance;

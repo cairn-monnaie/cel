@@ -37,16 +37,16 @@ class OperationListener
 
         $entityManager = $args->getEntityManager();
 
-        if($operation->getType() == Operation::$TYPE_TRANSACTION_SCHEDULED){
+        if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
             $operation->setUpdatedAt(new \Datetime());
 
             $interval = $operation->getExecutionDate()->diff($operation->getUpdatedAt());                                        
             if($interval->invert == 0){
                 $scheduledPaymentVO = $this->bridgeToSymfony->fromSymfonyToCyclosOperation($operation);
                 if($scheduledPaymentVO->installments[0]->status == 'FAILED'){
-                    $operation->setType(Operation::$TYPE_SCHEDULED_FAILED);
+                    $operation->setType(Operation::TYPE_SCHEDULED_FAILED);
                 }elseif($scheduledPaymentVO->installments[0]->status == 'PROCESSED'){
-                    $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+                    $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
                 }
 
                 $entityManager->flush();

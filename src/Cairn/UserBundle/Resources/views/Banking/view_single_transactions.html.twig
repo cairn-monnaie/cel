@@ -34,15 +34,17 @@
                         {{ app.user.name }}
                     </td>
                     <td> {{installment.reason }} </td>  
-                    <td> {{installment.description }} </td>  
                     <td> {{installment.amount }} </td>
-                    <td> 
-                            En cours
-                    </td>
+                    {% if installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                        <td> En cours </td>
+                    {% elseif installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                        <td> Echoué </td>
+                    {% endif %}
                     <td>
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'cancel' })}}"> Annuler </a>
                      | 
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'execute' })}}"> Exécuter maintenant </a>
+                    </td>
                 </tr>
     {% else %}
         Aucun virement en attente 

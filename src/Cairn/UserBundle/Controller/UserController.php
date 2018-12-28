@@ -99,7 +99,7 @@ class UserController extends Controller
         $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
             ->andWhere('o.paymentID is not NULL')
             ->andWhere('o.type = :type')
-            ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
+            ->setParameter('type',Operation::TYPE_TRANSACTION_EXECUTED)
             ->orderBy('o.executionDate','ASC')
             ->setMaxResults(15)
             ->getQuery()->getResult();

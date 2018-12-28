@@ -166,7 +166,7 @@ class BankingController extends Controller
 
         //amount of future transactions : next month total amount
         $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
-        $query->setParameter('type', Operation::$TYPE_TRANSACTION_SCHEDULED)
+        $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
             ->setParameter('number',$id);
 
@@ -482,9 +482,9 @@ class BankingController extends Controller
                 }
 
                 if($operation->getExecutionDate()->format('Y-m-d') != $operation->getSubmissionDate()->format('Y-m-d')){
-                    $operation->setType(Operation::$TYPE_TRANSACTION_SCHEDULED);
+                    $operation->setType(Operation::TYPE_TRANSACTION_SCHEDULED);
                 }else{
-                    $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+                    $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
                 }
 
                 $amount = $operation->getAmount();
@@ -633,7 +633,7 @@ class BankingController extends Controller
         $involvedAccounts = array();
 
         $transaction = new Operation();
-        $transaction->setType(Operation::$TYPE_CONVERSION);
+        $transaction->setType(Operation::TYPE_CONVERSION);
         $transaction->setReason('Conversion Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
 
         $formUser = $this->createFormBuilder()
@@ -717,7 +717,7 @@ class BankingController extends Controller
         $involvedAccounts = array();
 
         $transaction = new Operation();
-        $transaction->setType(Operation::$TYPE_DEPOSIT);
+        $transaction->setType(Operation::TYPE_DEPOSIT);
         $transaction->setReason('Dépôt Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
 
         $formUser = $this->createFormBuilder()
@@ -800,7 +800,7 @@ class BankingController extends Controller
         $involvedAccounts = array();
 
         $transaction = new Operation();
-        $transaction->setType(Operation::$TYPE_WITHDRAWAL);
+        $transaction->setType(Operation::TYPE_WITHDRAWAL);
         $transaction->setReason('Retrait Cairn '. $transaction->getSubmissionDate()->format('Y-m-d'));
 
         $formUser = $this->createFormBuilder()
@@ -971,10 +971,10 @@ class BankingController extends Controller
                     switch ($type){
                     case 'transaction':
                         //                        if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
-                        //                            $operation->setType(Operation::$TYPE_TRANSACTION_RECURRING);
+                        //                            $operation->setType(Operation::TYPE_TRANSACTION_RECURRING);
                         //                            $paymentVO = $this->bankingManager->makeRecurringPayment( $paymentReview);
                         //                        }else
-                        if($operation->getType() == Operation::$TYPE_TRANSACTION_SCHEDULED){
+                        if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
                             $paymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
                             $operation->setPaymentID($paymentVO->id);
                         }else{
@@ -1109,8 +1109,8 @@ class BankingController extends Controller
                     ->andWhere('o.paymentID is not NULL')
                     ->andWhere('o.executionDate <= :date')
                     ->andWhere('o.type = :type')
+                    ->setParameter('type', Operation::TYPE_TRANSACTION_EXECUTED)
                     ->setParameter('date',new \Datetime())
-                    ->setParameter('type',Operation::$TYPE_TRANSACTION_EXECUTED)
                     ->orderBy('o.executionDate','ASC')
                     ->getQuery()->getResult();
                 //                $processedTransactions = $bankingService->getTransactions(
@@ -1124,8 +1124,7 @@ class BankingController extends Controller
                 $ob = $operationRepo->createQueryBuilder('o');
                 $futureInstallments = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
                     ->andWhere('o.paymentID is not NULL')
-                    ->andWhere('o.type = :type')
-                    ->setParameter('type',Operation::$TYPE_TRANSACTION_SCHEDULED)
+                    ->andWhere($ob->expr()->in('o.type',array(Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_SCHEDULED_FAILED)))
                     ->orderBy('o.executionDate','ASC')
                     ->getQuery()->getResult();
 
@@ -1370,7 +1369,7 @@ class BankingController extends Controller
             }
             else{
                 if($status == 'execute'){
-                    $operation->setType(Operation::$TYPE_TRANSACTION_EXECUTED);
+                    $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
                     $operation->setExecutionDate(new \Datetime());
                 }elseif($status == 'cancel'){
                     $em->remove($operation);

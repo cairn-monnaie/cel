@@ -26,7 +26,7 @@ class OperationListenerTest extends TestCase
         //create a new Operation from it
         $executionDate = new \Datetime($paymentVO->date);
         $operation = new Operation();
-        $operation->setType(Operation::$TYPE_TRANSACTION_SCHEDULED);              
+        $operation->setType(Operation::TYPE_TRANSACTION_SCHEDULED);              
         $operation->setPaymentID($paymentVO->id);
         $operation->setExecutionDate($executionDate);    
         $operation->setSubmissionDate(date_modify($executionDate,'-1 days'));    
