@@ -38,8 +38,13 @@ class RegistrationListener
 
     public function onProfileEdit(FormEvent $event)
     {
+        $router = $this->container->get('router');          
+
+
         $form = $event->getForm();
         $user = $form->getData();
+
+//        var_dump($user->getImage());
 
         $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
@@ -48,6 +53,10 @@ class RegistrationListener
         $userDTO->email = $user->getEmail();
 
         $this->userManager->editUser($userDTO);                          
+
+        $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
+        $event->setResponse(new RedirectResponse($profileUrl));
+
     }
 
     /**

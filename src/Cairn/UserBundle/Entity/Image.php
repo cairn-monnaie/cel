@@ -108,12 +108,18 @@ class Image
 
     public function setFile(UploadedFile $file = null)
     {
+
         $this->file = $file;
 
         if(null !== $this->url){
             $this->tempFileName = $this->url;
             $this->url = null;
             $this->alt = null;
+        }else{
+            //little trick to allow PreUpdate callback to be called if the user had no image before
+            //if no attribute is modified, PreUpdate is not called, then PreUpload function is not called and
+            //finally the image is not updated
+            $this->url = 'xxx';
         }
 
     }

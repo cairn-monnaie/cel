@@ -67,7 +67,8 @@
             {% endif %}
  
             {% if user.id == app.user.id %}
-                <a href="{{path('fos_user_change_password')}}">Modifier son mot de passe</a>
+                <a href="{{path('fos_user_change_password')}}">Modifier son mot de passe</a> </br>
+                <a href="{{path('fos_user_profile_edit')}}">Editer son profil</a>
             {% endif %}
         {% endif %}
 
