@@ -36,7 +36,7 @@ class RegistrationType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('name', TextType::class,array('label'=>'Nom de la structure'))
+        $builder->add('name', TextType::class,array('label'=>'Nom de votre structure'))
                 ->remove('plainPassword');
         $builder->addEventListener(
             FormEvents::POST_SET_DATA,
@@ -69,8 +69,8 @@ class RegistrationType extends AbstractType
             }
         );
         $builder->add('address', AddressType::class)
-            ->add('description',TextareaType::class)
-            ->add('image', ImageType::class);
+            ->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
+            ->add('image', ImageType::class,array('label'=>'Votre logo'));
 
     }
 
