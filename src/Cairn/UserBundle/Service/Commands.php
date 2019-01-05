@@ -95,7 +95,7 @@ class Commands
                 $isInAdminGroup = $this->container->get('cairn_user_cyclos_user_info')->isInGroup($group ,$userVO->id);
 
                 if(!$isInAdminGroup){
-                    return 'This user can\'t be installed as an admin in the application';
+                    return 'This user can\'t be installed as an admin in the application : not in group '.$group;
                 }
             }catch(Cyclos\ServiceException $e){
                 if($e->errorCode == 'LOGIN'){
