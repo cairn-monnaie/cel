@@ -5,63 +5,80 @@
 {% block title %}{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
-    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
-
 {% endblock %}
 {% block body %}
     {{parent()}} 
     {% if app.user.hasRole('ROLE_PRO') %}
-         <h2> Espace Professionnel {{ app.user.name }}</h2>                                                  
+         <h1>Espace Professionnel {{ app.user.name }}</h1>
     {% elseif app.user.hasRole('ROLE_ADMIN') %}
-         <h2> Espace Groupe Local {{ app.user.name }}</h2>                                                  
+         <h1>Espace Groupe Local {{ app.user.name }}</h1>
     {% else %}
-         <h2> Espace Administrateur {{ app.user.name }}</h2>                                                  
+         <h1>Espace Administrateur {{ app.user.name }}</h1>
     {% endif %}
-<h3> {{ 'now'|date('d - m -Y') }} </h3>                                                                               
-<p>                                                                          
+<p>
 
-<div id="body_wrapper">
-    <div id="situation">
-        <a href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}">
-            <span role="heading" id="situation_title"> situation </span>
-        </a>
-        <ul>
-            {% for account in accounts %}
-            <li class="accounts_info">       
-                <a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">
-                    <div>
-                        {{account.type.name}} </br>
-                        {{account.number}}
-                    </div>
-                    <span> {{account.status.balance}} </span>
+<div class="row">
+    <div id="situation" class="col s12 m6">
+        <div class="card-panel z-depth-1">
+            <h2>Ma situation
+                <a href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}">
+                    <i class="material-icons">more</i>
                 </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    <div id="operations">
-        <a href="#">
-            <span role="heading" id="operations_title"> Dernières opérations </span>
-            <ul>
-                {% for transaction in lastTransactions %}
-                <li class="transactions_info">       
-                    <div>
-                        {{transaction.executionDate|date('Y-m-d')}} </br>
-                        {{transaction.reason}}
-                    </div>
-                    <span> {{transaction.amount}} cairns</span>
-                </li>
+            </h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Id</th>
+                    <th>Solde</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for account in accounts %}
+                    <tr>
+                        <td><a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">{{account.type.name}}</a></td>
+                        <td>{{account.number}}</td>
+                        <td>{{account.status.balance}}</td>
+                    </tr>
                 {% endfor %}
-            </ul>
-        </a>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div id="network">
-        <img src="{{asset('purple-network.png')}}" alt="Network">
-        <span role=heading" id="last_users_title"> Ils ont rejoint votre réseau </span>
+    <div id="operations" class="col s12 m6">
+        <div class="card-panel z-depth-1">
+            <h2>Mes dernières opérations</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Nature</th>
+                    <th>Montant</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for transaction in lastTransactions %}
+                    <tr>
+                        <td>{{transaction.executionDate|date('Y-m-d')}}</td>
+                        <td>{{transaction.reason}}</td>
+                        <td>{{transaction.amount}} cairns</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col s12"></div>
+    <div id="network" class="col s12 m6">
+        <div class="card">
+            <div class="card-image">
+                <img src="{{asset('purple-network.png')}}">
+                <span class="card-title black-text">Ils ont rejoint le [e]cairn</span>
+            </div>
+            <div class="card-content">
         <ul>
-            {% for user in lastUsers %}
-            <li class="users_show">       
+        {% for user in lastUsers %}
+            <li class="users_show">
                 <div>
                     <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}">
                         {{user.name}} </br>
@@ -69,15 +86,8 @@
                     </a>
                 </div>
             </li>
-            {% endfor %}
+        {% endfor %}
         </ul>
-
     </div>
-
 </div>
-
-</p>                                                                         
-                                                                            
-{% endblock %}              
-
-
+{% endblock %}

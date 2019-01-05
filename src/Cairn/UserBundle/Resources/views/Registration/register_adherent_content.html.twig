@@ -1,9 +1,14 @@
 {# src/Cairn/UserBundle/Resources/views/Registration/register_adherent_content.html.twig #}
 
-{% extends "CairnUserBundle::layout.html.twig" %}
+{% extends "::layout.html.twig" %}
 
 {% block body %}
-    <h1> Inscription impossible </h1>
-        La création de compte n'est pour l'instant possible que pour les professionnels du réseau !
-        
+    <h2> Inscription impossible <i class="material-icons">sentiment_very_dissatisfied</i></h2>
+    <p>
+        La création de compte e-cairn est possible uniquement pour les <b>professionnels</b> du réseau !</p>
+    <p>
+        Le lancement pour les particuliers est programmé <b>jeudi 14 mars 2019</b> dans le cadre des <b>5ème Rencontres nationales des collectivités locales
+    sur les Monnaies Locales Complementaires.</b></p>
+    <br>
+    <a class="waves-effect waves-teal btn" href="{{ path("cairn_user_registration") }}"><i class="material-icons left">arrow_back_ios</i>retour</a>
 {% endblock %}

@@ -5,74 +5,94 @@
 {% block title %}{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
-    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
 {% endblock %}
 
 {% block body %}
-    {{parent()}} 
-    
-    {% set card = user.card %}
-    <div class="profile_wrapper">
-        <ul>
-            <li>{{ user.name }}</li>                
-            <li>{{ user.username}} </li>
-            <li>{{ user.email }}</li>
-            <li>
-                <div id="user_address">                
-                    {{ user.address.street1}} </br>
-                    {{ user.address.zipCity.zipCode}} </br>
-                    {{ user.address.zipCity.city}} 
+    <div class="section">
+        <div class="row">
+            <div class="col s6 m2 offset-s3 offset-m5">
+                <h5 class="center-align">
+                    {% if user.image.url is defined %}
+                        <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
+                    {% else %}
+                        <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                    {% endif %}<br>
+                    {{ user.name }}
+                </h5>
+            </div>
+        </div>
+        <ul class="collapsible">
+            <li class="">
+                <div class="collapsible-header"><i class="material-icons">person</i>
+                    {% if user.id == app.user.id %}
+                        Mes informations
+                    {% else %}
+                        Informations
+                    {% endif %}
+                </div>
+                <div class="collapsible-body" style="display: none;">
+                    <div class="row">
+                        <div class="col s12 truncate"><i class="material-icons tiny">account_box</i>&nbsp;{{ user.name }}</div>
+                        <div class="col s12 truncate"><i class="material-icons tiny">mail</i>&nbsp;{{ user.email }}</div>
+                        <div class="col s12 truncate"><i class="material-icons tiny">location_on</i>
+                            &nbsp;{{ user.address.street1}}
+                            &nbsp;{{ user.address.street2}}
+                            &nbsp;{{ user.address.zipCity.zipCode}}
+                            &nbsp;{{ user.address.zipCity.city}}
+                        </div>
+                    </div>
+                    <blockquote>
+                        {{ user.description}}
+                    </blockquote>
+                    {% if user.id == app.user.id %}
+                        <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
+                        <a href="{{path('fos_user_change_password')}}" class="btn waves-effect waves-light">Modifier mon mot de passe</a>
+                        <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Supprimer mon compte</a>
+                    {% else %}
+                        <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
+                    {% endif %}
                 </div>
             </li>
-            <li>{{ user.description}} </li>
+            {% set card = user.card %}
+            {% if user.hasReferent(app.user) or user == app.user %}
             <li>
-                 {% if user.image.url is defined %}
-                     <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}"> 
-                 {% else %}
-                     <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur"> 
-                 {% endif %}
+                <div class="collapsible-header"><i class="material-icons">lock</i>Carte de sécurité</div>
+                <div class="collapsible-body">
+                    {{ render(controller("CairnUserBundle:Card:cardOperations",{'user':user})) }}
+                </div>
             </li>
-        </ul>
-        
-        {% if is_granted('ROLE_ADMIN') and user.hasRole('ROLE_PRO') %}
-            <div> 
-                <strong> Le groupe local référent de {{user.name}} </strong>
-                {% set adminReferent = user.getLocalGroupReferent() %}
-
-                {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
-                    {% if adminReferent is null %}
-                        <em> Aucun groupe local référent ! </em>
-                        <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
-                    {% else %}
-                        <em> {{adminReferent.name}} </em>
-                        <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
-                    {% endif %}    
-                {% endif %}
-            </div>
-        {% endif %}
-
-        {% if user.hasReferent(app.user) or user == app.user %} 
-            <a href="{{path('cairn_user_card_home',{'id': user.id})}}">Carte de sécurité Cairn</a>
-            <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}">Supprimer le membre</a>
-
-
+            {% endif %}
             {% if user.hasReferent(app.user) %}
-                {% if user.enabled == true %}
-                    <a class="user_access" href="{{path('cairn_user_users_block',{'id': user.id})}}">Bloquer l'accès à la plateforme</a>
-                {% else %}
-                    <a class="user_access" href="{{path('cairn_user_users_activate',{'id': user.id})}}">Autoriser l'accès à la plateforme</a>
-                {% endif %}
-
+                <li>
+                    <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
+                    <div class="collapsible-body">
+                        {% if user.enabled == true %}
+                            <a class="btn red" href="{{path('cairn_user_users_block',{'id': user.id})}}"><i class="material-icons left">lock</i>Bloquer l'accès à la plateforme</a>
+                        {% else %}
+                            <a class="btn green" href="{{path('cairn_user_users_activate',{'id': user.id})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
+                        {% endif %}
+                    </div>
+                </li>
             {% endif %}
- 
-            {% if user.id == app.user.id %}
-                <a href="{{path('fos_user_change_password')}}">Modifier son mot de passe</a> </br>
-                <a href="{{path('fos_user_profile_edit')}}">Editer son profil</a>
+            {% if is_granted('ROLE_ADMIN') and user.hasRole('ROLE_PRO') %}
+            <li>
+                <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Le groupe local référent de {{user.name}}</div>
+                <div class="collapsible-body">
+                    {% set adminReferent = user.getLocalGroupReferent() %}
+
+                    {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
+                        {% if adminReferent is null %}
+                            <em> Aucun groupe local référent ! </em>
+                            <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
+                        {% else %}
+                            <em> {{adminReferent.name}} </em>
+                            <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </li>
             {% endif %}
-        {% endif %}
-
-
+        </ul>
     </div>
 {% endblock %}              
 

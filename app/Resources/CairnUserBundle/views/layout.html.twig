@@ -1,0 +1,68 @@
+{% extends "::layout.html.twig" %}
+
+{% block top_nav %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        {% if is_granted("ROLE_ADMIN") %}
+            <ul id="admin_dropdown" class="dropdown-content">
+                <li>
+                    <a class="menu-item" href="{{path('cairn_user_users_home')}}"><i class="material-icons">people</i>Membres</a>
+                </li>
+            {% if is_granted('ROLE_SUPER_ADMIN') %}
+                <li class="divider"></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}">Virements </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}">Dépôt </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}">Retrait </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}">Conversion </a></li>
+                <li class="divider"></li>
+                <li><a class="menu-item" href="{{path('cairn_user_cyclos_config_home')}}"><i class="material-icons">settings</i>config</a></li>
+            {% endif %}
+            </ul>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+{% block top_nav_menu %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <li>
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"><i class="material-icons left">account_balance</i>Situation</a>
+        </li>
+        <li>
+            <a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"><i class="material-icons left">format_list_bulleted</i>Virements</a>
+        </li>
+        {% if is_granted("ROLE_ADMIN") %}
+            <li>
+                <a class="dropdown-trigger" href="#!" data-target="admin_dropdown">Administration<i class="material-icons right">arrow_drop_down</i></a>
+            </li>
+        {% elseif is_granted("ROLE_PRO") %}
+
+        {% endif %}
+    {% endif %}
+{% endblock %}
+{% block nav_mobile %}
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <li>
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"><i class="material-icons left">account_balance</i>Situation</a>
+        </li>
+        <li>
+            <a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"><i class="material-icons">format_list_bulleted</i>Virements</a>
+        </li>
+        {% if is_granted("ROLE_ADMIN") %}
+            <li>
+                <a class="menu-item" href="{{path('cairn_user_users_home')}}"><i class="material-icons">people</i>Membres</a>
+            </li>
+            {% if is_granted('ROLE_SUPER_ADMIN') %}
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}">Virements </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}">Dépôt </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}">Retrait </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}">Conversion </a></li>
+                <li><a class="menu-item" href="{{path('cairn_user_cyclos_config_home')}}"><i class="material-icons">settings</i>config</a></li>
+            {% endif %}
+        {% elseif is_granted("ROLE_PRO") %}
+
+        {% endif %}
+    {% endif %}
+{% endblock%}
+
+{% block body %}
+    {% block fos_user_content %}
+    {% endblock fos_user_content %}
+{% endblock%}

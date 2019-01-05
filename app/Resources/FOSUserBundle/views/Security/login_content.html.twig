@@ -1,25 +1,49 @@
 {% trans_default_domain 'FOSUserBundle' %}
 
-{% if error %}
-    <div>{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-{% endif %}
-
-<form action="{{ path("fos_user_security_check") }}" method="post">
-    {% if csrf_token %}
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}" />
+    {% if error %}
+        <div class="row">
+            <div class="col s12">
+                <div class="card-panel teal error lighten-1">
+                    <span class="white-text">{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+                </div>
+            </div>
+        </div>
     {% endif %}
-<div class="center">
-    <label for="username">Nom d'utilisateur</label>
-    <input type="text" id="username" name="_username" value="{{ last_username }}" required="required" autocomplete="username" />
-    <br>
-    <label for="password">Mot de passe</label>
-    <input type="password" id="password" name="_password" required="required" autocomplete="current-password" />
-    <br>
-    <input type="checkbox" id="remember_me" name="_remember_me" value="on" />
-    <label for="remember_me">Se souvenir de moi</label>
-    <br>
-    <input type="submit" id="_submit" name="_submit" value="Connexion" /><br>
-    <a href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
-</div>
 
-</form>
+    <section>
+        <div class="row">
+            <div class="col s12 m6 offset-m3 l4 offset-l4">
+                <div class="row login_form">
+                    <form action="{{ path("fos_user_security_check") }}" method="post">
+                        {% if csrf_token %}
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}" />
+                        {% endif %}
+                        <div class="input-field col s12">
+                            <i class="material-icons prefix">person_outline</i>
+                            <input type="text" id="username" name="_username" value="{{ last_username }}" required="required" autocomplete="username">
+                            <label for="username">Nom d'utilisateur</label>
+                        </div>
+                        <div class="input-field col s12">
+                            <i class="material-icons prefix">lock_outline</i>
+                            <input type="password" id="password" name="_password" required="required" autocomplete="current-password">
+                            <label for="password">Mot de passe</label>
+                        </div>
+                        <div class="col s12 center">
+                            <label for="remember_me">
+                                <input type="checkbox" id="remember_me" name="_remember_me" value="on" />
+                                <span>Se souvenir de moi</span>
+                            </label>
+                            <br>
+                            <button type="submit" id="_submit" name="_submit" value="Connexion" class="waves-effect waves-light btn">
+                                Connexion
+                                <i class="material-icons right">check</i>
+                            </button>
+                            <br>
+                            <a href="{{ path('fos_user_resetting_request') }}">Mot de passe ou identifiant oublié ?</a> <a href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>

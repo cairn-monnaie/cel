@@ -1,8 +1,57 @@
+
 {% trans_default_domain 'FOSUserBundle' %}
 
-{{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
-    {{ form_widget(form) }}
-    <div>
-        <input type="submit" value="Inscription" />
+<div class="row">
+    <h2>Inscription pro</h2>
+    {{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
+    <div class="input-field col s6">
+        <i class="material-icons prefix">mail_outline</i>
+        {{ form_widget(form.email) }}
+        {{ form_label(form.email) }}
+        <span class="red-text">{{ form_errors(form.email) }}</span>
     </div>
-{{ form_end(form) }}
+    <div class="input-field col s6">
+        <i class="material-icons prefix">person_outline</i>
+        {{ form_widget(form.username) }}
+        {{ form_label(form.username) }}
+        <span class="red-text">{{ form_errors(form.username) }}</span>
+    </div>
+    <div class="input-field col s12">
+        {{ form_widget(form.name) }}
+        {{ form_label(form.name) }}
+        <span class="red-text">{{ form_errors(form.name) }}</span>
+    </div>
+    <div class="input-field col s6">
+        {{ form_widget(form.address.street1) }}
+        {{ form_label(form.address.street1) }}
+        <span class="red-text">{{ form_errors(form.address.street1) }}</span>
+    </div>
+    <div class="input-field col s6">
+        {{ form_widget(form.address.street2) }}
+        {{ form_label(form.address.street2) }}
+        <span class="red-text">{{ form_errors(form.address.street2) }}</span>
+    </div>
+    <div class="input-field col s6">
+        {{ form_widget(form.address.zipCity) }}
+        {{ form_label(form.address.zipCity) }}
+    </div>
+    <div class="file-field input-field col s6">
+        <div class="btn">
+            <span>Logo</span>
+            {{ form_widget(form.image) }}
+        </div>
+        <div class="file-path-wrapper">
+            <input class="file-path validate" type="text">
+        </div>
+    </div>
+    <div class="input-field col s12">
+        {{ form_widget(form.description, { 'attr': {'class': 'materialize-textarea'} }) }}
+        {{ form_label(form.description) }}
+        <span class="red-text">{{ form_errors(form.description) }}</span>
+    </div>
+    <div class="col s12">
+        <button type="submit"class="btn">Inscription</button>
+    </div>
+    {{ form_end(form) }}
+</div>
+

@@ -5,18 +5,14 @@
 {% block title %}{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
-    <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" /> 
-    <link rel="stylesheet" href="{{ asset('pro.css') }}" type="text/css" /> 
-
 {% endblock %}
 {% block body %}
     {{parent()}} 
-<div>                                                                          
+<div class="row">
     {% if is_granted('ROLE_ADMIN') %}
-        <ul>
-            <li><a href="{{path('cairn_user_registration') }}" >Ajouter un membre</a></li> 
-            <li><a href="{{path('cairn_user_users_search') }}" >Rechercher un professionnel</a></li>
-        </ul>
+        <br>
+        <a href="{{path('cairn_user_registration') }}" class="btn green" ><i class="material-icons left">add</i>Ajouter un professionnel</a>
+        <a href="{{path('cairn_user_users_search') }}" class="btn blue"><i class="material-icons left">search</i>Rechercher un professionnel</a>
     {% endif %}
     <div>
 

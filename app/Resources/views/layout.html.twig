@@ -1,68 +1,158 @@
 {# app/Resources/views/layout.html.twig #}
-
 <!DOCTYPE html>
-
 <html>
     <head>
         <meta charset="utf-8" />
+        <!-- Compiled and minified CSS -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" />
+        {#<link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" />#}
         {% endblock %}
         <meta name="viewport" content="width=device-width" />
-        <title>{% block title %} Paye ton Cairn {% endblock %} </title>
-
+        <title>{% block title %}[e]Cairn{% endblock %}</title>
+        <style>
+            html {
+                height: 100%;
+            }
+            body {
+                min-height: 100%;
+                height: 100%;
+            }
+            .nav-wrapper > ul{
+                height: 100%;
+            }
+            #logo-container,#logo_user{
+                height: 100%;
+                padding: 5px;
+                box-sizing: border-box;
+            }
+            #logo-container img,#logo_user img{
+                height: 100%;
+            }
+            .login_splash{
+                background-image: url({{ asset('Stone_stack_together.jpg') }});
+                background-size: cover;
+                background-position: center;
+            }
+            .login_splash .login_form{
+                margin-top: 50px;
+                background: rgba(255,255,255,0.8);
+                padding: 20px 0px;
+            }
+            .teal.success{
+                /*background-color: @light-green !important;*/
+                background-color: #8bc34a !important;
+            }
+            .teal.error{
+                /*background-color: @red !important;*/
+                background-color: #F44336 !important;
+            }
+            .teal.warning{
+                /*background-color: @orange !important;*/
+                background-color: #ff9800 !important;
+            }
+            #network{
+                margin-top: 10px;
+            }
+            h1 {
+                font-size: 3rem;
+            }
+            h2 {
+                font-size: 2.50rem;
+            }
+            a:hover > img{
+                opacity: 0.5;
+            }
+        </style>
     </head>
-    <body>
-        <div id="main_wrapper">
-            <header>
-                <div class="top-left">
-                    <img src="{{asset('cairn.png')}}" alt="Logo du Cairn">
-                    <a href="{{ path('cairn_user_welcome') }}" id="titles">
-                        <h1> Le Cairn </h1>
-                        <h2> Monnaie Locale Complémentaire </h2>
-                    </a>
-                </div>
-                <div class="top-right">
-                    <div id="logo_user">
-                        <div class="notifications">
-                            <img  src="{{asset('cairn.png')}}" alt="Notifications">
+    <body class="{% block body_class %}{% endblock%}">
+        <nav class="orange lighten-1" role="navigation">
+            <div class="nav-wrapper container">
+                <a id="logo-container" href="{{ path('cairn_user_welcome') }}" class="brand-logo"><img src="{{asset('e-cairn.png')}}" alt="Logo du Cairn"></a>
+                <ul class="right hide-on-med-and-down">
+                    {% block top_nav_menu %}{% endblock%}
+                    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+                        <li id="logo_user" class="right hide-on-med-and-down">
+                            {% if app.user.image.url is defined %}
+                                <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+                            {% else %}
+                                <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                            {% endif %}
+                        </li>
+                        <li>
+                            <a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}">
+                                <i class="material-icons small left">settings</i>
+                                <small>{{ app.user.username }}</small>
+                            </a>
+                        </li>
+                        <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small right">exit_to_app</i>
+                            </a></li>
+                        </li>
+                    {% else %}
+                        <li><a href="{{ path('fos_user_security_login') }}">Connexion</a></li>
+                    {% endif %}
+                </ul>
+                {% block top_nav %}{% endblock%}
+                <ul id="nav-mobile" class="sidenav">
+                    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+                        <li><div class="user-view center-align">
+                                <div class="background">
+                                    <img class="responsive-img" src="{{asset('Stone_stack_together.jpg')}}" alt="" style="position: absolute;bottom: -46px;left: 0;" />
+                                </div>
+                                <a href="#user">
+                                {% if app.user.image.url is defined %}
+                                    <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle">
+                                {% else %}
+                                    <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle">
+                                {% endif %}
+                                </a>
+                                <a href="#name"><span class="white-text name">{{ app.user.username }}</span></a>
+                            </div>
+                        </li>
+                        <li><a href="{{ path('cairn_user_welcome') }}"><i class="material-icons small">home</i>
+                                Accueil
+                            </a></li>
+                        {% block nav_mobile %}{% endblock%}
+                        <li><a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"><i class="material-icons">settings</i>
+                                Mon profil</a></li>
+                        <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small">exit_to_app</i>
+                                {{ 'layout.logout'|trans({}, 'FOSUserBundle') }}
+                            </a></li>
+                    {% else %}
+                        <li><a href="{{ path('fos_user_security_login') }}"><span class="glyphicon glyphicon-log-in"></span> {{ 'layout.login'|trans({}, 'FOSUserBundle') }}</a></li>
+                    {% endif %}
+                </ul>
+                <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+            </div>
+        </nav>
+        {% if app.request.hasPreviousSession %}
+            {% for type, messages in app.session.flashBag.all %}
+                {% for message in messages %}
+                    <div class="row">
+                        <div class="col s12">
+                            <div class="card-panel teal {{ type }} lighten-1">
+                                <span class="white-text">{{ message|trans({}, 'FOSUserBundle')|raw }}</span>
+                            </div>
                         </div>
-                        {% if app.user.image.url is defined %}
-                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}"> 
-
-                        {% else %}
-                            <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur"> 
-
-                        {% endif %}
                     </div>
-                    <div id="logout">
-                        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-                            Connecté en tant que {{ app.user.username }}
-                            -
-                            <a href="{{ path('fos_user_security_logout') }}">
-                                <img src="{{asset('cairn.png')}}" alt="Déconnexion"></a>
-                        {% else %}
-                            <a href="{{ path('fos_user_security_login') }}">Connexion</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </header> 
-            {% block fos_user_content %}{% endblock %}
+
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+        <div class="{% block container_class %}container{% endblock%}">
             {% block body %}{% endblock%}
         </div>
+        <!-- Compiled and minified JavaScript -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
+        <script>
+            $(document).ready(function(){
+                M.AutoInit();
+            });
+        </script>
         {% block javascripts %}
-         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-            <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
         {% endblock %}
     </body>
-    {#<footer>#}
-        {#<nav>#}
-            {#<ul>#}
-                {#<li><a class=menu-item href="#"> Nos permanences <img src="{{asset('cairn.png')}}"></a></li>#}
-                {#<li><a class=menu-item href="#"> Site du Cairn <img src="{{asset('cairn.png')}}"></a></li>#}
-                {#<li><a class=menu-item href="#"> Réseaux sociaux <img src="{{asset('cairn.png')}}"></a></li>#}
-                {#<li><a class=menu-item href="#"> Contacts <img src="{{asset('cairn.png')}}"></a></li>#}
-            {#</ul>#}
-        {#</nav>#}
-    {#</footer>#}
 </html>
