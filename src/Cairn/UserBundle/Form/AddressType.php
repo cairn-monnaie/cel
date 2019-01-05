@@ -24,24 +24,28 @@ class AddressType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('street1', TextType::class,array('label'=> 'Adresse 1',
+            ->add('street1', TextType::class,array('label'=> 'Rue',
                 'constraints'=> new Assert\Length(array('min'=> 5,'max'=>40,
                                                   'minMessage' => 'Adresse trop courte',
                                                   'maxMessage' => 'Adresse trop longue'))
                                               ))
-            ->add('street2', TextType::class,array('required'=>false,'label'=> 'Adresse 2',
+            ->add('street2', TextType::class,array('required'=>false,'label'=> 'Complément d\'adresse',
                   'constraints'=> new Assert\Length(array('min'=> 5,'max'=>40,
-                                                  'minMessage' => 'Adresse trop courte',
-                                                  'maxMessage' => 'Adresse trop longue'))
+                                                  'minMessage' => 'Complément trop court',
+                                                  'maxMessage' => 'Complément trop long'))
                                               ))
             ->add('zipCity', EntityType::class, array(
-                                                     'class'=>ZipCity::class,
+                                                     'class'=>'CairnUserBundle:ZipCity',
+                                                     'placeholder' => '--- Villes ---',
                                                      'query_builder' => function (EntityRepository $er) {
                                                                  return $er->createQueryBuilder('z')
                                                                                  ->orderBy('z.zipCode', 'ASC');
                                                                      },
-                                                     'choice_label'=>'zipCode',
-                                                     'choice_value'=>'zipCode'
+                                                     'label' => 'ville',
+                                                     'multiple' => false,
+                                                     'required' => true,
+                                                     'choice_label'=>'name',
+                                                     'choice_value'=>'id'
             ));
     }
     
