@@ -99,5 +99,9 @@ class ZipCity
         return $this->city;
     }
 
+    public function getName(){
+        return $this->getZipCode().' '.$this->getCity();
+    }
+
 }
 
