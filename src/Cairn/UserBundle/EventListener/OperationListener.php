@@ -31,10 +31,6 @@ class OperationListener
 
     public function postLoad(Operation $operation, LifecycleEventArgs $args)
     {
-        if(!$operation instanceof Operation){
-            return;
-        }
-
         $entityManager = $args->getEntityManager();
 
         if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){

@@ -57,8 +57,6 @@ class SecurityListener
 
     public function onChangePassword(FormEvent $event)
     {
-
-
         $passwordManager = new PasswordManager();
         $form = $event->getForm();
         $user = $form->getData();

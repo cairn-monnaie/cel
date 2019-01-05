@@ -191,7 +191,7 @@ class CardController extends Controller
 
         $form = $this->createForm(ConfirmationType::class);
         $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
-                                                          'constraints'=>new UserPassword() ));
+            'constraints'=>new UserPassword() ));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -203,15 +203,17 @@ class CardController extends Controller
                     $user->setCard($card);
 
                     $em->flush();
-                    //email
-                    $subject = 'Nouvelle carte de sécurité Cairn';
-                    $from = $this->getParameter('cairn_email_noreply');
-                    $to = $user->getEmail();
 
-                    $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('by'=>$currentUser,'user'=>$user));
-                    $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-
-                    $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
+                    if($currentUser !== $user){
+                        $subject = 'Nouvelle carte de sécurité Cairn';
+                        $from = $this->getParameter('cairn_email_noreply');
+                        $to = $user->getEmail();
+                        $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('user'=>$user));
+                        $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
+                        $session->getFlashBag()->add('success','La carte de sécurité Cairn n°'.$user->getNbCards().' de '.$user->getName().' est commandée ! Un email lui a été envoyé pour l\'en informer.');
+                    }else{
+                        $session->getFlashBag()->add('success','Votre carte de sécurité Cairn a été commandée avec succès !');
+                    }
                 }
                 else{
                     $session->getFlashBag()->add('info','Vous avez annulé votre commande de carte.');
@@ -262,7 +264,7 @@ class CardController extends Controller
 
         $form = $this->createForm(ConfirmationType::class);
         $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
-                                                          'constraints'=> new UserPassword() ));
+            'constraints'=> new UserPassword() ));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
@@ -270,18 +272,21 @@ class CardController extends Controller
 
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-
-                    $subject = 'Révocation de votre carte de sécurité Cairn';
-                    $from = $this->getParameter('cairn_email_noreply');
-                    $to = $user->getEmail();
-                    $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig',array('by'=>$currentUser));
-
-                    $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-
                     $em->remove($card);
                     $em->flush();
 
-                    $session->getFlashBag()->add('success','Votre demande a bien été prise en compte. Un email a été envoyé à l\'adresse ' . $user->getEmail());
+                    if($currentUser !== $user){
+                        $subject = 'Révocation de votre carte de sécurité Cairn';
+                        $from = $this->getParameter('cairn_email_noreply');
+                        $to = $user->getEmail();
+                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig');
+
+                        $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
+                        $session->getFlashBag()->add('success','La carte de sécurité Cairn n°'.$user->getNbCards().' de '.$user->getName().' a été révoquée avec succès ! Un email lui a été envoyé pour l\'en informer.');
+                    }else{
+                        $session->getFlashBag()->add('success','Votre carte de sécurité Cairn a été révoquée avec succès !');
+                    }
+
                 }
                 else{
                     $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte n° ' .$card->getNumber());

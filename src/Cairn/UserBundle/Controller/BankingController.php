@@ -170,7 +170,8 @@ class BankingController extends Controller
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
             ->setParameter('number',$id);
 
-        $totalAmount = $query->getSingleScalarResult();
+        $res = $query->getSingleScalarResult();
+        $totalAmount = ($res == NULL) ? 0 : $res ;
 
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
@@ -437,7 +438,7 @@ class BankingController extends Controller
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $operation->setDescription($this->editDescription($type, $operation->getDescription()));
+                $operation->setReason($this->editDescription($type, $operation->getReason()));
                 //                if($frequency == 'recurring'){
                 //                    $dataTime = new \stdClass();
                 //                    $dataTime->periodicity =         $transaction->getPeriodicity();
@@ -488,7 +489,10 @@ class BankingController extends Controller
                 }
 
                 $amount = $operation->getAmount();
-                $description = $operation->getDescription();
+
+                //WARNING :  on Cyclos side, there is only one field for description, whereas on Symfony side there is
+                //both reason & description. For this reason, we transmit the reason as cyclos description
+                $cyclosDescription = $operation->getReason();
 
                 //                if($frequency == 'recurring'){
                 //
@@ -514,14 +518,14 @@ class BankingController extends Controller
                 if($toAccount['accountNumber']){
 
                     foreach($accurateTransferTypes as $transferType){
-                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
+                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$transferType,$dataTime);
 
                         if($res->toAccount->number == $toAccount['accountNumber']){
                             $session->set('paymentReview',$res);
                         }
                     }
                 }else{
-                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime);
+                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$accurateTransferTypes[0],$dataTime);
                     $session->set('paymentReview',$res);
 
                 }
@@ -1618,7 +1622,7 @@ class BankingController extends Controller
                             fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
-                            fputcsv($handle, array('Date', 'Description', 'Débit', 'Crédit','Solde'),';');
+                            fputcsv($handle, array('Date', 'Motif','Partie prenante', 'Débit', 'Crédit','Solde'),';');
                             $balance = $history->status->balanceAtBegin;
                             foreach($history->transactions as $transaction){
                                 $balance += $transaction->amount;
@@ -1634,6 +1638,7 @@ class BankingController extends Controller
                                     $handle, // The file pointer
                                     array($transaction->date, 
                                     $transaction->description, 
+                                    $userService->getOwnerName($transaction->relatedAccount->owner),
                                     $debit, 
                                     $credit,
                                     $balance), // The fields

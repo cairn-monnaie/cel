@@ -238,7 +238,7 @@ class CardControllerTest extends BaseControllerTest
      *                                                      . wrong password : try again
      *@dataProvider provideUsersForCardRevocation 
      */
-    public function testRevokeCard($current, $target,$expectForm,$expectMessage)
+    public function testRevokeCard($current, $target,$expectForm,$expectMessage,$emailSent)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -279,17 +279,21 @@ class CardControllerTest extends BaseControllerTest
                 $this->em->refresh($targetUser);
                 $this->assertEquals($targetUser->getCard(),NULL);
 
-                //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
-                $this->assertSame(1, $mailCollector->getMessageCount());
-                $message = $mailCollector->getMessages()[0];
-                $this->assertInstanceOf('Swift_Message', $message);
-                $this->assertContains('Révocation', $message->getSubject());
-                $this->assertContains('révocation', $message->getBody());
-                $this->assertContains($currentUser->getName(), $message->getBody());
-                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
-                $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
+                if($emailSent){
+                //assert email
+                    $this->assertSame(1, $mailCollector->getMessageCount());
+                    $message = $mailCollector->getMessages()[0];
+                    $this->assertInstanceOf('Swift_Message', $message);
+                    $this->assertContains('Révocation', $message->getSubject());
+                    $this->assertContains('révocation', $message->getBody());
+                    $this->assertContains($currentUser->getName(), $message->getBody());
+                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+                }else{
+                    $this->assertSame(0, $mailCollector->getMessageCount());
+                }
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
@@ -302,10 +306,14 @@ class CardControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-             'revocation from ref'=> array('current'=>$adminUsername,'target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx'), 
-             'self revocation'=> array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx'),             
-             'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'vie_integrative','expectForm'=>false,'expectMessage'=>'pas référent'),
-             'no card to revoke'=>array('current'=>'episol','target'=>'episol','expectForm'=>false,'expectMessage'=>'déjà été révoquée'),
+            'revocation from ref'=> array('current'=>$adminUsername,'target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx',
+                                          'emailSent'=>true), 
+            'self revocation'=> array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx',
+                                      'emailSent'=>false),             
+            'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'vie_integrative','expectForm'=>false,
+                                        'expectMessage'=>'pas référent','emailSent'=>false),
+            'no card to revoke'=>array('current'=>'episol','target'=>'episol','expectForm'=>false,
+                                       'expectMessage'=>'déjà été révoquée','emailSent'=>false),
         );
     }
 
@@ -318,7 +326,7 @@ class CardControllerTest extends BaseControllerTest
      *                                                      . wrong password : try again
      * @dataProvider provideUsersForCardOrder
      */
-    public function testOrderCard($current,$target,$expectForm, $expectMessage)
+    public function testOrderCard($current,$target,$expectForm, $expectMessage, $emailSent)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -359,17 +367,22 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertNotEquals($targetUser->getCard(),NULL);
                 $this->assertEquals($targetUser->getCardKeyTries(), 0);
 
-                //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
-                $this->assertSame(1, $mailCollector->getMessageCount());
-                $message = $mailCollector->getMessages()[0];
-                $this->assertInstanceOf('Swift_Message', $message);
-                $this->assertContains('Nouvelle carte', $message->getSubject());
-                $this->assertContains('nouvelle carte', $message->getBody());
-                $this->assertContains($currentUser->getName(), $message->getBody());
 
-                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
-                $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+                if($emailSent){
+                    //assert email
+                    $this->assertSame(1, $mailCollector->getMessageCount());
+                    $message = $mailCollector->getMessages()[0];
+                    $this->assertInstanceOf('Swift_Message', $message);
+                    $this->assertContains('Nouvelle carte', $message->getSubject());
+                    $this->assertContains('nouvelle carte', $message->getBody());
+                    $this->assertContains($currentUser->getName(), $message->getBody());
+
+                    $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                    $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+                }else{
+                    $this->assertSame(0, $mailCollector->getMessageCount());
+                }
 
                 $this->assertTrue($this->client->getResponse()->isRedirect('/card/home/'.$targetUser->getID()));
                 $crawler = $this->client->followRedirect();
@@ -384,15 +397,18 @@ class CardControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-             'ordered by ref'=> array('current'=>$adminUsername,'target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx'), 
-             'self order'=> array('current'=>'episol','target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx'),             
+            'ordered by ref'=> array('current'=>$adminUsername,'target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx',
+                                     'emailSent'=>true), 
+            'self order'=> array('current'=>'episol','target'=>'episol','expectForm'=>true,'expectMessage'=>'xxx',
+                                 'emailSent'=>false),             
              'ordered by non ref'=>array('current'=>$adminUsername,'target'=>'NaturaVie','expectForm'=>false,
-                                         'expectMessage'=>'pas référent'),
-             'card already ordered'=>array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>false,'expectMessage'=>'déjà commandé'),
+                                         'expectMessage'=>'pas référent','emailSent'=>false),
+             'card already ordered'=>array('current'=>'DrDBrew','target'=>'DrDBrew','expectForm'=>false,
+                                           'expectMessage'=>'carte commandée en cours','emailSent'=>false),
              'generated card'=>array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>false,
-                                     'expectMessage'=>'carte courante est active'),
+                                     'expectMessage'=>'carte courante est active','emailSent'=>false),
              'not generated card'=>array('current'=>'recycleco','target'=>'recycleco','expectForm'=>false,
-                                     'expectMessage'=>'déjà une carte courante'),
+                                     'expectMessage'=>'déjà une carte courante','emailSent'=>false),
 
         );
     }
