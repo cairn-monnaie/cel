@@ -88,11 +88,11 @@ class CardController extends Controller
 
         if(!$card){
             $session->getFlashBag()->add('info','Vous n\'avez pas de carte de sécurité Cairn. Votre opération ne peut être poursuivie. Commandez-en une');
-            return $this->redirectToRoute('cairn_user_card_home',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
         if(!$card->isEnabled()){
             $session->getFlashBag()->add('info','Votre carte courante n\'est pas active. Votre opération ne peut être poursuivie. Activez-la.');
-            return $this->redirectToRoute('cairn_user_card_home',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
 
         $positions = $this->generatePositions($card);
@@ -182,11 +182,12 @@ class CardController extends Controller
             }else{
                 if($card->isGenerated()){
                     $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
+                    return $this->redirectToRoute('cairn_user_card_validate',array('_format'=>$_format,'id'=>$user->getID()));
                 }else{
                     $session->getFlashBag()->add('info','Vous avez déjà une carte commandée en cours, mais elle ne vous a pas encore été envoyée.');
                 }
             }
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -217,7 +218,7 @@ class CardController extends Controller
                     $session->getFlashBag()->add('info','Vous avez annulé votre commande de carte.');
 
                 }
-                return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
 
             }
         }
@@ -252,12 +253,12 @@ class CardController extends Controller
         $card = $user->getCard();
         if(!$card){
             $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         if(!$card->isGenerated()){
             $session->getFlashBag()->add('info',
                 'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -286,7 +287,7 @@ class CardController extends Controller
                 else{
                     $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte n° ' .$card->getNumber());
                 }
-                return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
 
             }
         }
@@ -313,15 +314,15 @@ class CardController extends Controller
 
         if(!$card){
             $session->getFlashBag()->add('info','Votre carte de sécurité Cairn a été révoquée. Commandez-en une nouvelle.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         elseif(!$card->isGenerated()){
             $session->getFlashBag()->add('info','Votre carte de sécurité Cairn ne vous a pas été envoyé. Validation impossible');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
         if($card->isEnabled()){
             $session->getFlashBag()->add('info','Votre carte de sécurité Cairn est déjà active.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $positions = $this->generatePositions($card);
@@ -399,18 +400,18 @@ class CardController extends Controller
 
         if(!$card){
             $session->getFlashBag()->add('info',$user->getName() . ' n\'a pas de carte de sécurité à générer. Commandez-en une nouvelle.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
         if($card->isGenerated()){
             $session->getFlashBag()->add('info','La carte de sécurité a déjà été générée.');
-            return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
 
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('cancel')->isClicked()){
-                return $this->redirectToRoute('cairn_user_card_home', array('_format'=>$_format,'id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format,'id'=>$user->getID()));
             }
 
             $card->generateCard($this->getParameter('kernel.environment'));
@@ -447,9 +448,9 @@ class CardController extends Controller
         $fields = $card->getFields();
         $user = $card->getUser();
 
-        if(!$fields){
+        if(!$fields && !$this->isGranted('ROLE_SUPER_ADMIN')){
             $session->getFlashBag()->add('error',' Etape de vérification sautée. Petit Filou !');
-            return $this->redirectToRoute('cairn_user_card_home', array('_format'=> $format, 'id'=>$card->getUser()->getID()));
+            return $this->redirectToRoute('cairn_user_card_home', array('_format'=> $_format, 'id'=>$card->getUser()->getID()));
         }
 
         $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
