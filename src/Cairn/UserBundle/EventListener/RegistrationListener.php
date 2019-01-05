@@ -98,7 +98,7 @@ class RegistrationListener
             array('user'=>$user));
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
-        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée.');
+        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée par l\'association.');
 
     }
 
