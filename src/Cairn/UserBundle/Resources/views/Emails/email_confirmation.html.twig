@@ -1,15 +1,27 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/email_confirmation.html.twig #}
 
+{% block subject %}Changement de mot de passe{% endblock %}
 
-Bonjour {{ user.name }} !
+{% block body_text %}
+    {% autoescape false %}
+        Bonjour {{ user.name }} !
 
-Vous avez soumis une demande d'inscription via cette adresse mail. Il vous reste {{cairn_email_activation_delay}} jours pour la confirmer.
-Vous pouvez valider votre adresse mail en cliquant sur ce lien : {{ confirmationUrl }}
+        Vous avez soumis une demande d'inscription via cette adresse mail.
+        Merci de valider votre adresse email en cliquant sur ce lien : {{ confirmationUrl }}
 
-Une validation de l'équipe administrative sera ensuite nécessaire pour valider définitivement votre compte.
+        Le Cairn
 
-Le Cairn,
+        NB : Cet email contient des informations sensibles. Notez-les et supprimez le.
+    {% endautoescape %}
+{% endblock %}
 
+{% block body_html %}
+    Bonjour <b>{{ user.name }}</b> !
 
-NB : cet email contient des informations sensibles. Notez-les et supprimez le mail
+    Vous avez soumis une demande d'inscription via cette adresse mail.
+    Merci de valider votre adresse email en cliquant sur ce <a href="{{ confirmationUrl }}">lien</a>
 
+    Le Cairn
+
+    NB : Cet email contient des informations sensibles. Notez-les et supprimez le.
+{% endblock %}
