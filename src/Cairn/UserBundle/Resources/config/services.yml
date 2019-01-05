@@ -136,6 +136,10 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
 
+    Cairn\UserBundle\Form\ChangePasswordType:
+        arguments: ['@security.password_encoder']
+        tags: [form.type]
+
     Cairn\UserBundle\Form\CreditType:
         arguments: ['@security.authorization_checker']
         tags: [form.type]
