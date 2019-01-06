@@ -29,10 +29,13 @@ class UserInfo
      */
     private $groupService;
 
-    public function __construct()
+    private $leadingCompanyName;
+
+    public function __construct($leadingCompanyName)
     {
         $this->userService = new Cyclos\UserService();
         $this->groupService = new Cyclos\GroupService();
+        $this->leadingCompanyName = $leadingCompanyName;
     }
 
     /**
@@ -50,7 +53,7 @@ class UserInfo
         if(property_exists($owner,'display')){
             return $owner->display;
         }
-        return $owner;
+        return $this->leadingCompanyName;
     }
 
     public function getProfileData($userVO)

@@ -149,11 +149,11 @@ class BankingController extends Controller
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      'o.fromAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
                  ),
                  $ob->expr()->andX(
                      'o.toAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
@@ -170,13 +170,14 @@ class BankingController extends Controller
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
             ->setParameter('number',$id);
 
-        $totalAmount = $query->getSingleScalarResult();
+        $res = $query->getSingleScalarResult();
+        $totalAmount = ($res == NULL) ? 0 : $res ;
 
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
                 'label' => 'affiché par',
                 'choices' => array('dates décroissantes'=>'DESC',
-                'dates croissantes' => 'ASC')))
+                                   'dates croissantes' => 'ASC')))
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
                     'widget' => 'single_text',
@@ -224,11 +225,11 @@ class BankingController extends Controller
                     $ob->expr()->orX(
                         $ob->expr()->andX(
                             'o.fromAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
                         ),
                         $ob->expr()->andX(
                             'o.toAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
                         )
                     ))
                     ->andWhere('o.paymentID is not NULL')
@@ -437,7 +438,7 @@ class BankingController extends Controller
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $operation->setDescription($this->editDescription($type, $operation->getDescription()));
+                $operation->setReason($this->editDescription($type, $operation->getReason()));
                 //                if($frequency == 'recurring'){
                 //                    $dataTime = new \stdClass();
                 //                    $dataTime->periodicity =         $transaction->getPeriodicity();
@@ -488,7 +489,10 @@ class BankingController extends Controller
                 }
 
                 $amount = $operation->getAmount();
-                $description = $operation->getDescription();
+
+                //WARNING :  on Cyclos side, there is only one field for description, whereas on Symfony side there is
+                //both reason & description. For this reason, we transmit the reason as cyclos description
+                $cyclosDescription = $operation->getReason();
 
                 //                if($frequency == 'recurring'){
                 //
@@ -514,14 +518,14 @@ class BankingController extends Controller
                 if($toAccount['accountNumber']){
 
                     foreach($accurateTransferTypes as $transferType){
-                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferType,$dataTime);
+                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$transferType,$dataTime);
 
                         if($res->toAccount->number == $toAccount['accountNumber']){
                             $session->set('paymentReview',$res);
                         }
                     }
                 }else{
-                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$accurateTransferTypes[0],$dataTime);
+                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$accurateTransferTypes[0],$dataTime);
                     $session->set('paymentReview',$res);
 
                 }
@@ -529,7 +533,8 @@ class BankingController extends Controller
                 $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
                 $operation->setToAccountNumber($res->toAccount->number);
-                $operation->setStakeholder($creditorUser);
+                $operation->setCreditor($creditorUser);
+                $operation->setDebitor($currentUser);
                 $em->persist($operation);
                 $em->flush();
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
@@ -681,7 +686,8 @@ class BankingController extends Controller
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setStakeholder($userToCredit);
+            $transaction->setCreditor($userToCredit);
+            $transaction->setDebitor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -765,7 +771,8 @@ class BankingController extends Controller
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setStakeholder($userToCredit);
+            $transaction->setCreditor($userToCredit);
+            $transaction->setDebitor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -848,7 +855,8 @@ class BankingController extends Controller
             $transaction->setFromAccountNumber($res->fromAccount->number);
 
             $userToDebit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($fromAccount->owner->id);
-            $transaction->setStakeholder($userToDebit);
+            $transaction->setDebitor($userToDebit);
+            $transaction->setCreditor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -1253,6 +1261,17 @@ class BankingController extends Controller
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 
+        $currentUser = $this->getUser();
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
+
+        $fromNumber = $operation->getFromAccountNumber();
+        $toNumber = $operation->getToAccountNumber();
+
+        if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
+
         switch ($type){
         case 'scheduled.past':
             $data = $bankingService->getTransactionDataByID($id);
@@ -1439,11 +1458,16 @@ class BankingController extends Controller
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
 
+        $currentUser = $this->getUser();
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
-        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($this->getUser()->getCyclosID());
-        if(! in_array($operation->getFromAccountNumber(), $accountNumbers)){
-            throw new AccessDeniedException('Vous n\'avez pas accès à cette information');
-        }
+        $fromNumber = $operation->getFromAccountNumber();
+        $toNumber = $operation->getToAccountNumber();
+
+        if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
 
         $html = $this->renderView('CairnUserBundle:Pdf:operation_notice.html.twig',array(
             'transfer'=>$operation));
@@ -1618,7 +1642,7 @@ class BankingController extends Controller
                             fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
-                            fputcsv($handle, array('Date', 'Description', 'Débit', 'Crédit','Solde'),';');
+                            fputcsv($handle, array('Date', 'Motif','Partie prenante', 'Débit', 'Crédit','Solde'),';');
                             $balance = $history->status->balanceAtBegin;
                             foreach($history->transactions as $transaction){
                                 $balance += $transaction->amount;
@@ -1634,6 +1658,7 @@ class BankingController extends Controller
                                     $handle, // The file pointer
                                     array($transaction->date, 
                                     $transaction->description, 
+                                    $userService->getOwnerName($transaction->relatedAccount->owner),
                                     $debit, 
                                     $credit,
                                     $balance), // The fields

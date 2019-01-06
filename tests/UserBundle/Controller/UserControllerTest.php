@@ -59,16 +59,29 @@ class UserControllerTest extends BaseControllerTest
             $this->assertSame(1, $crawler->filter('input#fos_user_change_password_form_current_password')->count());    
             $this->assertSame(0, $crawler->filter('div.alert-success')->count());    
         }
+
+        //committing modifications
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
+
+        //Right after, we begin a new transaction in order to avoid the execption from PDO "there is no active transaction" which occurs
+        //on rollBack (automatically called after each test by DoctrineTestBundle listener) to keep a stable state of the DB
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::beginTransaction();
+
     }
 
     public function providePasswordData()
     {
-        $login = 'vie_integrative';
+        //WARNING : put here the login of an user who will be used ONLY for this specific test and anywhere else
+        //because the password is also changed on Cyclos-side. The password will be rolledback on Symfony-side but not on Cyclos-side
+        //It will provok an exception "LOGIN" and no other test will work as we need user to login and expect password to be 
+        //@@bbccdd// In order to be able to chain data provided, we must commit changes at the end of the test before the rollback
+        $login = 'denis_ketels';
 
         //keep the same password as the new one, because the password value is rolled back on MySQL BDD, but not on Cyclos side.
         //This would result in a dissociation of passwords
         $new = '@@bbccdd';
-        //valid data
+
+        //invalid data
         $baseData = array('login'=>$login,
             'current'=>'@@bbccdd',
             'new'=>$new,
@@ -87,7 +100,8 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessage'=>'contenu dans le mot de passe')),
             'no special character'        => array_replace($baseData, array('new'=>'1testPwd2' ,'confirm'=>'1testPwd2','expectValid'=>false,
             'expectedMessage'=>'caractère spécial')),
-            'valid'                       => $baseData
+            'new = confirm'               => array_replace($baseData, array('expectValid'=>false)),          
+            'valid'               => array_replace($baseData, array('new'=>'@bcdefgh','confirm'=>'@bcdefgh')),          
         );
     }
 

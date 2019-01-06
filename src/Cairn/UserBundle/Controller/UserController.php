@@ -96,26 +96,17 @@ class UserController extends Controller
 
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
-        $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
-            ->andWhere('o.paymentID is not NULL')
-            ->andWhere('o.type = :type')
-            ->setParameter('type',Operation::TYPE_TRANSACTION_EXECUTED)
-            ->orderBy('o.executionDate','ASC')
-            ->setMaxResults(15)
-            ->getQuery()->getResult();
-
-        $ob = $operationRepo->createQueryBuilder('o');
         $processedTransactions = $ob->where(
-            $ob->expr()->orX(
-                $ob->expr()->andX(
-                    $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                    $ob->expr()->in('o.type',Operation::getFromOperationTypes())
-                ),
-                $ob->expr()->andX(
-                    $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                    $ob->expr()->in('o.type',Operation::getToOperationTypes())
-                )
-            ))
+             $ob->expr()->orX(
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                 ),
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.toAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                 )
+             ))
             ->andWhere('o.paymentID is not NULL')
             ->orderBy('o.executionDate','ASC')
             ->setMaxResults(15)
@@ -653,11 +644,17 @@ class UserController extends Controller
             foreach($beneficiaries as $beneficiary){
                 $em->remove($beneficiary);
             }
-
-            //set Operations with user to remove as stakeholder to NULL
-            $operations = $operationRepo->findBy(array('stakeholder'=>$user));
+            
+            //TODO : ONE single SQL insert request instead of the two here
+            //set Operations with user to remove as creditor/debitor to NULL
+            $operations = $operationRepo->findBy(array('creditor'=>$user));
             foreach($operations as $operation){
-                $operation->setStakeholder(NULL);
+                $operation->setCreditor(NULL);
+            }
+
+            $operations = $operationRepo->findBy(array('debitor'=>$user));
+            foreach($operations as $operation){
+                $operation->setDebitor(NULL);
             }
 
             $em->remove($user);

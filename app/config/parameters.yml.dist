@@ -42,10 +42,10 @@ parameters:
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
 
-    cyclos_network_cairn   : Cdm
+    cyclos_network_cairn   : network_currency
     cyclos_root_prod_url : 'http://example-prod:1234/'
     cyclos_root_test_url:  'http://example-test:4321/'
 
 
     cyclos_currency_cairn : cairn
-
+    leading_company : 'Association Le Cairn'

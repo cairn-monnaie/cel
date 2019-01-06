@@ -338,10 +338,23 @@ class Commands
         $debitorAccountVO = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($transactionVO->fromOwner);
         $operation->setFromAccountNumber($debitorAccountVO->number);
 
+        if($debitorAccountVO->type->nature == 'SYSTEM'){
+            $debitor = $userRepo->myFindByRole(array('ROLE_SUPER_ADMIN'))[0];
+        }else{
+            $debitor = $userRepo->findOneByUsername($transactionVO->fromOwner->shortDisplay);
+        }
+        $operation->setDebitor($debitor);
+
         $creditorAccountVO = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($transactionVO->toOwner);
-        $stakeholder = $userRepo->findOneByUsername($transactionVO->toOwner->shortDisplay);
         $operation->setToAccountNumber($creditorAccountVO->number);
-        $operation->setStakeHolder($stakeholder);
+
+        if($creditorAccountVO->type->nature == 'SYSTEM'){
+            $creditor = $userRepo->myFindByRole(array('ROLE_SUPER_ADMIN'))[0];
+        }else{
+            $creditor = $userRepo->findOneByUsername($transactionVO->toOwner->shortDisplay);
+        }
+
+        $operation->setCreditor($creditor);
 
         $abortedOperation = Operation::copyFrom($operation);
 

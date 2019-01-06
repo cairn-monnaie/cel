@@ -38,17 +38,17 @@
                     <td> {{transaction.description}} </td>
                     <td> 
                         {% if transaction.amount < 0 %}
-                            {{transaction.amount}} {{currency.suffix}}
+                            {{transaction.amount}} {{currency.symbol}}
                         {% endif %}
                     </td>
                     <td> 
                         {% if transaction.amount > 0 %}
-                            {{transaction.amount}} {{currency.suffix}}
+                            {{transaction.amount}} {{currency.symbol}}
                         {% endif %}
                     </td>
 
                     <td> 
-                        {{ balance}} {{currency.suffix}}
+                        {{ balance}} {{currency.symbol}}
                     </td>
 
                 </tr>

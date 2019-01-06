@@ -31,7 +31,11 @@
                     <td> {{installment.submissionDate|date('Y-m-d')}} </td>
                     <td> {{installment.executionDate|date('Y-m-d')}} </td>
                     <td>
-                        {{ app.user.name }}
+                        {% if installment.creditor is defined %}
+                            <a href="{{path('cairn_user_profile_view', {'id' : installment.creditor.id})}}"> {{installment.creditorName}} </a>
+                        {% else %}
+                            {{installment.creditorName}}
+                        {% endif %}
                     </td>
                     <td> {{installment.reason }} </td>  
                     <td> {{installment.amount }} </td>
@@ -70,10 +74,10 @@
                 <tr>
                     <td> {{transaction.executionDate|date('Y-m-d')}} </td>
                     <td>
-                        {% if transaction.stakeholder is defined %}
-                            <a href="{{path('cairn_user_profile_view', {'id' : transaction.stakeholder.id})}}"> {{transaction.stakeholderName}} </a>
+                        {% if transaction.creditor is defined %}
+                            <a href="{{path('cairn_user_profile_view', {'id' : transaction.creditor.id})}}"> {{transaction.creditorName}} </a>
                         {% else %}
-                            {{transaction.stakeholderName}}
+                            {{transaction.creditorName}}
                         {% endif %}
                     </td>
                     <td> {{transaction.reason }} </td>  
