@@ -2,6 +2,8 @@ services:
 
     cairn_user_cyclos_user_info:
         class: Cairn\UserCyclosBundle\Service\UserInfo
+        arguments:
+            - "%leading_company%"
 
     cairn_user_cyclos_network_info:
         class: Cairn\UserCyclosBundle\Service\NetworkInfo

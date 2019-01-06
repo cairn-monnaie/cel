@@ -149,11 +149,11 @@ class BankingController extends Controller
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      'o.fromAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
                  ),
                  $ob->expr()->andX(
                      'o.toAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
@@ -177,7 +177,7 @@ class BankingController extends Controller
             ->add('orderBy',   ChoiceType::class, array(
                 'label' => 'affiché par',
                 'choices' => array('dates décroissantes'=>'DESC',
-                'dates croissantes' => 'ASC')))
+                                   'dates croissantes' => 'ASC')))
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
                     'widget' => 'single_text',
@@ -225,11 +225,11 @@ class BankingController extends Controller
                     $ob->expr()->orX(
                         $ob->expr()->andX(
                             'o.fromAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getFromOperationTypes())
+                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
                         ),
                         $ob->expr()->andX(
                             'o.toAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getToOperationTypes())
+                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
                         )
                     ))
                     ->andWhere('o.paymentID is not NULL')
@@ -533,7 +533,8 @@ class BankingController extends Controller
                 $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
                 $operation->setToAccountNumber($res->toAccount->number);
-                $operation->setStakeholder($creditorUser);
+                $operation->setCreditor($creditorUser);
+                $operation->setDebitor($currentUser);
                 $em->persist($operation);
                 $em->flush();
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
@@ -685,7 +686,8 @@ class BankingController extends Controller
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setStakeholder($userToCredit);
+            $transaction->setCreditor($userToCredit);
+            $transaction->setDebitor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -769,7 +771,8 @@ class BankingController extends Controller
             $transaction->setToAccountNumber($res->toAccount->number);
 
             $userToCredit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($toAccount->owner->id);
-            $transaction->setStakeholder($userToCredit);
+            $transaction->setCreditor($userToCredit);
+            $transaction->setDebitor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -852,7 +855,8 @@ class BankingController extends Controller
             $transaction->setFromAccountNumber($res->fromAccount->number);
 
             $userToDebit = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($fromAccount->owner->id);
-            $transaction->setStakeholder($userToDebit);
+            $transaction->setDebitor($userToDebit);
+            $transaction->setCreditor($currentUser);
             $em->persist($transaction);
             $em->flush();
 
@@ -1257,6 +1261,17 @@ class BankingController extends Controller
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 
+        $currentUser = $this->getUser();
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
+
+        $fromNumber = $operation->getFromAccountNumber();
+        $toNumber = $operation->getToAccountNumber();
+
+        if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
+
         switch ($type){
         case 'scheduled.past':
             $data = $bankingService->getTransactionDataByID($id);
@@ -1443,11 +1458,16 @@ class BankingController extends Controller
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
 
+        $currentUser = $this->getUser();
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
-        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($this->getUser()->getCyclosID());
-        if(! in_array($operation->getFromAccountNumber(), $accountNumbers)){
-            throw new AccessDeniedException('Vous n\'avez pas accès à cette information');
-        }
+        $fromNumber = $operation->getFromAccountNumber();
+        $toNumber = $operation->getToAccountNumber();
+
+        if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
 
         $html = $this->renderView('CairnUserBundle:Pdf:operation_notice.html.twig',array(
             'transfer'=>$operation));
