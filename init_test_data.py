@@ -232,7 +232,7 @@ pros = [
         ['apogee_du_vin', 'Apogée du vin', 'apogee_vin@test.com','Grenoble'],
         ['tout_1_fromage', 'Tout un fromage', 't1f@test.com','Grenoble'],
         ['vie_integrative', 'vie intégrative', 'vie_integrative@test.com','Voiron'],
-        ['denis_ketels', 'Denis Ketels', 'denis_ketels@test.com','Voiron'],
+        ['denis_ketels', 'Denis Ketels', 'denis_ketels@test.com','Voiron'], #used only for changePassword test
         ['nico_faus_prod', 'Nico Faus Production', 'nico_faus@test.com','Grenoble'],
         ['hirundo_archi', 'Hirundo Architecture', 'hirundo_archi@test.com','Villard-de-Lans'],
         ['maison_bambous', 'Maison aux Bambous', 'maison_bambous@test.com','Vinay'],
