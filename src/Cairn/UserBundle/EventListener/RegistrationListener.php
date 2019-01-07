@@ -100,6 +100,10 @@ class RegistrationListener
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
         $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée par l\'association.');
 
+        $router = $this->container->get('router');          
+        $loginUrl = $router->generate('fos_user_security_login');
+        $event->setResponse(new RedirectResponse($loginUrl));
+
     }
 
 

@@ -1674,7 +1674,7 @@ class BankingController extends Controller
 
                     //          $response->setStatusCode(200);
                     $response->headers->set('Content-Type', 'application/force-download');
-                    $response->headers->set('Content-Disposition', 'attachment; filename="export.csv"');
+                    $response->headers->set('Content-Disposition', 'attachment; filename="relevé-Cairn'.date('Y-m-d').'.csv"');
 
                     return $response; 
                 }

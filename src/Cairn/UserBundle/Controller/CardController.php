@@ -443,7 +443,7 @@ class CardController extends Controller
 
     /*
      *@Method("GET")
-     *
+     *@Security("is_granted('ROLE_ADMIN')")
      */ 
     public function downloadCardAction(Request $request, Card $card, $_format)
     {
@@ -453,9 +453,13 @@ class CardController extends Controller
         $fields = $card->getFields();
         $user = $card->getUser();
 
-        if(!$fields && !$this->isGranted('ROLE_SUPER_ADMIN')){
+        if(!$fields && !$this->isGranted('ROLE_ADMIN')){
             $session->getFlashBag()->add('error',' Etape de vérification sautée. Petit Filou !');
             return $this->redirectToRoute('cairn_user_card_home', array('_format'=> $_format, 'id'=>$card->getUser()->getID()));
+        }
+
+        if($card->isGenerated()){
+            throw new AccessDeniedException('Action impossible');
         }
 
         $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',

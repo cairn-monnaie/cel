@@ -314,7 +314,7 @@ class UserController extends Controller
 
         $form = $this->createFormBuilder()
             ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
-            ->add('email', EmailType::class, array('label' => 'email du bénéficiaire'))
+            ->add('email', EmailType::class, array('label' => 'Email du bénéficiaire'))
             //ICC : IntegerType does not work for bigint : rounding after 14 figures (Account Ids in Cyclos have 19)
             ->add('ICC',   TextType::class,array('label'=>'Identifiant de Compte Cairn(ICC)'))
             ->add('add', SubmitType::class, array('label' => 'Ajouter'))
