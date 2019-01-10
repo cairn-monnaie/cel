@@ -40,7 +40,7 @@ twig:
     debug: '%kernel.debug%'
     strict_variables: '%kernel.debug%'
     globals:
-        card_activation_delay: '%card_activation_delay%'
+        card_association_delay: '%card_association_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
 
 # Doctrine Configuration
@@ -65,6 +65,18 @@ doctrine:
         auto_generate_proxy_classes: '%kernel.debug%'
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
+
+doctrine_migrations:
+    dir_name: '%kernel.project_dir%/src/Migrations'
+    # namespace is arbitrary but should be different from App\Migrations
+    # as migrations classes should NOT be autoloaded
+    namespace: DoctrineMigrations
+    table_name: 'migration_versions'
+    name: 'Application Migrations'
+    # available in version >= 1.2. Possible values: "BY_YEAR", "BY_YEAR_AND_MONTH", false
+    organize_migrations: false
+        # available in version >= 1.2. Path to your custom migrations template
+    custom_template: ~
 
 # Swiftmailer Configuration
 swiftmailer:
