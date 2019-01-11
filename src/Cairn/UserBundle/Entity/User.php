@@ -83,11 +83,6 @@ class User extends BaseUser
     private $card;
 
     /**
-     * @ORM\Column(name="nb_cards", type="smallint", unique=false, nullable=false)
-     */
-    private $nbCards;
-
-    /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
      */
     private $passwordTries;
@@ -96,6 +91,11 @@ class User extends BaseUser
      * @ORM\Column(name="card_key_tries", type="smallint", unique=false, nullable=false)
      */
     private $cardKeyTries;
+
+    /**
+     * @ORM\Column(name="card_association_tries", type="smallint", unique=false, nullable=false)
+     */
+    private $cardAssociationTries;
 
     /**
      * @ORM\Column(name="removal_request", type="boolean", unique=false, nullable=false)
@@ -116,7 +116,7 @@ class User extends BaseUser
         $this->referents = new ArrayCollection();
         $this->setPasswordTries(0);
         $this->setCardKeyTries(0);
-        $this->setNbCards(0);
+        $this->setCardAssociationTries(0);
         $this->removalRequest = false;
         $this->firstLogin = true;
     }
@@ -428,6 +428,33 @@ class User extends BaseUser
     }
 
     /**
+     * Set cardAssociationTries
+     *
+     * @param integer $cardAssociationTries
+     *
+     * @return User
+     */
+    public function setCardAssociationTries($cardAssociationTries)
+    {
+        $this->cardAssociationTries = $cardAssociationTries;
+        if($this->cardAssociationTries >= 3){
+            $this->setEnabled(false);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get cardAssociationTries
+     *
+     * @return integer
+     */
+    public function getCardAssociationTries()
+    {
+        return $this->cardAssociationTries;
+    }
+
+    /**
      * Set card
      *
      * @param \Cairn\UserBundle\Entity\Card $card
@@ -436,9 +463,6 @@ class User extends BaseUser
      */
     public function setCard(\Cairn\UserBundle\Entity\Card $card = null)
     {
-        if($card){
-            $this->setNbCards($this->getNbCards() + 1);
-        }
         $this->card = $card;
 
         return $this;
@@ -454,29 +478,6 @@ class User extends BaseUser
         return $this->card;
     }
 
-    /**
-     * Set nbCards
-     *
-     * @param integer $nbCards
-     *
-     * @return User
-     */
-    public function setNbCards($nbCards)
-    {
-        $this->nbCards = $nbCards;
-
-        return $this;
-    }
-
-    /**
-     * Get nbCards
-     *
-     * @return integer
-     */
-    public function getNbCards()
-    {
-        return $this->nbCards;
-    }
 
     /**
      * Set removalRequest

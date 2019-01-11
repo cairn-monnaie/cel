@@ -23,16 +23,9 @@ class Card
     private $id;
 
     /**
-     * @var int
-     *
-     * @ORM\Column(name="number", type="smallint")
-     */
-    private $number;
-
-    /**
      * @var text
      *
-     * @ORM\Column(name="fields", type="text", length=400,nullable=true)
+     * @ORM\Column(name="fields", type="text", length=400)
      */
     private $fields;
 
@@ -50,16 +43,10 @@ class Card
      */
     private $cols;
 
-    /**
-     * @var boolean
-     *
-     * @ORM\Column(name="enabled", type="boolean")
-     */
-    private $enabled;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="card")
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(nullable=true)
      */
     private $user;
 
@@ -76,24 +63,22 @@ class Card
     private $salt;
 
     /**
-     * @var boolean
+     * @var int
      *
-     * @ORM\Column(name="is_generated", type="boolean")
+     * @ORM\Column(name="code", type="string", length=10)
      */
-    private $generated;
+    private $code;
 
 
-    public function __construct($user,$rows,$cols,$salt)
+    public function __construct($user,$rows,$cols,$salt, $code)
     {
         $this->setUser($user);
         $this->setRows($rows);
         $this->setCols($cols);
         $this->setSalt($salt);
-        $nbCards = $this->getUser()->getNbCards();
-        $this->setNumber($nbCards + 1);
-        $this->setEnabled(false);
-        $this->setGenerated(false);
+
         $this->creationDate = new \Datetime();
+        $this->setCode($code);
     }
 
     /**
@@ -106,29 +91,6 @@ class Card
         return $this->id;
     }
 
-    /**
-     * Set number
-     *
-     * @param integer $number
-     *
-     * @return Card
-     */
-    private function setNumber($number)
-    {
-        $this->number = $number;
-
-        return $this;
-    }
-
-    /**
-     * Get number
-     *
-     * @return int
-     */
-    public function getNumber()
-    {
-        return $this->number;
-    }
 
     /**
      * Generates a card with dimensions defined as global parameter
@@ -207,30 +169,6 @@ class Card
     }
 
     /**
-     * Set enabled
-     *
-     * @param boolean $enabled
-     *
-     * @return Card
-     */
-    public function setEnabled($enabled)
-    {
-        $this->enabled = $enabled;
-
-        return $this;
-    }
-
-    /**
-     * Get enabled
-     *
-     * @return boolean
-     */
-    public function isEnabled()
-    {
-        return $this->enabled;
-    }
-
-    /**
      * Set rows
      *
      * @param integer $rows
@@ -302,39 +240,6 @@ class Card
         return $this;
     }
 
-    /**
-     * Get enabled
-     *
-     * @return boolean
-     */
-    public function getEnabled()
-    {
-        return $this->enabled;
-    }
-
-    /**
-     * Set generated
-     *
-     * @param boolean $generated
-     *
-     * @return Card
-     */
-    public function setGenerated($generated)
-    {
-        $this->generated = $generated;
-
-        return $this;
-    }
-
-    /**
-     * Get generated
-     *
-     * @return boolean
-     */
-    public function isGenerated()
-    {
-        return $this->generated;
-    }
 
      /**
      * Set salt
@@ -357,6 +262,29 @@ class Card
    public function getSalt()
     {
         return $this->salt;
+    }
+
+     /**
+     * Set code
+     *
+     * @param string $code
+     *
+     * @return Card
+     */
+   public function setCode($code)
+    {
+        $this->code = $code;
+        return $this;
+    }
+
+     /**
+     * Get code
+     *
+     * @return string
+     */
+   public function getCode()
+    {
+        return $this->code;
     }
 
 }

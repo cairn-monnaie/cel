@@ -26,7 +26,7 @@ parameters:
 
     cairn_card_rows : 5
     cairn_card_cols : 5
-    card_activation_delay : 10
+    card_association_delay : 10
     cairn_email_noreply : noreply@cairn-monnaie.com
     cairn_email_technical_services : maintenance@cairn-monnaie.com
 
@@ -49,3 +49,4 @@ parameters:
 
     cyclos_currency_cairn : cairn
     leading_company : 'Association Le Cairn'
+    max_printable_cards : 20

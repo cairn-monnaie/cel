@@ -126,7 +126,7 @@ class UserController extends Controller
      *Get the list of all users grouped by roles
      *
      */
-    public function usersAction(Request $request, $_format)
+    public function listUsersAction(Request $request, $_format)
     {
         $currentUserID = $this->getUser()->getID();
         $em = $this->getDoctrine()->getManager();
@@ -177,10 +177,8 @@ class UserController extends Controller
         $ub = $userRepo->createQueryBuilder('u');
         $userRepo->whereReferent($ub, $currentUserID);
         $pendingCards = $ub
-            ->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->join('u.card','c')
-            ->andWhere('c.fields is NULL')
+            ->leftJoin('u.card','c')
+            ->andWhere('c.id is NULL') //card is the owning-side in the association user/card
             ->orderBy('u.name','ASC')
             ->getQuery()->getResult(); 
 

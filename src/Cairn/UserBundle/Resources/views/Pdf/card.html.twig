@@ -4,11 +4,17 @@
 
 
 {% block fos_user_content %}
-    {% set rows = fields|length %}
-    {% set cols = fields|length %}
+    {% set rows = card.fields|length %}
+    {% set cols = card.fields|length %}
     <table>
-        <caption> <strong> Carte de sécurité Cairn n° {{card.number}} </strong> </br>
-                    <em> Propriétaire : {{card.user.name }} </em>
+        <caption> <strong> Carte de sécurité Cairn </strong> </br>
+                    <em> Propriétaire : 
+                        {% if card.user %}
+                            {{card.user.name}}
+                        {% endif %}
+                    </em> </br>
+                    <em> Code d'association : {{ code }} </em>
+
         </caption>
 
         <thead>
@@ -24,7 +30,7 @@
                 <tr>
                     <td> <strong> &#{{64+letter}} </strong> </td>
                     {% for i in 1..cols%}
-                        <td>{{fields[letter-1][i-1]}}</td>        
+                        <td>{{card.fields[letter-1][i-1]}}</td>        
                     {% endfor %}
                 </tr>
             {% endfor %}

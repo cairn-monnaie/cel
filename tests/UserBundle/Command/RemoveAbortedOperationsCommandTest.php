@@ -1,9 +1,9 @@
 <?php
 
-// tests/UserBundle/Command/UpdateOperationsCommandTest.php
+// tests/UserBundle/Command/RemoveAbortedOperationsCommandTest.php
 namespace Tests\UserBundle\Command;
 
-use Cairn\UserBundle\Command\UpdateOperationsCommand;
+use Cairn\UserBundle\Command\RemoveAbortedOperationsCommand;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -11,14 +11,14 @@ use Symfony\Component\Console\Input\StringInput;
 
 use Cyclos;
 
-class UpdateOperationsCommandTest extends KernelTestCase
+class RemoveAbortedOperationsCommandTest extends KernelTestCase
 {
 
     /**
      *
      * Tests that all aborted operations ( <=> PaymentID is NULL) have been removed
      */
-    public function testUpdateOperationsCommand()
+    public function testRemoveAbortedOperationsCommand()
     {
         $kernel = static::createKernel();
         $kernel->boot();
@@ -28,13 +28,13 @@ class UpdateOperationsCommandTest extends KernelTestCase
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
         $application = new Application($kernel);
-        $application->add(new UpdateOperationsCommand());
+        $application->add(new RemoveAbortedOperationsCommand());
 
         //assert the database content BEFORE command execution
         $abortedOperations = $operationRepo->findBy(array('paymentID'=>NULL));
         $this->assertTrue(count($abortedOperations) != 0);
 
-        $command = $application->find('cairn.user:update-operations-status');
+        $command = $application->find('cairn.user:remove-aborted-operations');
         $commandTester = new CommandTester($command);
         $commandTester->execute(array(
             'command'  => $command->getName()

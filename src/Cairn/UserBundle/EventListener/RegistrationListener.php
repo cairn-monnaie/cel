@@ -147,9 +147,9 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
-        $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
-        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
-        $user->setCard($card);                                         
+//        $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
+//        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
+//        $user->setCard($card);                                         
 
         //set cyclos ID here to pass the constraint cyclos_id not null
         $cyclosID = rand(1, 1000000000);

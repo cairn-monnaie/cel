@@ -19,10 +19,19 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
+use Knp\Snappy\Pdf;
+
 //manage Forms
 use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\ConfirmationType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\FormBuilderInterface;                               
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 
 use Cairn\UserBundle\Validator\UserPassword;
 
@@ -87,11 +96,7 @@ class CardController extends Controller
         $card = $currentUser->getCard();
 
         if(!$card){
-            $session->getFlashBag()->add('info','Vous n\'avez pas de carte de sécurité Cairn. Votre opération ne peut être poursuivie. Commandez-en une');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
-        }
-        if(!$card->isEnabled()){
-            $session->getFlashBag()->add('info','Votre carte courante n\'est pas active. Votre opération ne peut être poursuivie. Activez-la.');
+            $session->getFlashBag()->add('info','Vous n\'avez pas de carte de sécurité Cairn associée à votre espace membre. Votre opération ne peut être poursuivie. ');
             return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
 
@@ -155,80 +160,103 @@ class CardController extends Controller
     }
 
     /**
-     * Requests for a new card
+     * Lists all the available cards
      *
-     * To request for a new card, the current card of $user must have been revoked. This request can be done by the user itself, or 
-     * by one of its referents. To ensure security, the user doing the request is asked to input its password. In case of failure,
-     * user's attribute 'passwordTries' is incremented. 3 failures leads to disable the user.
-     *
-     *@param User $user User who needs a new card
-     *@throws AccessDeniedException currentUser is not card's owner or referent of card's owner
-     *@Method("GET")
+     * This action lists all the available cards. The list can be filtered by creation date and by code
+     *@Security("is_granted('ROLE_ADMIN')")
      */
-    public function orderCardAction(Request $request, User $user, $_format)
+    public function listAvailableCardsAction(Request $request)
     {
-        $currentUser = $this->getUser();
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
+        $cardRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:Card');
 
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        $availableCards = $cardRepo->findAvailableCards();
+
+        $beforeDefaultDate = new \Datetime(date('Y-m-d 23:59'));
+        $form = $this->createFormBuilder()
+            ->add('orderBy',   ChoiceType::class, array(
+                'label' => 'affiché par',
+                'choices' => array('dates de génération décroissantes'=>'DESC',
+                                   'dates de génération croissantes' => 'ASC')))
+            ->add('before',     DateTimeType::class, array(
+                'label' => 'générées avant',
+                'date_widget' => 'single_text',
+                'time_widget' => 'single_text',
+                'data'=> $beforeDefaultDate,
+                'required'=>false))
+            ->add('code',  TextType::class,array(
+                'label'=>'Code',
+                'required'=>false))
+                ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
+                ->getForm();
+
+        if($request->isMethod('POST')){ //form filled and submitted
+
+            $form->handleRequest($request);    
+            if($form->isValid()){
+                $dataForm = $form->getData();            
+                $orderBy = $dataForm['orderBy'];
+                $before = $dataForm['before'];
+                $code = $dataForm['code'];
+
+                $cb = $cardRepo->createQueryBuilder('c');
+                $cb->where('c.user is NULL')
+                    ->orderBy('c.creationDate',$orderBy);
+
+                if($before){
+                    $cb->andWhere('c.creationDate <= :creationDate')
+                       ->setParameter('creationDate',$before);
+
+                }
+                if($code){
+                    $cb->andWhere('c.code = :code')
+                       ->setParameter('code',$code);
+                }
+
+                $availableCards = $cb->getQuery()->getResult();
+            }
         }
 
-        $card = $user->getCard();
-        if($card){
-            if($card->isEnabled()){
-                $session->getFlashBag()->add('info','La carte courante est active. Vous ne pouvez commander une autre carte qu\'en cas de perte de la carte courante. Veuillez la révoquer d\'abord.');
-            }else{
-                if($card->isGenerated()){
-                    $session->getFlashBag()->add('info','Vous avez déjà une carte courante, inactive. Veuillez l\'activer ou la révoquer en cas de perte.');
-                    return $this->redirectToRoute('cairn_user_card_validate',array('_format'=>$_format,'id'=>$user->getID()));
-                }else{
-                    $session->getFlashBag()->add('info','Vous avez déjà une carte commandée en cours, mais elle ne vous a pas encore été envoyée.');
-                }
-            }
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
+        return $this->render('CairnUserBundle:Card:list_available_cards.html.twig',array('form'=>$form->createView(),
+                                                                                         'availableCards'=>$availableCards));
+    }
+
+    /**
+     * Destructs an available card
+     *
+     *@Security("is_granted('ROLE_ADMIN')")
+     *@Method("GET")
+     */
+    public function destructCardAction(Request $request, Card $card)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $session = $request->getSession();
+        //associated card
+        if($card->getUser()){
+            throw new AccessDeniedException('Cette carte est associée à un compte. Destruction impossible');
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
-            'constraints'=>new UserPassword() ));
+        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','constraints'=> new UserPassword() ));
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
 
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    $salt = $this->get('cairn_user.security')->generateCardSalt($user);
-                    $card = new Card($user,$this->getParameter('cairn_card_rows'), $this->getParameter('cairn_card_cols'),$salt);
-                    $user->setCard($card);
-
+                    $em->remove($card);
                     $em->flush();
-
-                    if($currentUser !== $user){
-                        $subject = 'Nouvelle carte de sécurité Cairn';
-                        $from = $this->getParameter('cairn_email_noreply');
-                        $to = $user->getEmail();
-                        $body = $this->renderView('CairnUserBundle:Emails:new_card.html.twig',array('user'=>$user));
-                        $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-                        $session->getFlashBag()->add('success','La carte de sécurité Cairn n°'.$user->getNbCards().' de '.$user->getName().' est commandée ! Un email lui a été envoyé pour l\'en informer.');
-                    }else{
-                        $session->getFlashBag()->add('success','Votre carte de sécurité Cairn a été commandée avec succès !');
-                    }
+                    $session->getFlashBag()->add('success', 'La carte de sécurité a été détruite avec succès !');
+                }else{
+                    $session->getFlashBag()->add('info', 'La carte de sécurité n\'a pas été détruite.');
                 }
-                else{
-                    $session->getFlashBag()->add('info','Vous avez annulé votre commande de carte.');
 
-                }
-                return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
-
+                return $this->redirectToRoute('cairn_user_card_list_available');
             }
         }
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView()));
-        }
-        return $this->render('CairnUserBundle:Card:confirm_new_card.html.twig',array('form'=>$form->createView()));
+
+        return $this->render('CairnUserBundle:Card:destruct_card.html.twig',array('form'=>$form->createView(),'card'=>$card));
     }
+
 
     /**
      * Requests for a card revocation
@@ -254,17 +282,12 @@ class CardController extends Controller
 
         $card = $user->getCard();
         if(!$card){
-            $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée. Vous pouvez en commander une nouvelle.');
+            $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée.Vous pouvez aller en chercher une nouvelle.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
-        }
-        if(!$card->isGenerated()){
-            $session->getFlashBag()->add('info',
-                'La carte de sécurité n\'a pas encore été créée. Vous ne pouvez donc pas la révoquer.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
-        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe','required'=>false,
+        $form->add('current_password', PasswordType::class, array('label'=> 'Mot de passe',
             'constraints'=> new UserPassword() ));
 
         if($request->isMethod('POST')){
@@ -273,6 +296,7 @@ class CardController extends Controller
 
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
+                    $saveCode = $card->getCode();
                     $em->remove($card);
                     $em->flush();
 
@@ -283,15 +307,16 @@ class CardController extends Controller
                         $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig');
 
                         $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
-                        $session->getFlashBag()->add('success','La carte de sécurité Cairn n°'.$user->getNbCards().' de '.$user->getName().' a été révoquée avec succès ! Un email lui a été envoyé pour l\'en informer.');
+                        $session->getFlashBag()->add('success','La carte de sécurité Cairn de code'.$saveCode.' appartenant à '.$user->getName().' a été révoquée avec succès ! Un email lui a été envoyé pour l\'en informer.');
                     }else{
                         $session->getFlashBag()->add('success','Votre carte de sécurité Cairn a été révoquée avec succès !');
                     }
 
                 }
                 else{
-                    $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte n° ' .$card->getNumber());
+                    $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte de sécurité');
                 }
+
                 return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
 
             }
@@ -303,94 +328,172 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:confirm_revoke_card.html.twig',array('form'=>$form->createView(),'card'=>$card));
     }
 
-
     /**
-     * Validates new user's card
+     * Generates a zip file containing a list of cards
      *
-     * To ensure security, the user is asked to input its card key. In case of failure, user's attribute 'cardKeyTries' is incremented. 
-     * 3 failures leads to disable the user.
+     * As an admin, an user can generate a list of cards to be associated afterwards. The number of printable cards is limited according
+     * to a global variable max_printed_cards. 
+     *
+     *@Security("is_granted('ROLE_ADMIN')")
      */
-    public function validateCardAction(Request $request, $_format)
+    public function generateSetOfCardsAction(Request $request)
     {
         $session = $request->getSession();
-        $user = $this->getUser();
-        $card = $user->getCard();
+        $currentUser = $this->getUser();
         $em = $this->getDoctrine()->getManager();
+        $cardRepo = $em->getRepository('CairnUserBundle:Card');
 
-        if(!$card){
-            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn a été révoquée. Commandez-en une nouvelle.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
-        }
-        elseif(!$card->isGenerated()){
-            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn ne vous a pas été envoyé. Validation impossible');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
-        }
-        if($card->isEnabled()){
-            $session->getFlashBag()->add('info','Votre carte de sécurité Cairn est déjà active.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
+        $nbAvailableCards = count($cardRepo->findAvailableCards());
+        $nbPrintableCards = $this->getParameter('max_printable_cards') - $nbAvailableCards;
+
+        if($nbPrintableCards == 0){
+            $session->getFlashBag()->add('info','La limite de cartes générables a été atteinte : '.$this->getParameter('max_printable_cards'));
+            return $this->redirectToRoute('cairn_user_welcome',array('id'=>$currentUser->getID()));
         }
 
-        $positions = $this->generatePositions($card);
-        if($request->isMethod('GET')){
-            $session->set('position',$positions['index']);
+        $form = $this->createFormBuilder()
+            ->add('number', IntegerType::class, array('label' => 'Nombre de cartes'))
+            ->add('confirm', SubmitType::class, array('label' => 'Valider'))
+            ->getForm();
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()){
+                $nbRequestedCards =  $form->get('number')->getData();
+
+                if($nbPrintableCards < $nbRequestedCards){
+                    $nbRequestedCards = $nbPrintableCards;
+                    $session->getFlashBag()->add('info','Vous avez demandé la génération de '.$nbRequestedCards.' mais seules '.$nbPrintableCards.' peuvent être fournies.');
+                }
+
+                $uploadDir = $this->getParameter('kernel.project_dir').'/web/uploads/cards/';
+
+                $zip = new \ZipArchive();
+                $zipName = 'cards-set-'.time().'.zip';
+                $zipWebPath = $uploadDir.$zipName;
+//                $zipName = $this->getParameter('kernel.project_dir').'/test.zip';
+                $zip->open($zipWebPath,  \ZipArchive::CREATE);
+
+                $files = array();
+                for($i=0; $i<$nbRequestedCards; $i++){
+                    $snappy = new Pdf($this->getParameter('kernel.project_dir').'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
+//                    $snappy->setTemporaryFolder($this->getParameter('kernel.project_dir').'/temp');
+
+                    $salt = $this->get('cairn_user.security')->generateCardSalt();
+
+                    $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
+
+                    $card = new Card(NULL,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode);
+                    $card->generateCard($this->getParameter('kernel.environment'));
+                    $fields = $card->getFields();
+
+                    $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
+                        array('card'=>$card,'code'=>$this->get('cairn_user.security')->vigenereEncode($uniqueCode)));
+
+                    $pdfName = 'card-'.time().'-'.$card->getCode().'.pdf';
+                    $webPath = $uploadDir.$pdfName;
+                    $snappy->generateFromHtml($html,$webPath);
+                    $zip->addFromString($pdfName, file_get_contents($webPath));
+
+                    $em->persist($card);
+
+                }
+
+                $zip->close();
+
+                $response = new Response(file_get_contents($zipWebPath));
+                $response->headers->set('Content-Type', 'application/zip');
+                $response->headers->set('Content-Disposition', 'attachment;filename="' . $zipName . '"');
+                $response->headers->set('Content-length', filesize($zipWebPath));
+
+                $em->flush();
+
+                $session->getFlashBag()->add('success',$nbPrintableCards.' ont été téléchargées avec succès !');
+                return $response;
+            }
         }
-        $array_pos = $positions['cell'];
+        return $this->render('CairnUserBundle:Card:generate_set_cards.html.twig',array('form'=>$form->createView(),
+                                                                                       'nbPrintableCards'=>$nbPrintableCards));
+
+    }
+
+
+    /**
+     * Associate new user's card
+     *
+     * To ensure security, the user is asked to input a code provided on his card. In case of failure, user's attribute 
+     * 'cardAssociationTries' is incremented.
+     * 3 failures leads to disable the user.
+     */
+    public function associateCardAction(Request $request, User $user, $_format)
+    {
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+        $em = $this->getDoctrine()->getManager();
+        $cardRepo = $em->getRepository('CairnUserBundle:Card');
+
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
+
+        $card = $user->getCard();
+        if($card){
+            $session->getFlashBag()->add('info','Une carte a déjà été associée.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
+        }
+
+        if($user->getRemovalRequest() || !$user->isEnabled() ){
+            $session->getFlashBag()->add('info',$user->getName().' est en instance de suppression. L\'association de carte est donc impossible');
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
+        }
 
         $form = $this->createForm(CardType::class);
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $position = $session->get('position');
-                $cardKey =  $form->get('field')->getData();
+                $cardCode =  $form->get('field')->getData();
+                $newCard = $cardRepo->findAvailableCardWithCode($this->get('cairn_user.security')->vigenereDecode($cardCode));
 
-                $event = new InputCardKeyEvent($card->getUser(),$cardKey,$position, $session);
-                $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
-
-                if($event->getRedirect()){
-                    $session->getFlashBag()->add('error','Votre compte a été bloqué');
-                    return $this->redirectToRoute('fos_user_security_logout');
-                }
-
-
-                if($user->getCardKeyTries() == 0){
-                    $session->set('has_input_card_key_valid',false);
-                    $card->setEnabled(true);
+                if(!$newCard){
+                    $currentUser->setCardAssociationTries($user->getCardAssociationTries() + 1);
+                    $remainingTries = 3 - $user->getCardAssociationTries();
+                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais.');
                     $em->flush();
 
-                    $session->getFlashBag()->add('success','Votre carte a été activée avec succès.');
-                    return $this->redirectToRoute('cairn_user_card_home',array('_format'=>$_format,'id'=>$user->getID()));
-
-                }
-                else{
-                    $session->getFlashBag()->add('error','Clé invalide. Veuillez réessayer');
                     return new RedirectResponse($request->getRequestUri());
+                }else{
+                    $currentUser->setCardAssociationTries(0);
+                    $user->setCard($newCard);
+                    $newCard->setUser($user);
+                    $this->get('cairn_user.security')->encodeCard($newCard);
+                    $em->flush();
+
+                    $session->getFlashBag()->add('success','La carte a été associée avec succès.');
+                    return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
                 }
+
             }
         }
 
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'card'=>$card,'position'=>$array_pos));
-
-        }
-        return $this->render('CairnUserBundle:Card:validate_card.html.twig',array('form'=>$form->createView(),'card'=>$card,'position'=>$array_pos));
+        return $this->render('CairnUserBundle:Card:associate_card.html.twig',array('form'=>$form->createView(),'user'=>$user));
 
     }
 
 
     /**
-     * Generates a new card entity, print it in PDF format then encode it in database
+     * Generates a new card entity, associates it to an user, prints it in PDF format then encodes it in database
      *
      * This action is considered as a sensible operation.
      * Card generation can be done by an admin for user under its responsibility. An exception case is installed SUPER_ADMIN who can 
-     * generate a card for himself
+     * generate a card for himself. The association between user and card is done automatically.
      *
      * The card is encoded in database using user's salt attribute to add a security layer in database.
      *
      *@Security("is_granted('ROLE_ADMIN')")
      *@Method("GET")
      */
-    public function generateCardAction(Request $request, User $user, $_format)
+    public function downloadAndAssociateCardAction(Request $request, User $user, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -403,12 +506,8 @@ class CardController extends Controller
 
         $card = $user->getCard();
 
-        if(!$card){
-            $session->getFlashBag()->add('info',$user->getName() . ' n\'a pas de carte de sécurité à générer. Commandez-en une nouvelle.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
-        }
-        if($card->isGenerated()){
-            $session->getFlashBag()->add('info','La carte de sécurité a déjà été générée.');
+        if($card){
+            $session->getFlashBag()->add('info',$user->getName().' a déjà une carte de sécurité associée.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
         }
 
@@ -419,60 +518,27 @@ class CardController extends Controller
                 return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format,'id'=>$user->getID()));
             }
 
+            $salt = $this->get('cairn_user.security')->generateCardSalt();
+            $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
+
+            $card = new Card($user,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode);
+
             $card->generateCard($this->getParameter('kernel.environment'));
+
+            $user->setCard($card);
+
+            $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
+                array('card'=>$card,'code'=>$this->get('cairn_user.security')->vigenereEncode($uniqueCode)));
+    
+    
+            $this->get('cairn_user.security')->encodeCard($card);
             $em->flush();
-
-            $session->getFlashBag()->add('success','Pensez à supprimer le fichier de votre ordinateur dès que la carte a été imprimée !');
-
-            return $this->redirectToRoute('cairn_user_card_download', array('_format'=>$_format,'id'=>$card->getID()));
-
-        }
-
-        if($_format == 'json'){
-            return $this->json(array(
-                'user' => $user,
-                'form'   => $form->createView()
-            ));
-        }
-        return $this->render('CairnUserBundle:Card:generate.html.twig', array(
-            'user' => $user,
-            'form'   => $form->createView()
-        ));
-
-    }
-
-    /*
-     *@Method("GET")
-     *@Security("is_granted('ROLE_ADMIN')")
-     */ 
-    public function downloadCardAction(Request $request, Card $card, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-
-        $fields = $card->getFields();
-        $user = $card->getUser();
-
-        if(!$fields && !$this->isGranted('ROLE_ADMIN')){
-            $session->getFlashBag()->add('error',' Etape de vérification sautée. Petit Filou !');
-            return $this->redirectToRoute('cairn_user_card_home', array('_format'=> $_format, 'id'=>$card->getUser()->getID()));
-        }
-
-        if($card->isGenerated()){
-            throw new AccessDeniedException('Action impossible');
-        }
-
-        $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
-            array('card'=>$card,'fields'=>$fields));
-
-        $card->setGenerated(true);
-
-        $this->get('cairn_user.security')->encodeCard($card);
-        $em->flush();
-        $filename = sprintf('carte-sécurité-cairn-'.$card->getNumber().'-%s.pdf',$user->getUserName());
-
-        if($_format == 'json'){
-            return new JsonResponse(
+            $filename = sprintf('carte-sécurité-cairn-'.$card->getID().'-%s.pdf',$user->getUserName());
+    
+            $session->getFlashBag()->add('success','La carte a été associée à '.$user->getName().' !');
+            $session->getFlashBag()->add('info','Pensez à supprimer le fichier de votre ordinateur dès que la carte a été imprimée !');
+   
+            return new Response(
                 $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
                 200,
                 [
@@ -480,16 +546,15 @@ class CardController extends Controller
                     'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
                 ]
             );
+
         }
 
-        return new Response(
-            $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
-            200,
-            [
-                'Content-Type'        => 'application/pdf',
-                'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
-            ]
-        );
+        return $this->render('CairnUserBundle:Card:generate.html.twig', array(
+            'user' => $user,
+            'form'   => $form->createView()
+        ));
+
     }
+
 
 }

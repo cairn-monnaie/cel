@@ -28,7 +28,7 @@ class Commands
 
     protected $templating;
 
-    protected $cardActivationDelay;
+    protected $cardAssociationDelay;
 
     protected $emailValidationDelay;
 
@@ -36,19 +36,19 @@ class Commands
 
     protected $container;
 
-    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating, $cardActivationDelay, $emailValidationDelay, Router $router, Container $container)
+    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating, $cardAssociationDelay, $emailValidationDelay, Router $router, Container $container)
     {
         $this->em = $em;
         $this->messageNotificator = $messageNotificator;
         $this->templating = $templating;
-        $this->cardActivationDelay = $cardActivationDelay;
+        $this->cardAssociationDelay = $cardAssociationDelay;
         $this->emailValidationDelay = $emailValidationDelay;
         $this->router = $router;
         $this->userManager = new UserManager();
         $this->container = $container;
     }
 
-    public function updateOperations()
+    public function removeAbortedOperations()
     {
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
 
@@ -131,7 +131,9 @@ class Commands
 
             //ajouter la carte
             $salt = $this->container->get('cairn_user.security')->generateCardSalt($new_admin);
-            $card = new Card($new_admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
+            $code = $this->container->get('cairn_user.security')->findAvailableCode();
+            $card = new Card($new_admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt,$code);
+            $card->generateCard($this->container->getParameter('kernel.environment'));
             $new_admin->setCard($card);
             $this->em->persist($new_admin);
 
@@ -216,54 +218,31 @@ class Commands
     }
 
     /**
-     * searches users with unactivated cards, warns them or remove their card
+     * searches printed and unassociated cards, and removes them if the association delay has passed
      *
-     * Everyday, this action is requested to look for users who have not activated their card. A maximal delay is defined.
-     * If the deadline is missed, the new user's card is automatically removed with an email notification sent, otherwise he is just
-     * reminded to validate it 5/2 and 1 day before the deadline
+     * Everyday, this action is requested to look for unassociated. A maximal delay is defined.
+     * If the deadline is missed, the card is automatically removed for security reasons : the card might have been lost
      *
      */
-    public function checkCardsActivation()
+    public function checkCardsAssociation()
     {
         $cardRepo = $this->em->getRepository('CairnUserBundle:Card');
-
-        $cb = $cardRepo->createQueryBuilder('c');
-        $cb->join('c.user','u')
-            ->where('c.enabled = false')
-            ->andWhere('c.generated = true')
-            ->addSelect('u');
-        $cards = $cb->getQuery()->getResult();
+        $cards = $cardRepo->findAvailableCards();
 
         $from = $this->messageNotificator->getNoReplyEmail();
 
         $today = new \Datetime(date('Y-m-d H:i:s'));
         foreach($cards as $card){
             $creationDate = $card->getCreationDate();
-            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->cardActivationDelay.' days');
+            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->cardAssociationDelay.' days');
             $interval = $today->diff($expirationDate);
-            $diff = $interval->days;
-            $nbMonths = intdiv($this->cardActivationDelay,30);
-            if( ($interval->invert == 0) && ($diff != 0)){
-                if($interval->m == $nbMonths){
-                    if(($diff == 5) || ($diff == 2) || ($diff == 1)){
-                        $subject = 'Activation de votre carte de sécurité Cairn';
-                        $body = $this->templating->render('CairnUserBundle:Emails:reminder_card_activation.html.twig',array('card'=>$card,'remainingDays'=>$diff));
-                        $this->messageNotificator->notifyByEmail($subject,$from,$card->getUser()->getEmail(),$body);
-
-                    }
-
-                }
-            }
-            else{
-                $subject = 'Expiration de votre carte de sécurité Cairn';
-                $body = $this->templating->render('CairnUserBundle:Emails:expiration_card.html.twig');
-                $card->getUser()->setCard(NULL);
-                $saveEmail = $card->getUser()->getEmail();
+            if( $interval->invert == 1 ){
                 $this->em->remove($card);
-                $this->em->flush();
-                $this->messageNotificator->notifyByEmail($subject,$from,$saveEmail,$body);
             }
         }
+
+        $this->em->flush();
+
     }
 
     public function createUser($cyclosUser, $admin)
@@ -298,12 +277,12 @@ class Commands
         $doctrineUser->setAddress($address);                                  
         $doctrineUser->setDescription('Test user blablablabla');             
 
-        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa');
+        $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+        $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
         //encode user's card
         $this->container->get('cairn_user.security')->encodeCard($card);
-        $card->setGenerated(true);
         $doctrineUser->setCard($card);
         $doctrineUser->addReferent($admin);
         $this->em->persist($doctrineUser);
@@ -375,7 +354,7 @@ class Commands
             $credentials = array('username'=>$adminUsername,'password'=>$password);
             $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
 
-            //generate doctrine users 
+            // ************************* generate doctrine users **************************************
             $memberGroupName = $this->container->getParameter('cyclos_group_pros');
             $adminGroupName = $this->container->getParameter('cyclos_group_network_admins');
 
@@ -404,7 +383,21 @@ class Commands
 
             $this->em->flush();
 
-            ////// payments creation : foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+            // ************************* creation of non-associated cards *******************************
+            // there is a max possible number of cards to print. We let 5 possible cards to print
+            
+            $nbPrintedCards = $this->container->getParameter('max_printable_cards') - 5;
+            for($i=0; $i < $nbPrintedCards; $i++){
+                $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+                $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
+                $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
+
+                $this->em->persist($card);
+            }
+
+
+            // ************************* payments creation ******************************************
+            // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
             $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
             $accountTypeVO = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER')[0];
 
@@ -418,7 +411,7 @@ class Commands
             }
 
             //instances of TransactionEntryVO
-            //in init_data_test.py script, trankilou makes transaction in order to have a null account balance
+            //in init_data_test.py script, trankilou makes a transaction in order to have a null account balance
             $user = $userRepo->findOneByUsername('trankilou'); 
 
             $processedTransactions = $bankingService->getTransactions(
@@ -447,34 +440,16 @@ class Commands
                 $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
             }
 
-//********* Here, we set specific attributes to each user in order to test different contexts and data *******************************
+            //********************** Fine-tune user data in order to have a diversified database ************************
 
-            //admin has a generated and validated card too, by default
+            //admin has a an associated and has already login once (avoids the compulsary redirection to change password)
             $admin->setFirstLogin(false);
             $admin->getCard()->generateCard($this->container->getParameter('kernel.environment'));
             $this->container->get('cairn_user.security')->encodeCard($admin->getCard());
-            $admin->getCard()->setGenerated(true);
-            $admin->getCard()->setEnabled(true);
 
-            //vie_integrative has generated(default at user creation in createUser function) and validated card + admin is not referent
+            //vie_integrative has associated card + admin is not referent
             $user = $userRepo->findOneByUsername('vie_integrative'); 
             $user->removeReferent($admin);
-            $card  = $user->getCard();
-            $card->setEnabled(true);
-
-            //users have generated(default at user creation in createUser function) and validated card
-            $user = $userRepo->findOneByUsername('labonnepioche'); 
-            $card  = $user->getCard();
-            $card->setEnabled(true);
-
-            $user = $userRepo->findOneByUsername('lib_colibri'); 
-            $card  = $user->getCard();
-            $card->setEnabled(true);
-
-            //card is not generated
-            $user = $userRepo->findOneByUsername('DrDBrew'); 
-            $card  = $user->getCard();
-            $card->setGenerated(false);
 
             //episol has NO card
             $user = $userRepo->findOneByUsername('episol'); 
@@ -489,7 +464,6 @@ class Commands
 
             //nico_faus_prod has beneficiary labonnepioche
             $debitor = $userRepo->findOneByUsername('nico_faus_prod'); 
-            $debitor->getCard()->setEnabled(true);
             $creditor = $userRepo->findOneByUsername('labonnepioche'); 
 
             $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
@@ -529,6 +503,7 @@ class Commands
             //user is blocked
             $user = $userRepo->findOneByUsername('tout_1_fromage'); 
             $user->setEnabled(false);
+
 
 //            //users have ROLE_ADMIN as referent
 //            $user1 = $userRepo->findOneByUsername('atelier_eltilo'); 

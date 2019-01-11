@@ -1,4 +1,4 @@
-{# src/Cairn/UserBundle/Resources/views/Card/validate_card.html.twig #}         
+{# src/Cairn/UserBundle/Resources/views/Card/destruct_card.html.twig #}         
                                                                                
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
@@ -9,11 +9,8 @@
 {% block body %}
     {{parent()}} 
     
-    <h2>Valider votre carte de sécurité Cairn </h2>
-    <h3>Saisir une clé </h3>
+    <h2> Détruire la carte de code {{card.code}} </h2>
     <div>                                                                          
-        {{include("CairnUserBundle:Card:warning_card_tries.html.twig",{'card': card})}}
-        Clé contenue dans la case numérotée <strong>{{position}}</strong> de votre carte de sécurité 
         {{ form_start(form) }}
         {{form_end(form) }}
     </div>                                                                         

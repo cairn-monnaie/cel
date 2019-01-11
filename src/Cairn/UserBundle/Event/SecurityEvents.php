@@ -26,7 +26,10 @@ final class SecurityEvents
      * WARNING : ParamConverters can't be used for controller actions matching these routes. 
      */
     const SENSIBLE_ROUTES = [
-        'cairn_user_card_generate',
+        'cairn_user_card_download',
+        'cairn_user_card_generate_set',
+        'cairn_user_card_destruct',
+        'cairn_user_card_list_available',
         'cairn_user_banking_withdrawal_request',
         'cairn_user_banking_deposit_request',
         'cairn_user_banking_reconversion_request',
