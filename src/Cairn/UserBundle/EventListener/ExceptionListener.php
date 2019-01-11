@@ -70,7 +70,7 @@ class ExceptionListener
         $from = $this->messageNotificator->getNoReplyEmail();
         $to = $this->messageNotificator->getMaintenanceEmail();
 
-        $exceptionMessage = 'Message d\'erreur : '. $exception->getMessage();
+        $exceptionMessage = 'Message d\'erreur : '. $exception->getMessage(). "\n";
 
         $traceMessage = 'Trace : '. $exception->getTraceAsString();
         $fileMessage = 'Dans le fichier : ' . $exception->getFile();
@@ -116,7 +116,17 @@ class ExceptionListener
                     $session->getFlashBag()->add('error','Donnée introuvable');
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
+                elseif($exception->errorCode == 'VALIDATION'){
+                    $listErrors = '';
+                    for($i = 0; $i < count($exception->error->validation->allErrors); $i++){
+                        $listErrors = "\n".$exception->error->validation->allErrors[$i].$listErrors;
+                    }
+                    $body = $listErrors . $body;
 
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
+                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                }
                 else{
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');

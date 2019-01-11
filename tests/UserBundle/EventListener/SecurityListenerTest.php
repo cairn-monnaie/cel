@@ -49,7 +49,8 @@ class SecurityListenerTest extends KernelTestCase
 
     public function __construct()
     {
-        self::$kernel = static::createKernel();                                      
+         parent::__construct();
+       self::$kernel = static::createKernel();                                      
         self::$kernel->boot();                                                       
         $this->container = self::$kernel->getContainer();
                                                                                          
