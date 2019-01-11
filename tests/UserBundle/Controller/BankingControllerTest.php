@@ -509,7 +509,7 @@ class BankingControllerTest extends BaseControllerTest
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
             $crawler = $this->client->followRedirect();
-            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
+
 
             $this->em->refresh($operation);
             $this->assertEquals($operation->getType(), Operation::TYPE_TRANSACTION_EXECUTED);
@@ -525,7 +525,6 @@ class BankingControllerTest extends BaseControllerTest
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
             $crawler = $this->client->followRedirect();
-            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
 
             $operation = $operationRepo->findOneBy(array('paymentID'=>$paymentID));
             $this->assertEquals($operation,NULL);

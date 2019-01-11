@@ -52,6 +52,7 @@ class RegistrationListenerTest extends KernelTestCase
 
     public function __construct()
     {
+        parent::__construct();
         self::$kernel = static::createKernel();                                      
         self::$kernel->boot();                                                       
         $this->container = self::$kernel->getContainer();
