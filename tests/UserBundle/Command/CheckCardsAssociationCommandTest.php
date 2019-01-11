@@ -9,6 +9,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Input\StringInput;
 
+use Cairn\UserBundle\Entity\Card;
+
 use Symfony\Component\Console\Input\InputInterface;                            
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -28,8 +30,9 @@ class CheckCardsAssociationCommandTest extends KernelTestCase
         $kernel->boot();
 
         $container = $kernel->getContainer();
-        $userRepo = $container->get('doctrine.orm.entity_manager')->getRepository('CairnUserBundle:User');
-        $cardRepo = $container->get('doctrine.orm.entity_manager')->getRepository('CairnUserBundle:Card');
+        $em = $container->get('doctrine.orm.entity_manager');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $cardRepo = $em->getRepository('CairnUserBundle:Card');
 
         $securityService = $container->get('cairn_user.security');
 
@@ -44,7 +47,8 @@ class CheckCardsAssociationCommandTest extends KernelTestCase
         $card->generateCard($container->getParameter('kernel.environment'));
         $card->setCreationDate($creationDate);
 
-        $container->get('doctrine.orm.entity_manager')->flush();
+        $em->persist($card);
+        $em->flush();
 
         $application = new Application($kernel);
         $application->add(new CheckCardsAssociationCommand());

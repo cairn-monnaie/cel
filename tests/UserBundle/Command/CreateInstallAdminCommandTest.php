@@ -15,9 +15,15 @@ class CreateInstallAdminCommandTest extends KernelTestCase
 {
 
     /**
+     * Tests the installation of an administrator in command line.
+     *
+     * If the admin is not supposed to be already installed, he is removed before command line is called.
+     * Then, if the admin has been successfully installed after the command line had been called, the user entity
+     * exists, is enabled and must be forced to change his password
+     *
      *@dataProvider provideInstallData
      */
-    public function testExecuteInstallAdminCommand($login, $password, $message, $isInstalled, $generateCard)
+    public function testExecuteInstallAdminCommand($login, $password, $message, $isAlreadyInstalled,$successInstalled)
     {
         $kernel = static::createKernel();
         $kernel->boot();
@@ -31,8 +37,18 @@ class CreateInstallAdminCommandTest extends KernelTestCase
         $application = new Application($kernel);
         $application->add(new CreateInstallAdminCommand());
 
-        if(! $isInstalled){
+        if(! $isAlreadyInstalled){
             $admin = $em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'admin_network'));        
+
+            $operations = $em->getRepository('CairnUserBundle:Operation')->findBy(array('creditor'=>$admin));    
+            foreach($operations as $operation){                                
+                $operation->setCreditor(NULL);                                 
+            }                                                                  
+
+            $operations = $em->getRepository('CairnUserBundle:Operation')->findBy(array('debitor'=>$admin));     
+            foreach($operations as $operation){                                
+                $operation->setDebitor(NULL);                                  
+            }
             $em->remove($admin);
             $em->flush();
         }
@@ -50,7 +66,7 @@ class CreateInstallAdminCommandTest extends KernelTestCase
         $this->assertContains($message, $output);
 
 
-        if($isInstalled){
+        if($successInstalled){
             //test a connection
             $crawler = $client->request('GET','/login');                     
 
@@ -67,33 +83,8 @@ class CreateInstallAdminCommandTest extends KernelTestCase
             $this->assertTrue($client->getResponse()->isRedirect('/profile/change-password'));
             $crawler =  $client->followRedirect();
 
-            //change password
-            $form = $crawler->selectButton('fos_user_change_password_form_save')->form();
-            $form['fos_user_change_password_form[current_password]']->setValue('@@bbccdd');
-            $form['fos_user_change_password_form[plainPassword][first]']->setValue('@@bbccdd');
-            $form['fos_user_change_password_form[plainPassword][second]']->setValue('@@bbccdd');
-            $crawler = $client->submit($form);
-            $crawler =  $client->followRedirect();
-
-            $em->refresh($admin);
-            $this->assertFalse($admin->isFirstLogin());
-
-            if(!$generateCard){
-                //test card generation
-                $crawler = $client->request('GET','/card/generate/'.$admin->getID());
-
-                $form = $crawler->selectButton('confirmation_save')->form();       
-                $crawler =  $client->submit($form);                          
-                $crawler = $client->followRedirect(); 
-
-                $em->refresh($admin);
-                $card = $admin->getCard();
-                $this->assertTrue($card->isGenerated());
-            }
         }
-        //assert the emails sent
 
-        //assert the content of the database with respect to the setup
         $kernel->shutDown();
     }
 
@@ -101,13 +92,13 @@ class CreateInstallAdminCommandTest extends KernelTestCase
     {
         return array(
             'wrong pwd'=>array('username'=>'admin_network','password'=>'@bcdefgh',
-            'message'=>'Wrong','isInstalled'=>false,'generateCard'=>false),
+                               'message'=>'Wrong','isAlreadyInstalled'=>false,'successInstalled'=>false),
             'wrong login'=>array('username'=>'test_admin','password'=>'@@bbccdd',
-            'message'=>'Wrong','isInstalled'=>false,'generateCard'=>false),
+                                 'message'=>'Wrong','isAlreadyInstalled'=>false,'successInstalled'=>false),
             'success'=>array('username'=>'admin_network','password'=>'@@bbccdd',
-            'message'=>'created successfully','isInstalled'=>false,'generateCard'=>false),
+                                 'message'=>'created successfully','isAlreadyInstalled'=>false,'successInstalled'=>true),
             'already installed'=>array('username'=>'admin_network','password'=>'@@bbccdd',
-            'message'=>'already been created','isInstalled'=>true,'generateCard'=>true),
+                                 'message'=>'already been created','isAlreadyInstalled'=>true,'successInstalled'=>false),
         );
     }
 }
