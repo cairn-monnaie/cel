@@ -5,6 +5,7 @@ namespace Cairn\UserBundle\Service;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Repository\CardRepository;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Card;
 
@@ -23,15 +24,24 @@ class Security
      */
     protected $userRepo;
 
+    /**
+     *@var CardRepository $cardRepo
+     */
+    protected $cardRepo;
+
     protected $tokenStorage;
 
     protected $encoderFactory;
 
-    public function __construct(UserRepository $userRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory)
+    protected $secret;
+
+    public function __construct(UserRepository $userRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory, $secret)
     {
         $this->userRepo = $userRepo;
+        $this->cardRepo = $cardRepo;
         $this->tokenStorage = $tokenStorage;
         $this->encoderFactory = $encoderFactory;
+        $this->secret = $secret;
     }
 
     public function getCurrentUser()
@@ -56,7 +66,7 @@ class Security
 
         $isSensibleRoute = in_array($route,$sensibleRoutes);                   
 
-        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_order'){
+        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_associate'){
             if(! ($this->userRepo->findOneBy(array('id'=>$parameters['id'])) === $currentUser)){
                 $isSensibleUrl = true;
             }
@@ -97,17 +107,58 @@ class Security
         return false;                                                          
     }                
 
-    public function generateCardSalt(User $user)
-    {
-        $encoder = $this->encoderFactory->getEncoder($user);
 
-        if ($encoder instanceof BCryptPasswordEncoder) {                   
-            $salt = NULL;                                                  
-        } else {                                                           
-            $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
-        }                    
+    private function getKey($length){
+        $key = $this->secret;
+        if (strlen($key) >= $length){
+            return substr($key,0,$length);
+        }else{
+            return str_pad('', $length, $key);
+        }
+    }
+
+
+    //Chiffre_de_Vigenère
+    public function vigenereEncode($string){
+        $return = str_pad('', strlen($string), ' ', STR_PAD_LEFT);
+        $key = $this->getKey(strlen($string));
+        for ( $pos=0; $pos < strlen($string); $pos ++ ) {
+            $return[$pos] = chr((ord($string[$pos]) + ord($key[$pos])) % 256);
+        }
+        return base64_encode($return);
+    }
+
+    public function vigenereDecode($string){
+        $string = base64_decode($string);
+        $return = str_pad('', strlen($string), ' ', STR_PAD_LEFT);
+        $key = $this->getKey(strlen($string));
+        for ( $pos=0; $pos < strlen($string); $pos ++ ) {
+            $return[$pos] = chr((ord($string[$pos]) - ord($key[$pos])) % 256);
+        }
+        return $return;
+    }
+
+
+    public function findAvailableCode()                                        
+    {                                                                          
+        $uniqueCode = substr($this->generateCardSalt(),0,5);        
+        $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);         
+
+        while($existingCard){                                                  
+            $uniqueCode = substr($this->generateCardSalt(),0,5);    
+            $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);     
+        }                                                                      
+
+        return $uniqueCode;                                                    
+    }
+
+
+    public function generateCardSalt()
+    {
+        $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
         return $salt;
     }
+
 
     public function encodeCard(Card $card)
     {

@@ -13,13 +13,18 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Operation] 
 
+    cairn_user.repository_card: 
+        class: CardRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Card] 
+
     cairn_user.commands:
         class: Cairn\UserBundle\Service\Commands
         arguments:
             - "@doctrine.orm.entity_manager"
             - "@cairn_user.message_notificator"
             - "@templating"
-            - "%card_activation_delay%"
+            - "%card_association_delay%"
             - "%cairn_email_activation_delay%"
             - "@router"
             - "@service_container"
@@ -57,8 +62,10 @@ services:
         class: Cairn\UserBundle\Service\Security
         arguments:
             - "@cairn_user.repository_user"
+            - "@cairn_user.repository_card"
             - "@security.token_storage"
             - "@security.encoder_factory" 
+            - "%secret%" 
 
     cairn_user.operation_listener:
         class: Cairn\UserBundle\EventListener\OperationListener

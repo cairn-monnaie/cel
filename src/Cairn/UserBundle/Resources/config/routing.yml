@@ -71,9 +71,9 @@ cairn_user_beneficiaries_remove:
         id: \d+
         _format: html|json
 
-cairn_user_users_home:
+cairn_user_list_users_home:
     path:     users.{_format}
-    defaults: { _controller: CairnUserBundle:User:users, _format: html }
+    defaults: { _controller: CairnUserBundle:User:listUsers, _format: html }
     requirements:
         _format: html|json
 
@@ -116,19 +116,6 @@ cairn_user_card_home:
         id: \d+
         _format: html|json
 
-cairn_user_card_order:
-    path:     card/order/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:orderCard, _format: html }
-    requirements:
-        id: \d+
-        _format: html|json
-
-cairn_user_card_validate:
-    path:     card/validate.{_format}
-    defaults: { _controller: CairnUserBundle:Card:validateCard, _format: html }
-    requirements:
-        _format: html|json
-
 cairn_user_card_revoke:
     path:     card/revoke/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Card:revokeCard, _format: html }
@@ -136,17 +123,37 @@ cairn_user_card_revoke:
         id: \d+
         _format: html|json
 
-#if you change this route's name, change it in EventListener/SecurityListener, in the function "onSensibleOperations"
-cairn_user_card_generate:
-    path:     card/generate/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:generateCard, _format: html }
+cairn_user_card_download:
+    path:     card/download/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:downloadAndAssociateCard, _format: html }
     requirements:
         id: \d+
         _format: html|json
 
-cairn_user_card_download:
-    path:     card/download/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:downloadCard, _format: html }
+cairn_user_card_associate:
+    path:     card/associate/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_destruct:
+    path:     card/destruct/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:destructCard, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_list_available:
+    path:     card/list-available
+    defaults: { _controller: CairnUserBundle:Card:listAvailableCards, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_generate_set:
+    path:     card/generate-set
+    defaults: { _controller: CairnUserBundle:Card:generateSetOfCards, _format: html }
     requirements:
         id: \d+
         _format: html|json

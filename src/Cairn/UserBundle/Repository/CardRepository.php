@@ -10,4 +10,21 @@ namespace Cairn\UserBundle\Repository;
  */
 class CardRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function findAvailableCardWithCode($code)
+    {
+        $cb = $this->createQueryBuilder('c');                  
+        $cb->where('c.user is NULL')
+            ->andWhere('c.code = :code')
+            ->setParameter('code',$code)
+            ->setMaxResults(1);
+
+        $result = $cb->getQuery()->getOneOrNullResult();
+        return $result;
+    }
+
+    public function findAvailableCards()
+    {
+        return $this->findBy(array('user'=>NULL));
+    }
 }

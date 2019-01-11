@@ -111,7 +111,7 @@ class RegistrationListenerTest extends KernelTestCase
         $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_SUCCESS,$event); 
 
         //necessary to pass the constraint "cannot be null"
-        $this->assertTrue($user->getCard() != NULL);
+        $this->assertTrue($user->getCard() == NULL);
         $this->assertTrue($user->getCyclosID() != NULL);
 
     }

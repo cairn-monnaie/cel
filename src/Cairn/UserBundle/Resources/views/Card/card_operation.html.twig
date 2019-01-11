@@ -1,25 +1,12 @@
 {# src/Cairn/UserBundle/Resources/views/Card/card_operation.html.twig #}         
 
     {% set card = user.card %}
-    {% if card and card.isGenerated %}
+    {% if card %}
         <a class="btn red" href="{{path('cairn_user_card_revoke',{'id':user.id})}}"><i class="material-icons left">clear</i>Révoquer la carte </a>
-        {% if user == app.user  %}
-            {% if not card.enabled and card.isGenerated%}
-                <a class="btn green" href="{{path('cairn_user_card_validate')}}"> Activer la carte </a>
-            {% endif %}
-        {% endif %}
 
-    {% elseif not card %}
-        <a class="btn teal" href="{{path('cairn_user_card_order',{'id':user.id})}}"> Commander une carte </a>
     {% else %}
-        {% if user.hasReferent(app.user) and not card.isGenerated %}
-            <a class="btn green" href="{{path('cairn_user_card_generate',{'id':user.id})}}"> Générer la carte </a>
-        {% else %}
-            Carte en attente de génération.
-        {% endif %}
-    {% endif %}
-    {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
-        {% if card and card.isGenerated and user == app.user %}
-            <a href="{{ path('cairn_user_card_download',{'id':card.id}) }}" class="btn blue"><i class="material-icons left">get_app</i>Télécharger</a>
+        <a class="btn teal" href="{{path('cairn_user_card_associate',{'id':user.id})}}"> Associer une carte existante </a>
+        {% if user.hasReferent(app.user)%}
+            <a class="btn green" href="{{path('cairn_user_card_download',{'id':user.id})}}"> Télécharger une nouvelle carte et l'associer à {{user.name}} </a>
         {% endif %}
     {% endif %}

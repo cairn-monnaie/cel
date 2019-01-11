@@ -193,7 +193,7 @@ class SecurityListener
         $isExceptionCase = false;
         //check if installed admin is asking for a new security card
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-            if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_generate')){
+            if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_download')){
                 //for himself ? for someone else ?
                 $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
                 if($toUser === $currentUser){
@@ -258,15 +258,13 @@ class SecurityListener
             $session->set('has_input_card_key_valid',true);
         }
         else{
+            $counter->incrementTries($user,'cardKey');
+
             if($user->getCardKeyTries() >= 2){
-                $counter->incrementTries($user,'cardKey');
                 $subject = 'Votre espace membre a été bloqué';
                 $body = 'Suite à 3 échecs de validation de votre carte de clés personnelles, votre espace membre a été bloqué par souci de sécurité. \n Veuillez contacter nos services pour plus d\'information';
                 $accessPlatform->disable(array($user),$subject,$body);
                 $event->setRedirect(true);
-            }
-            else{
-                $counter->incrementTries($user,'cardKey');
             }
         }
         $em->flush();
