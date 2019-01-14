@@ -31,7 +31,7 @@ def get_internal_name(name):
 # Récupération des constantes
 logger.info('Récupération des constantes depuis le YAML')
 APP_CONSTANTS = None
-with open("app/config/parameters.yml", 'r') as app_stream:
+with open("app/config/parameters.yml", 'r', encoding='utf8') as app_stream:
     try:
         APP_CONSTANTS = yaml.load(app_stream)
     except yaml.YAMLError as exc:
@@ -303,7 +303,7 @@ for pro in pros:
 #        login=login,
 #    )
 
-with open("cyclos_constants.yml", 'r') as cyclos_stream:
+with open("cyclos_constants.yml", 'r', encoding='utf8') as cyclos_stream:
     try:
         CYCLOS_CONSTANTS = yaml.load(cyclos_stream)
     except yaml.YAMLError as exc:
@@ -381,7 +381,7 @@ for i in range(1,10):
 logger.info('Virements futurs de 1 ' + LOCAL_CURRENCY_INTERNAL_NAME + ' réalisés par labonnepioche... Terminé !')
 
 ### write account numbers and ids in a file
-#with open("cyclos_constants.yml", 'w') as cyclos_stream:
+#with open("cyclos_constants.yml", 'w', encoding='utf8') as cyclos_stream:
 #    for category in sorted(constants_by_category.keys()):
 #        cyclos_stream.write(category + ':\n')
 #        constants = constants_by_category[category]

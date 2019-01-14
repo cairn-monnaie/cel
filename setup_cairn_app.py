@@ -33,9 +33,9 @@ def get_internal_name(name):
     return slug.replace('-', '_')
 
 # Récupération des paramètres globaux de l'application CairnB2B
-logger.info('Récupération des paramètres globaux de l application CairnB2B depuis le fichier app/config/parameters.yml ')
+logger.info('Recuperation des parametres globaux de l application CairnB2B depuis le fichier app/config/parameters.yml ')
 APP_CONSTANTS = None
-with open("app/config/parameters.yml", 'r') as app_stream:
+with open("app/config/parameters.yml", 'r',encoding='utf8') as app_stream:
     try:
         APP_CONSTANTS = yaml.load(app_stream)
     except yaml.YAMLError as exc:
@@ -44,7 +44,7 @@ with open("app/config/parameters.yml", 'r') as app_stream:
 # Récupération du temps de session autorisé de l'application CairnB2B
 logger.info('Récupération du temps de session de l application CairnB2B depuis le fichier app/config/config.yml ')
 CONFIG_CONSTANTS = None
-with open("app/config/config.yml", 'r') as app_stream:
+with open("app/config/config.yml", 'r', encoding='utf8') as app_stream:
     try:
         CONFIG_CONSTANTS = yaml.load(app_stream)
     except yaml.YAMLError as exc:
