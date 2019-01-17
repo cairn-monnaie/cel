@@ -90,8 +90,8 @@ def add_constant(category, name, value):
 
 
 # URLs des web services
-global_web_services = url + 'global/web-rpc/'
-network_web_services = url +  NETWORK_INTERNAL_NAME + '/web-rpc/'
+global_web_services = url + '/global/web-rpc/'
+network_web_services = url + '/' +  NETWORK_INTERNAL_NAME + '/web-rpc/'
 
 # En-têtes pour toutes les requêtes (il n'y a qu'un en-tête, pour
 # l'authentification).
@@ -2634,25 +2634,11 @@ def create_user(group, name, login):
     add_constant('users', name, user_id)
     return user_id
 
-logger.info('Informations de l\'administrateur , à toi de jouer !')
-
-logger.info('Attention! Si vous ne suivez pas les indications, ou rentrez des données incohérentes, vous ne pourrez pas terminer l\'installation')
-
-logger.info('Le nom doit contenir entre 3 et 30 caractères. Pour simplifier : seulement des chiffres et des lettres, sinon le parseur râle')
-admin_name = raw_input("Nom de l'administrateur: ")
-
-#logger.info('Le login doit contenir entre 5 et 16 caractères, tous alphanumériques : lettres, nombres, underscore et .')
-#admin_login = raw_input("Login de l'administrateur : ")
-
-logger.info('L\'adresse email doit avoir un format cohérent')
-admin_email = raw_input("Email de l'administrateur : ")
-
-
 create_user_with_password(
     group=ID_GROUPE_NETWORK_ADMINS,
-    name= admin_name,
+    name= 'Administrator',
     login= 'admin_network',
-    email= admin_email,
+    email= 'administrator@localhost.fr',
     password= '@@bbccdd'
 )
 
@@ -2685,3 +2671,6 @@ for category in sorted(constants_by_category.keys()):
     for name in sorted(constants.keys()):
         constants_file.write('  ' + name + ': ' + constants[name] + '\n')
 constants_file.close()
+
+logger.info('Fin du script')
+

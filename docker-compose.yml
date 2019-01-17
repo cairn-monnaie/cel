@@ -1,0 +1,83 @@
+version: '3'
+
+networks:
+  cyclos-net:
+    driver: bridge
+  symfony-net:
+    driver: bridge
+
+services:
+  mysql-db:
+    image: mysql:5.7
+    ports:
+      - "3307:3306"
+    environment:
+      - "MYSQL_ROOT_PASSWORD=KNicNj3p"
+      - "MYSQL_USER=root"
+      - "MYSQL_PASSWORD=KNicNj3p"
+      - "MYSQL_DATABASE=symfony_dev"
+    networks:
+      - symfony-net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:81"
+    networks:
+      - symfony-net
+
+  engine:
+    image: php:7.1-fpm
+    ports:
+      - "9000:9000"
+    volumes:
+        - ".:/var/www/Symfony:rw"
+    networks:
+      - symfony-net
+
+  front:
+    build: ./docker/front
+    image: mazda/nginx
+    ports:
+      - "8000:8000"
+    volumes:
+        - ".:/var/www/Symfony:rw"
+    networks:
+      - symfony-net
+
+  cyclos-app:
+    image: cyclos/cyclos:4.8.2
+    environment:
+    - DB_HOST=cyclos-db
+    - DB_NAME=cyclos
+    - DB_USER=cyclos
+    - DB_PASSWORD=cyclos
+    # build: ./cyclos
+    ports:
+    - "1234:8080"
+    #    volumes:
+    #    - ${PWD}/cyclos/cyclos.properties:/usr/local/cyclos/WEB-INF/classes/cyclos.properties
+    networks:
+      - cyclos-net
+  cyclos-db:
+    # build: ./cyclosdb
+    image: cyclos/db
+    volumes:
+      - ./cyclos-dump-minimal.sql:/docker-entrypoint-initdb.d/cyclos-dump-minimal.sql #dump done automatically by postgre
+    environment:
+    - POSTGRES_DB=cyclos
+    - POSTGRES_USER=cyclos
+    - POSTGRES_PASSWORD=cyclos
+    networks:
+      - cyclos-net
+        
+  cel:
+      #build: .
+    image: mazda/cairnb2b
+    depends_on:
+      - cyclos-app
+      - front
+    networks:
+      - cyclos-net
+      - symfony-net
+    
