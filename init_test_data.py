@@ -77,7 +77,7 @@ for k, v in vars(args).items():
 
 # URLs des web services
 global_web_services = url + 'global/web-rpc/'
-network_web_services = url + NETWORK_INTERNAL_NAME + '/web-rpc/'
+network_web_services = url + '/' + NETWORK_INTERNAL_NAME + '/web-rpc/'
 
 # En-têtes pour toutes les requêtes (il n'y a qu'un en-tête, pour
 # l'authentification).
