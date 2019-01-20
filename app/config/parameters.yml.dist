@@ -6,12 +6,12 @@ parameters:
     router.request_context.scheme: https
     router.request_context.base_url:
 
-    database_host: 127.0.0.1
-    database_port: ~
-    database_name: symfony
-    database_test_name : symfony
-    database_user: root
-    database_password: ~
+    database_host: db
+    database_port: 3306
+    database_name: db-name
+    database_test_name : db-name-test
+    database_user: username
+    database_password: pwd
     # You should uncomment this if you want to use pdo_sqlite
     #database_path: '%kernel.project_dir%/var/data/data.sqlite'
 

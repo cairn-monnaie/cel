@@ -27,4 +27,5 @@ composer.lock
 .web-server-pid
 bootstrap.php.cache
 /app/config/parameters.yml
+.env
 /docs

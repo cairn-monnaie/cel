@@ -11,7 +11,8 @@ RUN apt-get update \
     && docker-php-ext-install pdo pdo_mysql 
 
 COPY . /var/www/Symfony
-RUN chown -R www-data:www-data /var/www/Symfony
+RUN cd /var/www && php -r "eval('?>'.file_get_contents('http://getcomposer.org/installer'));" \  
+    && chown -R www-data:www-data /var/www/Symfony
 
 WORKDIR /var/www/Symfony
 

@@ -6,34 +6,35 @@ networks:
   symfony-net:
     driver: bridge
 
-volumes:
-  cel-data:
-    name: cel-data
+#volumes:
+#  cel-data:
+#    name: cel-data
 
 services:
   db:
     image: mysql:5.7
     ports:
-      - '3307:3306' #'${DB_PORT}:3306'
+      - '${DB_PORT}:3306'
     environment:
-      - MYSQL_ROOT_PASSWORD=KNicNj3p #${DB_ROOT_PASSWORD}'
-      - MYSQL_USER=root #${DB_USER}'
-      - MYSQL_PASSWORD=KNicNj3p #${DB_PASSWORD}'
-      - MYSQL_DATABASE=symfony_dev #${DB_DATABASE}'
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    restart: always
     networks:
       - symfony-net
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-        - '8080:80' #${PMA_PORT}:80'
+        - '${PMA_PORT}:80'
     networks:
       - symfony-net
 #    environment:
 #      - "PMA_HOST=db"
 #      - "PMA_PORT=3306"
 #      - 'PMA_USER= root' #${DB_USER}'
-#      - 'PMA_PASSWORD= KNicNj3p' #${DB_PASSWORD}'
+#      - 'PMA_PASSWORD=  #${DB_PASSWORD}'
 #    depends_on:
 #      - db
 
@@ -43,7 +44,9 @@ services:
     ports:
       - '${ENGINE_PORT}:9000'
     volumes:
-      - "cel-data:/var/www/Symfony/var/:rw"
+      - ".:/var/www/Symfony"
+      - "./docker/logs:/var/www/Symfony/var/logs/:rw" #retrieve log files
+    restart: always
     networks:
       - symfony-net
       - cyclos-net
@@ -53,10 +56,11 @@ services:
     ports:
       - '${FRONT_PORT}:8000'
     volumes:
-        - "cel-data:/var/log/nginx"
+        - "./docker/logs:/var/log/nginx" #retrieve log files
         - "./docker/front/nginx.conf:/etc/nginx/nginx.conf:ro"
         - "./docker/front/moncompte.conf:/etc/nginx/conf.d/moncompte.conf:ro"
         - "./web/:/var/www/Symfony/web"
+    restart: always
     networks:
       - symfony-net
 
@@ -68,8 +72,9 @@ services:
     - DB_USER=cyclos
     - DB_PASSWORD=cyclos
     # build: ./cyclos
+    restart: always
     ports:
-    - "1234:8080"
+    - '${CYCLOS_PORT}:8080'
     #    volumes:
     #    - ${PWD}/cyclos/cyclos.properties:/usr/local/cyclos/WEB-INF/classes/cyclos.properties
     networks:
@@ -83,6 +88,14 @@ services:
     - POSTGRES_DB=cyclos
     - POSTGRES_USER=cyclos
     - POSTGRES_PASSWORD=cyclos
+    restart: always
     networks:
       - cyclos-net
 
+  email-catcher:
+    image: schickling/mailcatcher    
+    ports: 
+      - '1025:1025'
+      - '1080:1080'
+    networks:
+      - symfony-net
