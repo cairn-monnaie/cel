@@ -5,10 +5,11 @@ LABEL description="CairnB2B based on debian" \
         maintainer="mazda91 <https://github.com/mazda91>"
 
 RUN apt-get update \
-    && apt-get install -y vim curl \
+    && apt-get install -y git vim curl \
     && apt-get install -y python3.5 python3-pip \
+    && apt-get install -y zlib1g-dev \
     && pip3 install python-slugify PyYAML datetime requests \
-    && docker-php-ext-install pdo pdo_mysql 
+    && docker-php-ext-install pdo pdo_mysql zip 
 
 COPY . /var/www/Symfony
 RUN cd /var/www && php -r "eval('?>'.file_get_contents('http://getcomposer.org/installer'));" \  

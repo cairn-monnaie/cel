@@ -83,8 +83,6 @@ Digital Cairn
      * Start the remaining containers  
        `docker-compose up -d`  
 
-     * Enable engine's user to write logs, cache files and web static files(images)  
-       `docker-compose exec engine chown -R www-data:www-data var web`  
 
      * Install dependencies from composer.json 
        `docker-compose exec engine ../composer.phar update`  
@@ -93,12 +91,15 @@ Digital Cairn
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
      * Launch Cyclos configuration script and initialize mysql database  
-       `docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod) 
+       `docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
      **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
+
+     * Enable engine's user to write logs, cache files and web static files(images)  
+       `docker-compose exec engine chown -R www-data:www-data var web`  
 
 ## Development
 
- * **Access applications and logs**    
+ * **Access applications**    
      From now on, you can access the main application, phpmyadmin and the cyclos underlying application.  
      Access engine's url (main app) and connect with default credentials : admin_network / @@bbccdd  
      Start browsing !
@@ -132,7 +133,7 @@ Digital Cairn
     A log file is available in `./docker/logs/test.log` file
 
  * **Generating test data**  
-    `docker-compose exec engine python init_test_data.py ``echo -n admin_network:@@bbccdd | base64` ``  
+    `docker-compose exec engine python init_test_data.py `` `echo -n admin_network:@@bbccdd | base64` `` `  
     This script first generates a set of users with an identical password : @@bbccdd.  
     Then, it credits some users with 1000 units of account (all  the users in a given city : Grenoble by default)  
     Finally, a specified user (labonnepioche by default) makes some scheduled payments.  
@@ -142,10 +143,12 @@ Digital Cairn
      The bootstrap script is automatically called when phpunit is requested. It can be found in `tests/bootstrap.php`. It executes two symfony custom console commands in order to fill the MySQL database with respect to the Cyclos database for consistency purposes. If the testing database already contains users, the command does nothing.  
       
  * **Tests isolation**  
-    In order to ensure MySQL database integrity, any begun transaction is rolled back at the end of each test. This way, we always work with the same database content between each test. This process is automatically set up with the doctrine-test-bundle bundle.  
+    In order to ensure MySQL database integrity from one test to another, any begun transaction is rolled back at the end of each test. This way, we always work with the same database content between each test. This process is automatically set up with the doctrine-test-bundle bundle.  
 
-    **Warning** : If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above).  
-     _Example_ : The user John Doe, in a functional test, changes its password from @@bbccdd to @bcdefgh. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not @@bbccdd anymore.  
+    **Warning** : If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above). 
+ 
+     _Example_ : The user John Doe, in a functional test, changes its password from '@@bbccdd' to '@bcdefgh'. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not '@@bbccdd' anymore.  
+
      _Workaround_ : if a test executes a transaction in the Cyclos database, explicitely commit the transaction before the end of the test  
      `public function testMyTestWhichChangesCyclosDatabase()  
      {   

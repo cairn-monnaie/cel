@@ -46,6 +46,7 @@ services:
     volumes:
       - ".:/var/www/Symfony"
       - "./docker/logs:/var/www/Symfony/var/logs/:rw" #retrieve log files
+      - "./docker/engine/php.ini:/usr/local/etc/php/php.ini"
     restart: always
     networks:
       - symfony-net
@@ -71,16 +72,12 @@ services:
     - DB_NAME=cyclos
     - DB_USER=cyclos
     - DB_PASSWORD=cyclos
-    # build: ./cyclos
     restart: always
     ports:
     - '${CYCLOS_PORT}:8080'
-    #    volumes:
-    #    - ${PWD}/cyclos/cyclos.properties:/usr/local/cyclos/WEB-INF/classes/cyclos.properties
     networks:
       - cyclos-net
   cyclos-db:
-    # build: ./cyclosdb
     image: cyclos/db
     volumes:
       - ./cyclos-dump-minimal.sql:/docker-entrypoint-initdb.d/cyclos-dump-minimal.sql #dump done automatically by postgre
