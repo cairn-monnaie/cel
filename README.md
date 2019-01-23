@@ -27,12 +27,12 @@ Digital Cairn
       `cp app/config/parameters.yml.dist app/config/parameters.yml`
 
     Some of these parameters rely directly on the docker-compose.yml file  
-      `database_host: db (name of the docker service containing MySQL database)`
-      `database_port: 3306 (port listener in the db container)`
-      `database_name: db-name`
-      `database_user: username (provided in .env)`
-      `database_password: pwd (provided in .env)`
-      `cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`
+      `database_host: db (name of the docker service containing MySQL database)`  
+      `database_port: 3306 (port listener in the db container)`  
+      `database_name: db-name`  
+      `database_user: username (provided in .env)`  
+      `database_password: pwd (provided in .env)`  
+      `cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`  
 
     Customize parameters according to your use among the following list
      * mailer_transport: smtp
