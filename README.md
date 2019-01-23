@@ -15,9 +15,8 @@ Digital Cairn
 
  * **Set up global parameters**
 
-    Copy the template file containing environment variables and open it with your favorite editor. 
-
-    `cp .env.dist .env`
+    Copy the template file containing environment variables and open it with your favorite editor.   
+      `cp .env.dist .env`
 
     Set the different variables and ports, ensuring that ports are not already in use by another application.
     To make sure of it, you can use the following command :
@@ -65,22 +64,28 @@ Digital Cairn
  * **Setup the application**
 
      Build docker images 
+
      `docker-compose build`
 
      Build the cyclos database. The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container.
      This way, the dump restore is automatically executed at container's creation. 
+
      `sudo docker-compose up -d cyclos-db`
 
      Check out the logs while the database is building from the basic cyclos-dump-minimal.sql file
+
      `docker-compose logs -f cyclos-db`
 
      One the database has been fully restored, start the cyclos app
+
      `docker-compose up -d cyclos-app`
 
      Then, start the database container, and check that it is listening on port 3306
+
      `docker-compose up -d db`
-     `docker-compose logs -f db`
+     `docker-compose logs -f db` 
      Otherwise, restart the container and check again
+
      `docker-compose restart db`
      `docker-compose logs -f db`
   
