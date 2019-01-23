@@ -86,48 +86,48 @@ Digital Cairn
      * Enable engine's user to write logs, cache files and web static files(images)  
        `docker-compose exec engine chown -R www-data:www-data var web`  
 
-     * Install dependencies  
+     * Install dependencies from composer.json 
        `docker-compose exec engine ../composer.phar update`  
       
      * Change the set of cities   
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
-     * Launch Cyclos configuration script and initialize mysql database
+     * Launch Cyclos configuration script and initialize mysql database  
        `docker-compose exec engine ./build-setup.sh env admin:admin`  
-     WARNING : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
+     **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
 ## Development
- * **Access applications and logs**
-    
-    From now on, you can access the main application, phpmyadmin and the cyclos underlying application.
-    Access engine's url (main app) and connect with default credentials : admin_network / @@bbccdd
-    Start browsing !
 
- As a volume is mounted on the project root directory, any change on the host is automatically reported in the container. Hence, there is no need to rebuild or restart the engine's container.
- * **Logs**
-    Using the same method of binding volumes between host and containers, all the log files are gathered in the docker/logs directory.  
+ * **Access applications and logs**    
+     From now on, you can access the main application, phpmyadmin and the cyclos underlying application.  
+     Access engine's url (main app) and connect with default credentials : admin_network / @@bbccdd  
+     Start browsing !
+
+ * **Update the code**  
+     As a volume is mounted on the project's root directory, any change on your host machine is automatically replicated in the container. Hence, there is no need to rebuild or restart the engine's container.
+
+ * **Update the database schema**  
+    `docker-compose exec engine doctrine:migrations:diff`  
+    `docker-compose exec engine doctrine:migrations:migrate`  
+
+ * **Logs**  
+     Using the same method of binding volumes between host and containers, all the log files are gathered in the docker/logs directory.  
     
  * **Emails**
-    An useful feature while developing a web app is email catching. Here, we use mailcatcher, listening on port 1025 to catch any message sent through our app. Therefore, we deliver messages to port 1025 using smtp protocol.
+    An useful feature while developing a web app is email catching. Here, we use **mailcatcher**, listening on port 1025 to catch any message sent through our app. Therefore, we must deliver messages to port 1025 using smtp protocol.
 
     Open the file `app/config/parameters.yml` with your favorite editor. 
-    Update the following parameters:
-
-     `* mailer_transport: smtp
-     * mailer_host: email-catcher
-     * mailer_port: 1025`
-
-    Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.
-
-    Update database schema
-    `docker-compose exec engine doctrine:migrations:diff`
-    `docker-compose exec engine doctrine:migrations:migrate`
+    Update the following parameters:  
+     `mailer_transport: smtp`
+     `mailer_host: email-catcher`
+     `mailer_port: 1025`  
+    Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.  
 
 ## Testing
       
  All the information provided in the _Development_ subsection is also very useful for testing the app. Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
 
- The source code regarding tests is available in the _tests_ directory, and any change will be automatically reported in the engine's container, as there is a binding volume with the project's root directory as binding point.
+ The source code regarding tests is available in the _tests_ directory, and any change will be automatically replicated in the engine's container, as there is a binding volume with the project's root directory as binding point.
 
   * **Working with tests**
 
