@@ -129,10 +129,10 @@ Digital Cairn
  The source code regarding tests is available in the _tests_ directory
 
  * **Logs**  
-    A log file is available : ./docker/logs/test.log
+    A log file is available in `./docker/logs/test.log` file
 
  * **Generating test data**  
-    `docker-compose exec engine python init_test_data.py `echo -n admin_network:@@bbccdd | base64 ``  
+    `docker-compose exec engine python init_test_data.py ``echo -n admin_network:@@bbccdd | base64` ``  
     This script first generates a set of users with an identical password : @@bbccdd.  
     Then, it credits some users with 1000 units of account (all  the users in a given city : Grenoble by default)  
     Finally, a specified user (labonnepioche by default) makes some scheduled payments.  
@@ -148,7 +148,7 @@ Digital Cairn
      _Example_ : The user John Doe, in a functional test, changes its password from @@bbccdd to @bcdefgh. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not @@bbccdd anymore.  
      _Workaround_ : if a test executes a transaction in the Cyclos database, explicitely commit the transaction before the end of the test  
      `public function testMyTestWhichChangesCyclosDatabase()  
-     {  
+     {   
     // ... something thats changes the Cyclos DB state  
     \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();  
      }`
