@@ -35,34 +35,32 @@ Digital Cairn
       `cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`  
 
     Customize parameters according to your use among the following list
-     * mailer_transport: smtp
-     * mailer_host: engine (name of the docker service executing php code)
-     * mailer_user: xxx (e.g admin@localhost.fr)
-     * mailer_port: xxx
-     * mailer_password: xxx
-     * secret: ThisTokenIsNotSoSecretChangeIt
-     * cairn_email_noreply: xxx (e.g noreply@localhost.fr)
-     * cyclos_group_pros: **_%network-group-members%_** (step 23)
-     * cyclos_group_network_admins: **_%network-group-admins%_** (step 19) 
-     * cyclos_group_global_admins: **_%global-group-admins%_** (step 28)
-     * cyclos_network_cairn: **_%network-internal-name%_** (step 5)
-     * cyclos_currency_cairn: **_%currency-name%_** (step 8)
-     * cairn_card_rows: xxx (e.g 5)
-     * cairn_card_cols: xxx (e.g 5)
-     * cairn_email_technical_services: xxx (e.g services@localhost.fr)
-     * card_activation_delay: xxx (e.g 10)
-     * cairn_default_conversion_description: xxx (e.g 'Conversion euros-cairns')
-     * cairn_default_withdrawal_description: xxx (e.g 'Withdrawal cairns')
-     * cairn_default_deposit_description: xxx  (e.g 'Deposit cairns')
-     * cairn_default_reconversion_description: xxx (e.g 'Reconversion cairns-euros')
-     * cairn_default_transaction_description: xxx (e.g 'Virement Cairn')
-     * cairn_email_activation_delay: xxx (e.g 10)
+      `mailer_transport: smtp`  
+      `mailer_host: engine (name of the docker service executing php code)`  
+      `mailer_user: xxx (e.g admin@localhost.fr)`  
+      `mailer_port: xxx`  
+      `mailer_password: xxx`  
+      `secret: ThisTokenIsNotSoSecretChangeIt`  
+      `cairn_email_noreply: xxx (e.g noreply@localhost.fr)`  
+      `cyclos_group_pros: xxx (e.g Adherents)`  
+      `cyclos_group_network_admins: xxx (e.g Network Admins)`  
+      `cyclos_group_global_admins: xxx (e.g Global Admins)`  
+      `cyclos_network_cairn: xxx (e.g network)` **MUST BE SLUGIFIED**  
+      `cyclos_currency_cairn: xxx (e.g euro)` **MUST BE SLUGIFIED**  
+      `cairn_card_rows: xxx (e.g 5)`  
+      `cairn_card_cols: xxx (e.g 5)`  
+      `cairn_email_technical_services: xxx (e.g services@localhost.fr)`  
+      `card_activation_delay: xxx (e.g 10)`  
+      `cairn_default_conversion_description: xxx (e.g 'Conversion euros-cairns')`  
+      `cairn_default_withdrawal_description: xxx (e.g 'Withdrawal cairns')`  
+      `cairn_default_deposit_description: xxx  (e.g 'Deposit cairns')`  
+      `cairn_default_reconversion_description: xxx (e.g 'Reconversion cairns-euros')`  
+      `cairn_default_transaction_description: xxx (e.g 'Virement Cairn')`  
+      `cairn_email_activation_delay: xxx (e.g 10)`  
 
- 
  * **Setup the application**
 
-     Build docker images 
-
+     Build docker images   
      `docker-compose build`
 
      Build the cyclos database. The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container.
