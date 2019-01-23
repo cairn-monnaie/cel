@@ -4,7 +4,6 @@ Digital Cairn
 # Requirements
  * docker && docker-compose
  * git
- * mailcatcher
 
 # Install
 
@@ -17,27 +16,30 @@ Digital Cairn
  * **Set up global parameters**
 
     Copy the template file containing environment variables and open it with your favorite editor. 
+
     `cp .env.dist .env`
 
-    Set the different variables and ports, ensuring that ports are not already inuse by another application.
+    Set the different variables and ports, ensuring that ports are not already in use by another application.
     To make sure of it, you can use the following command :
+
     `sudo lsof -i :xxx` xxx being the port
  
 
     Copy the template file containing symfony app global variables and open it with your favorite editor. 
+
     `cp app/config/parameters.yml.dist app/config/parameters.yml`
 
     Some of these parameters rely directly on the docker-compose.yml file
-     * database_host: db (name of the service)
+     `* database_host: db (name of the docker service containing MySQL database)
      * database_port: 3306 (port listener in the db container)
      * database_name: db-name
-     * database_user: username
-     * database_password: pwd
-     * cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the service)
+     * database_user: username (provided in .env)
+     * database_password: pwd (provided in .env)
+     * cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`
 
     Customize parameters according to your use among the following list
      * mailer_transport: smtp
-     * mailer_host: 127.0.0.1
+     * mailer_host: engine (name of the docker service executing php code)
      * mailer_user: xxx (e.g admin@localhost.fr)
      * mailer_port: xxx
      * mailer_password: xxx
@@ -62,7 +64,7 @@ Digital Cairn
  
  * **Setup the application**
 
-     Build docker images
+     Build docker images 
      `docker-compose build`
 
      Build the cyclos database. The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container.
