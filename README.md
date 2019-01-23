@@ -93,7 +93,7 @@ Digital Cairn
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
      * Launch Cyclos configuration script and initialize mysql database  
-       `docker-compose exec engine ./build-setup.sh env admin:admin`  
+       `docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod) 
      **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
 ## Development
@@ -111,48 +111,44 @@ Digital Cairn
     `docker-compose exec engine doctrine:migrations:migrate`  
 
  * **Logs**  
-     Using the same method of binding volumes between host and containers, all the log files are gathered in the docker/logs directory.  
+     Using the same method of binding volumes between host and containers, all the log files are gathered in the `docker/logs` directory.  
     
  * **Emails**
     An useful feature while developing a web app is email catching. Here, we use **mailcatcher**, listening on port 1025 to catch any message sent through our app. Therefore, we must deliver messages to port 1025 using smtp protocol.
 
     Open the file `app/config/parameters.yml` with your favorite editor. 
     Update the following parameters:  
-     `mailer_transport: smtp`
-     `mailer_host: email-catcher`
-     `mailer_port: 1025`  
+     `mailer_transport: smtp`  
+     `mailer_host: email-catcher`  
+     `mailer_port: 1025`    
     Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.  
 
 ## Testing
       
- All the information provided in the _Development_ subsection is also very useful for testing the app. Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
+ All the information provided in the _Development_ subsection is also relevant here. Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
+ The source code regarding tests is available in the _tests_ directory
 
- The source code regarding tests is available in the _tests_ directory, and any change will be automatically replicated in the engine's container, as there is a binding volume with the project's root directory as binding point.
+ * **Logs**  
+    A log file is available : ./docker/logs/test.log
 
-  * **Working with tests**
+ * **Generating test data**  
+    `docker-compose exec engine python init_test_data.py `echo -n admin_network:@@bbccdd | base64 ``  
+    This script first generates a set of users with an identical password : @@bbccdd.  
+    Then, it credits some users with 1000 units of account (all  the users in a given city : Grenoble by default)  
+    Finally, a specified user (labonnepioche by default) makes some scheduled payments.  
 
-     Using mailcatcher (see _Development_ subsection), emails sent during a testing phase can be displayed.
-     A log file is available : ./docker/logs/test.log
+ * **Launching tests**  
+    `docker-compose exec engine ./vendor/bin/phpunit`  
+     The bootstrap script is automatically called when phpunit is requested. It can be found in `tests/bootstrap.php`. It executes two symfony custom console commands in order to fill the MySQL database with respect to the Cyclos database for consistency purposes. If the testing database already contains users, the command does nothing.  
+      
+ * **Tests isolation**  
+    In order to ensure MySQL database integrity, any begun transaction is rolled back at the end of each test. This way, we always work with the same database content between each test. This process is automatically set up with the doctrine-test-bundle bundle.  
 
-     Generating test data from scratch on Cyclos-side  (should be done after installation)
-     `python init_test_data.py  \`echo -n admin_network:@@bbccdd | base64 \``
-     This script first generates a set of users with an identic password : @@bbccdd.
-     Then, it credits some users with 1000 units of account (all  the users in a given city : Grenoble by default) 
-     Finally, a specified user (labonnepioche by default) makes some scheduled payments.
-
-     Testing the source code
-     `docker-compose exec engine ./vendor/bin/phpunit`
-     The bootstrap is automatically called when phpunit is requested : tests/bootstrap.php. It fills the MySQL database with respect to the Cyclos database for consistency purposes, using a symfony custom console command. If the testing database already contains users, the command does nothing.
-
-     Tests isolation
-     In order to ensure MySQL database integrity, any begun transaction is rolled back at the end of each test. This way, we always work with the same database content between each test. This process is automatically set up with the doctrine-test-bundle bundle.
-
-     **Warning**
-     If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above).
-     Example : The user John Doe, in a functional test, changes its password from @@bbccdd to @bcdefgh. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not @@bbccdd anymore.
-     Workaround : if a test executes a transaction in the Cyclos database, expicitely commit the transaction before the end of the test
-     `public function testMyTestWhichChangesCyclosDatabase()
-     {
-    // ... something thats changes the Cyclos DB state
-    \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
+    **Warning** : If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above).  
+     _Example_ : The user John Doe, in a functional test, changes its password from @@bbccdd to @bcdefgh. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not @@bbccdd anymore.  
+     _Workaround_ : if a test executes a transaction in the Cyclos database, explicitely commit the transaction before the end of the test  
+     `public function testMyTestWhichChangesCyclosDatabase()  
+     {  
+    // ... something thats changes the Cyclos DB state  
+    \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();  
      }`
