@@ -60,45 +60,40 @@ Digital Cairn
 
  * **Setup the application**
 
-     Build docker images   
-     `docker-compose build`
+     * Build docker images   
+       `docker-compose build`
 
-     Build the cyclos database. The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container.
-     This way, the dump restore is automatically executed at container's creation. 
+     * Build the cyclos database.  
+       The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container. This way, the dump restore is automatically executed at container's creation.  
+       `sudo docker-compose up -d cyclos-db`  
 
-     `sudo docker-compose up -d cyclos-db`
+     * Check out the logs while the database is building from the basic cyclos-dump-minimal.sql file  
+       `docker-compose logs -f cyclos-db`  
 
-     Check out the logs while the database is building from the basic cyclos-dump-minimal.sql file
+     * One the database has been fully restored, start the cyclos app  
+       `docker-compose up -d cyclos-app`  
 
-     `docker-compose logs -f cyclos-db`
-
-     One the database has been fully restored, start the cyclos app
-
-     `docker-compose up -d cyclos-app`
-
-     Then, start the database container, and check that it is listening on port 3306
-
-     `docker-compose up -d db`
-     `docker-compose logs -f db` 
-     Otherwise, restart the container and check again
-
-     `docker-compose restart db`
-     `docker-compose logs -f db`
+     * Then, start the database container, and check that it is listening on port 3306  
+       `docker-compose up -d db`  
+       `docker-compose logs -f db`   
+       Otherwise, restart the container and check again  
+       `docker-compose restart db`  
+       `docker-compose logs -f db`  
   
-     Start the remaining containers
-     `docker-compose up -d`
+     * Start the remaining containers  
+       `docker-compose up -d`  
 
-     Enable engine's user to write logs, cache files and web static files(images)
-     `docker-compose exec engine chown -R www-data:www-data var web`
+     * Enable engine's user to write logs, cache files and web static files(images)  
+       `docker-compose exec engine chown -R www-data:www-data var web`  
 
-     Install dependencies
-     `docker-compose exec engine ../composer.phar update`
+     * Install dependencies  
+       `docker-compose exec engine ../composer.phar update`  
       
-     Change the set of cities 
-     By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
+     * Change the set of cities   
+       By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
-     Launch Cyclos configuration script and initialize mysql database
-     `docker-compose exec engine ./build-setup.sh env admin:admin`
+     * Launch Cyclos configuration script and initialize mysql database
+       `docker-compose exec engine ./build-setup.sh env admin:admin`  
      WARNING : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
 ## Development
