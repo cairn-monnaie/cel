@@ -8,15 +8,28 @@
 {% endblock %}
 {% block body %}
     {{parent()}} 
-    
-    <h2>Valider votre carte de sécurité Cairn n° {{card.number}} </h2>
-    <h3>Saisir une clé </h3>
-    <div>                                                                          
-        {{include("CairnUserBundle:Card:warning_card_tries.html.twig",{'card': card})}}
-        Clé contenue dans la case numérotée <strong>{{position}}</strong> de votre carte n° {{card.number}}
+    <div class="row">
+        <div class="col s12">
+            <h2>Valider votre carte de sécurité Cairn n° {{card.number}} </h2>
+            <h3>Pour vérifier votre identité, merci de saisir une clé</h3>
+            {{include("CairnUserBundle:Card:warning_card_tries.html.twig",{'card': card})}}
+        </div>
         {{ form_start(form) }}
-        {{form_end(form) }}
-    </div>                                                                         
+        <p>Clé contenue dans la case numérotée <strong>{{position}}</strong> de votre carte n° {{card.number}}</p>
+        <div class="input-field col s10 m4">
+            {{ form_widget(form.field) }}
+            {{ form_label(form.field) }}
+            <span class="red-text">{{ form_errors(form.field) }}</span>
+        </div>
+        <div class="col s2">
+            <button type="submit"class="btn">Valider</button>
+        </div>
+        <div class="col s12">
+            <span class="red-text">{{ form_errors(form) }}</span>
+            {{ form_widget(form) }}
+        </div>
+        {{ form_end(form.field) }}
+    </div>
 
 {% endblock %}              
 

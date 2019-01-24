@@ -17,7 +17,7 @@ class ConfirmationType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('cancel',    SubmitType::class, array('label' => 'Annulation'))
-            ->add('save',      SubmitType::class, array('label' => 'Confirmation'));
+            ->add('cancel',    SubmitType::class, array('label' => 'Annulation','attr' => array('class' => 'btn red')))
+            ->add('save',      SubmitType::class, array('label' => 'Confirmation','attr' => array('class' => 'btn green')));
     }
 }

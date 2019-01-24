@@ -4,81 +4,34 @@
     <head>
         <meta charset="utf-8" />
         <!-- Compiled and minified CSS -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/css/materialize.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/iconfont/material-icons.css') }}">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/css/ecairn.css') }}" rel="stylesheet">
         {% block stylesheets %}
-        {#<link rel="stylesheet" href="{{ asset('layout-style.css') }}" type="text/css" />#}
         {% endblock %}
         <meta name="viewport" content="width=device-width" />
         <title>{% block title %}[e]Cairn{% endblock %}</title>
         <style>
-            html {
-                height: 100%;
-            }
-            body {
-                min-height: 100%;
-                height: 100%;
-            }
-            .nav-wrapper > ul{
-                height: 100%;
-            }
-            #logo-container,#logo_user{
-                height: 100%;
-                padding: 5px;
-                box-sizing: border-box;
-            }
-            #logo-container img,#logo_user img{
-                height: 100%;
-            }
             .login_splash{
-                background-image: url({{ asset('Stone_stack_together.jpg') }});
-                background-size: cover;
-                background-position: center;
-            }
-            .login_splash .login_form{
-                margin-top: 50px;
-                background: rgba(255,255,255,0.8);
-                padding: 20px 0px;
-            }
-            .teal.success{
-                /*background-color: @light-green !important;*/
-                background-color: #8bc34a !important;
-            }
-            .teal.error{
-                /*background-color: @red !important;*/
-                background-color: #F44336 !important;
-            }
-            .teal.warning{
-                /*background-color: @orange !important;*/
-                background-color: #ff9800 !important;
-            }
-            #network{
-                margin-top: 10px;
-            }
-            h1 {
-                font-size: 3rem;
-            }
-            h2 {
-                font-size: 2.50rem;
-            }
-            a:hover > img{
-                opacity: 0.5;
+                background-image: url({{ asset('bundles/cairnuser/img/Stone_stack_together.jpg') }});
             }
         </style>
     </head>
     <body class="{% block body_class %}{% endblock%}">
         <nav class="orange lighten-1" role="navigation">
             <div class="nav-wrapper container">
-                <a id="logo-container" href="{{ path('cairn_user_welcome') }}" class="brand-logo"><img src="{{asset('e-cairn.png')}}" alt="Logo du Cairn"></a>
+                <a id="logo-container" href="{{ path('cairn_user_welcome') }}" class="brand-logo"><img src="{{asset('bundles/cairnuser/img/e-cairn.png')}}" alt="Logo du Cairn"></a>
                 <ul class="right hide-on-med-and-down">
                     {% block top_nav_menu %}{% endblock%}
                     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
                         <li id="logo_user" class="right hide-on-med-and-down">
+                            <a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}">
                             {% if app.user.image.url is defined %}
                                 <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
                             {% else %}
-                                <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                                <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
                             {% endif %}
+                            </a>
                         </li>
                         <li>
                             <a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}">
@@ -98,13 +51,13 @@
                     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
                         <li><div class="user-view center-align">
                                 <div class="background">
-                                    <img class="responsive-img" src="{{asset('Stone_stack_together.jpg')}}" alt="" style="position: absolute;bottom: -46px;left: 0;" />
+                                    <img class="responsive-img" src="{{asset('bundles/cairnuser/img/Stone_stack_together.jpg')}}" alt="" style="position: absolute;bottom: -46px;left: 0;" />
                                 </div>
                                 <a href="#user">
                                 {% if app.user.image.url is defined %}
                                     <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle">
                                 {% else %}
-                                    <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle">
+                                    <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle">
                                 {% endif %}
                                 </a>
                                 <a href="#name"><span class="white-text name">{{ app.user.username }}</span></a>
@@ -144,14 +97,9 @@
             {% block body %}{% endblock%}
         </div>
         <!-- Compiled and minified JavaScript -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
-        <script>
-            $(document).ready(function(){
-                M.AutoInit();
-            });
-        </script>
+        {% include "JqueryBundle:Jquery:jquery.html.twig" %}
+        <script src="{{ asset('bundles/cairnuser/materialize/js/materialize.min.js') }}"></script>
+        <script src="{{ asset('bundles/cairnuser/js/app.js') }}"></script>
         {% block javascripts %}
         {% endblock %}
     </body>

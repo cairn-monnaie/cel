@@ -34,12 +34,14 @@
                                 <span>Se souvenir de moi</span>
                             </label>
                             <br>
+                            <br>
                             <button type="submit" id="_submit" name="_submit" value="Connexion" class="waves-effect waves-light btn">
                                 Connexion
                                 <i class="material-icons right">check</i>
                             </button>
                             <br>
-                            <a href="{{ path('fos_user_resetting_request') }}">Mot de passe ou identifiant oublié ?</a> <a href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
+                            <br>
+                            <a href="{{ path('fos_user_resetting_request') }}" class="blue-grey-text">Mot de passe ou identifiant oublié ?</a> | <a href="{{ path("cairn_user_registration") }}" class="orange-text text-darken-4">Créer mon compte</a>
                         </div>
 
                     </form>

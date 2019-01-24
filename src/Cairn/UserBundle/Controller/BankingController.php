@@ -290,10 +290,14 @@ class BankingController extends Controller
      */
     public function transactionToAction(Request $request, $frequency, $_format)
     {
+        $accountService = $this->get('cairn_user_cyclos_account_info');
+        $currentUser = $this->getUser();
+        $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
         if($_format == 'json'){
             return $this->json(array('frequency'=>$frequency));
         }
-        return $this->render('CairnUserBundle:Banking:transaction_to.html.twig',array('frequency'=>$frequency));
+        return $this->render('CairnUserBundle:Banking:transaction_to.html.twig',array('frequency'=>$frequency,'accounts'=>$selfAccounts));
     }
 
     /**
@@ -398,17 +402,12 @@ class BankingController extends Controller
             $direction = $directionPrefix.'_TO_SELF';
             $toAccounts = $selfAccounts;
             if(count($toAccounts) == 1){
-                $session->getFlashBag()->add('info','Vous n\'avez qu\'un compte.'); 
+                $session->getFlashBag()->add('info','Vous n\'avez qu\'un seul compte.');
                 return $this->redirectToRoute('cairn_user_banking_transaction_to',array('frequency'=>$frequency));
             }
         }elseif($to == 'beneficiary'){
-            $bb = $beneficiaryRepo->createQueryBuilder('b');
-            $bb->join('b.sources','s')
-                ->where('s.id = :id')
-                ->setParameter('id',$currentUser->getID())
-                ->join('b.user','u')
-                ->addSelect('u');
-            $beneficiaries = $bb->getQuery()->getResult();
+
+            $beneficiaries = $currentUser->getBeneficiaries();
 
             if(count($beneficiaries) == 0){
                 $session->getFlashBag()->add('info','Vous n\'avez aucun bénéficiaire enregistré');
