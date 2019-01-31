@@ -22,7 +22,6 @@ Digital Cairn
     To make sure of it, you can use the following command :  
       `sudo lsof -i :xxx` xxx being the port
  
-
     Copy the template file containing symfony app global variables and open it with your favorite editor.  
       `cp app/config/parameters.yml.dist app/config/parameters.yml`
 
@@ -82,7 +81,6 @@ Digital Cairn
   
      * Start the remaining containers  
        `docker-compose up -d`  
-
 
      * Install dependencies from composer.json 
        `docker-compose exec engine ../composer.phar update`  
