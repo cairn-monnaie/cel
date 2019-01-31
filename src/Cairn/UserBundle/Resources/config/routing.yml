@@ -1,27 +1,60 @@
 # Cairn/UserBundle/Resources/config/routing.yml
 
-#login:
-#    path:     /login
-#    defaults: { _controller: CairnUserBundle:Security:login }
-
 cairn_user_welcome:
     path:     .{_format} 
     defaults: { _controller: CairnUserBundle:User:index, _format: html}
     requirements:
         _format: html|json
 
+cairn_user_api_get_token:
+    path: oauth/get-tokens
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
 
-cairn_user_api_current_user:
-    path: api/user.{_format}
-    defaults: { _controller: CairnUserBundle:Default:getId, _format: json }
-    requirements:
-        _format: json
+cairn_user_api_users_options:
+    path: api/users
+    methods: OPTIONS
+    defaults: { _controller: CairnUserBundle:User:options, _format: json }
+
+cairn_user_api_users_get:
+    path: api/users/get/{id}
+    methods: GET
+    defaults: { _controller: CairnUserBundle:User:viewProfile, _format: json }
+
+cairn_user_api_users_list:
+    path: api/users/list
+    methods: GET
+    defaults: { _controller: CairnUserBundle:User:list, _format: json }
+
+cairn_user_api_users_post:
+    path: api/users/post
+    methods: POST
+    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
+
+cairn_user_api_users_put:
+    path: api/users/put
+    methods: POST
+    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
+
+cairn_user_api_users_delete:
+    path: api/users/delete/{id}
+    methods: DELETE
+    defaults: { _controller: CairnUserBundle:User:delete, _format: json }
+
+cairn_user_api_users_change_password:
+    path: api/users/change-password
+    methods: PATCH
+    defaults: { _controller: CairnUserBundle:User:changePassword, _format: json }
+
+cairn_user_api_users_card_association:
+    path: api/users/{id}/associate-card
+    methods: PATCH
+    defaults: { _controller: CairnUserBundle:User:associateCard, _format: json }
+
 
 cairn_user_registration:
-    path:     inscription.{_format}
+    path:     inscription
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
-    requirements:
-        _format: html|json
 
 cairn_user_redirect_login:
     path:     login/redirection/{message}/
@@ -39,11 +72,10 @@ cairn_user_referents_assign:
         id: \d+
 
 cairn_user_profile_view:
-    path:     user/profile/view/{id}.{_format}
+    path:     user/profile/view/{id}
     defaults: { _controller: CairnUserBundle:User:viewProfile, _format: html }
     requirements:
         id: \d+
-        _format: html|json
 
 cairn_user_beneficiaries_list:
     path:     user/beneficiaries/list.{_format}

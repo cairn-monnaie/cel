@@ -44,19 +44,25 @@ class RegistrationListener
         $form = $event->getForm();
         $user = $form->getData();
 
-//        var_dump($user->getImage());
-
         $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
+        var_dump($userVO);
+        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO('7645679660442932879');
         $userDTO->name = $user->getName();
         $userDTO->username = $user->getUsername();
         $userDTO->email = $user->getEmail();
 
         $this->userManager->editUser($userDTO);                          
 
-        $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
-        $event->setResponse(new RedirectResponse($profileUrl));
-
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card','plainPassword'));
+            $response = new Response($serializedUser);
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
+            $event->setResponse(new RedirectResponse($profileUrl));
+        }
     }
 
     /**
@@ -115,8 +121,8 @@ class RegistrationListener
      */
     public function onRegistrationInitialize(UserEvent $event)
     {
-        $session = $event->getRequest()->getSession();
-        $type = $session->get('registration_type'); 
+        $request = $event->getRequest();
+        $type = $request->query->get('type'); 
         if(!$type){
             $type = 'pro'; 
         }
@@ -139,6 +145,8 @@ class RegistrationListener
     /**
      *Once the registration form is valid, this function sets up the user in Cyclos and Doctrine
      *
+     * Note: FOSUserBundle EmailConfirmationListener is also listening to this event. Then, as we want to master the response in case of
+     * API call, this function must be called in the end (piority defined in services.yml)
      */
     public function onRegistrationSuccess(FormEvent $event)
     {
@@ -146,10 +154,6 @@ class RegistrationListener
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
         $user = $event->getForm()->getData();
-
-//        $salt = $this->container->get('cairn_user.security')->generateCardSalt($user);
-//        $card = new Card($user,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt);
-//        $user->setCard($card);                                         
 
         //set cyclos ID here to pass the constraint cyclos_id not null
         $cyclosID = rand(1, 1000000000);
@@ -159,6 +163,14 @@ class RegistrationListener
             $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
         }
         $user->setCyclosID($cyclosID);
+
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card','plainPassword'));
+            $response = new Response($serializedUser);
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_CREATED);
+            $event->setResponse($response);
+        }
     }
 
 

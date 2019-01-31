@@ -47,6 +47,7 @@ parameters:
     cyclos_root_test_url:  'http://example-test:4321/'
 
 
+    session_timeout: 1500
     cyclos_currency_cairn : cairn
     leading_company : 'Association Le Cairn'
     max_printable_cards : 20

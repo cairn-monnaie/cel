@@ -2664,7 +2664,7 @@ for passwordType in r.json()['result']:
 # On écrit dans un fichier toutes les constantes nécessaires à l'API,
 # après les avoir triées.
 logger.debug('Constantes :\n%s', constants_by_category)
-constants_file = open('cyclos_constants_config.yml', 'w')
+constants_file = open('cyclos_constants.yml', 'w')
 for category in sorted(constants_by_category.keys()):
     constants_file.write(category + ':\n')
     constants = constants_by_category[category]

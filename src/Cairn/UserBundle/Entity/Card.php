@@ -104,7 +104,7 @@ class Card
         for($row = 0; $row < $this->getRows(); $row++){
             $line = array();
             for($col =0; $col < $this->getCols();$col++){
-                if($env == 'test'){
+                if($env != 'prod'){
                     $line[] = 1111;
                 }
                 else{

@@ -128,13 +128,7 @@ class Commands
             $new_admin->setAddress($address);
             $new_admin->setDescription('Administrateur de l\'application');
 
-
             //ajouter la carte
-            $salt = $this->container->get('cairn_user.security')->generateCardSalt($new_admin);
-            $code = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card($new_admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),$salt,$code);
-            $card->generateCard($this->container->getParameter('kernel.environment'));
-            $new_admin->setCard($card);
             $this->em->persist($new_admin);
 
             //set admin has referent of all users including himself

@@ -45,19 +45,12 @@ class DefaultController extends Controller
         $this->userManager = new UserManager();                                
     }   
 
-    public function getIdAction(Request $request, $_format)
-    {
-        $user = $this->getUser();
-        return $this->json(array('current_user_id'=>$user->getID()));
-    }
-
-
     /**
      * First step of user's registration
      *
      * The type of user is set in session here because we will need it in our RegistrationEventListener.
      */
-    public function registrationAction(Request $request, $_format)
+    public function registrationAction(Request $request)
     {
         $session = $request->getSession();
         $checker = $this->get('security.authorization_checker');
@@ -77,17 +70,11 @@ class DefaultController extends Controller
             if( ($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
-
-            $session->set('registration_type',$type);
-            if($_format == 'json'){
-                $registrationData = array('name'=>'','username'=>'','email'=>'','description'=>'');
-                return $this->json($registrationData);
-            }
             return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
         }elseif($type == 'adherent'){
             return $this->render('CairnUserBundle:Registration:register_adherent_content.html.twig');
         }else{
-            return $this->redirectToRoute('cairn_user_registration',array('format'=>$_format));
+            return $this->redirectToRoute('cairn_user_registration');
         }
     }    
 

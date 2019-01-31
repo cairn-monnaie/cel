@@ -18,6 +18,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Card] 
 
+    cairn_user.api:
+        class: Cairn\UserBundle\Service\Api
+        arguments:
+            - "@request_stack"
+
     cairn_user.commands:
         class: Cairn\UserBundle\Service\Commands
         arguments:
@@ -81,9 +86,9 @@ services:
             - "@service_container"
         tags:
             - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
-            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess }
+            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess, priority: -512 }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
-            - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEdit }
+            - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEdit, priority: -512 }
 
     cairn_user.security.input_listener:
         class: Cairn\UserBundle\EventListener\SecurityListener
@@ -142,6 +147,12 @@ services:
             - "@cairn_user_cyclos_account_info"
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
+
+    Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
+        arguments:
+            - "@cairn_user.api"
+        tags:
+            - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType}
 
     Cairn\UserBundle\Form\ChangePasswordType:
         arguments: ['@security.password_encoder']

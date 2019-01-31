@@ -74,10 +74,6 @@ class SecurityListener
         $event->setResponse(new RedirectResponse($profileUrl));
     }
 
-    /**
-     *
-     *@TODO : faire onLogout
-     */
     public function onLogin(InteractiveLoginEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
@@ -97,8 +93,8 @@ class SecurityListener
         $networkInfo->switchToNetwork($networkName,'login',$credentials);
 
         $dto = new \stdClass();
-        $dto->amount = 10;
-        $dto->field = 'MINUTES';
+        $dto->amount = $this->container->get('session_timeout');
+        $dto->field = 'SECONDS';
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
         $session->set('cyclos_session_token',$loginResult->sessionToken); 
