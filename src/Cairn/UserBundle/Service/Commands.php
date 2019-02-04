@@ -84,7 +84,7 @@ class Commands
             //get cyclos reference
             $credentials = array('username'=>$username,'password'=>$password);
 
-            $network = $this->container->getParameter('cyclos_network_cairn');
+            $network = $this->container->getParameter('cyclos_currency_cairn');
             $group = $this->container->getParameter('cyclos_group_network_admins');
 
             $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
@@ -346,7 +346,7 @@ class Commands
 
         if(!$users){
             $credentials = array('username'=>$adminUsername,'password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
             // ************************* generate doctrine users **************************************
             $memberGroupName = $this->container->getParameter('cyclos_group_pros');
@@ -421,12 +421,12 @@ class Commands
             $user = $userRepo->findOneByUsername('labonnepioche'); 
 
             $credentials = array('username'=>'labonnepioche','password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
             $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$accountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement futur');
 
             $credentials = array('username'=>'admin_network','password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),'login',$credentials);
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
             var_dump(count($futureInstallments));
             

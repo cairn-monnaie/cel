@@ -32,7 +32,7 @@ class BaseControllerTest extends WebTestCase
 
     public function login($username,$password)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'));
 
         $crawler = $this->client->request('GET','/logout');
         $crawler = $this->client->request('GET','/login');

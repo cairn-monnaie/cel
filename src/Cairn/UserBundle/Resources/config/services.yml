@@ -120,7 +120,7 @@ services:
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:
-            - "%cyclos_network_cairn%"
+            - "%cyclos_currency_cairn%"
             - "%cyclos_group_pros%"
             - "@cairn_user_cyclos_channel_info"
             - "@cairn_user_cyclos_group_info"

@@ -107,7 +107,7 @@ class BankingControllerTest extends BaseControllerTest
         $creditorEmail = $creditorUser->getEmail();
 
         $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
                                                                                  'login',$credentials);
 
         $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
@@ -137,7 +137,7 @@ class BankingControllerTest extends BaseControllerTest
     public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,$periodicity, $isValid)
     {
         $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
                                                                                  'login',$credentials);
 
         $validator = $this->container->get('validator');
@@ -171,7 +171,7 @@ class BankingControllerTest extends BaseControllerTest
         $debitor = 'labonnepioche';
 
         $credentials = array('username'=>$debitor,'password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
                                                                                  'login',$credentials);
 
         $creditor = 'maltobar';
@@ -353,7 +353,7 @@ class BankingControllerTest extends BaseControllerTest
     {
         //connect with admin to get owner's account ids (not possible with member for another one)
         $credentials = array('username'=>$this->testAdmin,'password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'),
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
                                                                                  'login',$credentials);
 
         $downloaderUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$downloader));

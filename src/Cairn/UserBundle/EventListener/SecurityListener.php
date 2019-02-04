@@ -77,7 +77,7 @@ class SecurityListener
     public function onLogin(InteractiveLoginEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
 
         $loginManager = new LoginManager();
 
@@ -93,7 +93,7 @@ class SecurityListener
         $networkInfo->switchToNetwork($networkName,'login',$credentials);
 
         $dto = new \stdClass();
-        $dto->amount = $this->container->get('session_timeout');
+        $dto->amount = $this->container->getParameter('session_timeout');
         $dto->field = 'SECONDS';
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
@@ -105,7 +105,7 @@ class SecurityListener
     public function onKernelController(FilterControllerEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
 
         $session = $event->getRequest()->getSession();
         $token = $session->get('cyclos_session_token');

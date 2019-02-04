@@ -34,7 +34,7 @@ class SecurityController extends Controller
 
             // ********* get Cyclos Token ****************
             $networkInfo = $this->get('cairn_user_cyclos_network_info');
-            $networkName = $this->getParameter('cyclos_network_cairn');
+            $networkName = $this->getParameter('cyclos_currency_cairn');
             $loginManager = new LoginManager();
 
             $credentials = array('username'=>$params['username'],'password'=> $params['password']);     

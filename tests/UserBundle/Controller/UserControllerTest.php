@@ -233,7 +233,7 @@ class UserControllerTest extends BaseControllerTest
     //     */
     //    public function testEditBeneficiary()
     //    {
-    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+    //        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'));
     //
     //        $crawler = $this->login($debitor, '@@bbccdd');
     //

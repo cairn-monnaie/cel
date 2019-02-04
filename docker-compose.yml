@@ -1,14 +1,9 @@
 version: '3.4'
 
 networks:
-  cyclos-net:
-    driver: bridge
-  symfony-net:
-    driver: bridge
-
-#volumes:
-#  cel-data:
-#    name: cel-data
+  mlc_net:
+    external:
+      name: mlc_net
 
 services:
   db:
@@ -22,7 +17,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     restart: always
     networks:
-      - symfony-net
+      - mlc_net
 
 #  phpmyadmin:
 #    image: phpmyadmin/phpmyadmin
@@ -40,7 +35,6 @@ services:
 
   engine:
     build: .
-    image: mazda/fastcgi
     ports:
       - '${ENGINE_PORT}:9000'
     volumes:
@@ -49,8 +43,7 @@ services:
       - "./docker/engine/php.ini:/usr/local/etc/php/php.ini"
     restart: always
     networks:
-      - symfony-net
-      - cyclos-net
+      - mlc_net
 
   front:
     image: nginx:latest
@@ -63,31 +56,8 @@ services:
         - "./web/:/var/www/Symfony/web"
     restart: always
     networks:
-      - symfony-net
+      - mlc_net
 
-  cyclos-app:
-    image: cyclos/cyclos:4.8.2
-    environment:
-    - DB_HOST=cyclos-db
-    - DB_NAME=cyclos
-    - DB_USER=cyclos
-    - DB_PASSWORD=cyclos
-    restart: always
-    ports:
-    - '${CYCLOS_PORT}:8080'
-    networks:
-      - cyclos-net
-  cyclos-db:
-    image: cyclos/db
-    volumes:
-      - ./cyclos-dump-minimal.sql:/docker-entrypoint-initdb.d/cyclos-dump-minimal.sql #dump done automatically by postgre
-    environment:
-    - POSTGRES_DB=cyclos
-    - POSTGRES_USER=cyclos
-    - POSTGRES_PASSWORD=cyclos
-    restart: always
-    networks:
-      - cyclos-net
 
 #  email-catcher:
 #    image: schickling/mailcatcher

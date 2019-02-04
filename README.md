@@ -32,6 +32,10 @@ Digital Cairn
       `database_user: username (provided in .env)`  
       `database_password: pwd (provided in .env)`  
       `cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`  
+      `cyclos_group_pros: xxx (name of the group of professionals in your cyclos application)`  
+      `cyclos_group_network_admins: 'Network administrators'`  
+      `cyclos_group_global_admins: 'Global administrators'`  
+      `cyclos_currency_cairn: '<currency>' (name of the currency provided in docker-compose of api application)
 
     Customize parameters according to your use among the following list
       `mailer_transport: smtp`  
@@ -41,11 +45,6 @@ Digital Cairn
       `mailer_password: xxx`  
       `secret: ThisTokenIsNotSoSecretChangeIt`  
       `cairn_email_noreply: xxx (e.g noreply@localhost.fr)`  
-      `cyclos_group_pros: xxx (e.g Adherents)`  
-      `cyclos_group_network_admins: xxx (e.g Network Admins)`  
-      `cyclos_group_global_admins: xxx (e.g Global Admins)`  
-      `cyclos_network_cairn: xxx (e.g network)` **MUST BE SLUGIFIED**  
-      `cyclos_currency_cairn: xxx (e.g euro)` **MUST BE SLUGIFIED**  
       `cairn_card_rows: xxx (e.g 5)`  
       `cairn_card_cols: xxx (e.g 5)`  
       `cairn_email_technical_services: xxx (e.g services@localhost.fr)`  

@@ -4,7 +4,7 @@ FROM php:7.1-fpm
 LABEL description="CairnB2B based on debian" \
         maintainer="mazda91 <https://github.com/mazda91>"
 
-RUN apt-get update \
+RUN apt-get -y update \
     && apt-get install -y git vim curl \
     && apt-get install -y python3.5 python3-pip \
     && apt-get install -y zlib1g-dev \
