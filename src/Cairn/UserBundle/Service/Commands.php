@@ -248,11 +248,10 @@ class Commands
         $doctrineUser->setCyclosID($cyclosUserData->id);                                      
         $doctrineUser->setUsername($cyclosUserData->username);                           
         $doctrineUser->setName($cyclosUserData->name);
-        $doctrineUser->setEmail($cyclosUserData->email);
+        $doctrineUser->setEmail($cyclosUserData->username . '@test.com');
         $doctrineUser->setFirstLogin(false);
 
-        $creationDate = new \Datetime($cyclosUserData->activities->userActivationDate);
-        $doctrineUser->setCreationDate($creationDate);
+        $doctrineUser->setCreationDate(new \Datetime());
         $doctrineUser->setPlainPassword('@@bbccdd');                      
         $doctrineUser->setEnabled(true);                                      
 
@@ -354,7 +353,7 @@ class Commands
 
             try{
                 $memberGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($memberGroupName ,'MEMBER_GROUP');
-                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id);
+                $cyclosMembers = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($memberGroup->id,array('DISABLED'));
 
 //                $adminGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminGroupName ,'ADMIN_GROUP');
 //                $cyclosAdmins = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminGroup->id);
@@ -390,56 +389,63 @@ class Commands
             }
 
 
-            // ************************* payments creation ******************************************
-            // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
-            $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
-            $accountTypeVO = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER')[0];
-
-
-            //instances of TransactionEntryVO
-            $processedDeposits = $bankingService->getTransactions(
-                $admin->getCyclosID(),$accountTypeVO->id,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
-
-            foreach($processedDeposits as $transaction){
-                $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
-            }
-
-            //instances of TransactionEntryVO
-            //in init_data_test.py script, trankilou makes a transaction in order to have a null account balance
-            $user = $userRepo->findOneByUsername('trankilou'); 
-
-            $processedTransactions = $bankingService->getTransactions(
-                $user->getCyclosID(),$accountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'remise à 0');
-
-            foreach($processedTransactions as $transaction){
-                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-            }
-
-            //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
-            //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
-            //in init_data_test.py script, future transactions are made by labonnepioche
-            $user = $userRepo->findOneByUsername('labonnepioche'); 
-
-            $credentials = array('username'=>'labonnepioche','password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-
-            $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$accountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement futur');
-
-            $credentials = array('username'=>'admin_network','password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-
-            var_dump(count($futureInstallments));
-            
-            foreach($futureInstallments as $installment){
-                $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
-            }
+//            // ************************* payments creation ******************************************
+//            // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+//            $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+//            $accountTypeVO = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes(NULL,'USER')[0];
+//
+//
+//            //instances of TransactionEntryVO
+//            $processedDeposits = $bankingService->getTransactions(
+//                $admin->getCyclosID(),$accountTypeVO->id,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
+//
+//            foreach($processedDeposits as $transaction){
+//                $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
+//            }
+//
+//            //instances of TransactionEntryVO
+//            //in init_data.py script, trankilou makes a transaction in order to have a null account balance
+//            $user = $userRepo->findOneByUsername('trankilou'); 
+//
+//            $processedTransactions = $bankingService->getTransactions(
+//                $user->getCyclosID(),$accountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'remise à 0');
+//
+//            foreach($processedTransactions as $transaction){
+//                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+//            }
+//
+//            //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
+//            //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
+//            //in init_data_test.py script, future transactions are made by labonnepioche
+//            $user = $userRepo->findOneByUsername('labonnepioche'); 
+//
+//            $credentials = array('username'=>'labonnepioche','password'=>$password);
+//            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+//
+//            $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$accountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement futur');
+//
+//            $credentials = array('username'=>'admin_network','password'=>$password);
+//            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+//
+//            var_dump(count($futureInstallments));
+//            
+//            foreach($futureInstallments as $installment){
+//                $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+//            }
 
             //********************** Fine-tune user data in order to have a diversified database ************************
 
-            //admin has a an associated and has already login once (avoids the compulsary redirection to change password)
+            //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
             $admin->setFirstLogin(false);
-            $admin->getCard()->generateCard($this->container->getParameter('kernel.environment'));
-            $this->container->get('cairn_user.security')->encodeCard($admin->getCard());
+            $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+            $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),
+                             'aaaa',$uniqueCode);
+            $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
+
+            //encode user's card
+            $this->container->get('cairn_user.security')->encodeCard($card);
+            $admin->setCard($card);
+
 
             //vie_integrative has associated card + admin is not referent
             $user = $userRepo->findOneByUsername('vie_integrative'); 

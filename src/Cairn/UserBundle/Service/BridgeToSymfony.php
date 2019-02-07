@@ -116,10 +116,9 @@ class BridgeToSymfony
                 $subject = "Dissociation des bases de données Symfony-Cyclos";
                 $body = 'Entité : Operation. Equivalent Cyclos inexistant. ID Symfony valide '.$operation->getID();
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-            }else{
-                throw $e;
             }
+
+            throw $e;
         }
        
     }

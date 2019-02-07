@@ -135,6 +135,7 @@ class Operation
      */
     private $toAccount;
 
+    //WARNING : VALUES SHOULD NOT CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
     const TYPE_TRANSACTION_EXECUTED = 0;
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
@@ -144,6 +145,28 @@ class Operation
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
 
+    public static function getTypeName($type)
+    {
+        switch ($type){
+        case "0":
+            return 'transaction';
+            break;
+        case "3":
+            return 'conversion';
+            break;
+        case "4":
+            return 'reconversion';
+            break;
+        case "5":
+            return 'deposit';
+            break;
+        case "6":
+            return 'withdrawal';
+            break;
+        default:
+            return NULL;
+        }
+    }
     public static function getFromOperationTypes()
     {
         return array(self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
