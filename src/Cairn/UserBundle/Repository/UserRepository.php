@@ -40,6 +40,13 @@ class UserRepository extends EntityRepository
         return $qb->getQuery()->getResult();                                   
     }                                                                          
 
+    public function whereRole(QueryBuilder $qb, $role)
+    {
+        $qb->andWhere('u.roles LIKE :roles') 
+            ->setParameter('roles','%"'.$role.'"%');
+        return $this;
+    }
+
     public function whereReferent(QueryBuilder $qb, $userID)
     {
         $qb->join('u.referents','r')
@@ -49,11 +56,43 @@ class UserRepository extends EntityRepository
 
     }
 
-
-    public function whereRole(QueryBuilder $qb, $role)
+    public function findPendingUsers($referentID, $role)
     {
-        $qb->andWhere('u.roles LIKE :roles') 
-            ->setParameter('roles','%"'.$role.'"%');
-        return $this;
+        $ub = $this->createQueryBuilder('u');                  
+        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
+        $ub->andWhere('u.confirmationToken is NULL')     
+            ->andWhere('u.enabled = false')                                    
+            ->andWhere('u.lastLogin is NULL')                                  
+            ->orderBy('u.name','ASC');
+
+        return $ub->getQuery()->getResult();
+    }
+
+    public function findUsersWithStatus($referentID, $role, $isEnabled = NULL)
+    {
+        $ub = $this->createQueryBuilder('u');                  
+        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
+        $ub->andWhere('u.confirmationtoken is null')     
+            ->andWhere('u.lastLogin is not NULL')
+            ->orderBy('u.name','ASC');
+        if($isEnabled != NULL){
+            $ub->andWhere('u.enabled = :isEnabled')
+              ->setParameter('isEnabled',$isEnabled);            
+        }
+
+        return $ub->getQuery()->getResult();
+    }
+
+    public function findUsersWithPendingCard($referentID, $role)
+    {
+        $ub = $this->createQueryBuilder('u');                  
+        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
+        $ub->leftJoin('u.card','c')                                           
+            ->andWhere('c.id is NULL') //card is the owning-side in the association user/card
+            ->andWhere('u.confirmationtoken is null')
+            ->andWhere('u.enabled = true')
+            ->orderBy('u.name','ASC');                                    
+        
+        return $ub->getQuery()->getResult();
     }
 }

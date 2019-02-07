@@ -4,7 +4,9 @@ security:
         #        Cairn\UserBundle\Entity\User: plaintext
 
     role_hierarchy:
-        ROLE_ADMIN:       ROLE_PRO
+        ROLE_PERSON: ROLE_ADHERENT
+        ROLE_PRO: ROLE_ADHERENT
+        ROLE_ADMIN: [ROLE_PRO, ROLE_PERSON]
         ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
 
     providers:
@@ -23,12 +25,12 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        oauth_token: # Everyone can access the access token URL.
-            pattern: ^/oauth/v2/token
-            security: false
+        #        oauth_token: # Everyone can access the access token URL.
+        #            pattern: ^/oauth/v2/token
+        #            security: false
 
         api:
-            pattern:    .json$
+            pattern: ^/api
             fos_oauth:  true
             stateless:  true
             anonymous:  true # can be omitted as its default value        

@@ -83,8 +83,26 @@ class RegistrationListener
 
         $user = $event->getUser();
         $user->setEnabled(false);
+
+        //we set referent roles
         foreach($superAdmins as $superAdmin){
             $user->addReferent($superAdmin);
+        }
+
+        //if user is a person, any local group is referent
+        if($user->hasRole('ROLE_PERSON')){
+            $admins = $userRepo->myFindByRole(array('ROLE_ADMIN'));
+            foreach($admins as $admin){
+                $user->addReferent($admin);
+            }
+        }
+
+        //if user is a local group, he is referent of any individual adherent
+        if($user->hasRole('ROLE_ADMIN')){
+            $persons = $userRepo->myFindByRole(array('ROLE_PERSON'));
+            foreach($persons as $person){
+                $person->addReferent($user);
+            }
         }
 
         //automatically assigns a local group as referent to a pro if they have same city
@@ -124,12 +142,16 @@ class RegistrationListener
         $request = $event->getRequest();
         $type = $request->query->get('type'); 
         if(!$type){
-            $type = 'pro'; 
+            $type = 'person'; 
         }
+
         $user = $event->getUser();
 
         $user->setPlainPassword(User::randomPassword());
         switch ($type){
+        case 'person':
+            $user->addRole('ROLE_PERSON');
+            break;
         case 'pro':
             $user->addRole('ROLE_PRO');
             break;
@@ -138,6 +160,8 @@ class RegistrationListener
             break;
         case 'superAdmin':
             $user->addRole('ROLE_SUPER_ADMIN');
+            break;
+        default:
             break;
         }
     }

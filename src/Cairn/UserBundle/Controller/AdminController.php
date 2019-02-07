@@ -167,6 +167,8 @@ class AdminController extends Controller
 
                             if($user->hasRole('ROLE_PRO')){                                        
                                 $groupName = $this->getParameter('cyclos_group_pros');  
+                            }elseif($user->hasRole('ROLE_PERSON')){
+                                $groupName = $this->getParameter('cyclos_group_persons');  
                             }else{                                                                 
                                 $groupName = $this->getParameter('cyclos_group_network_admins');
                             }   

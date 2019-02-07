@@ -18,7 +18,6 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Table(name="cairn_user")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
- * @UniqueEntity(fields = {"name"},message="Ce nom est déjà utilisé") 
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
  */
 class User extends BaseUser
@@ -32,7 +31,7 @@ class User extends BaseUser
     protected $id;
 
     /**
-     * @ORM\Column(name="name", type="string", unique=true, nullable=true)
+     * @ORM\Column(name="name", type="string", unique=false, nullable=false)
      */
     private $name; 
 

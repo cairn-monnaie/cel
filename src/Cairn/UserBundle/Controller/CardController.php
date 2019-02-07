@@ -44,7 +44,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 /**
  * This class contains all actions related to security cards
  *
- * @Security("is_granted('ROLE_PRO')")
+ * @Security("is_granted('ROLE_ADHERENT')")
  */
 class CardController extends Controller
 {

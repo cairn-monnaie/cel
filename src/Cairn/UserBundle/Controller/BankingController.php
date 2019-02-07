@@ -50,7 +50,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 /**
  * This class contains actions related to account operations 
  *
- * @Security("is_granted('ROLE_PRO')")
+ * @Security("is_granted('ROLE_ADHERENT')")
  */
 class BankingController extends Controller
 {   
@@ -389,7 +389,7 @@ class BankingController extends Controller
         $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
         $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
 
-        if($currentUser->hasRole('ROLE_PRO')){
+        if($currentUser->hasRole('ROLE_PRO') || $currentUser->hasRole('ROLE_PERSON')){
             $directionPrefix = 'USER';
         }else{
             $directionPrefix = 'SYSTEM';
@@ -1188,7 +1188,7 @@ class BankingController extends Controller
      * Two formats are possible : CSV | PDF
      * By default, end date is today's date
      *
-     * @throws AccessDeniedException Current user is not a ROLE_PRO or a ROLE_SUPER_ADMIN 
+     * @throws AccessDeniedException Current user is not a ROLE_PRO, ROLE_PERSON or a ROLE_SUPER_ADMIN 
      */
     public function downloadAccountsOverviewAction(Request $request)
     {
@@ -1196,7 +1196,7 @@ class BankingController extends Controller
         $accountService = $this->get('cairn_user_cyclos_account_info');
 
         $currentUser = $this->getUser();
-        if(! ($currentUser->hasRole('ROLE_PRO') || $currentUser->hasRole('ROLE_SUPER_ADMIN')) ){
+        if( $currentUser->hasRole('ROLE_ADMIN')){
             throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
         }
 

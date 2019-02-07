@@ -36,8 +36,10 @@ class RegistrationType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('name', TextType::class,array('label'=>'Nom de votre structure'))
-                ->remove('plainPassword');
+        $builder->add('name', TextType::class,array('label'=>'Nom de la structure'))
+            ->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
+            ->remove('plainPassword');
+
         $builder->addEventListener(
             FormEvents::POST_SET_DATA,
             function (FormEvent $event) {
@@ -65,13 +67,15 @@ class RegistrationType extends AbstractType
                             'required'=>false
                         ));
                     }
+                }elseif($user->hasRole('ROLE_PERSON')){
+                    $form->add('name', TextType::class,array('label'=>'Nom et prénom'))
+                        ->add('description',TextareaType::class,array('label'=>
+                                    'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
                 }
             }
         );
         $builder->add('address', AddressType::class)
-            ->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
             ->add('image', ImageType::class,array('label'=>'Votre logo'));
-
     }
 
 

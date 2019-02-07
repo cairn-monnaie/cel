@@ -142,25 +142,22 @@ class DefaultController extends Controller
 
         $user = $this->getUser();
         if($user){
-            if($user->hasRole('ROLE_PRO')){
+            if($user->hasRole('ROLE_ADHERENT')){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }
 
         $type = $request->query->get('type'); 
-        if($type == NULL){
-            return $this->render('CairnUserBundle:Registration:index.html.twig');
-        }
-        elseif( ($type == 'pro') || ($type == 'localGroup') || ($type == 'superAdmin')){
-            if( ($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
+
+        if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
+            if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
             return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
-        }elseif($type == 'adherent'){
-            return $this->render('CairnUserBundle:Registration:register_adherent_content.html.twig');
         }else{
-            return $this->redirectToRoute('cairn_user_registration');
+            return $this->render('CairnUserBundle:Registration:index.html.twig');
         }
+
     }    
 
 
