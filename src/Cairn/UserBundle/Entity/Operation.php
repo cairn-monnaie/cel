@@ -151,6 +151,9 @@ class Operation
         case "0":
             return 'transaction';
             break;
+        case "2":
+            return 'scheduled transaction';
+            break;
         case "3":
             return 'conversion';
             break;
@@ -162,6 +165,9 @@ class Operation
             break;
         case "6":
             return 'withdrawal';
+            break;
+        case "7":
+            return 'failed transaction';
             break;
         default:
             return NULL;

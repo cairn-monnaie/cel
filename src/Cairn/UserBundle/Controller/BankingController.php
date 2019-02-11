@@ -167,12 +167,15 @@ class BankingController extends Controller
                 'label' => 'affiché par',
                 'choices' => array('dates décroissantes'=>'DESC',
                                    'dates croissantes' => 'ASC')))
-                ->add('type',    ChoiceType::class, array(
+                ->add('types',    ChoiceType::class, array(
                 'label' => 'type d\'opération',
+                'required'=>false,
                 'choices' => Operation::getExecutedTypes(),
                 'choice_label'=> function($choice){
                     return Operation::getTypeName($choice);
-                }
+                },
+                'multiple'=>true,
+                'expanded'=>false
                 ))
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
@@ -202,7 +205,7 @@ class BankingController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();            
                 $orderBy = $dataForm['orderBy'];
-                $operationType = $dataForm['type'];
+                $operationTypes = $dataForm['types'];
                 $begin = $dataForm['begin'];
                 $end = $dataForm['end'];
                 $minAmount = $dataForm['minAmount'];
@@ -217,24 +220,25 @@ class BankingController extends Controller
                 //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
                 $end = date_modify($end,'+1 days');
 
+                $arrayTypes = Operation::getExecutedTypes();
+                if($operationTypes){
+                    $arrayTypes = $operationTypes;
+                }
+
                 $ob = $operationRepo->createQueryBuilder('o');
                 $ob->where(
                     $ob->expr()->orX(
                         $ob->expr()->andX(
                             'o.fromAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                            $ob->expr()->in('o.type',$arrayTypes)
                         ),
                         $ob->expr()->andX(
                             'o.toAccountNumber = :number',
-                            $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                            $ob->expr()->in('o.type',$arrayTypes)
                         )
                     ))
                     ->andWhere('o.paymentID is not NULL')
                     ->andWhere('o.executionDate BETWEEN :begin AND :end');
-                if($operationType){
-                    $ob->andWhere('o.type = :type')
-                        ->setParameter('type',$operationType);
-                }
                 if($minAmount){
                     $ob->andWhere('o.amount >= :min')
                         ->setParameter('min',$minAmount);
@@ -1197,7 +1201,7 @@ class BankingController extends Controller
 
         $currentUser = $this->getUser();
         if( $currentUser->hasRole('ROLE_ADMIN')){
-            throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un professionnel.');
+            throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un adhérent.');
         }
 
         $accountTypesVO = array();

@@ -34,8 +34,6 @@ class OperationListener
      *
      * If a transaction has been scheduled in the future and has finally been executed, the operation type must be edit from
      * SCHEDULED to EXECUTED. If the future transaction has failed, type becomes FAILED
-     * If a transaction involving current user has been done in Cyclos from another application, it must be updated here as well
-     * Examples : conversion, deposit, withdrawal...
      *
      */
     public function postLoad(Operation $operation, LifecycleEventArgs $args)
