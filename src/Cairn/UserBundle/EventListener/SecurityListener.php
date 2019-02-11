@@ -71,7 +71,15 @@ class SecurityListener
         if($user->isFirstLogin()){
             $user->setFirstLogin(false);
         }
-        $event->setResponse(new RedirectResponse($profileUrl));
+
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
+        }
     }
 
     public function onLogin(InteractiveLoginEvent $event)
@@ -97,7 +105,7 @@ class SecurityListener
         $dto->field = 'SECONDS';
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
-        $session->set('cyclos_session_token',$loginResult->sessionToken); 
+        $session->set('cyclos_token',$loginResult->sessionToken); 
 
     }
 
@@ -107,10 +115,14 @@ class SecurityListener
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName=$this->container->getParameter('cyclos_currency_cairn');          
 
-        $session = $event->getRequest()->getSession();
-        $token = $session->get('cyclos_session_token');
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $cyclos_token = $event->getRequest()->request->get('cyclos_token');
+        }else{
+            $session = $event->getRequest()->getSession();
+            $cyclos_token = $session->get('cyclos_token');
+        }
 
-        $networkInfo->switchToNetwork($networkName,'session_token',$token);
+        $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
     }
 
     /**
