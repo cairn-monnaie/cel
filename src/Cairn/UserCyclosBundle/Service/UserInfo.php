@@ -131,10 +131,14 @@ class UserInfo
      * @param stdClass|int $groupVO either the whole groupVO object or its ID
      * @return list of users in group $name
      */
-    public function getListInGroup($groupVO)
+    public function getListInGroup($groupVO, $statuses=NULL)
     {
         $query = new \stdClass();
         $query->groups = $groupVO;
+        $query->userStatus = array('ACTIVE');
+        if($statuses){
+            $query->userStatus = array_merge($query->userStatus,$statuses);
+        }
 
         return $this->userService->search($query)->pageItems; 
     }

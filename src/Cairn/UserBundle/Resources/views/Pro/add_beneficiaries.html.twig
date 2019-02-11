@@ -24,8 +24,8 @@
     <script>
         jQuery(function ($) {
             var list = new Array();
-             {% for pro in pros %}
-                list.push({  value : "{{ pro.name }}", info :{name:"{{pro.name}}", email :"{{ pro.email }}"}   }); 
+             {% for beneficiary in beneficiaries %}
+                list.push({  value : "{{ beneficiary.name }}", info :{name:"{{beneficiary.name}}", email :"{{ beneficiary.email }}"}   }); 
             {% endfor %}
             $containerName = $('#form_name');
             $containerEmail = $('#form_email');

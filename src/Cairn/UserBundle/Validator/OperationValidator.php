@@ -135,7 +135,7 @@ class OperationValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_WITHDRAWAL);
+        $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
 
         if(in_array($operation->getType(),$array_debitor)){
 
@@ -146,24 +146,15 @@ class OperationValidator extends ConstraintValidator
                 $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
                 $this->validateBalance($account,$operation->getAmount());
             }
-
-            //if not a withdrawal, make sure that creditor account exists (account number provided handly)
-            //if withdrawal, the creditor account is debit account by default, so no need to validate it
-            if(! ($operation->getType() == Operation::TYPE_WITHDRAWAL)){
-                $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
-            }
+            $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
 
         }else{
             //we ensure that creditor account exists
             $this->validateActiveAccount($operation->getToAccount(),'toAccount');
-
-            //if type is CONVERSION or DEPOSIT, the debitor account is debit account on Cyclos side, so no need to validate it
-            if(! (in_array($operation->getType(), Operation::getToOperationTypes()) )){
-                $this->validatePassiveAccount($operation->getFromAccount(),'fromAccount');
-                if(count($this->context->getViolations()) == 0){
-                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
-                    $this->validateBalance($account,$operation->getAmount());
-                }
+            $this->validatePassiveAccount($operation->getFromAccount(),'fromAccount');
+            if(count($this->context->getViolations()) == 0){
+                $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
+                $this->validateBalance($account,$operation->getAmount());
             }
 
         }

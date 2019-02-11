@@ -139,7 +139,6 @@ class UserControllerTest extends BaseControllerTest
             }
         }
         if( ($isReferent || $targetUser === $currentUser)){
-            $this->assertSame(1,$crawler->filter('a[href*="card/home"]')->count());
             $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
 
             if($isReferent){
@@ -161,11 +160,6 @@ class UserControllerTest extends BaseControllerTest
         }
     }
 
-
-    //    public function testListBeneficiaries()
-    //    {
-    //        ;
-    //    }
 
     /**
      *@dataProvider provideBeneficiariesToAdd
@@ -210,20 +204,21 @@ class UserControllerTest extends BaseControllerTest
             $this->em->refresh($debitorUser);
             $this->assertTrue($debitorUser->hasBeneficiary($beneficiary));
         }else{
-            $this->assertTrue($this->client->getResponse()->isRedirect());
-            $crawler = $this->client->followRedirect();
-
+            $this->assertTrue($this->client->getResponse()->isRedirect() || ($this->client->getResponse()->getStatusCode() == 401));
         }
     }
 
     public function provideBeneficiariesToAdd()
     {
         return array(
-            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.com','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
-            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
-            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.com','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
-            'valid benef'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.com','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.com','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.fr','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
+            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.fr','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
+            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
+            'valid benef'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+            'pro adds person'=>array('current'=>'labonnepioche','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'person adds person'=>array('current'=>'cretine_agnes','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
 
         );
     }
@@ -381,8 +376,6 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertEquals($targetUser->getRemovalRequest(),true);
                     $this->assertEquals($targetUser->isEnabled(),false);
 
-                    //this assertion is false because login and logout don t display session flash messages
-                    $this->assertSame(1,$crawler->filter('div.alert-success')->count());    
                 }
             }       
         }

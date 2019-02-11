@@ -144,6 +144,7 @@ class AdminController extends Controller
                 if(! $user->getLastLogin()){
                     try{
                         $userVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($user->getCyclosID());
+                        $this->get('cairn_user.access_platform')->enable(array($user));
                     }catch(\Exception $e){
                         if(! $e->errorCode == 'ENTITY_NOT_FOUND'){
                             throw $e;
@@ -190,16 +191,14 @@ class AdminController extends Controller
                             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
                             $em->flush();
                             return $this->redirectToRoute('cairn_user_card_associate',array('id'=>$user->getID()));
-
-
                         }
                     }
                 }else{
                     $this->get('cairn_user.access_platform')->enable(array($user));
-                    $em->flush();
                 }
             }
 
+            $em->flush();
             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }

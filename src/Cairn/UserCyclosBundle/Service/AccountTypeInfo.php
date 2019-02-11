@@ -54,10 +54,10 @@ class AccountTypeInfo
      * @param stdClass|int $currencyVO
      * @return int 
      */
-    public function getAccountTypeID($name,$currencyVO,$nature)
+    public function getAccountTypeID($internalName,$currencyVO,$nature)
     {
         $query = new \stdClass();
-        $query->name = $name;
+        $query->internalName = $internalName;
         $query->currency = $currencyVO;
         $query->nature = $nature;
         $res = $this->accountTypeService->search($query);

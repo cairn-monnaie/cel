@@ -129,7 +129,7 @@ class SecurityListenerTest extends KernelTestCase
 
         $this->assertFalse($event->getResponse() == NULL);
         $this->assertContains('maintenance',$event->getResponse()->getContent());
-        $this->assertNotContains('security.login.username',$event->getResponse()->getContent());
+        $this->assertNotContains('/login_check',$event->getResponse()->getContent());
 
         //delete maintenance file
         unlink('maintenance.txt');

@@ -68,27 +68,37 @@ class RegistrationListenerTest extends KernelTestCase
         //PRO is registering
         $user = new User();
         $request = new Request();
-        $session = new Session(new MockArraySessionStorage());
-        $session->set('registration_type','pro');
-        $request->setSession($session);
+        $request->query->set('type','pro');
 
         $event = new UserEvent($user,$request);
         $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_INITIALIZE,$event); 
         $this->assertTrue($user->hasRole('ROLE_PRO'));
+        $this->assertFalse($user->hasRole('ROLE_PERSON'));
         $this->assertFalse($user->hasRole('ROLE_ADMIN'));
         $this->assertFalse($user->hasRole('ROLE_SUPER_ADMIN'));
 
-        //local group is registering
+        //PERSON is registering
         $user = new User();
         $request = new Request();
-        $session = new Session(new MockArraySessionStorage());
-        $session->set('registration_type','localGroup');
-        $request->setSession($session);
+        $request->query->set('type','person');
 
         $event = new UserEvent($user,$request);
         $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_INITIALIZE,$event); 
+        $this->assertTrue($user->hasRole('ROLE_PERSON'));
         $this->assertFalse($user->hasRole('ROLE_PRO'));
+        $this->assertFalse($user->hasRole('ROLE_ADMIN'));
+        $this->assertFalse($user->hasRole('ROLE_SUPER_ADMIN'));
+
+        //PERSON is getting registered
+        $user = new User();
+        $request = new Request();
+        $request->query->set('type','localGroup');
+
+        $event = new UserEvent($user,$request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::REGISTRATION_INITIALIZE,$event); 
         $this->assertTrue($user->hasRole('ROLE_ADMIN'));
+        $this->assertFalse($user->hasRole('ROLE_PRO'));
+        $this->assertFalse($user->hasRole('ROLE_PERSON'));
         $this->assertFalse($user->hasRole('ROLE_SUPER_ADMIN'));
 
     }

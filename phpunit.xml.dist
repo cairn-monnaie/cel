@@ -23,7 +23,6 @@
         </testsuite>
         <testsuite name="Order">
             <file>tests/UserBundle/Command/CreateInstallAdminCommandTest.php</file>
-            <file>tests/UserBundle/Controller/SystemSetUpControllerTest.php</file>
             <file>tests/UserBundle/Controller/CardControllerTest.php</file>
             <file>tests/UserBundle/Controller/DefaultControllerTest.php</file>
             <file>tests/UserBundle/Controller/UserControllerTest.php</file>

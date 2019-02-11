@@ -143,7 +143,7 @@ class BankingInfo
     public function hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description,$orderBy, $period, $pageSize)
     {
         $query             = new \stdClass();
-        $query->by       = $ownerVO;
+        $query->owner       = $ownerVO;
         $query->accountTypes = $accountTypesVO;
         $query->natures   = $natures; 
         //the array of statuses will be filled in this order : payment request status/recurring payment status/ scheduled payment status
@@ -170,7 +170,7 @@ class BankingInfo
      *@param int $pageSize number of responses
      *@return stdClass Java type: org.cyclos.model.banking.transactions.TransactionVO 
      */
-    public function getTransactions($ownerVO,$accountTypesVO,$natures = NULL,$statuses = NULL,$description, $orderBy = NULL, $period = NULL, $pageSize = NULL)
+    public function getTransactions($ownerVO,$accountTypesVO,$natures = NULL,$statuses = NULL,$description=NULL, $orderBy = NULL, $period = NULL, $pageSize = NULL)
     {
         $query = $this->hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description, $orderBy , $period, $pageSize);
 

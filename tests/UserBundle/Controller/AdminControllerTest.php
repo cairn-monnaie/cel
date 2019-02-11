@@ -117,7 +117,6 @@ class AdminControllerTest extends BaseControllerTest
 
                 $this->em->refresh($targetUser);
                 $this->assertTrue($targetUser->isEnabled());
-
                 $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($targetUser);
                 $this->assertNotEquals($userVO, NULL);
 
@@ -153,53 +152,56 @@ class AdminControllerTest extends BaseControllerTest
     }
 
 
-//    /**
-//     *
-//     *@dataProvider provideReferentsToAssign
-//     */
-//    public function testAssignReferent($referent, $target, $isValid, $isPro, $expectKey)
-//    {
-//        $adminUsername = $this->testAdmin;
-//        $crawler = $this->login($adminUsername, '@@bbccdd');
-//
-//        //can be null
-//        $referentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
-//        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
-//
-//        $crawler = $this->client->request('GET','/user/referents/assign/'.$targetUser->getID());
-//
-//        if(!$isPro){
-//            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-//            $this->assertSame(1,$crawler->filter('html:contains("Seuls les professionnels")')->count());
-//        }else{
-//
-//            $form = $crawler->selectButton('form_save')->form();
-//            $form['form[singleReferent]']->select($referent);
-//            $crawler = $this->client->submit($form);
-//
-//            $crawler = $this->client->followRedirect();
-//            if($isValid){
-//
-//                if($referentUser){
-//                    $this->assertTrue($targetUser->hasReferent($referentUser));
-//                }else{
-//                    $this->assertEquals($targetUser->getLocalGroupReferent(),NULL);
-//                }
-//            }else{
-//            }    
-//        }
-//
-//    }
-//
-//    public function provideReferentsToAssign()
-//    {
-//        return array(
-//            'invalid target' => array('referent'=>'gl_grenoble','target'=>'gl_voiron','isValid'=>false,'isPro'=>false,'expectKey'=>''),
-//            'valid assignation' => array('referent'=>'gl_grenoble','target'=>'labonnepioche','isValid'=>true,'isPro'=>true,'expectKey'=>'success'),
-//            'useless assignation' => array('referent'=>'','target'=>'LaDourbie','isValid'=>true,'isPro'=>true,'expectKey'=>'info'),
-//            'invalid assignation' => array('referent'=>'gl_grenoble','target'=>'atelier_eltilo','isValid'=>false,'isPro'=>true,'expectKey'=>'info'),
-//        );
-//
-//    }
+    /**
+     *
+     *@dataProvider provideReferentsToAssign
+     */
+    public function testAssignReferent($referent, $target, $isValid, $isPro, $expectKey)
+    {
+        $adminUsername = $this->testAdmin;
+        $crawler = $this->login($adminUsername, '@@bbccdd');
+
+        //can be null
+        $referentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        $crawler = $this->client->request('GET','/user/referents/assign/'.$targetUser->getID());
+
+        if(!$isPro){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            $this->assertSame(1,$crawler->filter('html:contains("Seuls les professionnels")')->count());
+        }else{
+
+            $form = $crawler->selectButton('form_save')->form();
+            $form['form[singleReferent]']->select($referent);
+            $crawler = $this->client->submit($form);
+
+            $crawler = $this->client->followRedirect();
+            if($isValid){
+
+                if($referentUser){
+                    $this->assertTrue($targetUser->hasReferent($referentUser));
+                }else{
+                    $this->assertEquals($targetUser->getLocalGroupReferent(),NULL);
+                }
+            }else{
+            }    
+        }
+
+    }
+
+    public function provideReferentsToAssign()
+    {
+        return array(
+            'invalid target(GL)' => array('referent'=>'gl_grenoble','target'=>'gl_voiron','isValid'=>false,'isPro'=>false,'expectKey'=>''),
+            'invalid target(person)' => array('referent'=>'gl_grenoble','target'=>'tous_andre','isValid'=>false,
+                                              'isPro'=>false,'expectKey'=>''),
+            'valid assignation' => array('referent'=>'gl_grenoble','target'=>'labonnepioche','isValid'=>true,'isPro'=>true,
+                                         'expectKey'=>'success'),
+            'referent already assigned' => array('referent'=>'gl_grenoble','target'=>'episol','isValid'=>true,'isPro'=>true,
+                                                 'expectKey'=>'info'),
+        );
+
+    }
 
 }
