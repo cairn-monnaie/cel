@@ -38,7 +38,8 @@ parameters:
     cairn_default_deposit_description :  Dépôt Cairn
     cairn_default_reconversion_description : Reconversion cairns-euros
 
-    cyclos_group_pros : Pros
+    cyclos_group_pros : 'Adhérents prestataires'
+    cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
 

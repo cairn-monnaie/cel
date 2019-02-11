@@ -130,10 +130,17 @@ Digital Cairn
     A log file is available in `./docker/logs/test.log` file
 
  * **Generating test data**  
-    `docker-compose exec engine python init_test_data.py `` `echo -n admin_network:@@bbccdd | base64` `` `  
-    This script first generates a set of users with an identical password : @@bbccdd.  
-    Then, it credits some users with 1000 units of account (all  the users in a given city : Grenoble by default)  
-    Finally, a specified user (labonnepioche by default) makes some scheduled payments.  
+    This will (re)create a scratch MySQL test database
+    `docker-compose exec engine ./build-setup.sh test admin:admin`    
+
+    `docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
+    This script first generates a set of users with an identical password : @@bbccdd, based on cyclos adherents data. 
+    Then, it creates a set of security cards.
+    Finally, it creates Operation entries based on Cyclos payments data. 
+    **WARNING** : This command is based on many external factors which make it difficult to maintain. In the state of the git repo, and without any modification, the script should finish. It depends on :
+      * the cyclos configuration : see api repo (setup.py)
+      * the cyclos init data script  : see api repo (init_data.py)
+      * the symfony command GenerateDatabaseCommand.php
 
  * **Launching tests**  
     `docker-compose exec engine ./vendor/bin/phpunit`  
