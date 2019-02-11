@@ -47,9 +47,8 @@ class SecurityController extends Controller
 
             //effectively log in and get session token
             $loginResult = $loginManager->login($dto);                             
-//            $array_oauth['cyclos_token'] =  $loginResult->sessionToken;
-//
-//            $networkInfo->switchToNetwork($networkName,'session_token',$token);
+            $array_oauth['cyclos_token'] =  $loginResult->sessionToken;
+
 
             $response =  new Response(json_encode($array_oauth));
             $response->headers->set('Content-Type', 'application/json');

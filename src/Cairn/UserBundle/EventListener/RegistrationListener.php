@@ -40,13 +40,11 @@ class RegistrationListener
     {
         $router = $this->container->get('router');          
 
-
         $form = $event->getForm();
         $user = $form->getData();
 
         $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-        var_dump($userVO);
-        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO('7645679660442932879');
+        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
         $userDTO->name = $user->getName();
         $userDTO->username = $user->getUsername();
         $userDTO->email = $user->getEmail();

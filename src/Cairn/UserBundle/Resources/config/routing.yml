@@ -43,13 +43,13 @@ cairn_user_api_users_delete:
 
 cairn_user_api_users_change_password:
     path: api/users/change-password
-    methods: PATCH
-    defaults: { _controller: CairnUserBundle:User:changePassword, _format: json }
+    methods: POST
+    defaults: { _controller: FOSUserBundle:ChangePassword:changePassword, _format: json }
 
 cairn_user_api_users_card_association:
     path: api/users/{id}/associate-card
-    methods: PATCH
-    defaults: { _controller: CairnUserBundle:User:associateCard, _format: json }
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: json }
 
 
 cairn_user_registration:

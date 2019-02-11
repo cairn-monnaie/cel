@@ -51,6 +51,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Config\Definition\Exception\Exception;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use Symfony\Component\Validator\Constraints as Assert;
@@ -58,7 +59,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * This class contains all actions related to user experience
  *
- * @Security("is_granted('ROLE_PRO')")
+ * @Security("is_granted('ROLE_ADHERENT')")
  */
 class UserController extends Controller
 {
@@ -76,7 +77,7 @@ class UserController extends Controller
 
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
-        //last users registered
+        //last pros registered
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
@@ -112,9 +113,13 @@ class UserController extends Controller
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
-        if($checker->isGranted('ROLE_PRO')){
+        if($checker->isGranted('ROLE_ADHERENT')){
             if($_format == 'json'){
-                $response = array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions, 'lastUsers'=>$users);
+                $response = $this->get('serializer')->serialize($users[0], 'json');
+                //$response = array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions, 'lastUsers'=>$users);
+                $response = new Response($response);
+                $response->headers->set('Content-Type', 'application/json');
+                return $response;
                 return $this->json($response);
             }
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastUsers'=>$users));
@@ -131,79 +136,34 @@ class UserController extends Controller
         $currentUserID = $this->getUser()->getID();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
-        $ub = $userRepo->createQueryBuilder('u');
 
-        //validated pros who the current user is referent of 
-        $validatedPros = new \stdClass();
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
+        $pros = new \stdClass();
+        $pros->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',true);
+        $pros->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',false);
+        $pros->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PRO');
+        $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
 
-        $listEnabledPros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
+        $persons = new \stdClass();
+        $persons->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',true);
+        $persons->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',false);
+        $persons->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PERSON');
+        $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
 
-        //blocked pros who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
-        $listBlockedPros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->andWhere('u.lastLogin is not NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
+        $admins = new \stdClass();
+        $admins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',true);
+        $admins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',false);
+        $admins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_ADMIN');
 
-        $validatedPros->enabledPros = $listEnabledPros;
-        $validatedPros->blockedPros = $listBlockedPros;
-
-        //never validated pros who the current user is referent of 
-        $pendingUsers = new \stdClass();
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
-        $pendingUsers->pros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->andWhere('u.lastLogin is NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //blocked admins who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_ADMIN')->whereReferent($ub, $currentUserID);
-        $pendingUsers->admins = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all members waiting for a card who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereReferent($ub, $currentUserID);
-        $pendingCards = $ub
-            ->leftJoin('u.card','c')
-            ->andWhere('c.id is NULL') //card is the owning-side in the association user/card
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all ROLE_ADMIN
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_ADMIN');
-        $listAdmins = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all ROLE_SUPER_ADMIN
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
-        $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
+        $superAdmins = new \stdClass();
+        $superAdmins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',true);
+        $superAdmins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',false);
+        $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
 
         $allUsers = array(
-            'validPros'=>$validatedPros, 
-            'pendingUsers'=>$pendingUsers,
-            'pendingCards'=>$pendingCards,
-            'listAdmins'=>$listAdmins,
-            'listSuperAdmins'=>$listSuperAdmins
+            'pros'=>$pros, 
+            'persons'=>$persons,
+            'admins'=>$admins,
+            'superAdmins'=>$superAdmins,
         );
 
         if($_format == 'json'){
@@ -213,30 +173,343 @@ class UserController extends Controller
     }
 
 
+//    public function getAction(Request $request, User $user)
+//    {
+//
+//    }
+    /**
+     * List API options related to user URI 
+     *
+     */
+    public function optionsAction(Request $request)                           
+    {   
+        $template = array(
+            'notes'=> '',
+            'path'=> '',
+            'method'=> '',
+            'Parameters'=> array(
+                'query'=>array(),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(),
+                'access denied'=> array(),
+                'error'=> array()
+            )
+        );
+
+        $options = array();
+        $options['get users list'] = array(
+            'notes'=> 'Request list of users',
+            'path'=> 'api/users',
+            'method'=> 'GET',
+            'Parameters'=> array(
+                'query'=>array(),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful request'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'you do not have access to these users'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['get user profile'] = array(
+            'notes'=> 'Request profile data for an user with id {id}',
+            'path'=> "api/users/{id}",
+            'method'=> 'GET',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=>array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    )
+                ),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful request'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'forbidden access'
+                 ),
+                'undefined user'=> array(
+                     'status code'=> '404',
+                     'reason'=> 'no user with given id'
+                 ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['post'] = array(
+            'notes'=> 'Create a new user using provided data',
+            'path'=> 'api/users',
+            'method'=> 'POST',
+            'Parameters'=> array(
+                'query'=>array(
+                    'type'=>array(
+                        'description'=> 'kind of user to add',
+                        'data_type'=> 'string',
+                        'values'=> array('pro','localGroup','superAdmin')
+                    )
+                ),
+                'body'=>array(
+                    'name'=>array(
+                        'description'=> 'User name (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'username'=>array(
+                        'description'=> 'User login (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'address'=>array(
+                        'address1'=> array(
+                            'description'=> 'User main address (required)',
+                            'data_type'=> 'string'
+                        ),
+                        'address2'=> array(
+                            'description'=> 'User complement address',
+                            'data_type'=> 'string'
+                        ),
+                        'city'=> array(
+                            'description'=> 'User current city (required)',
+                            'data_type'=> 'string'
+                        ),
+                        'zipcode'=> array(
+                            'description'=> 'Zipcode of the city (required)',
+                            'data_type'=> 'int'
+                        ),
+
+                    ),
+                    'description'=>array(
+                        'description'=> 'Provide a few words on user\'s activity',
+                        'data_type'=> 'text'
+                    ),
+                    'logo'=>array(
+                        'description'=> 'User avatar',
+                        'data_type'=> 'image',
+                        'mimeTypes'=> array('image/jpeg','image/jpg','image/png','image/gif')
+                    )
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '201',
+                     'reason'=> 'successful user creation'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'Given current user\'s role, creating a user is not authorized'
+                 ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );        
+
+        $options['put'] = array(
+            'notes'=> ' Update user with id {id} using provided properties',
+            'path'=> 'api/users/{id}',
+            'method'=> 'PUT',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=>array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    )
+                ),
+                'body'=>array(
+                    'name'=>array(
+                        'description'=> 'User name',
+                        'data_type'=> 'string'
+                    ),
+                    'username'=>array(
+                        'description'=> 'User login',
+                        'data_type'=> 'string'
+                    ),
+                    'address'=>array(
+                        'address1'=> array(
+                            'description'=> 'User main address',
+                            'data_type'=> 'string'
+                        ),
+                        'address2'=> array(
+                            'description'=> 'User complement address',
+                            'data_type'=> 'string'
+                        ),
+                        'city'=> array(
+                            'description'=> 'User current city',
+                            'data_type'=> 'string'
+                        ),
+                        'zipcode'=> array(
+                            'description'=> 'Zipcode of the city',
+                            'data_type'=> 'int'
+                        ),
+
+                    ),
+                    'description'=>array(
+                        'description'=> 'Provide a few words on user\'s activity',
+                        'data_type'=> 'text'
+                    ),
+                    'logo'=>array(
+                        'description'=> 'User avatar',
+                        'data_type'=> 'image',
+                        'mimeTypes'=> 'image/jpeg','image/jpg','image/png','image/gif'
+                    )
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user update'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['delete'] = array(
+            'notes'=> 'Request delete user with id {id}',
+            'path'=> 'api/users/{id}',
+            'method'=> 'DELETE',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=> array(
+                      'description'=> 'user id (required)',
+                      'data_type'=> 'int'
+                  )
+                ),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user update'
+                ),
+                'access denied'=> array(
+                 'status code'=> '403',
+                 'reason'=> 'forbidden removal on given user => not referent or not the user himself'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+        $options['Change_password'] = array(
+            'notes'=> 'Change password',
+            'path'=> 'api/users/change-password',
+            'method'=> 'PATCH',
+            'Parameters'=> array(
+                'query'=> array(),
+                'body'=> array(
+                    'current password'=> array(
+                      'description'=> 'User current password (required)',
+                      'data_type'=> 'string'
+                    ),
+                    'new password'=> array(
+                      'description'=> 'User requested password (required)',
+                      'data_type'=> 'string'
+                    ),
+                    'confirm new password'=> array(
+                      'description'=> 'Confirm requested password (required)',
+                      'data_type'=> 'string'
+                    ),
+                ),
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful password change'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+        $options['associate_card'] = array(
+            'notes'=> 'Associate a security card to a user',
+            'path'=> 'api/users/{id}/associate-card',
+            'method'=> 'PATCH',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=> array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    ),
+                ),
+                'body'=>array(
+                    'current password'=> array(
+                        'description'=> 'User current password (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'new password'=> array(
+                        'description'=> 'User requested password (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'confirm new password'=> array(
+                        'description'=> 'Confirm requested password (required)',
+                        'data_type'=> 'string'
+                    ),
+             
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user creation'       
+                ),
+                'access denied'=> array(
+                 'status code'=> '403',
+                 'reason'=> 'forbidden removal on given user => not referent or not the user himself'
+                ),
+                'error'=> array(
+                      'status code'=> '500',
+                     'reason'=> 'error on server-side'           
+                ),
+            )
+        );
+
+        return new Response(json_encode($options));
+    }                      
+
     /**
      * View the profile of $user
      *
      * What will be displayed on the screen will depend on the current user
      *
      * @param User $user User with profile to view
-     * @Method("GET")
      */
     public function viewProfileAction(Request $request , User $user, $_format)                           
     {                                                                          
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $currentUser = $this->getUser();
+        if( (!$this->get('security.authorization_checker')->isGranted('ROLE_ADMIN')) && $user->hasRole('ROLE_SUPER_ADMIN')){
+            throw new AccessDeniedException('Pas les droits nécessaires pour accéder au profil de cet utilisateur');
+        } 
 
         if($_format == 'json'){
-            $array_user = array('name'=>$user->getName(),
-                'username'=>$user->getUsername(),
-                'email'=>$user->getEmail(),
-                'street1'=>$user->getAddress()->getStreet1(),
-                'street2'=>$user->getAddress()->getStreet2(),
-                'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
-                'city'=>$user->getCity(),
-                'image'=>$user->getImage()
-            );
-
-            return $this->json(array('user'=>$array_user));
+            $serializedUser = $this->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card'));
+            $response = new Response($serializedUser);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
         }
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
@@ -306,9 +579,11 @@ class UserController extends Controller
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
 
-
-        $possibleUsers = $userRepo->myFindByRole(array('ROLE_PRO'));
         $currentUser = $this->getUser();
+
+        $possiblePros = $userRepo->myFindByRole(array('ROLE_PRO'));
+        $possiblePersons = $userRepo->myFindByRole(array('ROLE_PERSON'));
+        $possibleBeneficiaries = array_merge($possiblePros, $possiblePersons);
 
         $form = $this->createFormBuilder()
             ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
@@ -377,19 +652,18 @@ class UserController extends Controller
 
                 $beneficiary->addSource($currentUser);
                 $currentUser->addBeneficiary($beneficiary);
-                $em->persist($beneficiary);                    
+                $em->persist($beneficiary);
                 $em->persist($currentUser);
                 $em->flush();
                 $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                 return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-
             }
         }
 
         if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'pros'=>$possibleUsers));
+            return $this->json(array('form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries));
         }
-        return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'pros'=>$possibleUsers));
+        return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries));
     }
 
     /**
@@ -531,7 +805,7 @@ class UserController extends Controller
      *
      * A user can remove its own member area, or an admin can do it if he is a referent.
      *
-     * If the user to remove is a ROLE_USER, we ensure that all his accounts have a balance to zero
+     * If the user to remove is a ROLE_ADHERENT, we ensure that all his accounts have a balance to zero
      *
      * @Method("GET")
      *
@@ -565,7 +839,7 @@ class UserController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id,NULL);
 
-        if($user->hasRole('ROLE_PRO')){
+        if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
             foreach($accounts as $account){
                 if($account->status->balance != 0){
                     $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La suppression ne peut aboutir.');
@@ -586,7 +860,7 @@ class UserController extends Controller
                         $redirection = 'cairn_user_users_home';
                         $isRemoved = $this->removeUser($user, $currentUser);
                         $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
-                    }else{//is ROLE_PRO
+                    }else{//is ROLE_PRO or ROLE_PERSON
                         $user->setRemovalRequest(true);
                         $user->setEnabled(false);
 

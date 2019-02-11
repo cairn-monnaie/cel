@@ -443,7 +443,7 @@ class CardController extends Controller
         }
 
         if($user->getRemovalRequest() || !$user->isEnabled() ){
-            $session->getFlashBag()->add('info',$user->getName().' est en instance de suppression. L\'association de carte est donc impossible');
+            $session->getFlashBag()->add('info',$user->getName().' est soit bloqué, soit en instance de suppression. L\'association de carte est donc impossible');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
 
@@ -461,6 +461,12 @@ class CardController extends Controller
                     $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais.');
                     $em->flush();
 
+                    if($this->get('cairn_user.api')->isApiCall()){
+                        $response =  new Response('card association : FAILED !');
+                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                        $response->headers->set('Content-Type', 'application/json');
+                        return $response;
+                    }
                     return new RedirectResponse($request->getRequestUri());
                 }else{
                     $currentUser->setCardAssociationTries(0);
@@ -468,6 +474,13 @@ class CardController extends Controller
                     $newCard->setUser($user);
                     $this->get('cairn_user.security')->encodeCard($newCard);
                     $em->flush();
+
+                    if($this->get('cairn_user.api')->isApiCall()){
+                        $response =  new Response('card association : OK !');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        $response->headers->set('Content-Type', 'application/json');
+                        return $response;
+                    }
 
                     $session->getFlashBag()->add('success','La carte a été associée avec succès.');
                     return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
