@@ -1,0 +1,28 @@
+{# src/Cairn/UserBundle/Resources/views/User/change_phone_number.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+    <div class="body_wrapper">
+        {{ form_start(formPhoneNumber) }}                                                       
+         {{ form_rest(formPhoneNumber) }}                                                        
+        {{form_end(formPhoneNumber) }}   
+    </div>
+    
+    {% if app.user.phoneNumberValidationCode != NULL %} 
+        <div class="body_wrapper">
+            {{ form_start(formCode) }}                                                       
+             {{ form_rest(formCode) }}                                                        
+            {{form_end(formCode) }}   
+        </div>
+    {% endif %}
+
+{% endblock %}              
+

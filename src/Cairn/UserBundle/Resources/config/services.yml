@@ -125,6 +125,7 @@ services:
             - "@cairn_user_cyclos_channel_info"
             - "@cairn_user_cyclos_group_info"
             - "@cairn_user_cyclos_network_info"
+            - "@cairn_user.repository_user"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
 
@@ -138,6 +139,14 @@ services:
             - "@cairn_user.security"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_password_validator }
+
+    cairn_user.user_phone_number_validator:
+        class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.security"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }
 
     cairn_user.operation_validator:
         class: Cairn\UserBundle\Validator\OperationValidator

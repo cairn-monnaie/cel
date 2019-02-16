@@ -77,31 +77,60 @@ cairn_user_profile_view:
     requirements:
         id: \d+
 
-cairn_user_beneficiaries_list:
-    path:     user/beneficiaries/list.{_format}
-    defaults: { _controller: CairnUserBundle:User:listBeneficiaries, _format: html }
+
+cairn_user_phonenumber_edit:
+    path:     user/phone-number/edit
+    defaults: { _controller: CairnUserBundle:User:changePhoneNumber, _format: html }
+
+cairn_user_api_beneficiaries_options:
+    path: api/beneficiaries
+    methods: OPTIONS
+    defaults: { _controller: CairnUserBundle:Beneficiary:options, _format: json }
+
+cairn_user_api_beneficiaries_get:
+    path:     api/beneficiaries/get/{id}
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Beneficiary:viewBeneficiary, _format: json }
     requirements:
-        _format: html|json
+        id: \d+
+
+cairn_user_beneficiaries_list:
+    path:     user/beneficiaries/list
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: html }
+
+cairn_user_api_beneficiaries_list:
+    path:     api/beneficiaries/get
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
 
 cairn_user_beneficiaries_add:
-    path:     user/beneficiaries/add.{_format}
-    defaults: { _controller: CairnUserBundle:User:addBeneficiary, _format: html }
-    requirements:
-        _format: html|json
+    path:     user/beneficiaries/add
+    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: html }
+
+cairn_user_api_beneficiaries_post:
+    path:     api/beneficiaries/post
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
 
 cairn_user_beneficiaries_edit:
     path:     user/beneficiaries/edit/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:User:editBeneficiary, _format: html  }
+    defaults: { _controller: CairnUserBundle:Beneficiary:editBeneficiary, _format: html  }
     requirements:
         id: \d+
         _format: html|json
 
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:User:removeBeneficiary, _format: html }
+    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: html }
     requirements:
         id: \d+
-        _format: html|json
+
+cairn_user_api_beneficiaries_delete:
+    path:     api/beneficiaries/delete/{id}
+    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
+    requirements:
+        id: \d+
 
 cairn_user_list_users_home:
     path:     users.{_format}

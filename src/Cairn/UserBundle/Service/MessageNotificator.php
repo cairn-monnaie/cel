@@ -43,6 +43,11 @@ class MessageNotificator
         $this->noreply = $noreply;
     }
 
+    public function sendSMS($phoneNumber, $content)
+    {
+        ;
+    }
+
     public function getNoReplyEmail()
     {
         return $this->noreply;

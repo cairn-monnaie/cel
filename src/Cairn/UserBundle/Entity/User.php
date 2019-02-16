@@ -36,8 +36,8 @@ class User extends BaseUser
     private $name; 
 
     /**
-     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
-     * @Assert\Length(min=19, minMessage="Contient exactement {{ limit }} chiffres")
+     * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID; 
 
@@ -57,6 +57,26 @@ class User extends BaseUser
      * @ORM\Column(name="creation_date", type="datetime", unique=false, nullable=false)
      */
     private $creationDate; 
+
+    /**
+     * @ORM\Column(name="phone_number", type="string", unique=false, nullable=true)
+     */
+    private $phoneNumber;
+
+    /**
+     * @ORM\Column(name="last_phone_number_request_date", type="datetime", unique=false, nullable=true)
+     */
+    private $lastPhoneNumberRequestDate; 
+
+    /**
+     * @ORM\Column(name="nb_phone_number_requests", type="smallint", unique=false, nullable=false)
+     */
+    private $nbPhoneNumberRequests; 
+
+    /**
+     * @ORM\Column(name="phone_number_validation_code", type="string", unique=false, nullable=true)
+     */
+    private $phoneNumberValidationCode;
 
     /**
      * @var ArrayCollection
@@ -92,6 +112,11 @@ class User extends BaseUser
     private $cardKeyTries;
 
     /**
+     * @ORM\Column(name="phone_number_validation_tries", type="smallint", unique=false, nullable=false)
+     */
+    private $phoneNumberValidationTries;
+
+    /**
      * @ORM\Column(name="card_association_tries", type="smallint", unique=false, nullable=false)
      */
     private $cardAssociationTries;
@@ -118,6 +143,8 @@ class User extends BaseUser
         $this->setCardAssociationTries(0);
         $this->removalRequest = false;
         $this->firstLogin = true;
+        $this->setNbPhoneNumberRequests(0);
+        $this->setPhoneNumberValidationTries(0);
     }
 
     public function getCity()
@@ -223,6 +250,104 @@ class User extends BaseUser
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * Set phoneNumber
+     *
+     * @param string $phoneNumber
+     *
+     * @return User
+     */
+    public function setPhoneNumber($phoneNumber)
+    {
+        $this->phoneNumber = $phoneNumber;
+
+        return $this;
+    }
+
+    /**
+     * Get phoneNumber
+     *
+     * @return string
+     */
+    public function getPhoneNumber()
+    {
+        return $this->phoneNumber;
+    }
+
+
+    /**
+     * Set lastPhoneNumberRequestDate
+     *
+     * @param \DateTime $lastPhoneNumberRequestDate
+     *
+     * @return User
+     */
+    public function setLastPhoneNumberRequestDate($lastPhoneNumberRequestDate = NULL)
+    {
+        $this->lastPhoneNumberRequestDate = $lastPhoneNumberRequestDate;
+
+        return $this;
+    }
+
+    /**
+     * Get lastPhoneNumberRequestDate
+     *
+     * @return \DateTime
+     */
+    public function getLastPhoneNumberRequestDate()
+    {
+        return $this->lastPhoneNumberRequestDate;
+    }
+
+    /**
+     * Set nbPhoneNumberRequests
+     *
+     * @param int $nbPhoneNumberRequests
+     *
+     * @return User
+     */
+    public function setNbPhoneNumberRequests($nbPhoneNumberRequests)
+    {
+        $this->nbPhoneNumberRequests = $nbPhoneNumberRequests;
+
+        return $this;
+    }
+
+    /**
+     * Get nbPhoneNumberRequests
+     *
+     * @return int
+     */
+    public function getNbPhoneNumberRequests()
+    {
+        return $this->nbPhoneNumberRequests;
+    }
+
+
+    /**
+     * Set phoneNumberValidationCode
+     *
+     * @param string $phoneNumberValidationCode
+     *
+     * @return User
+     */
+    public function setPhoneNumberValidationCode($phoneNumberValidationCode = NULL)
+    {
+        $this->phoneNumberValidationCode = $phoneNumberValidationCode;
+
+        return $this;
+    }
+
+    /**
+     * Get phoneNumberValidationCode
+     *
+     * @return string
+     */
+    public function getPhoneNumberValidationCode()
+    {
+        return $this->phoneNumberValidationCode;
     }
 
     /**
@@ -392,7 +517,7 @@ class User extends BaseUser
     /**
      * Get passwordTries
      *
-     * @return integer
+     * @return int
      */
     public function getPasswordTries()
     {
@@ -402,16 +527,13 @@ class User extends BaseUser
     /**
      * Set cardKeyTries
      *
-     * @param integer $cardKeyTries
+     * @param int $cardKeyTries
      *
      * @return User
      */
     public function setCardKeyTries($cardKeyTries)
     {
         $this->cardKeyTries = $cardKeyTries;
-        if($this->cardKeyTries >= 3){
-            $this->setEnabled(false);
-        }
 
         return $this;
     }
@@ -419,7 +541,7 @@ class User extends BaseUser
     /**
      * Get cardKeyTries
      *
-     * @return integer
+     * @return int
      */
     public function getCardKeyTries()
     {
@@ -427,9 +549,33 @@ class User extends BaseUser
     }
 
     /**
+     * Set phoneNumberValidationTries
+     *
+     * @param int $phoneNumberValidationTries
+     *
+     * @return User
+     */
+    public function setPhoneNumberValidationTries($phoneNumberValidationTries)
+    {
+        $this->phoneNumberValidationTries = $phoneNumberValidationTries;
+
+        return $this;
+    }
+
+    /**
+     * Get phoneNumberValidationTries
+     *
+     * @return int
+     */
+    public function getPhoneNumberValidationTries()
+    {
+        return $this->phoneNumberValidationTries;
+    }
+
+    /**
      * Set cardAssociationTries
      *
-     * @param integer $cardAssociationTries
+     * @param int $cardAssociationTries
      *
      * @return User
      */
@@ -446,7 +592,7 @@ class User extends BaseUser
     /**
      * Get cardAssociationTries
      *
-     * @return integer
+     * @return int
      */
     public function getCardAssociationTries()
     {

@@ -32,6 +32,7 @@ use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\BeneficiaryType;
 use Cairn\UserBundle\Form\ProfileFormType;
 use Cairn\UserBundle\Form\ChangePasswordType;
+use Cairn\UserBundle\Form\PhoneNumberType;
 
 use Cairn\UserBundle\Validator\UserPassword;
 
@@ -125,6 +126,90 @@ class UserController extends Controller
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastUsers'=>$users));
         }
 
+    }
+
+    /**
+     * Changes the current user's phone number
+     *
+     * This action permits to change current user's phone number. 
+     */
+    public function changePhoneNumberAction(Request $request)
+    {
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $user = $this->getUser();
+
+        $formPhoneNumber = $this->createForm(PhoneNumberType::class);
+        $formCode = $this->createFormBuilder()
+            ->add('code', PasswordType::class,array('label'=>'Code de validation'))
+            ->add('save', SubmitType::class,array('label'=>'Valider'))
+            ->getForm();
+
+        $formPhoneNumber->handleRequest($request);
+        if($formPhoneNumber->isSubmitted() && $formPhoneNumber->isValid()){
+            //give a new code to be validated
+            $code = rand(1000,9999);
+            $user->setPhoneNumberValidationCode($code);
+            $user->setNbPhoneNumberRequests($user->getNbPhoneNumberRequests() + 1);
+            $user->setLastPhoneNumberRequestDate(new \Datetime());
+            $user->setPhoneNumber($formPhoneNumber->getData()['phoneNumber']);
+
+            if($user->getNbPhoneNumberRequests() > 3){
+                $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            }
+
+            // send SMS with validation code to current user's new phone number
+            $newPhoneNumber = $user->getPhoneNumber();
+            $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber, '');
+            $em->flush();
+            $session->getFlashBag()->add('info','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider votre nouveau numéro de téléphone');
+            return $this->render('CairnUserBundle:User:change_phone_number.html.twig',
+                array('formPhoneNumber'=>$formPhoneNumber->createView(),
+                      'formCode'=>$formCode->createView()));
+        }
+
+        $formCode->handleRequest($request);
+        if($formCode->isSubmitted() && $formCode->isValid()){
+            $code = $formCode->getData()['code'];
+
+            //no new phone number requested
+            if(! $user->getPhoneNumberValidationCode()){
+                $session->getFlashBag()->add('info','Aucune demande d\'ajout de numéro enregistrée');
+                return new RedirectResponse($request->getRequestUri());
+            }
+
+            //valid code
+            if($code == $user->getPhoneNumberValidationCode()){
+                $user->setPhoneNumberValidationCode(NULL);
+                $user->setNbPhoneNumberRequests(0);
+                $user->setLastPhoneNumberRequestDate(NULL);
+                $user->setPhoneNumberValidationTries(0);
+
+                $em->flush();
+                $session->getFlashBag()->add('success','Nouveau numéro de téléphone enregistré : '.$user->getPhoneNumber());
+                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+
+            //invalid code
+            }else{
+                $user->setPhoneNumberValidationTries($user->getPhoneNumberValidationTries() + 1);
+                $remainingTries = 3 - $user->getPhoneNumberValidationTries();
+                if($remainingTries > 0){
+                    $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' avant blocage du compte');
+                }else{
+                    $user->setEnabled(False);
+                    $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
+                }
+
+                $em->flush();
+                return new RedirectResponse($request->getRequestUri());
+
+            }
+        }
+
+        return $this->render('CairnUserBundle:User:change_phone_number.html.twig',
+            array('formPhoneNumber'=>$formPhoneNumber->createView(),
+                  'formCode'=>$formCode->createView()));
     }
 
     /**
@@ -506,7 +591,7 @@ class UserController extends Controller
         } 
 
         if($_format == 'json'){
-            $serializedUser = $this->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card'));
+            $serializedUser = $this->get('cairn_user.api')->serialize($user);
             $response = new Response($serializedUser);
             $response->headers->set('Content-Type', 'application/json');
             return $response;
@@ -514,287 +599,6 @@ class UserController extends Controller
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
 
-    /**
-     * Get the list of beneficiaries for current User
-     *
-     */
-    public function listBeneficiariesAction(Request $request, $_format)
-    {
-        $beneficiaries = $this->getUser()->getBeneficiaries();
-
-        if($_format == 'json'){
-            return $this->json(array('beneficiaries'=>$beneficiaries));
-        }
-        return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('beneficiaries'=>$beneficiaries));
-    }
-
-
-
-    /**
-     * Checks if the beneficiary exists in database, and is a current beneficiary of $user
-     *
-     *@param User $user User who is supposed to own the account
-     *@param int $ICC account cyclos ID
-
-     *@return stdClass with attributes : 'existingBeneficiary'(Beneficiary class) and 'hasBeneficiary'(boolean)
-     */
-    public function isValidBeneficiary($user, $ICC)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-        $toReturn = new \stdClass();
-
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-
-        $toReturn->account = $this->get('cairn_user_cyclos_account_info')->hasAccount($ownerVO->id,$ICC);
-
-        $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$user,'ICC'=>$ICC));
-
-        if($existingBeneficiary){
-            $toReturn->existingBeneficiary = $existingBeneficiary;
-            $toReturn->hasBeneficiary = $this->getUser()->hasBeneficiary($existingBeneficiary);
-        }
-        else{
-            $toReturn->existingBeneficiary = NULL;
-            $toReturn->hasBeneficiary = NULL; 
-        }
-        return $toReturn;
-    }
-
-
-    /**
-     * Adds a new beneficiary to the existing list
-     *
-     * This action is considered as a sensible operation
-     * Proposes a list of potential users with autocompletion, then checks if the user and the ICC match, before ensuring that the
-     * beneficiary is valid and adding it.
-     *
-     * As the User and Beneficiary class have a ManyToMany bidirectional relationship, adding it the two directions must be done
-     *
-     */
-    public function addBeneficiaryAction(Request $request, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-
-        $currentUser = $this->getUser();
-
-        $possiblePros = $userRepo->myFindByRole(array('ROLE_PRO'));
-        $possiblePersons = $userRepo->myFindByRole(array('ROLE_PERSON'));
-        $possibleBeneficiaries = array_merge($possiblePros, $possiblePersons);
-
-        $form = $this->createFormBuilder()
-            ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
-            ->add('email', EmailType::class, array('label' => 'Email du bénéficiaire'))
-            //ICC : IntegerType does not work for bigint : rounding after 14 figures (Account Ids in Cyclos have 19)
-            ->add('ICC',   TextType::class,array('label'=>'Identifiant de Compte Cairn(ICC)'))
-            ->add('add', SubmitType::class, array('label' => 'Ajouter'))
-            ->getForm();
-
-        if($request->isMethod('POST')){
-            $form->handleRequest($request);
-            if($form->isValid()){
-                $dataForm = $form->getData();
-
-                //                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-                //                $re_name ='#^[\w\.]+$#' ;
-                //                $re_ICC = '#^[-]?[0-9]+$#';
-                //                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
-
-                $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
-                if(!$user){
-                    $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
-                    if(!$user){
-                        $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
-                        return new RedirectResponse($request->getRequestUri());
-
-                    }
-                }
-                if($user->getID() == $currentUser->getID())
-                {
-                    $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                    return new RedirectResponse($request->getRequestUri());
-                }
-                $ICC = preg_replace('/\s+/', '', $dataForm['ICC']);
-
-                //check that ICC exists and corresponds to this user
-                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
-                if(!$toUserVO){
-                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    if(! ($user->getUsername() == $toUserVO->username)){
-                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                        return new RedirectResponse($request->getRequestUri());
-
-                    }
-                }
-
-                //check that beneficiary is not already in database, o.w create new one
-                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
-
-                if(!$existingBeneficiary){
-                    $beneficiary = new Beneficiary();
-                    $beneficiary->setUser($user);
-                    $beneficiary->setICC($ICC);
-                }
-                else{ 
-                    if($currentUser->hasBeneficiary($existingBeneficiary)){
-                        $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                        return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                    }
-                    $beneficiary = $existingBeneficiary;
-                }
-
-                $beneficiary->addSource($currentUser);
-                $currentUser->addBeneficiary($beneficiary);
-                $em->persist($beneficiary);
-                $em->persist($currentUser);
-                $em->flush();
-                $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-            }
-        }
-
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries));
-        }
-        return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries));
-    }
-
-    /**
-     *Edit an existing beneficiary
-     *
-     * Only the ICC can be changed. Then, this new beneficiary is verified : 
-     *  _checks that the user's beneficiary has an account with the provided ICC
-     *  _check that new beneficiary is not already a beneficiary
-     *@param Beneficiary $beneficiary Beneficiary with a given ICC is edited
-     *@Method("GET")
-     */
-    public function editBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-
-        $newBeneficiary = new Beneficiary();
-        $newBeneficiary->setUser($beneficiary->getUser());
-        $newBeneficiary->setICC($beneficiary->getICC());
-        $form = $this->createForm(BeneficiaryType::class,$newBeneficiary);
-        $currentUser = $this->getUser();
-
-        if($request->isMethod('GET')){
-            $session->set('formerICC',$beneficiary->getICC());
-        }
-        if($request->isMethod('POST')){ //form filled and submitted            
-            $formerBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$session->get('formerICC')));
-            //            $session->remove('formerICC');
-            $form->handleRequest($request);                                    
-            if($form->isValid()){                                              
-                //check that ICC exists and corresponds to this user
-                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($newBeneficiary->getICC());
-                if(!$toUserVO){
-                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    $benefUser = $newBeneficiary->getUser();
-                    if(! ($benefUser->getUsername() == $toUserVO->username)){
-                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$benefUser->getName());
-                        return new RedirectResponse($request->getRequestUri());
-                    }
-                }
-
-
-                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$newBeneficiary->getICC()));
-                if($existingBeneficiary){
-                    $newBeneficiary = $existingBeneficiary;
-                }
-
-                if($currentUser->hasBeneficiary($newBeneficiary)){
-                    $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                }
-
-                $nbSources = count($formerBeneficiary->getSources()) ;
-                $formerBeneficiary->removeSource($currentUser);
-                $currentUser->removeBeneficiary($formerBeneficiary);
-                if($nbSources == 1){
-                    $em->remove($formerBeneficiary);
-                }
-                $currentUser->addBeneficiary($newBeneficiary);
-                $newBeneficiary->addSource($currentUser);
-
-                $em->persist($newBeneficiary);
-                $em->persist($currentUser);
-                $em->flush();
-                $session->getFlashBag()->add('success','Modification effectuée avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-            }                                                              
-        }                                                                  
-
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView()));
-        }
-        return $this->render('CairnUserBundle:Pro:confirm_edit_beneficiary.html.twig',array('form'=>$form->createView()));
-    }
-
-
-    /**
-     * Removes a given beneficiary
-     *
-     * Once $beneficiary is removed, we ensure that this beneficiary is associated to at least one user. Otherwise, it is removed
-     * @TODO : try the option OrphanRemoval in annotations to let Doctrine do it 
-     * @param Beneficiary $beneficiary Beneficiary to remove
-     * @Method("GET")
-     */
-    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $form = $this->createForm(ConfirmationType::class);
-        $currentUser = $this->getUser();
-
-        if(!$currentUser->hasBeneficiary($beneficiary)){
-            $session->getFlashBag()->add('error',' Donnée introuvable');
-            return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
-        }
-        if($request->isMethod('POST')){ //form filled and submitted            
-
-            $form->handleRequest($request);                                    
-            if($form->isValid()){                                              
-                if($form->get('save')->isClicked()){ 
-                    $nbSources = count($beneficiary->getSources());
-                    $beneficiary->removeSource($currentUser);
-                    $currentUser->removeBeneficiary($beneficiary);
-                    if($nbSources == 1){
-                        $em->remove($beneficiary);
-                    }
-
-                    $em->flush();
-                    $session->getFlashBag()->add('success','Suppression effectuée avec succès');
-
-                    //TODO here
-                }                                                              
-                else{
-                    $session->getFlashBag()->add('info','Suppression annulée');
-                }
-                return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
-            }                                                                  
-        }        
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'beneficiary_name'=>$beneficiary->getUser()->getName()));
-        }
-
-        return $this->render('CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',
-            array(
-                'form'=>$form->createView(),
-                'beneficiary_name'=>$beneficiary->getUser()->getName()
-            ));
-    }
 
 
     /**

@@ -112,6 +112,10 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
+ 
+    }
+
+}
 
         //WARNING with commented code below : creates duplicated users in cyclos database. It is a problem for network and global admins if they want to change their password
         //if no violation, it necessarily means that a validation error would come from password
@@ -158,6 +162,6 @@ class UserValidator extends ConstraintValidator
 //                }
 //            }
 //        }
-
-    }
-}
+//
+//    }
+//}
