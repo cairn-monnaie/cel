@@ -31,39 +31,8 @@ class PhoneNumberType extends AbstractType
             ->add('phoneNumber', TextType::class,array(
                 'label'=>'Numéro de téléphone portable',
                 'constraints'=>new UserPhoneNumber() 
-            ));
-        $builder->addEventListener(
-            FormEvents::POST_SET_DATA,
-            function (FormEvent $event) {
-                $user = $event->getData();
-                $form = $event->getForm();
-                if(null === $user){
-                    return;
-                }
-
-                $previousPhoneNumber = $user->getPhoneNumber();
-                return $previousPhoneNumber;
-            }
-        );
-
-        $builder->addEventListener(
-            FormEvents::SUBMIT,
-            function (FormEvent $event) {
-                $user = $event->getData();
-                $form = $event->getForm();
-                if(null === $user){
-                    return;
-                }
-
-//                $newPhoneNumber = $user->getPhoneNumber();
-//                if($newPhoneNumber == $previousPhoneNumber){
-//                    $error = new FormError('Ce numéro de téléphone est déjà utilisé');
-//                    $form->addError($error);
-//                }
-            }
-        );
-
-        $builder->add('save' , SubmitType::class);
+            ))
+            ->add('save' , SubmitType::class);
     }
 
 //    /**

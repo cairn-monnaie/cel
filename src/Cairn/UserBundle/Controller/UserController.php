@@ -154,6 +154,7 @@ class UserController extends Controller
             $user->setLastPhoneNumberRequestDate(new \Datetime());
             $user->setPhoneNumber($formPhoneNumber->getData()['phoneNumber']);
 
+            //let this check here in POST context, because the user must be able to access this page to provide code in this case
             if($user->getNbPhoneNumberRequests() > 3){
                 $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
                 return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
@@ -179,6 +180,12 @@ class UserController extends Controller
                 return new RedirectResponse($request->getRequestUri());
             }
 
+            //should never happen but just in case
+            if($user->getPhoneNumberValidationCode() && !$user->getPhoneNumber()){
+                $session->getFlashBag()->add('info','Aucune numéro de téléphone enregistré');
+                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            }
+
             //valid code
             if($code == $user->getPhoneNumberValidationCode()){
                 $user->setPhoneNumberValidationCode(NULL);
@@ -195,9 +202,9 @@ class UserController extends Controller
                 $user->setPhoneNumberValidationTries($user->getPhoneNumberValidationTries() + 1);
                 $remainingTries = 3 - $user->getPhoneNumberValidationTries();
                 if($remainingTries > 0){
-                    $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' avant blocage du compte');
+                    $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte');
                 }else{
-                    $user->setEnabled(False);
+                    $this->get('cairn_user.access_platform')->disable(array($user),'Compte bloqué','Echecs');
                     $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
                 }
 

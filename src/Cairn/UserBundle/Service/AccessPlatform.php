@@ -95,6 +95,7 @@ class AccessPlatform
                 $user->setEnabled(true);
                 $user->setPasswordTries(0);
                 $user->setCardKeyTries(0);
+                $user->setPhoneNumberValidationTries(0);
                 $user->setCardAssociationTries(0);
             }
         }
