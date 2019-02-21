@@ -38,6 +38,11 @@ class UserInfo
         $this->leadingCompanyName = $leadingCompanyName;
     }
 
+    public function getCurrentUser()
+    {
+        return $this->userService->getCurrentUser();
+    }
+
     /**
      * Returns the name of a Cyclos owner object
      *

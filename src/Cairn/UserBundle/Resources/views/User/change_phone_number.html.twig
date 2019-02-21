@@ -9,22 +9,18 @@
 
 {% block body %}
     {{parent()}} 
-
-    {% if app.user.nbPhoneNumberRequests < 3 and app.user.phoneNumberValidationCode == NULL %} 
+        <em> Attention </em> Un SMS vous sera envoyé. Assurez-vous d'être en mesure de le recevoir
         <div class="body_wrapper">
             {{ form_start(formPhoneNumber) }}                                                       
              {{ form_rest(formPhoneNumber) }}                                                        
             {{form_end(formPhoneNumber) }}   
         </div>
-    {% elseif  app.user.phoneNumberValidationCode != NULL %} 
+
         <div class="body_wrapper">
             {{ form_start(formCode) }}                                                       
              {{ form_rest(formCode) }}                                                        
             {{form_end(formCode) }}   
         </div>
-    {% else %}
-        Trop de demandes effectuées sans validation : contactez l'Association
-    {% endif %}
 
 {% endblock %}              
 

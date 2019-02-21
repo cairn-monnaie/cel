@@ -69,6 +69,7 @@ class AccessPlatform
             if($user->isEnabled()){
                 $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
                 $user->setEnabled(false);
+                $user->setSmsEnabled(false);
             }
         }
     }
@@ -95,7 +96,7 @@ class AccessPlatform
                 $user->setEnabled(true);
                 $user->setPasswordTries(0);
                 $user->setCardKeyTries(0);
-                $user->setPhoneNumberValidationTries(0);
+                $user->setPhoneNumberActivationTries(0);
                 $user->setCardAssociationTries(0);
             }
         }

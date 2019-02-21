@@ -574,47 +574,41 @@ class Commands
             $user2->addReferent($admin2);
             echo 'INFO: OK !'."\n";
 
-            //setup phone number information for pros and persons
-            $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
-            $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
-            $pro1->setPhoneNumber('0612345678');
-            $person1->setPhoneNumber('0612345678');
-            echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
-            echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
-
-            $pro2 = $userRepo->findOneByUsername('maltobar'); 
-            $person2 = $userRepo->findOneByUsername('benoit_perso'); 
-            $pro2->setPhoneNumber('0611223344');
-            $person2->setPhoneNumber('0644332211');
-            echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
-            echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
-            echo 'INFO: OK !'."\n";
-
-            $user = $userRepo->findOneByUsername('crabe_arnold'); 
-            echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
-            $user->setPhoneNumber('0711111111');
-            $user->setNbPhoneNumberRequests(3);
-            $user->setPhoneNumberValidationCode('1111');
-            $user->setLastPhoneNumberRequestDate(new \Datetime());
-            echo 'INFO: OK !'."\n";
-
-            $user = $userRepo->findOneByUsername('hirundo_archi'); 
-            echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
-            $user->setPhoneNumber('0722222222');
-            $user->setNbPhoneNumberRequests(1);
-            $user->setPhoneNumberValidationTries(2);
-            $user->setPhoneNumberValidationCode('1111');
-            $user->setLastPhoneNumberRequestDate(new \Datetime());
-            echo 'INFO: OK !'."\n";
-
-            $user = $userRepo->findOneByUsername('DrDBrew'); 
-            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number'."\n";
-            $user->setPhoneNumber('0733333333');
-            $user->setNbPhoneNumberRequests(1);
-            $user->setPhoneNumberValidationTries(0);
-            $user->setPhoneNumberValidationCode('1111');
-            $user->setLastPhoneNumberRequestDate(new \Datetime());
-            echo 'INFO: OK !'."\n";
+//            //setup phone number information for pros and persons
+//            $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
+//            $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
+//            $pro1->setPhoneNumber('0612345678');
+//            $person1->setPhoneNumber('0612345678');
+//            echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
+//            echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
+//
+//            $pro2 = $userRepo->findOneByUsername('maltobar'); 
+//            $person2 = $userRepo->findOneByUsername('benoit_perso'); 
+//            $pro2->setPhoneNumber('0611223344');
+//            $person2->setPhoneNumber('0644332211');
+//            echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
+//            echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
+//            echo 'INFO: OK !'."\n";
+//
+//            $user = $userRepo->findOneByUsername('crabe_arnold'); 
+//            echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
+//            $user->setPhoneNumber('0711111111');
+//            $user->setNbPhoneNumberRequests(3);
+//            echo 'INFO: OK !'."\n";
+//
+//            $user = $userRepo->findOneByUsername('hirundo_archi'); 
+//            echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
+//            $user->setPhoneNumber('0722222222');
+//            $user->setNbPhoneNumberRequests(1);
+//            $user->setPhoneNumberActivationTries(2);
+//            echo 'INFO: OK !'."\n";
+//
+//            $user = $userRepo->findOneByUsername('DrDBrew'); 
+//            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number'."\n";
+//            $user->setPhoneNumber('0733333333');
+//            $user->setNbPhoneNumberRequests(1);
+//            $user->setPhoneNumberActivationTries(0);
+//            echo 'INFO: OK !'."\n";
 
             $this->em->flush();
 

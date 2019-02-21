@@ -8,6 +8,8 @@ use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Repository\CardRepository;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserCyclosBundle\Entity\UserIdentificationManager;
+use Cairn\UserCyclosBundle\Service\UserIdentificationInfo;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
@@ -33,14 +35,17 @@ class Security
 
     protected $encoderFactory;
 
+    protected $userIdentificationInfo;
+
     protected $secret;
 
-    public function __construct(UserRepository $userRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory, $secret)
+    public function __construct(UserRepository $userRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret)
     {
         $this->userRepo = $userRepo;
         $this->cardRepo = $cardRepo;
         $this->tokenStorage = $tokenStorage;
         $this->encoderFactory = $encoderFactory;
+        $this->userIdentificationInfo= $userIdentificationInfo;
         $this->secret = $secret;
     }
 
@@ -178,4 +183,29 @@ class Security
         $card->setFields($fields);
     }
 
+    /**
+     *
+     */
+    public function createAccessClient(User $user, $type)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+        return $userIdentificationManager->createAccessClient($user->getCyclosID(),$type);
+    }
+
+    public function assignAccessClient($accessClientVO)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+        return $userIdentificationManager->assignAccessClient($accessClientVO);
+    }
+
+    public function unassignAccessClient($accessClientVO)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+        return $userIdentificationManager->unassignAccessClient($accessClientVO);
+    }
+
+    public function getSmsClient(User $user)
+    {
+        return str_replace($this->secret, '', $this->vigenereDecode($user->getSmsClient()) );
+    }
 }

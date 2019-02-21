@@ -1,0 +1,28 @@
+{# src/Cairn/UserBundle/Resources/views/User/confirm_disable_sms.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+    <p>
+    Etes-vous certain de vouloir bloquer le paiement par SMS pour le numéro {{user.phoneNumber}} ? </br>
+    Vous ne pourrez ni effectuer, ni recevoir des paiements
+    </p>
+
+    <form action="{{ path('cairn_user_users_sms_disable', {'id': user.id}) }}" method="post">
+    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}" class="btn btn-default">
+    <i class="glyphicon glyphicon-chevron-left"></i>
+    Retour au profil
+    </a>
+    <input type="submit" value="Confirmer" class="btn btn-danger" />
+    {# Ceci va générer le champ CSRF #}
+    {{ form_rest(form) }}
+    </form>
+{% endblock %}              
+

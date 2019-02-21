@@ -64,20 +64,20 @@ class User extends BaseUser
     private $phoneNumber;
 
     /**
-     * @ORM\Column(name="last_phone_number_request_date", type="datetime", unique=false, nullable=true)
-     */
-    private $lastPhoneNumberRequestDate; 
-
-    /**
      * @ORM\Column(name="nb_phone_number_requests", type="smallint", unique=false, nullable=false)
      */
     private $nbPhoneNumberRequests; 
 
     /**
-     * @ORM\Column(name="phone_number_validation_code", type="string", unique=false, nullable=true)
+     * @ORM\Column(name="sms_enabled", type="boolean", unique=false, nullable=false)
      */
-    private $phoneNumberValidationCode;
+    private $smsEnabled; 
 
+    /**
+     * @ORM\Column(name="sms_client", type="string", unique=true, nullable=true)
+     */
+    private $smsClient; 
+   
     /**
      * @var ArrayCollection
      *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
@@ -112,9 +112,9 @@ class User extends BaseUser
     private $cardKeyTries;
 
     /**
-     * @ORM\Column(name="phone_number_validation_tries", type="smallint", unique=false, nullable=false)
+     * @ORM\Column(name="phone_number_activation_tries", type="smallint", unique=false, nullable=false)
      */
-    private $phoneNumberValidationTries;
+    private $phoneNumberActivationTries;
 
     /**
      * @ORM\Column(name="card_association_tries", type="smallint", unique=false, nullable=false)
@@ -144,7 +144,8 @@ class User extends BaseUser
         $this->removalRequest = false;
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
-        $this->setPhoneNumberValidationTries(0);
+        $this->setPhoneNumberActivationTries(0);
+        $this->setSmsEnabled(false);
     }
 
     public function getCity()
@@ -216,9 +217,6 @@ class User extends BaseUser
         return $userDTO;
     }
 
-    /**
-     *@ORM\PreUpdate
-     */ 
     private function saveDTO()
     {
         $userManager = new UserManager();
@@ -253,6 +251,54 @@ class User extends BaseUser
     }
 
     /**
+     * Set smsEnabled
+     *
+     * @param string $smsEnabled
+     *
+     * @return User
+     */
+    public function setSmsEnabled($smsEnabled)
+    {
+        $this->smsEnabled = $smsEnabled;
+
+        return $this;
+    }
+
+    /**
+     * Get smsEnabled
+     *
+     * @return boolean
+     */
+    public function isSmsEnabled()
+    {
+        return $this->smsEnabled;
+    }
+
+    /**
+     * Set smsClient
+     *
+     * @param string $smsClient
+     *
+     * @return User
+     */
+    public function setSmsClient($smsClient)
+    {
+        $this->smsClient = $smsClient;
+
+        return $this;
+    }
+
+    /**
+     * Get smsClient
+     *
+     * @return string
+     */
+    public function getSmsClient()
+    {
+        return $this->smsClient;
+    }
+
+    /**
      * Set phoneNumber
      *
      * @param string $phoneNumber
@@ -278,30 +324,6 @@ class User extends BaseUser
 
 
     /**
-     * Set lastPhoneNumberRequestDate
-     *
-     * @param \DateTime $lastPhoneNumberRequestDate
-     *
-     * @return User
-     */
-    public function setLastPhoneNumberRequestDate($lastPhoneNumberRequestDate = NULL)
-    {
-        $this->lastPhoneNumberRequestDate = $lastPhoneNumberRequestDate;
-
-        return $this;
-    }
-
-    /**
-     * Get lastPhoneNumberRequestDate
-     *
-     * @return \DateTime
-     */
-    public function getLastPhoneNumberRequestDate()
-    {
-        return $this->lastPhoneNumberRequestDate;
-    }
-
-    /**
      * Set nbPhoneNumberRequests
      *
      * @param int $nbPhoneNumberRequests
@@ -325,30 +347,6 @@ class User extends BaseUser
         return $this->nbPhoneNumberRequests;
     }
 
-
-    /**
-     * Set phoneNumberValidationCode
-     *
-     * @param string $phoneNumberValidationCode
-     *
-     * @return User
-     */
-    public function setPhoneNumberValidationCode($phoneNumberValidationCode = NULL)
-    {
-        $this->phoneNumberValidationCode = $phoneNumberValidationCode;
-
-        return $this;
-    }
-
-    /**
-     * Get phoneNumberValidationCode
-     *
-     * @return string
-     */
-    public function getPhoneNumberValidationCode()
-    {
-        return $this->phoneNumberValidationCode;
-    }
 
     /**
      * Set creationDate
@@ -549,27 +547,27 @@ class User extends BaseUser
     }
 
     /**
-     * Set phoneNumberValidationTries
+     * Set phoneNumberActivationTries
      *
-     * @param int $phoneNumberValidationTries
+     * @param int $phoneNumberActivationTries
      *
      * @return User
      */
-    public function setPhoneNumberValidationTries($phoneNumberValidationTries)
+    public function setPhoneNumberActivationTries($phoneNumberActivationTries)
     {
-        $this->phoneNumberValidationTries = $phoneNumberValidationTries;
+        $this->phoneNumberActivationTries = $phoneNumberActivationTries;
 
         return $this;
     }
 
     /**
-     * Get phoneNumberValidationTries
+     * Get phoneNumberActivationTries
      *
      * @return int
      */
-    public function getPhoneNumberValidationTries()
+    public function getPhoneNumberActivationTries()
     {
-        return $this->phoneNumberValidationTries;
+        return $this->phoneNumberActivationTries;
     }
 
     /**

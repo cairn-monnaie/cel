@@ -77,11 +77,6 @@ cairn_user_profile_view:
     requirements:
         id: \d+
 
-
-cairn_user_phonenumber_edit:
-    path:     user/phone-number/edit
-    defaults: { _controller: CairnUserBundle:User:changePhoneNumber, _format: html }
-
 cairn_user_api_beneficiaries_options:
     path: api/beneficiaries
     methods: OPTIONS
@@ -169,6 +164,22 @@ cairn_user_users_remove_pending:
     requirements:
         id: \d+
         _format: html|json
+
+cairn_user_users_phonenumber_edit:
+    path:     user/phone-number/edit
+    defaults: { _controller: CairnUserBundle:User:changePhoneNumber, _format: html}
+
+cairn_user_users_sms_enable:
+    path:     user/sms/enable/{id}
+    defaults: { _controller: CairnUserBundle:User:enableSmsPayments, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_users_sms_disable:
+    path:     user/sms/disable/{id}
+    defaults: { _controller: CairnUserBundle:User:disableSmsPayments, _format: html}
+    requirements:
+        id: \d+
 
 cairn_user_card_home:
     path:     card/home/{id}.{_format}
@@ -271,6 +282,12 @@ cairn_user_banking_transaction_request:
         frequency: unique #|recurring
         to: new|beneficiary|self
         _format: html|json
+
+
+cairn_user_banking_sms_reception:
+    path:     banking/sms/reception
+    defaults: { _controller: CairnUserBundle:Default:smsReception, _format: html}
+
 
 cairn_user_banking_operation_confirm:
     path:     banking/operation/confirm/{id}-{type}.{_format}
