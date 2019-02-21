@@ -10,6 +10,7 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
+use Cairn\UserCyclosBundle\Entity\BankingManager;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -45,10 +46,234 @@ class DefaultController extends Controller
      */
     private $userManager;                                                      
 
+    private $bankingManager;                                                      
+
     public function __construct()                                              
     {                                                                          
-        $this->userManager = new UserManager();                                
+        $this->userManager = new UserManager();
+        $this->bankingManager = new BankingManager();
     }   
+
+    public function smsReceptionAction(Request $request)
+    {
+        $this->smsAction('SOLDE');
+        return new Response('ok');
+    }
+
+    public function parseSms($content)
+    {
+        //1) content treatment : escape special chars and remove all whitespaces from content
+        $content = preg_replace('/\s+/', '',htmlspecialchars($content));
+
+        //2)Regex analysis
+        //TODO : make it more flexible
+        //PAYE | PAY | autoriser plus de décimales au montant et tronquer après
+        preg_match('#^(PAYER|SOLDE|\d{4,5})((\d+([,\.]\d{1,2})?)([a-zA-Z]{1}\w+))?$#',$content,$matches);
+        
+        var_dump($matches);
+        //3) Prepare error messages
+        $res = new \stdClass();
+        
+        $errors = NULL;
+        if(!$matches){
+            $errors = array();
+        }else{
+            if($matches[1] == 'PAYER'){
+                $res->isPaymentRequest = true;
+                $res->isPaymentValidation = false;
+                $res->amount = str_replace(',','.',$matches[3]);
+                $res->creditorLogin = $matches[5];
+            }elseif($matches[1] == 'SOLDE'){
+                $res->isPaymentRequest = false;
+                $res->isPaymentValidation = false;
+            }else{//card code sent
+                $res->isPaymentRequest = false;
+                $res->isPaymentValidation = true;
+                $res->cardKey = $matches[1];
+            }
+        }
+
+        $res->errors = $errors;
+        return $res;
+//        if(!$matches[1]){
+//            $errors['action'] = 'ACTION NON RECONNUE : OPTIONS "PAYER" OU "SOLDE"';
+//        }else{
+//            if($matches[1] == 'PAYER'){
+//                if(!$matches[2]){
+//                    $errors['amount'] = 'MONTANT INVALIDE : EXEMPLES "15.5" OU "15,52"';
+//                }
+//                if(!$matches[3]){
+//                    $errors['creditor'] = 'PSEUDO CREDITEUR INVALIDE';
+//                }
+//
+//            }   
+//        }
+
+    }
+
+    public function smsAction($content)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+        $securityService = $this->get('cairn_user.security');
+        $operation = new Operation();
+        $operation->setType(Operation::TYPE_SMS_PAYMENT);
+
+        //TODO here : get data from SMS and parse content
+        $debitorPhoneNumber = '0611223344';
+
+        $debitorUsers = $em->getRepository('CairnUserBundle:User')->findBy(array('phoneNumber'=>$debitorPhoneNumber));
+        $isUniquePhoneNumber = (count($debitorUsers) == 1);
+        $isProAndPersonPhoneNumber = (count($debitorUsers) == 2);
+
+
+        //1) we ensure that SMS sender exists
+        //if there are two members with same phone number, ROLE_PERSON is used by default
+        if($isProAndPersonPhoneNumber){
+            $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PERSON')) ? $debitorUsers[0] : $debitorUsers[1];
+        }elseif($isUniquePhoneNumber){
+            $debitorUser = $debitorUsers[0];
+        }else{
+            //TODO : est-ce qu'on prend même la peine d'envoyer un SMS
+            $messageNotificator->sendSMS($debitorPhoneNumber,'COMPTE E-CAIRN INTROUVABLE');
+            return;
+        }
+       
+        //2)Then, we ensure that sms actions are enabled for this user
+        if(! $debitorUser->isSmsEnabled()){
+             $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISE: rendez-vous sur la plateforme web pour vous y donner accès !');
+             return;
+        }
+
+        //3) Connect the user to Cyclos via access client
+        try{
+            $networkInfo = $this->get('cairn_user_cyclos_network_info');
+            $networkName = $this->getParameter('cyclos_currency_cairn');
+            $accessClient = $securityService->getSmsClient($debitorUser);
+
+            if(!$accessClient){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
+                return; 
+            }
+            $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
+
+            $debitorUserVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+
+        }catch(\Exception $e){
+
+            if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
+            }else{
+                $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : Veuillez nous contacter');
+            }
+            return;
+        }
+
+        //4) Parse SMS content
+        $parsedSms = $this->parseSms($content);
+        if( $parsedSms->errors){
+            $reason = 'FORMAT DU SMS INVALIDE';
+
+            //if($smsIsPayment){
+            //    $example = 'EXEMPLE : PAYER 5.5 MAGASIN';
+            //}else{
+            //    $example = 'EXEMPLE : SOLDE';
+            //}
+            $messageNotificator->sendSMS($debitorPhoneNumber,$reason);
+            return;
+        }
+
+        
+        if(! $parsedSms->isPaymentRequest){
+            if($parsedSms->isPaymentValidation){
+                ;
+            }else{// account balance requested
+                $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
+                $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE COMPTE E-CAIRN : '.$account->status->balance);
+                return;
+            }
+        }
+
+        //4) If payment, find Creditor user
+        $creditorUser = $em->getRepository('CairnUserBundle:User')->findOneByUsername($parsedSms->creditorLogin);
+        if(! $creditorUser){
+            $messageNotificator->sendSMS($debitorPhoneNumber,'COMPTE E-CAIRN CREDITEUR INTROUVABLE');
+            return;
+        }
+
+        $creditorPhoneNumber = $creditorUser->getPhoneNumber();
+
+        $operationAmount = floatval($parsedSms->amount);
+
+        $operation->setAmount($operationAmount);
+        $operation->setDebitor($debitorUser);
+        $operation->setCreditor($creditorUser);
+
+
+        $validator = $this->get('validator');
+        $listErrors = $validator->validate($operation);
+
+        if( count($listErrors) > 0 ){
+            $content = '';
+            foreach($listErrors as $error){
+                $content = $content.$error->getMessage()."\n";
+            }
+            $messageNotificator->sendSMS($debitorPhoneNumber, $content);
+            return;
+        }
+
+        $reason = 'Virement '.$this->getParameter('cyclos_currency_cairn').' par SMS';
+        $operation->setReason($reason);
+
+        $bankingService = $this->get('cairn_user_cyclos_banking_info');
+        //make payment on Cyclos-side
+        try{
+            $paymentData = $bankingService->getPaymentData($debitorUserVO,$creditorUser->getCyclosID(),NULL);
+            foreach($paymentData->paymentTypes as $paymentType){
+                if(preg_match('#paiement_par_sms#', $paymentType->internalName)){
+                    $smsTransferType = $paymentType;
+                }
+            }
+
+            $res = $this->bankingManager->makeSinglePreview($paymentData,$operationAmount,$reason,$smsTransferType,$operation->getExecutionDate());
+            $operation->setFromAccountNumber($res->fromAccount->number);
+            $operation->setToAccountNumber($res->toAccount->number);
+
+            if($securityService->paymentNeedsValidation($debitorUser, $res)){
+                 
+                return;
+            }
+
+            $paymentVO = $this->bankingManager->makePayment($res->payment);
+            
+        }catch(\Exception $e){
+            if($e instanceof Cyclos\ServiceException){
+                if($e->errorCode == 'INSUFFICIENT_BALANCE'){ //should not happen because check in OperationValidator
+                    $balance = $this->get('cairn_user_cyclos_account_info')->getAccountByID($res->from->id)->status->balance; 
+                    $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE INSUFFISANT : '.$balance);
+                }else{
+                    $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE CYCLOS: Veuillez nous contacter');
+                }
+                return;
+            }else{
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE 500: Veuillez nous contacter');
+                throw $e;
+            }
+
+            return;
+        }
+
+        //synchronize payment ID
+        $operation->setPaymentID($paymentVO->id);
+
+        $em->persist($operation);
+        $em->flush();
+
+        //notify creditor that payment has been executed successfully
+        $messageNotificator->sendSMS($creditorPhoneNumber,'données du paiement');
+        return;
+    }
+
 
     public function synchronizeOperationAction(Request $request, $type)
     {

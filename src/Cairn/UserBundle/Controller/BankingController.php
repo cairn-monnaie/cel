@@ -65,6 +65,7 @@ class BankingController extends Controller
         $this->bankingManager = new BankingManager();
     }
 
+
     /*
      * Shows an overview of all @param accounts
      *
@@ -455,24 +456,24 @@ class BankingController extends Controller
                 $dataTime = $operation->getExecutionDate();
                 //                }
 
-                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()['accountNumber']);
+                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()['number']);
                 $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
                     //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
-                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount['accountNumber']));
+                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount['number']));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
                         return new RedirectResponse($request->getRequestUri());
                     }
-                }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id, $toAccount['accountNumber'])){
+                }elseif($to == 'self' && !$accountService->hasAccount($debitorVO->id, $toAccount['number'])){
                     $session->getFlashBag()->add('error','Le compte créditeur ne vous appartient pas.' );
                     return new RedirectResponse($request->getRequestUri());
                 }
 
 
-                if($toAccount['accountNumber']){
-                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['accountNumber']);
+                if($toAccount['number']){
+                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['number']);
                 }else{
                     $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['email']);
                 }
@@ -504,11 +505,11 @@ class BankingController extends Controller
                 //                if($frequency == 'recurring'){
                 //
                 //                    $environment = $this->getParameter('kernel.environment');
-                //                    if($toAccount['accountNumber']){
+                //                    if($toAccount['number']){
                 //
                 //                        foreach($accurateTransferTypes as $transferType){
                 //                            $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferType,$dataTime,$environment);
-                //                            if($res->toAccount->number == $toAccount['accountNumber']){
+                //                            if($res->toAccount->number == $toAccount['number']){
                 //                                $session->set('paymentReview',$res);
                 //                            }
                 //
@@ -522,12 +523,12 @@ class BankingController extends Controller
                 //
                 //                }elseif($frequency == 'unique'){
 
-                if($toAccount['accountNumber']){
+                if($toAccount['number']){
 
                     foreach($accurateTransferTypes as $transferType){
                         $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$transferType,$dataTime);
 
-                        if($res->toAccount->number == $toAccount['accountNumber']){
+                        if($res->toAccount->number == $toAccount['number']){
                             $session->set('paymentReview',$res);
                         }
                     }

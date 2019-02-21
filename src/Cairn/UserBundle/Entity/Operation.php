@@ -75,9 +75,9 @@ class Operation
     private $reason;
 
     /**
-     * @var int
+     * @var float
      *
-     * @ORM\Column(name="amount", type="integer")
+     * @ORM\Column(name="amount", type="float")
      */
     private $amount;
 
@@ -144,6 +144,12 @@ class Operation
     const TYPE_DEPOSIT = 5;
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
+    const TYPE_SMS_PAYMENT = 8;
+
+    public function isSmsPayment()
+    {
+        return ($this->getType() == self::TYPE_SMS_PAYMENT) ;
+    }
 
     public static function getTypeName($type)
     {
@@ -169,13 +175,16 @@ class Operation
         case "7":
             return 'failed transaction';
             break;
+        case "8":
+            return 'sms payment';
+            break;
         default:
             return NULL;
         }
     }
     public static function getFromOperationTypes()
     {
-        return array(self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getDebitOperationTypes()
@@ -190,7 +199,7 @@ class Operation
 
     public static function getExecutedTypes()
     {
-        return array(self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
     }
 
     public static function getScheduledTypes()
@@ -427,7 +436,7 @@ class Operation
     /**
      * Set amount
      *
-     * @param integer $amount
+     * @param float $amount
      *
      * @return Operation
      */
@@ -441,7 +450,7 @@ class Operation
     /**
      * Get amount
      *
-     * @return int
+     * @return float
      */
     public function getAmount()
     {

@@ -45,8 +45,8 @@ class UserValidator extends ConstraintValidator
     public function validate($user, Constraint $constraint)
     {
         //check length for example
-        if(strlen($user->getUsername()) < 5){
-            $this->context->buildViolation('Login trop court ! 5 caractères minimum')
+        if(strlen($user->getUsername()) < 3){
+            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
                 ->atPath('username')
                 ->addViolation();
         }
@@ -55,6 +55,11 @@ class UserValidator extends ConstraintValidator
             $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
                 ->atPath('username')
                 ->addViolation();
+            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
+                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
+                    ->atPath('username')
+                    ->addViolation();
+            }
         }
         if(strlen($user->getUsername()) > 16){
             $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
@@ -106,8 +111,8 @@ class UserValidator extends ConstraintValidator
                 ->atPath('plainPassword')
                 ->addViolation();
         }
-        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,3}$#',$user->getEmail())){
-            $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 3 lettres.")
+        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',$user->getEmail())){
+            $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.")
                 ->atPath('email')
                 ->addViolation();
         }
