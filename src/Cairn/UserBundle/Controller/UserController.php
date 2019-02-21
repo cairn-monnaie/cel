@@ -318,9 +318,12 @@ class UserController extends Controller
                 //if user had a phone number before, we check if there was a pro & personal number associated
                 //if so, we warn the user that, right now, SMS payment is possible for pro
                 if($user->getPhoneNumber()){
+
                     $existingUsers = $em->getRepository('CairnUserBundle:User')->findBy(array('phoneNumber'=>$user->getPhoneNumber()));
+
                     if(count($existingUsers) == 2){
-                        $session->getFlashBag()->add('success','Le compte professionnel associé au numéro '.$user->getPhoneNumber(). ' peut désormais réaliser des paiements par SMS');
+                        $proUser = ($existingUsers[0]->hasRole('ROLE_PRO')) ? $existingUsers[0] : $existingUsers[1];
+                        $session->getFlashBag()->add('success','Le compte professionnel '.$proUser->getName().' associé au numéro '.$user->getPhoneNumber(). ' peut désormais réaliser des paiements par SMS');
                     }
                 }
 

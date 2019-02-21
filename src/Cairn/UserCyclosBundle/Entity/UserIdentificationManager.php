@@ -59,5 +59,9 @@ class UserIdentificationManager
         $this->accessClientService->unassign($acParams);
     }
 
+    public function removeAccessClient($accessClientVO)
+    {
+        $this->accessClientService->remove($accessClientVO->id);
+    }
 
 }

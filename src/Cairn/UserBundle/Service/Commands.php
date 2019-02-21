@@ -284,6 +284,7 @@ class Commands
             $this->container->get('cairn_user.security')->encodeCard($card);
             $doctrineUser->setCard($card);
             $doctrineUser->addReferent($admin);
+
             $this->em->persist($doctrineUser);
 
             echo 'INFO: OK !'. "\n";
@@ -291,6 +292,30 @@ class Commands
 
     }
 
+    public function setUpAccessClient($user)
+    {
+        echo 'Setting up access client for '.$user->getName()."\n";
+
+        //changing cyclos credentials to user's instead of admins's is necessary to activate access client for himself
+        $credentials = array('username'=>$user->getUsername(),'password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+        if($user->getPhoneNumber()){
+            $securityService = $this->container->get('cairn_user.security');      
+            $securityService->createAccessClient($user,'client_sms');  
+        }
+        if($user->isSmsEnabled()){
+            $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
+            $smsClient = $securityService->assignAccessClient($accessClientVO);
+            $smsClient = $securityService->vigenereEncode($smsClient.$this->container->getParameter('secret'));
+            $user->setSmsClient($smsClient);
+        }
+        echo 'INFO: OK !'."\n";
+
+        //in the end of the process, admin user will be up, as before, to request cyclos
+        $credentials = array('username'=>'admin_network','password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
+    }
     /**
      * Here we create an operation and its aborted copy (paymentID is NULL)
      */
@@ -574,43 +599,65 @@ class Commands
             $user2->addReferent($admin2);
             echo 'INFO: OK !'."\n";
 
-//            //setup phone number information for pros and persons
-//            $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
-//            $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
-//            $pro1->setPhoneNumber('0612345678');
-//            $person1->setPhoneNumber('0612345678');
-//            echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
-//            echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
-//
-//            $pro2 = $userRepo->findOneByUsername('maltobar'); 
-//            $person2 = $userRepo->findOneByUsername('benoit_perso'); 
-//            $pro2->setPhoneNumber('0611223344');
-//            $person2->setPhoneNumber('0644332211');
-//            echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
-//            echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
-//            echo 'INFO: OK !'."\n";
-//
-//            $user = $userRepo->findOneByUsername('crabe_arnold'); 
-//            echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
-//            $user->setPhoneNumber('0711111111');
-//            $user->setNbPhoneNumberRequests(3);
-//            echo 'INFO: OK !'."\n";
-//
-//            $user = $userRepo->findOneByUsername('hirundo_archi'); 
-//            echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
-//            $user->setPhoneNumber('0722222222');
-//            $user->setNbPhoneNumberRequests(1);
-//            $user->setPhoneNumberActivationTries(2);
-//            echo 'INFO: OK !'."\n";
-//
-//            $user = $userRepo->findOneByUsername('DrDBrew'); 
-//            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number'."\n";
-//            $user->setPhoneNumber('0733333333');
-//            $user->setNbPhoneNumberRequests(1);
-//            $user->setPhoneNumberActivationTries(0);
-//            echo 'INFO: OK !'."\n";
+            //setup phone number and sms information for pros and persons
+            $usersWithSmsInfo = array();
+            $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
+            $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
+            $pro1->setPhoneNumber('0612345678');
+            $pro1->setSmsEnabled(true);
+            $person1->setPhoneNumber('0612345678');
+            $person1->setSmsEnabled(true);
+            echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
+            echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled sms operations : '."\n";
+            echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
+            echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled sms operations : '."\n";
+            $usersWithSmsInfo[] = $person1;
+            $usersWithSmsInfo[] = $pro1;
 
+            $pro2 = $userRepo->findOneByUsername('maltobar'); 
+            $person2 = $userRepo->findOneByUsername('benoit_perso'); 
+            $pro2->setPhoneNumber('0611223344');
+            $pro2->setSmsEnabled(true);
+            $person2->setPhoneNumber('0644332211');
+            $person2->setSmsEnabled(false);
+
+            echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
+            echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled sms operations : '."\n";
+            echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
+            echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations : '."\n";
+            echo 'INFO: OK !'."\n";
+            $usersWithSmsInfo[] = $person2;
+            $usersWithSmsInfo[] = $pro2;
+
+            $user = $userRepo->findOneByUsername('crabe_arnold'); 
+            echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
+            $user->setPhoneNumber('0711111111');
+            $user->setNbPhoneNumberRequests(3);
+            echo 'INFO: OK !'."\n";
+            $usersWithSmsInfo[] = $user;
+
+            $user = $userRepo->findOneByUsername('hirundo_archi'); 
+            echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
+            $user->setPhoneNumber('0722222222');
+            $user->setNbPhoneNumberRequests(1);
+            $user->setPhoneNumberActivationTries(2);
+            echo 'INFO: OK !'."\n";
+            $usersWithSmsInfo[] = $user;
+
+            $user = $userRepo->findOneByUsername('DrDBrew'); 
+            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number'."\n";
+            $user->setPhoneNumber('0733333333');
+            $user->setNbPhoneNumberRequests(1);
+            $user->setPhoneNumberActivationTries(0);
+            echo 'INFO: OK !'."\n";
+            $usersWithSmsInfo[] = $user;
+
+            echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
+            foreach($usersWithSmsInfo as $user){
+                $this->setUpAccessClient($user);
+            }
             $this->em->flush();
+            echo 'INFO: OK !'."\n";
 
             return 'Database successfully generated !';
         }else{

@@ -204,6 +204,12 @@ class Security
         return $userIdentificationManager->unassignAccessClient($accessClientVO);
     }
 
+    public function removeAccessClient($accessClientVO)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+        return $userIdentificationManager->removeAccessClient($accessClientVO);
+    }
+
     public function getSmsClient(User $user)
     {
         return str_replace($this->secret, '', $this->vigenereDecode($user->getSmsClient()) );
