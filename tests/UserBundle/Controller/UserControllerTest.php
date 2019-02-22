@@ -22,6 +22,205 @@ class UserControllerTest extends BaseControllerTest
     }
 
     /**
+     *@dataProvider provideDataForDisableSms
+     */
+    public function testDisableSms($current, $target, $isReferent,$isValid, $expectMessage)
+    {
+        $crawler = $this->login($current, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        $url = '/user/sms/disable/'.$targetUser->getID();
+        $crawler = $this->client->request('GET',$url);
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
+
+        if(! $isReferent){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        }else{
+            if(! $isValid){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            }else{
+                $formConfirm = $crawler->selectButton('Confirmer')->form();
+                $crawler = $this->client->submit($formConfirm);
+
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+
+                $this->em->refresh($targetUser);
+
+                $this->assertFalse($targetUser->isSmsEnabled());
+                $this->assertTrue($targetUser->getSmsClient() != NULL);
+
+                //assert that access client exists and is BLOCKED
+                $crawler = $this->login($target, '@@bbccdd');
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(), 'BLOCKED');
+                $this->assertTrue($accessClientVO != NULL);
+
+                //assert that access client encoded in database allows to connect to Cyclos
+                $networkInfo = $this->container->get('cairn_user_cyclos_network_info');       
+                $networkName = $this->container->getParameter('cyclos_currency_cairn');       
+                $accessClient = $this->container->get('cairn_user.security')->getSmsClient($targetUser);      
+
+                $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
+
+                try{
+                    $userVO = $this->container->get('cairn_user_cyclos_user_info')->getCurrentUser();
+
+                    //While disabling SMS operations, the access client is blocked for the current user on Cyclos side.
+                    //But at the end of the test, the sms client will be rolled back on Symfony side whereas access client will stay
+                    //on Cyclos side, breaking up the logic of our application
+                    //Workaround : unblock the access client "by hand" at test end
+                    //this is a problem regarding isolation tests and Cyclos
+                    
+
+                    //this is executed if Cyclos connection is successful, which should not be the case here
+                    $this->assertTrue(false);
+
+                }catch(\Exception $e){
+                    //normal process is to get refused access
+                    if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
+                        $this->assertTrue(true);
+                        $networkInfo->switchToNetwork($networkName,'login', array('username'=>$target,'password'=>'@@bbccdd'));
+                        $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'UNBLOCKED');
+
+                    }else{
+                        throw $e;
+                    }
+                }
+            }
+        }
+
+    }
+
+    public function provideDataForDisableSms()
+    {
+        $adminUsername = $this->testAdmin;
+
+        return array(
+            'valid user request for himself'=>array('current'=>'maltobar','target'=>'maltobar','isReferent'=>true,
+                                                    'isValid'=>true,'expectMessage'=>'désormais bloqué'),
+
+          'valid referent request'=>array('current'=>$adminUsername,'target'=>'maltobar','isReferent'=>true,
+                                          'isValid'=>true,'expectMessage'=>'désormais bloqué'),
+
+            'already disabled sms'=>array('current'=>'benoit_perso', 'target'=>'benoit_perso','isReferent'=>true,
+                                         'isValid'=>false,'expectMessage'=>'déjà bloqué'),
+
+            'no phone number associated'=>array('current'=>'pain_beauvoir', 'target'=>'pain_beauvoir','isReferent'=>true,
+                                         'isValid'=>false,'expectMessage'=>'Aucun numéro'),
+
+            'not referent'=>array('current'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,
+                                            'isValid'=>true,'expectMessage'=>'désormais autorisé'),
+
+        );
+    }
+
+    /**
+     *@dataProvider provideDataForEnableSms
+     */
+    public function testEnableSms($current, $target, $isReferent,$isValid, $expectMessage)
+    {
+        $crawler = $this->login($current, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        $url = '/user/sms/enable/'.$targetUser->getID();
+        $crawler = $this->client->request('GET',$url);
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
+
+        if(! $isReferent){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        }else{
+            if(! $isValid){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            }else{
+                $formConfirm = $crawler->selectButton('Confirmer')->form();
+                $crawler = $this->client->submit($formConfirm);
+
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $crawler = $this->client->followRedirect();
+
+                $this->em->refresh($targetUser);
+
+                $this->assertTrue($targetUser->isSmsEnabled());
+                $this->assertTrue($targetUser->getSmsClient() != NULL);
+
+                //assert that access client exists and is ACTIVE
+                $crawler = $this->login($target, '@@bbccdd');
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(), 'ACTIVE');
+                $this->assertTrue($accessClientVO != NULL);
+
+                //assert that access client encoded in database allows to connect to Cyclos
+                $networkInfo = $this->container->get('cairn_user_cyclos_network_info');       
+                $networkName = $this->container->getParameter('cyclos_currency_cairn');       
+                $accessClient = $this->container->get('cairn_user.security')->getSmsClient($targetUser);      
+
+                $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
+
+                try{
+                    $userVO = $this->container->get('cairn_user_cyclos_user_info')->getCurrentUser();
+
+                    //While enabling SMS operations, an access client is assigned for the current user on Cyclos side.
+                    //But at the end of the test, the sms client will be rolled back on Symfony side whereas access client will stay
+                    //on Cyclos side, breaking up the logic of our application
+                    //Workaround : unassign the access client "by hand" at test end
+                    //this is a problem regarding isolation tests and Cyclos
+                    $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'BLOCKED');
+
+                }catch(\Exception $e){
+                    var_dump($e->errorCode);
+                    if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
+                        var_dump($e->getMessage());
+                        $this->assertTrue(false);
+                    }else{
+                        throw $e;
+                    }
+                }
+            }
+        }
+
+    }
+
+    public function provideDataForEnableSms()
+    {
+        $adminUsername = $this->testAdmin;
+
+        return array(
+            'valid user request for himself'=>array('current'=>'benoit_perso','target'=>'benoit_perso','isReferent'=>true,
+                                                    'isValid'=>true,'expectMessage'=>'désormais autorisé'),
+
+          'valid referent request'=>array('current'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true,
+                                          'isValid'=>true,'expectMessage'=>'désormais autorisé'),
+
+            'already enabled sms'=>array('current'=>'nico_faus_prod', 'target'=>'nico_faus_prod','isReferent'=>true,
+                                         'isValid'=>false,'expectMessage'=>'déjà autorisé'),
+
+            'no phone number associated'=>array('current'=>'pain_beauvoir', 'target'=>'pain_beauvoir','isReferent'=>true,
+                                         'isValid'=>false,'expectMessage'=>'Aucun numéro'),
+
+            'not referent'=>array('current'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,
+                                            'isValid'=>true,'expectMessage'=>'désormais autorisé'),
+
+            'not active'=>array('current'=>$adminUsername,'target'=>'la_mandragore','isReferent'=>true,
+                                            'isValid'=>false,'expectMessage'=>'inactif'),
+        );
+    }
+
+    /**
      * Need to check that UserPhoneNumberValidator is called + that user can make payment with his new number
      *
      *@dataProvider provideDataForPhoneNumberChange
@@ -70,7 +269,7 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
 
                 //Plus, we assert that access client exists on Cyclos side. It is either ACTIVE or UNASSIGNED 
-                $status = ($currentUser->isSmsEnabled()) ? 'ACTIVE' : 'UNASSIGNED';
+                $status = ($currentUser->isSmsEnabled()) ? 'ACTIVE' : 'BLOCKED';
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), $status);
                 $this->assertTrue($accessClientVO != NULL);
 
@@ -80,7 +279,7 @@ class UserControllerTest extends BaseControllerTest
                 //Workaround : removing the access client "by hand" at test end
                 //this is a problem regarding isolation tests and Cyclos
                 if(! $hasPreviousPhoneNumber){
-                    $this->container->get('cairn_user.security')->removeAccessClient($accessClientVO);
+                    $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
                 }
             }else{
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());

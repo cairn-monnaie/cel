@@ -299,15 +299,22 @@ class Commands
         //changing cyclos credentials to user's instead of admins's is necessary to activate access client for himself
         $credentials = array('username'=>$user->getUsername(),'password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         if($user->getPhoneNumber()){
             $securityService = $this->container->get('cairn_user.security');      
             $securityService->createAccessClient($user,'client_sms');  
-        }
-        if($user->isSmsEnabled()){
+
             $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
-            $smsClient = $securityService->assignAccessClient($accessClientVO);
+            $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+
             $smsClient = $securityService->vigenereEncode($smsClient.$this->container->getParameter('secret'));
             $user->setSmsClient($smsClient);
+
+            if(! $user->isSmsEnabled()){
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
+                $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
+            }
+
         }
         echo 'INFO: OK !'."\n";
 
@@ -645,8 +652,20 @@ class Commands
             $usersWithSmsInfo[] = $user;
 
             $user = $userRepo->findOneByUsername('DrDBrew'); 
-            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number'."\n";
+            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number and has disabled sms ops'."\n";
             $user->setPhoneNumber('0733333333');
+            $user->setSmsEnabled(false);
+            $user->setNbPhoneNumberRequests(1);
+            $user->setPhoneNumberActivationTries(0);
+
+            echo 'INFO: OK !'."\n";
+            $usersWithSmsInfo[] = $user;
+
+            $user = $userRepo->findOneByUsername('la_mandragore'); 
+            echo 'INFO: '. $user->getName(). ' has phone number and is blocked'."\n";
+            $user->setEnabled(false);
+            $user->setSmsEnabled(false);
+            $user->setPhoneNumber('0744444444');
             $user->setNbPhoneNumberRequests(1);
             $user->setPhoneNumberActivationTries(0);
             echo 'INFO: OK !'."\n";

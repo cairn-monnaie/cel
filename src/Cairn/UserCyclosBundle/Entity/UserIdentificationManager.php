@@ -43,7 +43,29 @@ class UserIdentificationManager
         $acID = $this->accessClientService->save($acDTO);
     }
 
-    public function assignAccessClient($accessClientVO)
+    public function changeAccessClientStatus($accessClientVO, $status)
+    {
+        $acParams = array('accessClient'=>$accessClientVO->id);
+
+        switch ($status){
+            case 'BLOCKED':
+                $this->accessClientService->block($acParams);
+                break;
+            case 'UNBLOCKED':
+                $this->accessClientService->unblock($acParams);
+                break;
+            case 'UNASSIGNED':
+                $this->accessClientService->unassign($acParams);
+                break;
+            case 'REMOVED':
+                $this->accessClientService->remove($accessClientVO->id);
+                break;
+            default:
+                throw new Exception("Undefined access client status : changeAccessClientStatus");
+        }
+    }
+
+    public function activateAccessClient($accessClientVO)
     {
         $acParams = array('accessClient'=>$accessClientVO->id);
         $activationCode = $this->accessClientService->getActivationCode($acParams);
@@ -53,15 +75,5 @@ class UserIdentificationManager
         return $dto->token;
     }
 
-    public function unassignAccessClient($accessClientVO)
-    {
-        $acParams = array('accessClient'=>$accessClientVO->id);
-        $this->accessClientService->unassign($acParams);
-    }
-
-    public function removeAccessClient($accessClientVO)
-    {
-        $this->accessClientService->remove($accessClientVO->id);
-    }
 
 }

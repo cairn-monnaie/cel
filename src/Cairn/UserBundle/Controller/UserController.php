@@ -159,11 +159,12 @@ class UserController extends Controller
 
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             $securityService = $this->get('cairn_user.security');
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
-            $smsClient = $securityService->assignAccessClient($accessClientVO);
-            $smsClient = $securityService->vigenereEncode($smsClient.$this->getParameter('secret'));
-            $user->setSmsClient($smsClient);
+
+            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'BLOCKED');
+            $securityService->changeAccessClientStatus($accessClientVO,'UNBLOCKED');
             $user->setSmsEnabled(true);
+
+
             $em->flush();
 
             $session->getFlashBag()->add('success','Le paiement par SMS est désormais autorisé !');
@@ -201,21 +202,19 @@ class UserController extends Controller
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             $securityService = $this->get('cairn_user.security');
 
-            $smsClient = $securityService->getSmsClient($user);
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByToken($smsClient,'ACTIVE');
-            $securityService->unassignAccessClient($accessClientVO);
-            $user->setSmsClient(NULL);
+            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
+            $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
             $user->setSmsEnabled(false);
 
-            if($form->getData()['dissociateCard']){
-                $card = $user->getCard();
-                if($card){
-                    $user->setCard(NULL);
-                    $em->remove($card);
-                }else{
-                    $session->getFlashBag()->add('info','Aucune carte de sécurité associée au compte');
-                }
-            }
+//            if($form->getData()['dissociateCard']){
+//                $card = $user->getCard();
+//                if($card){
+//                    $user->setCard(NULL);
+//                    $em->remove($card);
+//                }else{
+//                    $session->getFlashBag()->add('info','Aucune carte de sécurité associée au compte');
+//                }
+//            }
             $em->flush();
 
             $session->getFlashBag()->add('success','Le paiement par SMS est désormais bloqué !');
@@ -329,10 +328,20 @@ class UserController extends Controller
 
                 $user->setPhoneNumber($newPhoneNumber);
 
-                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID());
+                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),array('BLOCKED','ACTIVE'));
                 if(! $accessClientVO){
                     $securityService = $this->get('cairn_user.security');
                     $securityService->createAccessClient($user,'client_sms');
+                    $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
+
+                    $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                    $smsClient = $securityService->vigenereEncode($smsClient.$this->getParameter('secret'));
+                    $user->setSmsClient($smsClient);
+
+                    //try to connect with access client
+
+                    //by default, access client is blocked and must be unblocked while enabling sms operations
+                    $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
                 }
 
                 $em->flush();

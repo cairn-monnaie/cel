@@ -189,25 +189,17 @@ class Security
     public function createAccessClient(User $user, $type)
     {
         $userIdentificationManager = new UserIdentificationManager();
-        return $userIdentificationManager->createAccessClient($user->getCyclosID(),$type);
+        $userIdentificationManager->createAccessClient($user->getCyclosID(),$type);
     }
 
-    public function assignAccessClient($accessClientVO)
+    public function changeAccessClientStatus($accessClientVO,$status)
     {
         $userIdentificationManager = new UserIdentificationManager();
-        return $userIdentificationManager->assignAccessClient($accessClientVO);
-    }
 
-    public function unassignAccessClient($accessClientVO)
-    {
-        $userIdentificationManager = new UserIdentificationManager();
-        return $userIdentificationManager->unassignAccessClient($accessClientVO);
-    }
-
-    public function removeAccessClient($accessClientVO)
-    {
-        $userIdentificationManager = new UserIdentificationManager();
-        return $userIdentificationManager->removeAccessClient($accessClientVO);
+        if($status == 'ACTIVE'){
+            return $userIdentificationManager->activateAccessClient($accessClientVO);
+        }
+        return $userIdentificationManager->changeAccessClientStatus($accessClientVO,$status);
     }
 
     public function getSmsClient(User $user)
