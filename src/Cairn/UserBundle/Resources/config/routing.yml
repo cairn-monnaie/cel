@@ -165,9 +165,9 @@ cairn_user_users_remove_pending:
         id: \d+
         _format: html|json
 
-cairn_user_users_phonenumber_edit:
-    path:     user/phone-number/edit
-    defaults: { _controller: CairnUserBundle:User:changePhoneNumber, _format: html}
+cairn_user_users_smsdata_edit:
+    path:     user/sms-data/edit
+    defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
 cairn_user_users_sms_enable:
     path:     user/sms/enable/{id}

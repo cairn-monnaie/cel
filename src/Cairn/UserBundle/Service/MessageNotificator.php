@@ -46,8 +46,7 @@ class MessageNotificator
     //TODO : to change when SMS API avaialble
     public function sendSMS($phoneNumber, $content)
     {
-        $user = $this->userRepo->findOneBy(array('phoneNumber'=>$phoneNumber));
-        $email = ($user) ? $user->getEmail() : 'whoknows@test.com';
+        $email = 'whoknows@test.com';
         $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
     }
 

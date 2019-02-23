@@ -1,4 +1,4 @@
-{# src/Cairn/UserBundle/Resources/views/User/change_phone_number.html.twig #} 
+{# src/Cairn/UserBundle/Resources/views/User/change_sms_data.html.twig #} 
                                                                                
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
@@ -11,9 +11,9 @@
     {{parent()}} 
         <em> Attention </em> Un SMS vous sera envoyé. Assurez-vous d'être en mesure de le recevoir
         <div class="body_wrapper">
-            {{ form_start(formPhoneNumber) }}                                                       
-             {{ form_rest(formPhoneNumber) }}                                                        
-            {{form_end(formPhoneNumber) }}   
+            {{ form_start(formSmsData) }}                                                       
+             {{ form_rest(formSmsData) }}                                                        
+            {{form_end(formSmsData) }}   
         </div>
 
         <div class="body_wrapper">

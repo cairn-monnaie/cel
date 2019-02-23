@@ -212,7 +212,10 @@ class Security
 
     public function getSmsClient(User $user)
     {
-        return str_replace($this->secret, '', $this->vigenereDecode($user->getSmsClient()) );
+        if($smsData = $user->getSmsData()){
+            return str_replace($this->secret, '', $this->vigenereDecode($smsData->getSmsClient()) );
+        }
+        return NULL;
     }
 
 
@@ -224,11 +227,12 @@ class Security
     {
         if(! $operation->isSmsPayment()){ return false; }
 
+        $debitor = $operation->getDebitor();
         //criteria 1 : second payment to the same pro in the same day
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$operation->getDebitor())
+            ->whereDebitor($ob,$debitor)
             ->whereCreditor($ob,$operation->getCreditor())
             ->whereCurrentDay($ob);
 
@@ -240,27 +244,27 @@ class Security
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$operation->getDebitor())
+            ->whereDebitor($ob,$debitor)
             ->whereCurrentDay($ob);
 
         $totalDayAmount = $this->operationRepo->countTotalAmount($ob);
-        if($totalDayAmount > $operation->getDebitor()->getAmountDailyThreshold()){
+        var_dump($totalDayAmount);
+        if($totalDayAmount > $debitor->getSmsData()->getDailyAmountThreshold()){
            return true; 
         }
         
-        //criteria 3 : number of current day payments (lower than threshold ?)
+       //criteria 3 : number of current day payments (lower than threshold ?)
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$operation->getDebitor())
-            ->whereAmountComparedWith($ob, $operation->getAmountDailyThreshold(), 'lt')
+            ->whereDebitor($ob,$debitor)
+            ->whereAmountComparedWith($ob, $debitor->getSmsData()->getDailyAmountThreshold(), 'lt')
             ->whereCurrentDay($ob);
 
         $operations = $ob->getQuery()->getResult();
-        if(count($operations) > $operation->getDebitor()->getNumberPaymentsThreshold()){ return true; }
+        if(count($operations) > $debitor->getSmsData()->getDailyNumberPaymentsThreshold()){ return true; }
 
         return false;
     }
 
-    }
 }

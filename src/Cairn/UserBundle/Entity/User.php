@@ -59,25 +59,10 @@ class User extends BaseUser
     private $creationDate; 
 
     /**
-     * @ORM\Column(name="phone_number", type="string", unique=false, nullable=true)
-     */
-    private $phoneNumber;
-
-    /**
      * @ORM\Column(name="nb_phone_number_requests", type="smallint", unique=false, nullable=false)
      */
     private $nbPhoneNumberRequests; 
 
-    /**
-     * @ORM\Column(name="sms_enabled", type="boolean", unique=false, nullable=false)
-     */
-    private $smsEnabled; 
-
-    /**
-     * @ORM\Column(name="sms_client", type="string", unique=true, nullable=true)
-     */
-    private $smsClient; 
-   
     /**
      * @var ArrayCollection
      *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
@@ -100,6 +85,11 @@ class User extends BaseUser
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Card", mappedBy="user", cascade={"persist","remove"})
      */
     private $card;
+
+    /**
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
+     */
+    private $smsData;
 
     /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
@@ -145,12 +135,19 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
-        $this->setSmsEnabled(false);
     }
 
     public function getCity()
     {
         return $this->getAddress()->getZipCity()->getCity();
+    }
+
+    public function getPhoneNumber()
+    {
+        if($this->getSmsData()){
+            return $this->getSmsData()->getPhoneNumber();
+        }
+        return NULL;
     }
 
     static function randomPassword() {
@@ -248,78 +245,6 @@ class User extends BaseUser
     public function getName()
     {
         return $this->name;
-    }
-
-    /**
-     * Set smsEnabled
-     *
-     * @param string $smsEnabled
-     *
-     * @return User
-     */
-    public function setSmsEnabled($smsEnabled)
-    {
-        $this->smsEnabled = $smsEnabled;
-
-        return $this;
-    }
-
-    /**
-     * Get smsEnabled
-     *
-     * @return boolean
-     */
-    public function isSmsEnabled()
-    {
-        return $this->smsEnabled;
-    }
-
-    /**
-     * Set smsClient
-     *
-     * @param string $smsClient
-     *
-     * @return User
-     */
-    public function setSmsClient($smsClient)
-    {
-        $this->smsClient = $smsClient;
-
-        return $this;
-    }
-
-    /**
-     * Get smsClient
-     *
-     * @return string
-     */
-    public function getSmsClient()
-    {
-        return $this->smsClient;
-    }
-
-    /**
-     * Set phoneNumber
-     *
-     * @param string $phoneNumber
-     *
-     * @return User
-     */
-    public function setPhoneNumber($phoneNumber)
-    {
-        $this->phoneNumber = $phoneNumber;
-
-        return $this;
-    }
-
-    /**
-     * Get phoneNumber
-     *
-     * @return string
-     */
-    public function getPhoneNumber()
-    {
-        return $this->phoneNumber;
     }
 
 
@@ -621,6 +546,29 @@ class User extends BaseUser
         return $this->card;
     }
 
+    /**
+     * Set smsData
+     *
+     * @param \Cairn\UserBundle\Entity\SmsData $smsData
+     *
+     * @return User
+     */
+    public function setSmsData(\Cairn\UserBundle\Entity\SmsData $smsData = null)
+    {
+        $this->smsData = $smsData;
+
+        return $this;
+    }
+
+    /**
+     * Get smsData
+     *
+     * @return \Cairn\UserBundle\Entity\SmsData
+     */
+    public function getSmsData()
+    {
+        return $this->smsData;
+    }
 
     /**
      * Set removalRequest

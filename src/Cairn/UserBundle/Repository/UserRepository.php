@@ -95,4 +95,17 @@ class UserRepository extends EntityRepository
         
         return $ub->getQuery()->getResult();
     }
+
+    public function findUsersByPhoneNumber($phoneNumber)
+    {
+        $ub = $this->createQueryBuilder('u');                  
+
+        $ub->leftJoin('u.smsData','s')                                           
+            ->andWhere('s.phoneNumber = :number') //smsData is the owning-side in the association user/smsData
+            ->setParameter('number',$phoneNumber)
+            ->addSelect('s');
+
+        return $ub->getQuery()->getResult();
+
+    }
 }

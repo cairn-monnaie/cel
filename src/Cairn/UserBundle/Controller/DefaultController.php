@@ -139,7 +139,7 @@ class DefaultController extends Controller
 
         //TODO here : get data from SMS and parse content
 
-        $debitorUsers = $em->getRepository('CairnUserBundle:User')->findBy(array('phoneNumber'=>$debitorPhoneNumber));
+        $debitorUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($debitorPhoneNumber);
         $isUniquePhoneNumber = (count($debitorUsers) == 1);
         $isProAndPersonPhoneNumber = (count($debitorUsers) == 2);
 
@@ -163,7 +163,7 @@ class DefaultController extends Controller
         }
 
         //2.2)Then, we ensure that sms actions are enabled for this user
-        if(! $debitorUser->isSmsEnabled()){
+        if(! $debitorUser->getSmsData()->isSmsEnabled()){
              $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISE: rendez-vous sur la plateforme web pour vous y donner accès !');
              return;
         }

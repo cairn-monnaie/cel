@@ -13,6 +13,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Operation] 
 
+    cairn_user.repository_smsdata: 
+        class: SmsDataRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\SmsData] 
+
     cairn_user.repository_card: 
         class: CardRepository                                                  
         factory: ["@doctrine.orm.entity_manager", getRepository]
@@ -145,7 +150,7 @@ services:
     cairn_user.user_phone_number_validator:
         class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
         arguments:
-            - "@cairn_user.repository_user"
+            - "@cairn_user.repository_smsdata"
             - "@cairn_user.security"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }

@@ -176,26 +176,29 @@ class OperationValidator extends ConstraintValidator
             }
         //************ Specific validation, SMS payment ************//
         }else{ 
-            if(! $operation->getDebitor()->isEnabled()){
+            $debitorUser = $operation->getDebitor();
+            $creditorUser = $operation->getCreditor();
+
+            if(! $debitorUser->isEnabled()){
                 $message = 'COMPTE E-CAIRN INACTIF';
                 $this->context->addViolation($message);
             }
-            if(! $operation->getCreditor()->isEnabled()){
+            if(! $creditorUser->isEnabled()){
                 $message = 'COMPTE E-CAIRN DU CREDITEUR INACTIF';
                 $this->context->addViolation($message);
             }
 
-            if($operation->getDebitor() === $operation->getCreditor()){
+            if($debitorUser === $creditorUser){
                 $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
             }
-            if(! $operation->getDebitor()->isSmsEnabled()){
+            if(! $debitorUser->getSmsData()->isSmsEnabled()){
                 $this->context->addViolation('PAIEMENT SMS NON AUTORISÉ : Rendez-vous sur votre espace membre pour l\'activer');
             }
-            if(! $operation->getCreditor()->isSmsEnabled()){
+            if(! $creditorUser->getSmsData()->isSmsEnabled()){
                 $this->context->addViolation('PAIEMENT NON AUTORISÉ : Le créditeur n\'a pas autorisé le paiement SMS');
             }
             if(count($this->context->getViolations()) == 0){
-                $account = $this->accountInfo->getDefaultAccount($operation->getDebitor()->getCyclosID());
+                $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());
                 $this->validateBalance($operation->getType(), $account,$operation->getAmount());
             }
           

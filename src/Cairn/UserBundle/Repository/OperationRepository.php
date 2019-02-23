@@ -78,7 +78,7 @@ class OperationRepository extends \Doctrine\ORM\EntityRepository
     {
         return $ob->select('SUM(o.amount) as totalAmount')
                ->getQuery()
-               ->getOneOrNullResult();
+               ->getSingleScalarResult();
     }
 
     public function whereCurrentDay(QueryBuilder $ob)
