@@ -5,8 +5,10 @@ namespace Cairn\UserBundle\Service;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Repository\OperationRepository;
 use Cairn\UserBundle\Repository\CardRepository;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserCyclosBundle\Entity\UserIdentificationManager;
 use Cairn\UserCyclosBundle\Service\UserIdentificationInfo;
@@ -27,6 +29,11 @@ class Security
     protected $userRepo;
 
     /**
+     *@var OperationRepository $operationRepo
+     */
+    protected $operationRepo;
+
+    /**
      *@var CardRepository $cardRepo
      */
     protected $cardRepo;
@@ -39,9 +46,10 @@ class Security
 
     protected $secret;
 
-    public function __construct(UserRepository $userRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret)
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret)
     {
         $this->userRepo = $userRepo;
+        $this->operationRepo = $operationRepo;
         $this->cardRepo = $cardRepo;
         $this->tokenStorage = $tokenStorage;
         $this->encoderFactory = $encoderFactory;
@@ -205,5 +213,54 @@ class Security
     public function getSmsClient(User $user)
     {
         return str_replace($this->secret, '', $this->vigenereDecode($user->getSmsClient()) );
+    }
+
+
+    /**
+     *Beware, input Operation is not persisted, and is relevant only for sms payments
+     *
+     */
+    public function paymentNeedsValidation(Operation $operation)
+    {
+        if(! $operation->isSmsPayment()){ return false; }
+
+        //criteria 1 : second payment to the same pro in the same day
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$operation->getDebitor())
+            ->whereCreditor($ob,$operation->getCreditor())
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+
+        if(count($operations) > 0){ return true; }
+
+        //criteria 2 : threshold of amount spent in one day
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$operation->getDebitor())
+            ->whereCurrentDay($ob);
+
+        $totalDayAmount = $this->operationRepo->countTotalAmount($ob);
+        if($totalDayAmount > $operation->getDebitor()->getAmountDailyThreshold()){
+           return true; 
+        }
+        
+        //criteria 3 : number of current day payments (lower than threshold ?)
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$operation->getDebitor())
+            ->whereAmountComparedWith($ob, $operation->getAmountDailyThreshold(), 'lt')
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+        if(count($operations) > $operation->getDebitor()->getNumberPaymentsThreshold()){ return true; }
+
+        return false;
+    }
+
     }
 }

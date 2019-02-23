@@ -57,7 +57,8 @@ class DefaultController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+//        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+        $this->smsAction('0612345678','PAYER 25.20 maltobar');
         return new Response('ok');
     }
 
@@ -256,10 +257,10 @@ class DefaultController extends Controller
             $operation->setToAccountNumber($res->toAccount->number);
             $operation->setAmount($res->totalAmount->amount);
 
-//            if($securityService->paymentNeedsValidation($debitorUser, $operation)){
-//                 
-//                return;
-//            }
+            if($securityService->paymentNeedsValidation($operation)){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'CONFIRMER CODE CARTE SECURITE B2');
+                return;
+            }
 
             $paymentVO = $this->bankingManager->makePayment($res->payment);
             

@@ -67,6 +67,7 @@ services:
         class: Cairn\UserBundle\Service\Security
         arguments:
             - "@cairn_user.repository_user"
+            - "@cairn_user.repository_operation"
             - "@cairn_user.repository_card"
             - "@security.token_storage"
             - "@security.encoder_factory" 
