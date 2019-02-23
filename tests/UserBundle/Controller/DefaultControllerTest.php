@@ -4,6 +4,7 @@ namespace Tests\UserBundle\Controller;
 
 use Tests\UserBundle\Controller\BaseControllerTest;
 
+use Cairn\UserBundle\Controller\DefaultController;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Cairn\UserCyclosBundle\Entity\ScriptManager;
 use Cairn\UserCyclosBundle\Entity\UserManager;
@@ -24,6 +25,73 @@ class DefaultControllerTest extends BaseControllerTest
 
     }
 
+    /**
+     *
+     *@dataProvider provideDataForSmsParsing
+     */
+    public function testSmsParsing($content, $isValid, $isPayment, $expectMessage)
+    {
+        $controller = new DefaultController();
+        $res = $controller->parseSms($content);
+        if($isValid){
+            $this->assertTrue($res->error == NULL);
+            if($isPayment){
+                $this->assertTrue($res->isPaymentRequest);
+                $this->assertTrue(is_numeric($res->amount) );
+            }
+        }else{
+            $this->assertTrue(strpos($res->error,$expectMessage) !== false);
+        }
+    }
+
+    public function provideDataForSmsParsing()
+    {
+        return array(
+            'invalid format : action PAYER'=>array('PAYEr 12.5 SHOP',false,true,'Action invalide'),
+            'invalid format : no action'=>array('12.5 SHOP', false, true, 'Action invalide'),
+            'invalid format : no amount'=>array('PAYER SHOP',false,true,'Format du montant'),
+            'invalid format : negative amount'=>array('PAYER -12.5 SHOP',false,true,'Format du montant'),
+            'invalid format : no identifier'=>array('PAYER 12.5',false,true,'IDENTIFIANT INCONNU'),
+            'invalid format : action SOLDE'=>array('SOLD',false,false,'Action invalide'),
+            'invalid format : action SOLDE + texte'=>array('SOLDE OUT!',false,false,'Demande de solde invalide'),
+            'invalid format : code with some letter'=>array('12e74',false,false,'Action invalide'),
+            'invalid format : code with two many figures'=>array('123456',false,false, '4 chiffres'),
+            'invalid format : code with not enough figures'=>array('123',false,false,'Action invalide'),
+            'valid format : classic payment'=>array('PAYER 12.5 SHOP',true,true,''),
+            'invalid format : action PAYER 2'=>array('PAYE 12.5 SHOP',false,true,'Action invalide'),
+            'invalid format : action PAYER 3'=>array('PAY 12.5 SHOP',false,true,'Action invalide'),
+            'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
+            'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
+            'invalid format : float amount with 0 decimals'=>array('PAYER 12.',false,true,'Format du montant'),
+            'valid format : float amount with 0 decimals'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
+            'valid format : float amount with . character'=>array('PAYER 12.5 SHOP',true,true,''),
+            'valid format : float amount with , character'=>array('PAYER 12,5 SHOP',true,true,''),
+            'valid format : amount with 1 decimal'=>array('PAYER 12.5 SHOP',true,true,''),
+            'valid format : amount with 2 decimals'=>array('PAYER 12.52 SHOP',true,true,''),
+            'valid format : integer amount'=>array('PAYER 12 SHOP',true,true,''),
+            'valid format : integer amount with useless 0s before'=>array('PAYER 00012 SHOP',true,true,''),
+            'valid format : username starts with figures'=> array('PAYER 12.5 12SHOP',true,true,''),
+            'valid format : no whitespace'=> array('PAYER12.5SHOP',true,true,''),
+            'valid format : random spaces'=> array('       PAYER12. 5    SH OP',true,true,''),
+            'valid format : SOLDE'=> array('SOLDE',true,false,''),
+        );
+    }
+
+//     /**
+//     *
+//     *@dataProvider provideDataForSmsOperation
+//     */
+//    public function testSmsOperation($phoneNumber, $content)
+//    {
+//
+//    }
+//  
+//    public function provideDataForSmsOperation()
+//    {
+//        return array(
+//
+//        );
+//    }
     /**
      *@dataProvider provideTypeForRegistration
      */

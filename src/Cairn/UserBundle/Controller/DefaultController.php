@@ -54,9 +54,10 @@ class DefaultController extends Controller
         $this->bankingManager = new BankingManager();
     }   
 
+
     public function smsReceptionAction(Request $request)
     {
-        $this->smsAction('SOLDE');
+        $this->smsAction('PAYER 13 nico_faus_prod');
         return new Response('ok');
     }
 
@@ -67,23 +68,39 @@ class DefaultController extends Controller
 
         //2)Regex analysis
         //TODO : make it more flexible
-        //PAYE | PAY | autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER|SOLDE|\d{4,5})((\d+([,\.]\d{1,2})?)([a-zA-Z]{1}\w+))?$#',$content,$matches);
+        //PAYER autoriser plus de décimales au montant et tronquer après
+        preg_match('#^(PAYER)(\d+([,\.]\d+)?)([a-zA-Z]{1}\w+)$#',$content,$matches_payment);
+        preg_match('#^SOLDE$#',$content,$matches_balance);
+        preg_match('#^\d{4}$#',$content, $matches_code);
         
-        var_dump($matches);
         //3) Prepare error messages
         $res = new \stdClass();
         
-        $errors = NULL;
-        if(!$matches){
-            $errors = array();
-        }else{
-            if($matches[1] == 'PAYER'){
+        $error = NULL;
+
+        if(! ($matches_payment || $matches_balance || $matches_code)){
+            if(! preg_match('#^(PAYER|SOLDE|\d{4})#',$content)){
+                $error = 'Action invalide'."\n".'Envoyer PAYER, SOLDE ou un code à 4 chiffres en cas de validation de paiement';
+            }else{
+                if(preg_match('#^PAYER#',$content)){ //is payment request
+                    if(! preg_match('#^PAYER\d+([,\.]\d+)?$#',$content)){//invalid amount format
+                        $error = 'Format du montant invalide : '."\n";
+                    }else{
+                        $error = 'IDENTIFIANT INCONNU'."\n";
+                    }
+                }elseif(preg_match('#^SOLDE#',$content)){
+                    $error = 'Demande de solde invalide '."\n";
+                }else{
+                    $error = 'Saisissez un code à 4 chiffres '."\n";
+                }
+            }
+        }else{ //one regex match
+            if($matches_payment){
                 $res->isPaymentRequest = true;
                 $res->isPaymentValidation = false;
-                $res->amount = str_replace(',','.',$matches[3]);
-                $res->creditorLogin = $matches[5];
-            }elseif($matches[1] == 'SOLDE'){
+                $res->amount = str_replace(',','.',$matches_payment[2]);
+                $res->creditorLogin = $matches_payment[4];
+            }elseif($matches_balance){
                 $res->isPaymentRequest = false;
                 $res->isPaymentValidation = false;
             }else{//card code sent
@@ -93,7 +110,7 @@ class DefaultController extends Controller
             }
         }
 
-        $res->errors = $errors;
+        $res->error = $error;
         return $res;
 //        if(!$matches[1]){
 //            $errors['action'] = 'ACTION NON RECONNUE : OPTIONS "PAYER" OU "SOLDE"';
@@ -162,6 +179,7 @@ class DefaultController extends Controller
         }catch(\Exception $e){
 
             if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
+                echo 'AAAAAAAA';
                 $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
             }else{
                 $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : Veuillez nous contacter');
@@ -239,10 +257,10 @@ class DefaultController extends Controller
             $operation->setFromAccountNumber($res->fromAccount->number);
             $operation->setToAccountNumber($res->toAccount->number);
 
-            if($securityService->paymentNeedsValidation($debitorUser, $res)){
-                 
-                return;
-            }
+//            if($securityService->paymentNeedsValidation($debitorUser, $operation)){
+//                 
+//                return;
+//            }
 
             $paymentVO = $this->bankingManager->makePayment($res->payment);
             
