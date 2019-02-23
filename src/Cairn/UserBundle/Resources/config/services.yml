@@ -150,7 +150,7 @@ services:
     cairn_user.user_phone_number_validator:
         class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
         arguments:
-            - "@cairn_user.repository_smsdata"
+            - "@cairn_user.repository_user"
             - "@cairn_user.security"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }

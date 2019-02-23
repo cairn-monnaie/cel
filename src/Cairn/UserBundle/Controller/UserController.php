@@ -280,19 +280,35 @@ class UserController extends Controller
     
                 $user->setNbPhoneNumberRequests($user->getNbPhoneNumberRequests() + 1);
     
-                $em->detach($smsData);
 
-                $session->set('smsData',$smsData);
+                //at this step, flush is impossible because entitymanager would consider $smsData object as a brand new object
+                //then, an exception would be thrown due to unique key constraint error
+                //that's why we retrieve the instance right away and refresh it to not flush modifications, as it should be done only
+                //after code validation from the second form
+                $newPhoneNumber = $smsData->getPhoneNumber(); //let's save it before refresh
+
+                if($previousPhoneNumber){ //otherwise, nothing to refresh
+                    //detach is necessary for serialization of associated entities before setting it in session
+                    $em->detach($smsData);
+                    $session->set('smsData',$smsData);
+                    $session->set('hasPreviousPhoneNumber',true);
+                    $smsData = $em->merge($session->get('smsData'));
+                    $em->refresh($smsData);
+                }else{
+                    $session->set('hasPreviousPhoneNumber',false);
+                    $session->set('smsData',$this->get('cairn_user.api')->serialize($smsData));
+                }
+
                 // send SMS with validation code to current user's new phone number
-                $this->get('cairn_user.message_notificator')->sendSMS($smsData->getPhoneNumber(),'Code de validation : '. $code);
+                $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber,'Code de validation : '. $code);
                 $em->flush();
 
-               $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$smsData->getPhoneNumber()));
+               $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
                 if($existSmsData){
                     $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des paiements par SMS');
                 }
     
-                $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$smsData->getPhoneNumber().'. Saisissez-le pour valider vos nouvelles données SMS');
+                $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
                 return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
                     array('formSmsData'=>$formSmsData->createView(),
                           'formCode'=>$formCode->createView()));
@@ -310,7 +326,7 @@ class UserController extends Controller
             $providedCode = $formCode->getData()['code'];
             
             $session_code = $session->get('activationCode');
-            $smsData = $session->get('smsData');
+
 
             //no activation code proposed (means that no phone number association requested)
             if(!$session_code){
@@ -320,6 +336,17 @@ class UserController extends Controller
 
             //valid code
             if($encoder->encodePassword($providedCode,$user->getSalt()) == $session_code){
+
+                $hasPreviousPhoneNumber = $session->get('hasPreviousPhoneNumber');
+
+                if($hasPreviousPhoneNumber){
+                    $smsData = $em->merge($session->get('smsData'));
+                   
+                }else{
+                    $res = $this->get('cairn_user.api')->deserialize($session->get('smsData'),'Cairn\UserBundle\Entity\SmsData');
+                   $smsData = $em->merge($res);
+                }
+
                 $user->setNbPhoneNumberRequests(0);
                 $user->setPhoneNumberActivationTries(0);
 

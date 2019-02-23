@@ -23,13 +23,21 @@ class SmsDataType extends AbstractType
 
         $builder
             ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable',
-                                                          'constraints'=>new UserPhoneNumber() 
-            ))    
+                                                          'constraints'=> new UserPhoneNumber()
+            ))
             ->add('smsEnabled', CheckboxType::class, array('label'=>'Autoriser les  actions SMS',
                                                           'required'=>false))
-            ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation'))
-            ->add('dailyNumberPaymentsThreshold'  , IntegerType::class       ,array('label' => 'Nombre de paiements SMS / jour sans validation'))
-            ->add('save'   , SubmitType::class,         array('label' => 'Suivant'));
+            ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',
+                        'constraints'=> new Assert\Range(array('min'=> 0,'max'=>50,
+                                                  'minMessage' => 'Un nombre négatif n\'a pas de sens !',
+                                                  'maxMessage' => 'Au dessus de 50, la carte de sécurité est obligatoire'))
+            ))
+            ->add('dailyNumberPaymentsThreshold'  , IntegerType::class ,array('label' => 'Nombre de paiements SMS / jour sans validation',
+                        'constraints'=> new Assert\Range(array('min'=> 0,'max'=>5,
+                                                  'minMessage' => 'Un nombre négatif n\'a pas de sens !',
+                                                  'maxMessage' => 'Au dessus de 5 paiements dans la même journée, la carte de sécurité est obligatoire'))
+            ))
+            ->add('save', SubmitType::class, array('label' => 'Suivant'));
     }
 
     /**
