@@ -62,8 +62,8 @@ class DefaultControllerTest extends BaseControllerTest
             'invalid format : action PAYER 3'=>array('PAY 12.5 SHOP',false,true,'Action invalide'),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
-            'invalid format : float amount with 0 decimals'=>array('PAYER 12.',false,true,'Format du montant'),
-            'valid format : float amount with 0 decimals'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
+            'invalid format : float amount with 0 decimals'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
+            'invalid format : float amount with 0 decimals'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
             'valid format : float amount with . character'=>array('PAYER 12.5 SHOP',true,true,''),
             'valid format : float amount with , character'=>array('PAYER 12,5 SHOP',true,true,''),
             'valid format : amount with 1 decimal'=>array('PAYER 12.5 SHOP',true,true,''),
@@ -77,21 +77,56 @@ class DefaultControllerTest extends BaseControllerTest
         );
     }
 
-//     /**
-//     *
-//     *@dataProvider provideDataForSmsOperation
-//     */
-//    public function testSmsOperation($phoneNumber, $content)
-//    {
-//
-//    }
-//  
-//    public function provideDataForSmsOperation()
-//    {
-//        return array(
-//
-//        );
-//    }
+     /**
+     *
+     *@dataProvider provideDataForSmsOperation
+     */
+    public function testSmsOperation($phoneNumber, $content, $expectMessage)
+    {
+        $client = static::createClient();
+        $client->enableProfiler();
+
+        $crawler = $client->request('GET','/banking/sms/reception?phone='.$phoneNumber.'&content='.$content);
+
+        //TODO : replace email by sms
+        $mailCollector = $client->getProfile()->getCollector('swiftmailer');
+        $this->assertSame(1, $mailCollector->getMessageCount());
+        $message = $mailCollector->getMessages()[0];
+        $this->assertInstanceOf('Swift_Message', $message);
+        $this->assertContains($expectMessage, $message->getBody());
+        $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+
+        //committing modifications
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
+        \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::beginTransaction();
+
+    }
+  
+    public function provideDataForSmsOperation()
+    {
+        return array(
+            'balance : phone number not registered'=>array('0612121212','SOLDE','COMPTE E-CAIRN INTROUVABLE'),
+            'balance : not active'=>array('0744444444','SOLDE','inactif'),
+            'balance : not sms enabled'=>array('0733333333','SOLDE','SMS NON AUTORISE'),
+            'balance : sms enabled for pro & person'=>array('0612345678','SOLDE','SOLDE COMPTE E-CAIRN'),
+
+            'balance : invalid sms'=>array('0612345678','SOLD','SMS INVALIDE'),
+            'balance : invalid sms'=>array('0612345678','SOLDEADO','SMS INVALIDE'),
+            'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA','CREDITEUR INTROUVABLE'),
+            'payment : balance error'=>array('0612345678','PAYER1000000maltobar','SOLDE INSUFFISANT'),
+            'payment : creditor inactive'=>array('0612345678','PAYER100la_mandragore','CREDITEUR INACTIF'),
+            'payment : creditor=debitor'=>array('0612345678','PAYER100nico_faus_perso','DEBITEUR ET CREDITEUR IDENTIQUES'),
+            'payment : too low amount'=>array('0612345678','PAYER0.001maltobar','MONTANT TROP FAIBLE'),
+            'payment : valid'=>array('0612345678','PAYER15maltobar','données du paiement'),
+            'payment : valid'=>array('0612345678','PAYER12.522maltobar','données du paiement'),
+            'payment : valid'=>array('0612345678','PAYER12.5220000maltobar','données du paiement'),
+            'payment : invalid sms'=>array('0612345678','PAYER12.maltobar','SMS INVALIDE'),
+            'payment : invalid sms'=>array('0612345678','PAYERSHOP','Format du montant'),
+            'payment : invalid sms'=>array('0612345678','PAYER00012maltobar','données'),
+
+        );
+    }
+
     /**
      *@dataProvider provideTypeForRegistration
      */

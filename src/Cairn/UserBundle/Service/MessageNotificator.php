@@ -47,7 +47,8 @@ class MessageNotificator
     public function sendSMS($phoneNumber, $content)
     {
         $user = $this->userRepo->findOneBy(array('phoneNumber'=>$phoneNumber));
-        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $user->getEmail(), $content);
+        $email = ($user) ? $user->getEmail() : 'whoknows@test.com';
+        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
     }
 
     public function getNoReplyEmail()

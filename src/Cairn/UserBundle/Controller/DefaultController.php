@@ -57,7 +57,7 @@ class DefaultController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        $this->smsAction('PAYER 13 nico_faus_prod');
+        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
         return new Response('ok');
     }
 
@@ -128,7 +128,7 @@ class DefaultController extends Controller
 
     }
 
-    public function smsAction($content)
+    public function smsAction($debitorPhoneNumber,$content)
     {
         $em = $this->getDoctrine()->getManager();
         $messageNotificator = $this->get('cairn_user.message_notificator');
@@ -137,7 +137,6 @@ class DefaultController extends Controller
         $operation->setType(Operation::TYPE_SMS_PAYMENT);
 
         //TODO here : get data from SMS and parse content
-        $debitorPhoneNumber = '0611223344';
 
         $debitorUsers = $em->getRepository('CairnUserBundle:User')->findBy(array('phoneNumber'=>$debitorPhoneNumber));
         $isUniquePhoneNumber = (count($debitorUsers) == 1);
@@ -151,12 +150,18 @@ class DefaultController extends Controller
         }elseif($isUniquePhoneNumber){
             $debitorUser = $debitorUsers[0];
         }else{
-            //TODO : est-ce qu'on prend même la peine d'envoyer un SMS
+            //TODO : est-ce qu'on prend même la peine d'envoyer un SMS ?
             $messageNotificator->sendSMS($debitorPhoneNumber,'COMPTE E-CAIRN INTROUVABLE');
             return;
         }
        
-        //2)Then, we ensure that sms actions are enabled for this user
+        //2.1)Then, we ensure that user is active, and then sms actions are enabled for this user
+        if(! $debitorUser->isEnabled()){
+             $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISE: Compte inactif');
+             return;
+        }
+
+        //2.2)Then, we ensure that sms actions are enabled for this user
         if(! $debitorUser->isSmsEnabled()){
              $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISE: rendez-vous sur la plateforme web pour vous y donner accès !');
              return;
@@ -179,7 +184,6 @@ class DefaultController extends Controller
         }catch(\Exception $e){
 
             if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
-                echo 'AAAAAAAA';
                 $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
             }else{
                 $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : Veuillez nous contacter');
@@ -189,14 +193,8 @@ class DefaultController extends Controller
 
         //4) Parse SMS content
         $parsedSms = $this->parseSms($content);
-        if( $parsedSms->errors){
-            $reason = 'FORMAT DU SMS INVALIDE';
-
-            //if($smsIsPayment){
-            //    $example = 'EXEMPLE : PAYER 5.5 MAGASIN';
-            //}else{
-            //    $example = 'EXEMPLE : SOLDE';
-            //}
+        if( $parsedSms->error){
+            $reason = 'SMS INVALIDE'."\n".$parsedSms->error;
             $messageNotificator->sendSMS($debitorPhoneNumber,$reason);
             return;
         }
@@ -256,6 +254,7 @@ class DefaultController extends Controller
             $res = $this->bankingManager->makeSinglePreview($paymentData,$operationAmount,$reason,$smsTransferType,$operation->getExecutionDate());
             $operation->setFromAccountNumber($res->fromAccount->number);
             $operation->setToAccountNumber($res->toAccount->number);
+            $operation->setAmount($res->totalAmount->amount);
 
 //            if($securityService->paymentNeedsValidation($debitorUser, $operation)){
 //                 
