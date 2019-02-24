@@ -62,14 +62,24 @@ class AccessPlatform
      *@param string $subject 
      *@param array $users 
      */
-    public function disable($users, $subject, $body)
+    public function disable($users, $subject = NULL, $body = NULL)
     {
+        if(!$subject){
+            $subject = "Compte e-Cairn bloqué";
+        }
+        if(!$body){
+            $body = "Votre compte e-Cairn est désormais bloqué";
+        }
+
         $from = $this->messageNotificator->getNoReplyEmail();
         foreach($users as $user){
             if($user->isEnabled()){
                 $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
                 $user->setEnabled(false);
-                $user->setSmsEnabled(false);
+
+                if($smsData = $user->getSmsData()){
+                    $smsData->setSmsEnabled(false);
+                }
             }
         }
     }
@@ -85,6 +95,8 @@ class AccessPlatform
     {
         if(!$subject){
             $subject = "Votre espace membre Cairn a été activé";
+        }
+        if(!$body){
             $body = "Votre compte est désormais accessible";
         }
 

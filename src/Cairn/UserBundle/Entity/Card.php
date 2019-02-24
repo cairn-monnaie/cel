@@ -119,6 +119,15 @@ class Card
 
     }
 
+    public function getKey($index)
+    {
+        $rows = $this->getRows();                                       
+
+        $pos_row = intdiv($index,$rows);                                    
+        $pos_col = $index % $rows;                                          
+        return $this->getFields()[$pos_row][$pos_col];
+    }
+
     /**
      * Set fields
      *

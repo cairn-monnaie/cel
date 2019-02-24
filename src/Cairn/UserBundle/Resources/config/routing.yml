@@ -286,7 +286,7 @@ cairn_user_banking_transaction_request:
 
 cairn_user_banking_sms_reception:
     path:     banking/sms/reception
-    defaults: { _controller: CairnUserBundle:Default:smsReception, _format: html}
+    defaults: { _controller: CairnUserBundle:Sms:smsReception, _format: html}
 
 
 cairn_user_banking_operation_confirm:

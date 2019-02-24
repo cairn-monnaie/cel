@@ -250,6 +250,11 @@ class UserController extends Controller
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
 
+        if(! $user->getCard()){
+            $session->getFlashBag()->add('error','Pas de carte de sécurité associée !');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
         $smsData = ($res = $user->getSmsData()) ? $res : new SmsData($user);
         $previousPhoneNumber = $smsData->getPhoneNumber();
 
@@ -849,7 +854,7 @@ class UserController extends Controller
                         $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                     }else{//is ROLE_PRO or ROLE_PERSON
                         $user->setRemovalRequest(true);
-                        $user->setEnabled(false);
+                        $this->get('cairn_user.access_platform')->disable(array($user));
 
                         $redirection = 'fos_user_security_logout';
                         $session->getFlashBag()->add('success','Votre demande de suppression d\'espace membre a été prise en compte');
@@ -939,7 +944,7 @@ class UserController extends Controller
                 $subject = 'Demande de suppression annulée';
                 $from = $messageNotificator->getNoReplyEmail();
                 $to = $user->getEmail();
-                $body = 'Vous avez demandé à supprimer votre espace membre, mais certains de vos comptes ont un solde non nul. Elle n\'a donc pas pu être validée. Mettez vos comptes à 0, et vérifiez que vous ne recevez pas des virements entre la demande et la validation';//$this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+                $body = 'Vous avez demandé à supprimer votre espace membre, mais certains de vos comptes ont un solde non nul. Elle n\'a donc pas pu être validée. Veuillez solder vos comptes.';
 
                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                 return false;
@@ -981,7 +986,6 @@ class UserController extends Controller
                 foreach($listUsers as $user){
                     $isRemoved = $this->removeUser($user, $currentUser);
                     if(!$isRemoved){
-                        $user->setEnabled(true);
                         $user->setRemovalRequest(false);
                         $notRemovedUsers = $notRemovedUsers.', '.$user->getName();
                     }

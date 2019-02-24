@@ -49,24 +49,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class CardController extends Controller
 {
 
-    /**
-     * Generates a random array index and its translated position as a cell
-     *
-     * @example For a 5x5 card. Index 7 gives cell position B2
-     * @param Card $card
-     * @return stdClass with attributes cell and index 
-     */
-    public function generatePositions(Card $card)
-    {
-        $rows = $card->getRows();
-        $nbFields = $rows * $card->getCols();
-        $position = rand(0,$nbFields-1);
-        $pos_row = intdiv($position,$rows);                                    
-        $pos_col = $position % $rows;
-        $array_pos = chr(65+ $pos_row) . strval($pos_col + 1); 
-
-        return ['cell' => $array_pos ,'index'=>$position];
-    }
 
     /**
      * The user must input a key of his card in order to keep browsing
@@ -100,11 +82,11 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
 
-        $positions = $this->generatePositions($card);
+        $positions = $this->get('cairn_user.security')->generateCardPositions($card);
         if($request->isMethod('GET')){
             $session->set('position',$positions['index']);
         }
-        $array_pos = $positions['cell'];
+        $string_pos = $positions['cell'];
 
         $form = $this->createForm(CardType::class);
 
@@ -133,7 +115,7 @@ class CardController extends Controller
 
             }
         }
-        return $this->render('CairnUserBundle:Card:validate_card.html.twig',array('form'=>$form->createView(),'card'=>$card,'position'=>$array_pos));
+        return $this->render('CairnUserBundle:Card:validate_card.html.twig',array('form'=>$form->createView(),'card'=>$card,'position'=>$string_pos));
     }
 
 
@@ -298,6 +280,12 @@ class CardController extends Controller
                 if($form->get('save')->isClicked()){
                     $saveCode = $card->getCode();
                     $em->remove($card);
+
+                    if($smsData = $user->getSmsData()){
+                        $smsData->setSmsEnabled(false);
+                        $session->getFlashBag()->add('info','Les fonctionnalités SMS sont désormais bloquées pour le numéro :'.$smsData->getPhoneNumber());
+                    }
+
                     $em->flush();
 
                     if($currentUser !== $user){

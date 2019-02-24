@@ -225,7 +225,7 @@ class UserControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForEditSmsData
      */
-    public function testEditSmsData($login,$newPhoneNumber,$isValidNumber,$isPhoneNumberEdit,$code,$isValidCode,$hasPreviousPhoneNumber,$expectMessage)
+    public function testEditSmsData($login,$smsData,$isValidData,$isPhoneNumberEdit,$code,$isValidCode,$hasPreviousPhoneNumber,$expectMessage)
     {
         $crawler = $this->login($login, '@@bbccdd');
 
@@ -243,16 +243,19 @@ class UserControllerTest extends BaseControllerTest
         $previous_phoneNumber = $currentUser->getPhoneNumber();
 
         $formPhoneNumber = $crawler->selectButton('cairn_userbundle_smsdata_save')->form();
-        $formPhoneNumber['cairn_userbundle_smsdata[phoneNumber]']->setValue($newPhoneNumber);
+        $formPhoneNumber['cairn_userbundle_smsdata[phoneNumber]']->setValue($smsData['phoneNumber']);
+        $formPhoneNumber['cairn_userbundle_smsdata[dailyNumberPaymentsThreshold]']->setValue($smsData['paymentsPerDay']);
+        $formPhoneNumber['cairn_userbundle_smsdata[dailyAmountThreshold]']->setValue($smsData['amountPerDay']);
+
         $crawler = $this->client->submit($formPhoneNumber);
 
         if($isPhoneNumberEdit){
-            if($isValidNumber){
+            if($isValidData){
                 $this->em->refresh($currentUser);
 
                 $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests + 1);
                 $this->assertTrue($currentUser->getPhoneNumber() == $previous_phoneNumber);
-                $this->assertFalse($currentUser->getPhoneNumber() == $newPhoneNumber);
+                $this->assertFalse($currentUser->getPhoneNumber() == $smsData['phoneNumber']);
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
 
                 $formCode = $crawler->selectButton('form_save')->form();
@@ -265,7 +268,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertEquals($currentUser->getPhoneNumberActivationTries(),0);
 
                     $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
-                    $this->assertEquals($currentUser->getPhoneNumber(),$newPhoneNumber);
+                    $this->assertEquals($currentUser->getPhoneNumber(),$smsData['phoneNumber']);
                     $this->assertTrue($currentUser->getSmsData() != NULL);
                     $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
                     $crawler = $this->client->followRedirect();
@@ -303,9 +306,14 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }
         }else{ //only security values regarding sms may have changed
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
-            $crawler = $this->client->followRedirect();
-            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            if($isValidData){
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+                $crawler = $this->client->followRedirect();
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            }else{
+                $this->assertFalse($this->client->getResponse()->isRedirect());
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            }
         }
 
 
@@ -314,8 +322,8 @@ class UserControllerTest extends BaseControllerTest
     public function provideDataForEditSmsData()
     {
         $baseData = array('login'=>'',
-            'phoneNumber'=>'0699999999',
-            'isValidNumber'=>true,
+            'smsData'=>array('phoneNumber'=>'0699999999','amountPerDay'=>'20','paymentsPerDay'=>'3'),
+            'isValidData'=>true,
             'isPhoneNumberEdit'=>true,
             'code'=>'1111',
             'isValidCode'=>true,
@@ -324,40 +332,64 @@ class UserControllerTest extends BaseControllerTest
         );
 
         return array(
-            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold', 'isValidNumber'=>false,
+            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold', 'isValidData'=>false,
                                                                 'expectMessage'=>'Trop de demandes')),
 
-            'current number'=>array_replace($baseData, array('login'=>'maltobar','phoneNumber'=>'0611223344','isPhoneNumberEdit'=>false,
-                                                              'isValidNumber'=>true,'expectMessage'=>'enregistrées')),
+            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','smsData'=>array('phoneNumber'=>'0611223344'),
+                                            'isPhoneNumberEdit'=>false,'isValidData'=>true,'expectMessage'=>'enregistrées')),
 
-            'used by pro & person'=>array_replace($baseData, array('login'=>'maltobar','phoneNumber'=>'0612345678',
-                                                             'isValidNumber'=>false,'expectMessage'=>'déjà utilisé')),
+            'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar',
+                                            'smsData'=>array('phoneNumber'=>'0612345678'), 'isValidData'=>false,
+                                            'expectMessage'=>'déjà utilisé')),
 
-            'pro request : used by pro'=>array_replace($baseData, array('login'=>'maltobar','isValidNumber'=>false,
-                                                            'phoneNumber'=>'0612345678','expectMessage'=>'déjà utilisé')),
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','isValidData'=>false,
+                                            'smsData'=>array('phoneNumber'=>'0612345678'),
+                                            'expectMessage'=>'déjà utilisé')),
 
-            'person request : used by person'=>array_replace($baseData, array('login'=>'benoit_perso','isValidNumber'=>false,
-                                                            'phoneNumber'=>'0612345678','expectMessage'=>'déjà utilisé')),
+            'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','isValidData'=>false,
+                                                            'smsData'=>array('phoneNumber'=>'0612345678'),'expectMessage'=>'déjà utilisé')),
 
-            'pro request : used by person'=>array_replace($baseData,array('login'=>'maltobar','phoneNumber'=>'0644332211',
-                                                                          'expectMessage'=>'Un code vous a été envoyé')),
+            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar',
+                                            'smsData'=>array('phoneNumber'=>'0644332211'),
+                                            'expectMessage'=>'Un code vous a été envoyé')),
 
-            'person request : used by pro'=>array_replace($baseData, array('login'=>'benoit_perso','phoneNumber'=>'0611223344',
-                                                                            'expectMessage'=>'Un code vous a été envoyé')),
+            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso',
+                                            'smsData'=>array('phoneNumber'=>'0611223344'),
+                                            'expectMessage'=>'Un code vous a été envoyé')),
 
-//          'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','isValidCode'=>false,
-//                                                                  'code'=>'2222','expectMessage'=>'compte a été bloqué')),
-//
-            'several remaining tries : wrong code'=>array_replace($baseData, array('login'=>'DrDBrew','isValidCode'=>false,
+          'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','isValidCode'=>false,
+                                                                           'hasPreviousPhoneNumber'=>false, 'code'=>'2222',
+                                                                           'expectMessage'=>'compte a été bloqué')),
+
+           'several remaining tries : wrong code'=>array_replace($baseData, array('login'=>'DrDBrew','isValidCode'=>false,
                                                                     'code'=>'2222','expectMessage'=>'Code invalide')),
 
-////            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','expectMessage'=>'enregistrées')),
-//
+          'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','hasPreviousPhoneNumber'=>false,
+                                             'expectMessage'=>'enregistrées')),
+
             'never had phone number : valid code'=>array_replace($baseData, array('login'=>'jardins_epices',
                                                             'hasPreviousPhoneNumber'=>false,'expectMessage'=>'enregistré')),
 
             '2 accounts associated before: valid code'=>array_replace($baseData, array('login'=>'nico_faus_prod',
                                                                      'expectMessage'=>'peut désormais réaliser')),
+
+            'negative daily amount threshold'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
+                                            'isPhoneNumberEdit'=>false,'smsData'=>array('amountPerDay'=>'-5'),
+                                            'expectMessage'=>'pas de sens')),
+
+            'too high daily amount threshold'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
+                                            'isPhoneNumberEdit'=>false,'smsData'=>array('amountPerDay'=>'1000'),
+                                            'expectMessage'=>'Au dessus de')),
+
+            'negative daily number of payments'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
+                                            'isPhoneNumberEdit'=>false,'smsData'=>array('paymentsPerDay'=>'-5'),
+                                            'expectMessage'=>'pas de sens')),
+
+            'too high daily number of payments'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
+                                            'isPhoneNumberEdit'=>false,'smsData'=>array('paymentsPerDay'=>'1000'),
+                                            'expectMessage'=>'Au dessus de')),
+
+
         );
     }
 

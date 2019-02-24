@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * SmsData
  *
- * @ORM\Table(name="sms_data")
+ * @ORM\Table(name="user_sms_data")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\SmsDataRepository")
  * @UniqueEntity(fields = {"smsClient"},message="Ce client SMS est déjà utilisé") 
  */

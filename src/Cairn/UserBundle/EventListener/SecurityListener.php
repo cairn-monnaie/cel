@@ -82,10 +82,11 @@ class SecurityListener
         }
     }
 
+
     public function onLogin(InteractiveLoginEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
+        $networkName= $this->container->getParameter('cyclos_currency_cairn');          
 
         $loginManager = new LoginManager();
 
@@ -253,13 +254,7 @@ class SecurityListener
         $position = $event->getPosition();
 
 
-        $fields = $currentCard->getFields();                             
-        $rows = $currentCard->getRows();                                              
-
-        $pos_row = intdiv($position,$rows);                                 
-        $pos_col = $position % $rows;                                       
-        $field_value = $fields[$pos_row][$pos_col];
-
+        $field_value = $currentCard->getKey($position);
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');
