@@ -258,12 +258,15 @@ class SecurityListener
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');
-            $session->set('has_input_card_key_valid',true);
+
+            if($session){
+                $session->set('has_input_card_key_valid',true);
+            }
         }
         else{
             $counter->incrementTries($user,'cardKey');
 
-            if($user->getCardKeyTries() >= 2){
+            if($user->getCardKeyTries() > 2){
                 $subject = 'Votre espace membre a été bloqué';
                 $body = 'Suite à 3 échecs de validation de votre carte de clés personnelles, votre espace membre a été bloqué par souci de sécurité. \n Veuillez contacter nos services pour plus d\'information';
                 $accessPlatform->disable(array($user),$subject,$body);

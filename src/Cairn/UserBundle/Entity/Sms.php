@@ -52,20 +52,20 @@ class Sms
     /**
      * @var string
      *
-     * @ORM\Column(name="cardKey", type="string", length=8)
+     * @ORM\Column(name="card_position", type="integer")
      */
-    private $cardKey;
+    private $cardPosition;
 
     const STATE_WAITING_KEY = 0;
     const STATE_EXPIRED = 1;
 
-    public function __construct($phoneNumber,$content,$state,$cardKey)
+    public function __construct($phoneNumber,$content,$state,$cardPosition)
     {
         $this->phoneNumber = $phoneNumber;
         $this->content = $content;
         $this->state = $state;
         $this->requestedAt = new \Datetime();
-        $this->cardKey = $cardKey;
+        $this->cardPosition = $cardPosition;
     }
 
     /**
@@ -175,26 +175,26 @@ class Sms
     }
 
     /**
-     * Set cardKey.
+     * Set cardPosition.
      *
-     * @param string $cardKey
+     * @param integer $cardPosition
      *
      * @return Sms
      */
-    public function setCardKey($cardKey)
+    public function setCardPosition($cardPosition)
     {
-        $this->cardKey = $cardKey;
+        $this->cardPosition = $cardPosition;
 
         return $this;
     }
 
     /**
-     * Get cardKey.
+     * Get cardPosition.
      *
-     * @return string
+     * @return integer
      */
-    public function getCardKey()
+    public function getCardPosition()
     {
-        return $this->cardKey;
+        return $this->cardPosition;
     }
 }

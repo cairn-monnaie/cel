@@ -191,25 +191,6 @@ class Security
         $card->setFields($fields);
     }
 
-    /**                                                                        
-     * Generates a random array index and its equivalent string cell position  
-     *                                                                         
-     * @example For a 5x5 card. index 7 equals cell position B2                
-     * @param Card $card                                                       
-     * @return stdClass with attributes cell and index                         
-     */                                                                        
-    public function generateCardPositions(Card $card)                              
-    {                                                                          
-        $rows = $card->getRows();                                              
-        $nbFields = $rows * $card->getCols();                                  
-        $position = rand(0,$nbFields-1);                                       
-        $pos_row = intdiv($position,$rows);                                    
-        $pos_col = $position % $rows;                                          
-        $string_pos = chr(65+ $pos_row) . strval($pos_col + 1);                
-
-        return ['cell' => $string_pos ,'index'=>$position];                    
-    }
-
 
     /**
      *

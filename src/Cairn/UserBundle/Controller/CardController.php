@@ -82,7 +82,7 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
 
-        $positions = $this->get('cairn_user.security')->generateCardPositions($card);
+        $positions = $card->generateCardPositions();
         if($request->isMethod('GET')){
             $session->set('position',$positions['index']);
         }

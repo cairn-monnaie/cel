@@ -9,6 +9,9 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Sms;
 
+use Cairn\UserBundle\Event\SecurityEvents;
+use Cairn\UserBundle\Event\InputCardKeyEvent;
+
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
 
@@ -46,9 +49,9 @@ class SmsController extends Controller
     {
 //        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
 //        $this->smsAction('0612345678','LOGIN');
-        $this->smsAction('0612345678','PAYER 40 maltobar');
+//        $this->smsAction('0612345678','PAYER 40 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
-//        $this->smsAction('0612345678','1111');
+        $this->smsAction('0612345678','1111');
 //        $this->smsAction('0612345678','2222');
 
         return new Response('ok');
@@ -93,25 +96,26 @@ class SmsController extends Controller
                 }
             }
         }else{ //one regex match
+            $res->content = $content;
             if($matches_payment){
                 $res->isPaymentRequest = true;
-                $res->isPaymentValidation = false;
+                $res->isOperationValidation = false;
                 $res->isSmsIdentifier = false;
                 $res->amount = str_replace(',','.',$matches_payment[2]);
                 $res->creditorLogin = $matches_payment[4];
             }elseif($matches_balance){
                 $res->isPaymentRequest = false;
-                $res->isPaymentValidation = false;
+                $res->isOperationValidation = false;
                 $res->isSmsIdentifier = false;
             }elseif($matches_login){//SMS identifier requested
                 $res->isPaymentRequest = false;
-                $res->isPaymentValidation = false;
+                $res->isOperationValidation = false;
                 $res->isSmsIdentifier = true;
             }else{
                 $res->isPaymentRequest = false;
-                $res->isPaymentValidation = true;
+                $res->isOperationValidation = true;
                 $res->isSmsIdentifier = false;
-                $res->cardKey = $matches[1];
+                $res->cardKey = $matches_code[0];
             }
         }
 
@@ -125,8 +129,6 @@ class SmsController extends Controller
         $em = $this->getDoctrine()->getManager();
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $securityService = $this->get('cairn_user.security');
-        $operation = new Operation();
-        $operation->setType(Operation::TYPE_SMS_PAYMENT);
 
         //TODO here : get data from SMS and parse content
 
@@ -192,27 +194,85 @@ class SmsController extends Controller
         }
 
         
-        if(! $parsedSms->isPaymentRequest){
-            if($parsedSms->isPaymentValidation){
-                ;
-            }elseif($parsedSms->isSmsIdentifier){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
-                return;
-            }else{// account balance requested
-                $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
-                $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE COMPTE E-CAIRN : '.$account->status->balance);
+        if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
+            $sms = $this->setUpSmsValidation($em, $debitorUser, $content);
+            $em->persist($sms);
+            $em->flush();
+            return;
+        }elseif($parsedSms->isOperationValidation){
+            $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
+                                                                          'state'=>Sms::STATE_WAITING_KEY));
+
+            if(!$sms){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR : AUCUNE OPERATION A VALIDER');
                 return;
             }
+
+            if($sms->getRequestedAt()->diff(new \Datetime())->i > 4){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'DELAI DE VALIDATION EXPIRE');
+                $em->remove($sms);
+                $em->flush();
+
+                return;
+            }
+            $event = new InputCardKeyEvent($debitorUser,$parsedSms->cardKey,$sms->getCardPosition(), NULL);
+            $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
+
+            $card = $debitorUser->getCard();
+            $nbTries = $debitorUser->getCardKeyTries();
+            $remainingTries = 3 - $nbTries;
+
+            if( ($nbTries  > 0) && ($remainingTries > 0)){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ECHEC CODE CARTE SECURITE : '.$remainingTries.' essais restant(s)');
+                return;
+            }elseif($remainingTries == 0){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ECHEC CODE CARTE SECURITE : Le compte a été bloqué. Veuillez contacter l\'Association');
+                return;
+            }
+
+            //get initial sms request
+            $parsedInitialSms = $this->parseSms($sms->getContent());
+            if($parsedInitialSms->isSmsIdentifier){
+                $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
+            }elseif($parsedInitialSms->isPaymentRequest){
+                //at this stage, as it is a validation action, it means that payment data has already been checked and validated
+                $this->executePayment($debitorUser, $parsedInitialSms, false);    
+            }else{//initial sms was about account balance
+                $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
+                $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE COMPTE E-CAIRN : '.$account->status->balance);
+            }
+          
+            //once pending request has been executed, the corresponding sms can be removed
+            $em->remove($sms);
+            $em->flush();
+            return;
         }
 
-        //4) If payment, find Creditor user
+        //last option : request is a payment to be validated
+        return $this->executePayment($debitorUser,$parsedSms, true);    
+
+    }
+
+
+    //TODO : changer l'état du SMS
+    public function executePayment($debitorUser, $parsedSms, $toValidate)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+        $securityService = $this->get('cairn_user.security');
+
+        $debitorPhoneNumber = $debitorUser->getPhoneNumber();
+
         $creditorUser = $em->getRepository('CairnUserBundle:User')->findOneByUsername($parsedSms->creditorLogin);
-        if(! $creditorUser){
+        if(! $creditorUser){//should not occur if validation has already been done
             $messageNotificator->sendSMS($debitorPhoneNumber,'COMPTE E-CAIRN CREDITEUR INTROUVABLE');
             return;
         }
 
         $creditorPhoneNumber = $creditorUser->getPhoneNumber();
+
+        $operation = new Operation();
+        $operation->setType(Operation::TYPE_SMS_PAYMENT);
 
         $operationAmount = floatval($parsedSms->amount);
 
@@ -221,89 +281,134 @@ class SmsController extends Controller
         $operation->setCreditor($creditorUser);
 
 
-        $validator = $this->get('validator');
-        $listErrors = $validator->validate($operation);
+        if($toValidate){
+            $validator = $this->get('validator');
+            $listErrors = $validator->validate($operation);
 
-        if( count($listErrors) > 0 ){
-            $content = '';
-            foreach($listErrors as $error){
-                $content = $content.$error->getMessage()."\n";
+            if( count($listErrors) > 0 ){
+                $content = '';
+                foreach($listErrors as $error){
+                    $content = $content.$error->getMessage()."\n";
+                }
+                $messageNotificator->sendSMS($debitorPhoneNumber, $content);
+                return;
             }
-            $messageNotificator->sendSMS($debitorPhoneNumber, $content);
-            return;
         }
 
-        $reason = 'Virement '.$this->getParameter('cyclos_currency_cairn').' par SMS';
+        $reason = 'Paiement '.$this->getParameter('cyclos_currency_cairn').' par SMS';
+        $description = 'Paiement effectué le '.$operation->getExecutionDate()->format('d-m-Y').' à destination de '.$creditorUser->getName();
         $operation->setReason($reason);
+        $operation->setDescription($description);
 
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
+
         //make payment on Cyclos-side
         try{
-            $paymentData = $bankingService->getPaymentData($debitorUserVO,$creditorUser->getCyclosID(),NULL);
+            $paymentData = $bankingService->getPaymentData($debitorUser->getCyclosID(),$creditorUser->getCyclosID(),NULL);
             foreach($paymentData->paymentTypes as $paymentType){
                 if(preg_match('#paiement_par_sms#', $paymentType->internalName)){
                     $smsTransferType = $paymentType;
                 }
             }
 
-            //allows to make sure payment would be executed according to provided data
+            //preview allows to make sure payment would be executed according to provided data
             $res = $this->bankingManager->makeSinglePreview($paymentData,$operationAmount,$reason,$smsTransferType,$operation->getExecutionDate());
-            $operation->setFromAccountNumber($res->fromAccount->number);
-            $operation->setToAccountNumber($res->toAccount->number);
-            $operation->setAmount($res->totalAmount->amount);
-
-            if($securityService->paymentNeedsValidation($operation)){
-                $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,'state'=>Sms::STATE_WAITING_KEY));
-                $waiting_op = "\n";
-                if($sms){
-                    $waiting_op = 'OPERATION PRECEDENTE ANNULEE : '.$sms->getContent()."\n";
-                    $em->remove($sms);
+        }catch(\Exception $e){
+            if($e instanceof Cyclos\ServiceException){
+                /*this is the only criteria that should be checked whether payment data have already been checked or not
+                1) imagine an user requests a payment who needs to be validated by key according to our application logic : there is no
+                   trace of this payment in database yet
+                2) then, instead of validating the payment in 1), he requests another payment which does not require validation key.
+                   The payment is proceeded and balance has changed.
+                3) he finally inputs card key code to validate first payment. The amount is greater than the new balance, so exception
+                   is thrown on Cyclos side
+                 */
+                if($e->errorCode == 'INSUFFICIENT_BALANCE'){ 
+                    $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID());
+                    $balance = $account->status->balance; 
+                    $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE INSUFFISANT : actuellement '.$balance);
+                    return;
                 }
+            }
 
-                $card = $debitorUser->getCard();
-                $positions = $securityService->generateCardPositions($card);
-                $str_pos = $positions['cell'] ;
-                $str_index = $positions['index'] ;
+            $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
+            return;
+        }
 
-                $code = $card->getKey($str_index) ;
-                $sms = new Sms($debitorPhoneNumber,$content,Sms::STATE_WAITING_KEY,$code);
-                $messageNotificator->sendSMS($debitorPhoneNumber,$waiting_op.'CONFIRMER CODE CARTE SECURITE '.$str_pos);
+        $operation->setFromAccountNumber($res->fromAccount->number);
+        $operation->setToAccountNumber($res->toAccount->number);
+        $operation->setAmount($res->totalAmount->amount);
 
+        if($toValidate){
+            if($securityService->paymentNeedsValidation($operation)){
+                $sms = $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content);
                 $em->persist($sms);
                 $em->flush();
                 return;
             }
-
-            $paymentVO = $this->bankingManager->makePayment($res->payment);
-            
-        }catch(\Exception $e){
-            if($e instanceof Cyclos\ServiceException){
-                //should never  happen because check in OperationValidator
-                if($e->errorCode == 'INSUFFICIENT_BALANCE'){ 
-                    $balance = $this->get('cairn_user_cyclos_account_info')->getAccountByID($res->from->id)->status->balance; 
-                    $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE INSUFFISANT : actuellement '.$balance);
-                }else{
-                    $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE. Veuillez nous contacter');
-                }
-                return;
-            }else{
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez nous contacter');
-                throw $e;
-            }
-
-            return;
         }
 
-        //synchronize payment ID
-        $operation->setPaymentID($paymentVO->id);
+        $paymentVO = $this->bankingManager->makePayment($res->payment);
 
+        $operation->setPaymentID($paymentVO->id);
         $em->persist($operation);
         $em->flush();
 
-        //notify creditor that payment has been executed successfully
-        $messageNotificator->sendSMS($creditorPhoneNumber,'données du paiement');
-        return;
+        //notify debitor that payment has been executed successfully
+        $messageBase = 'SUCCES DU PAIEMENT !'."\n".'MONTANT : '.$operation->getAmount();
+        $debitorBalance = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID())->status->balance;
+        $messageNotificator->sendSMS($debitorPhoneNumber,$messageBase.' CREDITEUR :'.$creditorUser->getName()."\n".'SOLDE ACTUEL : '.$debitorBalance);
+
+        //to notify creditor with creditor data, we need to connect to Cyclos with his access client
+        try{
+            $networkInfo = $this->get('cairn_user_cyclos_network_info');
+            $networkName = $this->getParameter('cyclos_currency_cairn');
+            $accessClient = $securityService->getSmsClient($creditorUser);
+
+            $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
+            $creditorUserVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+
+            $creditorAccount = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditorUser->getCyclosID());
+            $creditorBalance = $creditorAccount->status->balance;
+            $messageNotificator->sendSMS($creditorPhoneNumber,'SUCCES DU PAIEMENT !'."\n".'SOLDE ACTUEL : '.$creditorBalance);
+    
+            return;
+
+        }catch(\Exception $e){//if for some reason connexion to Cyclos fails, we still inform creditor that payment has been executed
+            $messageNotificator->sendSMS($creditorPhoneNumber,$messageBase.' DEBITEUR :'.$debitorUser->getName()."\n".'SOLDE ACTUEL : indisponible. Veuillez contacter l\'association');
+            return;
+        }
+
     }
 
+
+    public function setUpSmsValidation($em, $user, $content)
+    {
+        $phoneNumber = $user->getPhoneNumber();
+        $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$phoneNumber,
+                                                                          'state'=>Sms::STATE_WAITING_KEY));
+
+        $card = $user->getCard();
+
+        $waiting_op = "\n";
+        //if sms found, we ask for the exact same code position
+        if($sms){
+            $str_index = $sms->getCardPosition();
+            $str_pos = $card->generateCardPositions($str_index)['cell'];
+            $waiting_op = 'OPERATION PRECEDENTE ANNULEE : '.$sms->getContent()."\n";
+            $em->remove($sms);
+        }else{
+            $positions = $card->generateCardPositions();
+            $str_pos = $positions['cell'] ;
+            $str_index = $positions['index'] ;
+        }
+
+
+        $sms = new Sms($phoneNumber,$content,Sms::STATE_WAITING_KEY,$str_index);
+        $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,$waiting_op.'CONFIRMER CODE CARTE SECURITE '.$str_pos);
+
+        return $sms;
+
+    }
 
 }

@@ -34,7 +34,7 @@ class InputCardKeyEvent extends InputSecurityElementEvent
     protected $session;
 
 
-    public function __construct(UserInterface $user, $cardKey, $position, Session $session)
+    public function __construct(UserInterface $user, $cardKey, $position, Session $session = NULL)
     {
         parent::__construct($user);
         $this->cardKey = $cardKey;
