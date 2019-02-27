@@ -150,6 +150,20 @@ class User extends BaseUser
         return NULL;
     }
 
+    static function makeUsername($lastname, $firstname = '' , $extra = '')
+    {
+        $lastname = preg_replace('/[-\/]+/', ' ', $lastname);
+        $ln = explode(' ', $lastname);
+        if (strlen($ln[0]) < 3 && count($ln) > 1)
+            $ln = $ln[0] . $ln[1];
+        else
+            $ln = $ln[0];
+        $username = strtolower(substr(explode(' ', $firstname)[0], 0, 1) . $ln);
+        $username = preg_replace('/[^a-z0-9]/', '', $username);
+        $username .= $extra;
+        return $username;
+    }
+
     static function randomPassword() {
         $alphabet = 'abcdefghijklmnDEFGHIJKLMNOPQRSTUVWXYZ1234567890@_-#';
         $pass = array(); 

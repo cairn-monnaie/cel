@@ -177,11 +177,17 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
+        if (!$user->getUsername()) {
+
+            $username = $this->generateUsername($user);
+            $user->setUsername($username);
+        }
+
         //set cyclos ID here to pass the constraint cyclos_id not null
         $cyclosID = rand(1, 1000000000);
         $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
         while($existingUser){
-            $cyclosID = $cyclosID + 1; 
+            $cyclosID = rand(1, 1000000000);
             $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
         }
         $user->setCyclosID($cyclosID);
@@ -195,5 +201,29 @@ class RegistrationListener
         }
     }
 
+    private function generateUsername(User $user)
+    {
+        if (!$user->getFirstname() || !$user->getLastname()) {
+            return null;
+        }
+        $username = User::makeUsername($user->getLastname(),$user->getFirstname());
+        $em = $this->container->get('doctrine.orm.entity_manager');
+        $qb = $em->createQueryBuilder();
+        $usernames = $qb->select('u')->from('CairnUserBundle:User', 'u')
+            ->where($qb->expr()->like('u.username', $qb->expr()->literal($username . '%')))
+            ->orderBy('u.username', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        if (count($usernames)) {
+            $count = 1;
+            $first = $usernames[0]->getUsername();
+            if(preg_match_all('/\d+/', $first, $numbers)) {
+                $count = end($numbers[0]) + 1;
+            }
+            $username = $username . + $count;
+        }
+        return $username;
+    }
 
 } 
