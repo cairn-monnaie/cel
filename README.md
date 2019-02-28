@@ -105,7 +105,6 @@ Digital Cairn
      As a volume is mounted on the project's root directory, any change on your host machine is automatically replicated in the container. Hence, there is no need to rebuild or restart the engine's container.
 
  * **Update the database schema**  
-    `docker-compose exec engine doctrine:migrations:diff`  
     `docker-compose exec engine doctrine:migrations:migrate`  
 
  * **Logs**  
