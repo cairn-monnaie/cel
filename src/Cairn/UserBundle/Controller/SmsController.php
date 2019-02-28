@@ -47,11 +47,11 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-//        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
 //        $this->smsAction('0612345678','LOGIN');
 //        $this->smsAction('0612345678','PAYER 40 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
-        $this->smsAction('0612345678','1111');
+//        $this->smsAction('0612345678','1111');
 //        $this->smsAction('0612345678','2222');
 
         return new Response('ok');
@@ -62,13 +62,16 @@ class SmsController extends Controller
         //1) content treatment : escape special chars and remove all whitespaces from content
         $content = preg_replace('/\s+/', '',htmlspecialchars($content));
 
-        //2)Regex analysis
+        //2) replace all characters to uppercase chars
+        $content = strtoupper($content);
+
+        //3)Regex analysis
         //TODO : make it more flexible
         //PAYER autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER)(\d+([,\.]\d+)?)([a-zA-Z]{1}\w+)$#',$content,$matches_payment);
+        preg_match('#^(PAYER)(\d+([,\.]\d+)?)([A-Z]{1}\w+)$#',$content,$matches_payment);
         preg_match('#^SOLDE$#',$content,$matches_balance);
         preg_match('#^\d{4}$#',$content, $matches_code);
-         preg_match('#^LOGIN$#',$content, $matches_login);
+        preg_match('#^LOGIN$#',$content, $matches_login);
        
         //3) Prepare error messages
         $res = new \stdClass();
@@ -77,7 +80,7 @@ class SmsController extends Controller
 
         if(! ($matches_payment || $matches_balance || $matches_code || $matches_login)){
             if(! preg_match('#^(PAYER|SOLDE|LOGIN|\d{4})#',$content)){
-                $error = 'Action invalide'."\n".'Envoyer PAYER, SOLDE, LOGIN ou un code à 4 chiffres en cas de validation de paiement';
+                $error = 'Action invalide'."\n".'Envoyer PAYER, SOLDE ou un code à 4 chiffres en cas de validation de paiement';
             }else{
                 if(preg_match('#^PAYER#',$content)){ //is payment request
                     if(! preg_match('#^PAYER\d+([,\.]\d+)?$#',$content)){//invalid amount format
@@ -102,7 +105,7 @@ class SmsController extends Controller
                 $res->isOperationValidation = false;
                 $res->isSmsIdentifier = false;
                 $res->amount = str_replace(',','.',$matches_payment[2]);
-                $res->creditorLogin = $matches_payment[4];
+                $res->creditorIdentifier = $matches_payment[4];
             }elseif($matches_balance){
                 $res->isPaymentRequest = false;
                 $res->isOperationValidation = false;
@@ -157,7 +160,7 @@ class SmsController extends Controller
 
         //2.2)Then, we ensure that sms actions are enabled for this user
         if(! $debitorUser->getSmsData()->isSmsEnabled()){
-             $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISE: rendez-vous sur la plateforme web pour vous y donner accès !');
+             $messageNotificator->sendSMS($debitorPhoneNumber,'OPERATION SMS NON AUTORISÉE!');
              return;
         }
 
@@ -195,6 +198,9 @@ class SmsController extends Controller
 
         
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
+            if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
+               return;
+            }
             $sms = $this->setUpSmsValidation($em, $debitorUser, $content);
             $em->persist($sms);
             $em->flush();
@@ -208,9 +214,9 @@ class SmsController extends Controller
                 return;
             }
 
-            if($sms->getRequestedAt()->diff(new \Datetime())->i > 4){
+            if($sms->getRequestedAt()->diff(new \Datetime())->i > 5){
                 $messageNotificator->sendSMS($debitorPhoneNumber,'DELAI DE VALIDATION EXPIRE');
-                $em->remove($sms);
+                $sms->setState(Sms::STATE_EXPIRED);
                 $em->flush();
 
                 return;
@@ -233,7 +239,10 @@ class SmsController extends Controller
             //get initial sms request
             $parsedInitialSms = $this->parseSms($sms->getContent());
             if($parsedInitialSms->isSmsIdentifier){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
+                if($debitorUser->hasRole('ROLE_PRO')){
+                    $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
+                }
+                return;
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
                 $this->executePayment($debitorUser, $parsedInitialSms, false);    
@@ -263,12 +272,18 @@ class SmsController extends Controller
 
         $debitorPhoneNumber = $debitorUser->getPhoneNumber();
 
-        $creditorUser = $em->getRepository('CairnUserBundle:User')->findOneByUsername($parsedSms->creditorLogin);
-        if(! $creditorUser){//should not occur if validation has already been done
-            $messageNotificator->sendSMS($debitorPhoneNumber,'COMPTE E-CAIRN CREDITEUR INTROUVABLE');
+        $creditorSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
+        if(! $creditorSmsData){//should not occur if validation has already been done
+            $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS INTROUVABLE');
             return;
         }
 
+        $creditorUser = $creditorSmsData->getUser();
+
+        if(! $creditorUser->hasRole('ROLE_PRO')){
+            $messageNotificator->sendSMS($debitorPhoneNumber,'CREDITEUR NON PROFESSIONNEL');
+            return;
+        }
         $creditorPhoneNumber = $creditorUser->getPhoneNumber();
 
         $operation = new Operation();
@@ -340,7 +355,26 @@ class SmsController extends Controller
         $operation->setAmount($res->totalAmount->amount);
 
         if($toValidate){
-            if($securityService->paymentNeedsValidation($operation)){
+            $needsValidation = $securityService->paymentNeedsValidation($operation);
+            $isSuspicious = $securityService->paymentIsSuspicious($operation);
+            if($isSuspicious) {
+                $currency = $this->getParameter('cyclos_currency_cairn');
+
+                $subject = 'Paiement SMS suspicieux';
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:suspicious_sms.html.twig',array(
+                    'operation'=>$operation,'toAdmin'=>false));
+
+                $messageNotificator->sendSMS($debitorPhoneNumber,'PAIEMENT SMS BLOQUE : operation jugée suspicieuse');
+
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:suspicious_sms.html.twig',array(
+                    'operation'=>$operation,'toAdmin'=>true));
+
+                $messageNotificator->notifiyByEmail($subject, $this->getParameter('cairn_email_noreply'),$this->getParameter('cairn_email_management'), $body);
+
+                $creditorUser->getSmsData()->setSmsEnabled(false);
+                $em->flush();
+                return;
+            }elseif($needsValidation){
                 $sms = $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content);
                 $em->persist($sms);
                 $em->flush();

@@ -166,21 +166,21 @@ cairn_user_users_remove_pending:
         _format: html|json
 
 cairn_user_users_smsdata_edit:
-    path:     user/sms-data/edit
+    path:     user/sms-data/edit/{id}
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
-cairn_user_users_sms_enable:
-    path:     user/sms/enable/{id}
-    defaults: { _controller: CairnUserBundle:User:enableSmsPayments, _format: html}
-    requirements:
-        id: \d+
-
-cairn_user_users_sms_disable:
-    path:     user/sms/disable/{id}
-    defaults: { _controller: CairnUserBundle:User:disableSmsPayments, _format: html}
-    requirements:
-        id: \d+
-
+#cairn_user_users_sms_enable:
+#    path:     user/sms/enable/{id}
+#    defaults: { _controller: CairnUserBundle:User:enableSmsPayments, _format: html}
+#    requirements:
+#        id: \d+
+#
+#cairn_user_users_sms_disable:
+#    path:     user/sms/disable/{id}
+#    defaults: { _controller: CairnUserBundle:User:disableSmsPayments, _format: html}
+#    requirements:
+#        id: \d+
+#
 cairn_user_card_home:
     path:     card/home/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Card:cardOperations, _format: html }
@@ -254,12 +254,12 @@ cairn_user_banking_operations:
         type: transaction
         _format: html|json
 
-cairn_user_banking_post:
-    path:     operations/{type}.{_format}
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Default:synchronizeOperation, _format: json }
-    requirements:
-        type: deposit|withdrawal|conversion
+#cairn_user_banking_post:
+#    path:     operations/{type}.{_format}
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Default:synchronizeOperation, _format: json }
+#    requirements:
+#        type: deposit|withdrawal|conversion
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{type}.{_format}
@@ -285,7 +285,7 @@ cairn_user_banking_transaction_request:
 
 
 cairn_user_banking_sms_reception:
-    path:     banking/sms/reception
+    path:     sms/reception
     defaults: { _controller: CairnUserBundle:Sms:smsReception, _format: html}
 
 

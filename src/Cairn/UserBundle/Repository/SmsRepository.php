@@ -2,6 +2,9 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Cairn\UserBundle\Entity\Sms;
+use Doctrine\ORM\QueryBuilder;                                                 
+
 /**
  * SmsRepository
  *
@@ -10,4 +13,21 @@ namespace Cairn\UserBundle\Repository;
  */
 class SmsRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function whereState(QueryBuilder $sb, $state)
+    {
+        $sb->andWhere('s.state = :state')                                           
+            ->setParameter('state',$state);
+        return $this;
+
+    }
+
+    public function whereOlderThan(QueryBuilder $sb, $date)
+    {
+        $sb->andWhere('s.requestedAt < :date')
+            ->setParameter('date',$date);
+        return $this;
+
+    }
+
 }

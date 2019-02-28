@@ -279,9 +279,14 @@ class CardControllerTest extends BaseControllerTest
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
 
-                //assert card
+                //assert no card
                 $this->em->refresh($targetUser);
                 $this->assertEquals($targetUser->getCard(),NULL);
+
+                //assert SMS operations disabled
+                if($smsData = $targetUser->getSmsData()){
+                    $this->assertFalse($smsData->isSmsEnabled());
+                }
 
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
 
@@ -311,12 +316,18 @@ class CardControllerTest extends BaseControllerTest
         return array(
             'revocation from ref'=> array('current'=>$adminUsername,'target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx',
             'emailSent'=>true), 
+
             'self revocation'=> array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx',
             'emailSent'=>false),             
+
+            'self revocation with phone number'=> array('current'=>'maltobar','target'=>'maltobar','expectForm'=>true,
+                                                        'expectMessage'=>'xxx','emailSent'=>false),             
+
             'revoc from non ref'=>array('current'=>$adminUsername,'target'=>'vie_integrative','expectForm'=>false,
-            'expectMessage'=>'pas référent','emailSent'=>false),
+                                        'expectMessage'=>'pas référent','emailSent'=>false),
+
             'no card to revoke'=>array('current'=>'episol','target'=>'episol','expectForm'=>false,
-            'expectMessage'=>'déjà été révoquée','emailSent'=>false),
+                                      'expectMessage'=>'déjà été révoquée','emailSent'=>false),
         );
     }
 
@@ -418,7 +429,6 @@ class CardControllerTest extends BaseControllerTest
 
         return array(
             'number of printable cards exceeded'=> array('nbRequestedCards'=> $nbPrintableCards + 1,'isExceeded'=>true),
-//            'no more printable card'=> array('nbRequestedCards'=>4),
             'correct number of printable cards'=> array('nbRequestedCards'=>$nbPrintableCards - 1,'isExceeded'=>false),
         );
     }       

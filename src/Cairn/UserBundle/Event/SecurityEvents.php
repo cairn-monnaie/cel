@@ -30,10 +30,6 @@ final class SecurityEvents
         'cairn_user_card_generate_set',
         'cairn_user_card_destruct',
         'cairn_user_card_list_available',
-        'cairn_user_banking_withdrawal_request',
-        'cairn_user_banking_deposit_request',
-        'cairn_user_banking_reconversion_request',
-        'cairn_user_banking_conversion_request',
         'fos_user_profile_edit',
         'cairn_user_beneficiaries_add',
         'cairn_user_users_block',
@@ -44,8 +40,8 @@ final class SecurityEvents
         'cairn_user_cyclos_accountsconfig_account_edit',
         'fos_user_change_password',
         'cairn_user_users_smsdata_edit',
-        'cairn_user_users_sms_enable',
-        'cairn_user_users_sms_disable'
+//        'cairn_user_users_sms_enable',
+//        'cairn_user_users_sms_disable'
     ];
 
     /**

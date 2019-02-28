@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * @ORM\Table(name="user_sms_data")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\SmsDataRepository")
  * @UniqueEntity(fields = {"smsClient"},message="Ce client SMS est déjà utilisé") 
+ * @UniqueEntity(fields = {"identifier"},message="Cet identifiant SMS est déjà utilisé") 
  */
 class SmsData
 {
@@ -30,6 +31,13 @@ class SmsData
      * @ORM\Column(name="phoneNumber", type="string", length=15)
      */
     private $phoneNumber;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="identifier", type="string", length=30, nullable=true)
+     */
+    private $identifier;
 
     /**
      * @var bool
@@ -68,7 +76,7 @@ class SmsData
     public function __construct(User $user)
     {
         $this->setUser($user);
-        $this->setSmsEnabled(false);
+        $this->setSmsEnabled(true);
         $this->setDailyNumberPaymentsThreshold(4);
         $this->setDailyAmountThreshold(30);
     }
@@ -105,6 +113,30 @@ class SmsData
     public function getPhoneNumber()
     {
         return $this->phoneNumber;
+    }
+
+    /**
+     * Set identifier.
+     *
+     * @param string $identifier
+     *
+     * @return SmsData
+     */
+    public function setIdentifier($identifier)
+    {
+        $this->identifier = $identifier;
+
+        return $this;
+    }
+
+    /**
+     * Get identifier.
+     *
+     * @return string
+     */
+    public function getIdentifier()
+    {
+        return $this->identifier;
     }
 
     /**

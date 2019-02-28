@@ -139,7 +139,10 @@ class NetworkInfo
         if($internalName == 'global' && $this->environment != 'test'){
             throw new AccessDeniedException('Vous n\'avez pas accès à cette section');
         }
-
+        
+        if($this->environment != 'prod'){
+            $internalName =  $this->environment.$internalName;
+        }
         if($method == 'login'){
             Cyclos\Configuration::setAuthentication($credentials['username'],$credentials['password']); 
         }elseif($method == 'session_token'){

@@ -52,6 +52,7 @@ class Commands
     public function removeAbortedOperations()
     {
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+        $smsRepo = $this->em->getRepository('CairnUserBundle:Sms');
 
         $ob = $operationRepo->createQueryBuilder('o');                 
         $scheduledFailedTransactions = $ob->where('o.paymentID is NULL')                      
@@ -59,6 +60,22 @@ class Commands
 
         foreach($scheduledFailedTransactions as $transaction){
             $this->em->remove($transaction);
+        }
+
+        $sb = $smsRepo->createQueryBuilder('s');                 
+        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
+        $expiredSms = $sb->getQuery()->getResult();
+
+        foreach($expiredSms as $sms){
+            $this->em->remove($sms);
+        }
+
+        $sb = $smsRepo->createQueryBuilder('s');                 
+        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
+        $expiredSms = $sb->getQuery()->getResult();
+
+        foreach($expiredSms as $sms){
+            $this->em->remove($sms);
         }
 
         $this->em->flush();
@@ -314,10 +331,10 @@ class Commands
             $smsClient = $securityService->vigenereEncode($smsClient.$this->container->getParameter('secret'));
             $smsData->setSmsClient($smsClient);
 
-            if(! $smsData->isSmsEnabled()){
-                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
-                $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
-            }
+//            if(! $smsData->isSmsEnabled()){
+//                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
+//                $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
+//            }
 
             $em->persist($smsData);
         }
@@ -393,321 +410,335 @@ class Commands
 
         $users = $userRepo->myFindByRole(array('ROLE_PRO'));
 
-        if(!$users){
-            $credentials = array('username'=>$adminUsername,'password'=>$password);
-            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-
-            // ************************* generate doctrine users **************************************
-            $prosGroupName = $this->container->getParameter('cyclos_group_pros');
-            $personsGroupName = $this->container->getParameter('cyclos_group_persons');
-
-            $adminsGroupName = $this->container->getParameter('cyclos_group_network_admins');
-
-            try{
-                $prosGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($prosGroupName ,'MEMBER_GROUP');
-                $personsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($personsGroupName ,'MEMBER_GROUP');
-                $adminsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminsGroupName ,'ADMIN_GROUP');
-
-                $cyclosPros = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($prosGroup->id,array('DISABLED'));
-                $cyclosPersons = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($personsGroup->id,array('DISABLED'));
-                $cyclosAdmins =  $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminsGroup->id,array('DISABLED'));
-
-                $cyclosMembers = array_merge($cyclosPros, $cyclosPersons,$cyclosAdmins);
-
-            }catch(Cyclos\ServiceException $e){
-                if($e->errorCode == 'LOGIN'){
-                    return 'Wrong username or password provided';
-                }else{
-                    throw $e;
-                }
-            }   
-
-            $admin = $userRepo->findOneByUsername('admin_network');
-
-            //basic user creation : create entity using data from Cyclos + add a card for all users
-            echo 'INFO: ------- Creation of users based on Cyclos data' ."--------- \n";
-
-            foreach($cyclosMembers as $cyclosUser){
-                $this->createUser($cyclosUser,$admin);
-            }
-
-            $this->em->flush();
-            echo 'INFO: OK !' . "\n";
-
-            // ************************* creation of non-associated cards *******************************
-            // there is a max possible number of cards to print. We let 5 possible cards to print
-            
-            $maxCards = $this->container->getParameter('max_printable_cards');
-            $nbPrintedCards = $maxCards - 5;
-            echo 'INFO: -------' . $nbPrintedCards . ' cards to create. Max number of printable cards : '.$maxCards . "--------- \n";
-
-            for($i=0; $i < $nbPrintedCards; $i++){
-                $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-                $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
-                $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
-
-                $this->em->persist($card);
-            }
-            echo 'INFO: OK !' . "\n";
-
-
-            // ************************* payments creation ******************************************
-            // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
-            $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
-            $list = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($this->container->getParameter('cyclos_currency_cairn'),'USER');
-
-            foreach($list as $accountType){
-                if($accountType->internalName == 'compte_d_adherent'){
-                    $adherentAccountTypeVO = $accountType;
-                }
-            }
-
-
-            //instances of TransactionEntryVO
-            $processedDeposits = $bankingService->getTransactions(
-                $admin->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
-
-            foreach($processedDeposits as $transaction){
-                $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
-            }
-
-            //instances of TransactionEntryVO
-            //in init_data.py script, trankilou makes a transaction in order to have a null account balance
-            $user = $userRepo->findOneByUsername('trankilou'); 
-            $processedTransactions1 = $bankingService->getTransactions(
-                $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-            foreach($processedTransactions1 as $transaction){
-                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-            }
-
-            //in init_data.py script, DrDBrew makes transactions
-            $user = $userRepo->findOneByUsername('DrDBrew'); 
-            $processedTransactions2 = $bankingService->getTransactions(
-                $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-
-//            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
-            foreach($processedTransactions2 as $transaction){
-                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-            }
-
-            //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
-            //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
-            //in init_data_test.py script, future transactions are made by labonnepioche
-            $user = $userRepo->findOneByUsername('labonnepioche'); 
-
-//            $credentials = array('username'=>'labonnepioche','password'=>$password);
-//            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-//
-            $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
-
-//            $credentials = array('username'=>'admin_network','password'=>$password);
-//            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-//
-            var_dump(count($futureInstallments));
-            
-            foreach($futureInstallments as $installment){
-                $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
-            }
-
-            //********************** Fine-tune user data in order to have a diversified database ************************
-
-            //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
-            $admin->setFirstLogin(false);
-            $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),
-                             'aaaa',$uniqueCode);
-            $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
-
-            //encode user's card
-            $this->container->get('cairn_user.security')->encodeCard($card);
-            $admin->setCard($card);
-
-            echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";
-
-            //vie_integrative has associated card + admin is not referent
-            $user = $userRepo->findOneByUsername('vie_integrative'); 
-            echo 'INFO: '.$user->getName(). ' has no referent'."\n";
-            $user->removeReferent($admin);
-            echo 'INFO: OK !'."\n";
-
-            //episol has NO card
-            $user = $userRepo->findOneByUsername('episol'); 
-            echo 'INFO: '.$user->getName(). ' has no associated card'."\n";
-            $card  = $user->getCard();
-            $this->em->remove($card);
-            echo 'INFO: OK !'."\n";
-
-            //NaturaVie has NO card and admin not referent
-            $user = $userRepo->findOneByUsername('NaturaVie'); 
-            echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
-            $user->removeReferent($admin);
-            $card  = $user->getCard();
-            $this->em->remove($card);
-            echo 'INFO: OK !'."\n";
-
-            //nico_faus_prod has beneficiary labonnepioche
-            $debitor = $userRepo->findOneByUsername('nico_faus_prod'); 
-            $creditor = $userRepo->findOneByUsername('labonnepioche'); 
-            echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
-
-            $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
-            $ICC = $benef->number;
-            $beneficiary = new Beneficiary();
-            $beneficiary->setICC($ICC);
-            $beneficiary->setUser($creditor);
-            $debitor->addBeneficiary($beneficiary);
-            $beneficiary->addSource($debitor);
-            echo 'INFO: OK !'."\n";
-
-            //le_marque_page has beneficiary labonnepioche
-            $debitor = $userRepo->findOneByUsername('le_marque_page'); 
-            echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
-            $debitor->addBeneficiary($beneficiary);
-            $beneficiary->addSource($debitor);
-            echo 'INFO: OK !'."\n";
-
-            //pain_beauvoir has beneficiary ferme_bressot
-            $debitor = $userRepo->findOneByUsername('pain_beauvoir'); 
-            $creditor = $userRepo->findOneByUsername('ferme_bressot'); 
-            echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
-
-            $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
-            $ICC = $benef->number;
-            $beneficiary = new Beneficiary();
-            $beneficiary->setICC($ICC);
-            $beneficiary->setUser($creditor);
-
-            $debitor->addBeneficiary($beneficiary);
-            $beneficiary->addSource($debitor);
-            echo 'INFO: OK !'."\n";
-
-            //user has requested a removal and has null account balance on Cyclos-side
-            $user = $userRepo->findOneByUsername('Biocoop'); 
-            $user->setRemovalRequest(true);
-
-            //user has requested a removal and has non-null account balance on Cyclos-side
-            $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
-            echo 'INFO: '.$user->getName(). ' has requested to be removed'."\n";
-            $user->setRemovalRequest(true);
-            echo 'INFO: OK !'."\n";
-
-            //user is blocked
-            $user = $userRepo->findOneByUsername('tout_1_fromage'); 
-            echo 'INFO: '.$user->getName(). ' is blocked'."\n";
-            $user->setEnabled(false);
-            echo 'INFO: OK !'."\n";
-
-
-            //users have ROLE_ADMIN as referent
-            $user1 = $userRepo->findOneByUsername('episol'); 
-            $user2 = $userRepo->findOneByUsername('lib_colibri'); 
-
-            $admin1 = $userRepo->findOneByUsername('gl_grenoble'); 
-            $admin2  = $userRepo->findOneByUsername('gl_voiron'); 
-
-            echo 'INFO: '.$admin1->getName(). ' becomes referent of'. $user1->getName()."\n";
-            $user1->addReferent($admin1);
-            echo 'INFO: '.$admin2->getName(). ' becomes referent of'. $user2->getName()."\n";
-            $user2->addReferent($admin2);
-            echo 'INFO: OK !'."\n";
-
-            //setup phone number and sms information for pros and persons
-            $usersWithSmsInfo = array();
-
-            $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
-            $smsData = new SmsData($pro1);
-            $smsData->setSmsEnabled(true);
-            $smsData->setPhoneNumber('0612345678');
-            $pro1->setSmsData($smsData);
-
-
-            $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
-            $smsData = new SmsData($person1);
-            $smsData->setSmsEnabled(true);
-            $smsData->setPhoneNumber('0612345678');
-            $person1->setSmsData($smsData);
-
-            echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
-            echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled sms operations : '."\n";
-            echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
-            echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled sms operations : '."\n";
-            $usersWithSmsInfo[] = $person1;
-            $usersWithSmsInfo[] = $pro1;
-
-            $pro2 = $userRepo->findOneByUsername('maltobar'); 
-            $smsData = new SmsData($pro2);
-            $smsData->setSmsEnabled(true);
-            $smsData->setPhoneNumber('0611223344');
-            $pro2->setSmsData($smsData);
-
-            $person2 = $userRepo->findOneByUsername('benoit_perso'); 
-            $smsData = new SmsData($person2);
-            $smsData->setPhoneNumber('0644332211');
-            $person2->setSmsData($smsData);
-
-            echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
-            echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled sms operations : '."\n";
-            echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
-            echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations : '."\n";
-            echo 'INFO: OK !'."\n";
-            $usersWithSmsInfo[] = $person2;
-            $usersWithSmsInfo[] = $pro2;
-
-            $user = $userRepo->findOneByUsername('crabe_arnold'); 
-            echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
-            $smsData = new SmsData($user);
-            $smsData->setPhoneNumber('0711111111');
-            $user->setNbPhoneNumberRequests(3);
-            $user->setSmsData($smsData);
-
-            echo 'INFO: OK !'."\n";
-            $usersWithSmsInfo[] = $user;
-
-//            $user = $userRepo->findOneByUsername('hirundo_archi'); 
-//            echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
-//            $smsData = new SmsData($user);
-//            $smsData->setPhoneNumber('0722222222');
-//            $user->setNbPhoneNumberRequests(1);
-//            $user->setPhoneNumberActivationTries(2);
-//            $user->setSmsData($smsData);
-
-//            echo 'INFO: OK !'."\n";
-//            $usersWithSmsInfo[] = $user;
-
-            $user = $userRepo->findOneByUsername('DrDBrew'); 
-            echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number and has disabled sms ops'."\n";
-            $smsData = new SmsData($user);
-            $smsData->setPhoneNumber('0733333333');
-            $user->setNbPhoneNumberRequests(1);
-            $user->setPhoneNumberActivationTries(0);
-            $user->setSmsData($smsData);
-
-            echo 'INFO: OK !'."\n";
-            $usersWithSmsInfo[] = $user;
-
-            $user = $userRepo->findOneByUsername('la_mandragore'); 
-            echo 'INFO: '. $user->getName(). ' has phone number and is blocked'."\n";
-            $user->setEnabled(false);
-            $smsData = new SmsData($user);
-            $smsData->setPhoneNumber('0744444444');
-            $user->setNbPhoneNumberRequests(1);
-            $user->setPhoneNumberActivationTries(0);
-            $user->setSmsData($smsData);
-
-            echo 'INFO: OK !'."\n";
-            $usersWithSmsInfo[] = $user;
-
-            echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
-            foreach($usersWithSmsInfo as $user){
-                $this->setUpAccessClient($user, $this->em);
-            }
-            $this->em->flush();
-            echo 'INFO: OK !'."\n";
-
-            return 'Database successfully generated !';
-        }else{
+        if($users){
             return 'The database is not empty ! It can\'t be generated';
         }
+
+        $credentials = array('username'=>$adminUsername,'password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
+        // ************************* generate doctrine users **************************************
+        $prosGroupName = $this->container->getParameter('cyclos_group_pros');
+        $personsGroupName = $this->container->getParameter('cyclos_group_persons');
+
+        $adminsGroupName = $this->container->getParameter('cyclos_group_network_admins');
+
+        try{
+            $prosGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($prosGroupName ,'MEMBER_GROUP');
+            $personsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($personsGroupName ,'MEMBER_GROUP');
+            $adminsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminsGroupName ,'ADMIN_GROUP');
+
+            $cyclosPros = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($prosGroup->id,array('DISABLED'));
+            $cyclosPersons = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($personsGroup->id,array('DISABLED'));
+            $cyclosAdmins =  $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminsGroup->id,array('DISABLED'));
+
+            $cyclosMembers = array_merge($cyclosPros, $cyclosPersons,$cyclosAdmins);
+
+        }catch(Cyclos\ServiceException $e){
+            if($e->errorCode == 'LOGIN'){
+                return 'Wrong username or password provided';
+            }else{
+                throw $e;
+            }
+        }   
+
+        $admin = $userRepo->findOneByUsername('admin_network');
+
+        //basic user creation : create entity using data from Cyclos + add a card for all users
+        echo 'INFO: ------- Creation of users based on Cyclos data' ."--------- \n";
+
+        foreach($cyclosMembers as $cyclosUser){
+            $this->createUser($cyclosUser,$admin);
+        }
+
+        $this->em->flush();
+        echo 'INFO: OK !' . "\n";
+
+        // ************************* creation of non-associated cards *******************************
+        // there is a max possible number of cards to print. We let 5 possible cards to print
+
+        $maxCards = $this->container->getParameter('max_printable_cards');
+        $nbPrintedCards = $maxCards - 5;
+        echo 'INFO: -------' . $nbPrintedCards . ' cards to create. Max number of printable cards : '.$maxCards . "--------- \n";
+
+        for($i=0; $i < $nbPrintedCards; $i++){
+            $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+            $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
+            $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
+
+            $this->em->persist($card);
+        }
+        echo 'INFO: OK !' . "\n";
+
+
+        // ************************* payments creation ******************************************
+        // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+        $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+        $list = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($this->container->getParameter('cyclos_currency_cairn'),'USER');
+
+        foreach($list as $accountType){
+            if($accountType->internalName == 'compte_d_adherent'){
+                $adherentAccountTypeVO = $accountType;
+            }
+        }
+
+
+        //instances of TransactionEntryVO
+        $processedDeposits = $bankingService->getTransactions(
+            $admin->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
+
+        foreach($processedDeposits as $transaction){
+            $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
+        }
+
+        //instances of TransactionEntryVO
+        //in init_data.py script, trankilou makes a transaction in order to have a null account balance
+        $user = $userRepo->findOneByUsername('trankilou'); 
+        $processedTransactions1 = $bankingService->getTransactions(
+            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
+        foreach($processedTransactions1 as $transaction){
+            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+        }
+
+        //in init_data.py script, DrDBrew makes transactions
+        $user = $userRepo->findOneByUsername('DrDBrew'); 
+        $processedTransactions2 = $bankingService->getTransactions(
+            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
+
+        //            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
+        foreach($processedTransactions2 as $transaction){
+            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+        }
+
+        //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
+        //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
+        //in init_data_test.py script, future transactions are made by labonnepioche
+        $user = $userRepo->findOneByUsername('labonnepioche'); 
+
+        //            $credentials = array('username'=>'labonnepioche','password'=>$password);
+        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+        //
+        $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
+
+        //            $credentials = array('username'=>'admin_network','password'=>$password);
+        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+        //
+        var_dump(count($futureInstallments));
+
+        foreach($futureInstallments as $installment){
+            $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+        }
+
+        //********************** Fine-tune user data in order to have a diversified database ************************
+
+        //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
+        $admin->setFirstLogin(false);
+        $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+        $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),
+            'aaaa',$uniqueCode);
+        $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
+
+        //encode user's card
+        $this->container->get('cairn_user.security')->encodeCard($card);
+        $admin->setCard($card);
+
+        echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";
+
+        //vie_integrative has associated card + admin is not referent
+        $user = $userRepo->findOneByUsername('vie_integrative'); 
+        echo 'INFO: '.$user->getName(). ' has no referent'."\n";
+        $user->removeReferent($admin);
+        echo 'INFO: OK !'."\n";
+
+        //episol has NO card
+        $user = $userRepo->findOneByUsername('episol'); 
+        echo 'INFO: '.$user->getName(). ' has no associated card'."\n";
+        $card  = $user->getCard();
+        $this->em->remove($card);
+        echo 'INFO: OK !'."\n";
+
+        //NaturaVie has NO card and admin not referent
+        $user = $userRepo->findOneByUsername('NaturaVie'); 
+        echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
+        $user->removeReferent($admin);
+        $card  = $user->getCard();
+        $this->em->remove($card);
+        echo 'INFO: OK !'."\n";
+
+        //nico_faus_prod has beneficiary labonnepioche
+        $debitor = $userRepo->findOneByUsername('nico_faus_prod'); 
+        $creditor = $userRepo->findOneByUsername('labonnepioche'); 
+        echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
+
+        $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
+        $ICC = $benef->number;
+        $beneficiary = new Beneficiary();
+        $beneficiary->setICC($ICC);
+        $beneficiary->setUser($creditor);
+        $debitor->addBeneficiary($beneficiary);
+        $beneficiary->addSource($debitor);
+        echo 'INFO: OK !'."\n";
+
+        //le_marque_page has beneficiary labonnepioche
+        $debitor = $userRepo->findOneByUsername('le_marque_page'); 
+        echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
+        $debitor->addBeneficiary($beneficiary);
+        $beneficiary->addSource($debitor);
+        echo 'INFO: OK !'."\n";
+
+        //pain_beauvoir has beneficiary ferme_bressot
+        $debitor = $userRepo->findOneByUsername('pain_beauvoir'); 
+        $creditor = $userRepo->findOneByUsername('ferme_bressot'); 
+        echo 'INFO: '.$creditor->getName(). ' is beneficiary of '.$debitor->getName()."\n";
+
+        $benef = $this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($creditor->getCyclosID());
+        $ICC = $benef->number;
+        $beneficiary = new Beneficiary();
+        $beneficiary->setICC($ICC);
+        $beneficiary->setUser($creditor);
+
+        $debitor->addBeneficiary($beneficiary);
+        $beneficiary->addSource($debitor);
+        echo 'INFO: OK !'."\n";
+
+        //user has requested a removal and has null account balance on Cyclos-side
+        $user = $userRepo->findOneByUsername('Biocoop'); 
+        $user->setRemovalRequest(true);
+
+        //user has requested a removal and has non-null account balance on Cyclos-side
+        $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
+        echo 'INFO: '.$user->getName(). ' has requested to be removed'."\n";
+        $user->setRemovalRequest(true);
+        echo 'INFO: OK !'."\n";
+
+        //user is blocked
+        $user = $userRepo->findOneByUsername('tout_1_fromage'); 
+        echo 'INFO: '.$user->getName(). ' is blocked'."\n";
+        $user->setEnabled(false);
+        echo 'INFO: OK !'."\n";
+
+
+        //users have ROLE_ADMIN as referent
+        $user1 = $userRepo->findOneByUsername('episol'); 
+        $user2 = $userRepo->findOneByUsername('lib_colibri'); 
+
+        $admin1 = $userRepo->findOneByUsername('gl_grenoble'); 
+        $admin2  = $userRepo->findOneByUsername('gl_voiron'); 
+
+        echo 'INFO: '.$admin1->getName(). ' becomes referent of'. $user1->getName()."\n";
+        $user1->addReferent($admin1);
+        echo 'INFO: '.$admin2->getName(). ' becomes referent of'. $user2->getName()."\n";
+        $user2->addReferent($admin2);
+        echo 'INFO: OK !'."\n";
+
+        //setup phone number and sms information for pros and persons
+        $usersWithSmsInfo = array();
+
+        $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
+        $smsData = new SmsData($pro1);
+//        $smsData->setSmsEnabled(true);
+        $smsData->setPhoneNumber('0612345678');
+        $smsData->setIdentifier('NICOPROD');
+        $pro1->setSmsData($smsData);
+
+
+        $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
+        $smsData = new SmsData($person1);
+//        $smsData->setSmsEnabled(true);
+        $smsData->setPhoneNumber('0612345678');
+//        $smsData->setIdentifier('NICOPERSO');
+        $person1->setSmsData($smsData);
+
+        echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
+        echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
+        echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled sms operations : '."\n";
+        $usersWithSmsInfo[] = $person1;
+        $usersWithSmsInfo[] = $pro1;
+
+        $pro2 = $userRepo->findOneByUsername('maltobar'); 
+        $smsData = new SmsData($pro2);
+//        $smsData->setSmsEnabled(true);
+        $smsData->setPhoneNumber('0611223344');
+        $smsData->setIdentifier('MALTOBAR');
+        $pro2->setSmsData($smsData);
+
+        $person2 = $userRepo->findOneByUsername('benoit_perso'); 
+        $smsData = new SmsData($person2);
+        $smsData->setPhoneNumber('0644332211');
+
+//        $smsData->setIdentifier('BENOITPERSO');
+        $person2->setSmsData($smsData);
+
+        echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
+        echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations : '."\n";
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $person2;
+        $usersWithSmsInfo[] = $pro2;
+
+        $user = $userRepo->findOneByUsername('crabe_arnold'); 
+        echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
+        $smsData = new SmsData($user);
+        $smsData->setPhoneNumber('0711111111');
+        $smsData->setIdentifier('CRABEARNOLD');
+        $smsData->setSmsEnabled(false);
+        $user->setNbPhoneNumberRequests(3);
+        $user->setSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $user;
+
+        $user = $userRepo->findOneByUsername('hirundo_archi'); 
+        echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
+        $smsData = new SmsData($user);
+        $smsData->setPhoneNumber('0722222222');
+        $smsData->setIdentifier('HIRUNDO');
+        $user->setNbPhoneNumberRequests(1);
+        $user->setPhoneNumberActivationTries(2);
+        $user->setSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $user;
+
+        $user = $userRepo->findOneByUsername('DrDBrew'); 
+        echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number and has disabled sms ops'."\n";
+        $smsData = new SmsData($user);
+        $smsData->setSmsEnabled(false);
+        $smsData->setPhoneNumber('0733333333');
+        $smsData->setIdentifier('DRDBREW');
+        $user->setNbPhoneNumberRequests(1);
+        $user->setPhoneNumberActivationTries(0);
+        $user->setSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $user;
+
+        $user = $userRepo->findOneByUsername('la_mandragore'); 
+        echo 'INFO: '. $user->getName(). ' has phone number and is blocked'."\n";
+        $user->setEnabled(false);
+        $smsData = new SmsData($user);
+
+        $smsData->setPhoneNumber('0744444444');
+        $smsData->setIdentifier('MANDRAGORE');
+        $smsData->setSmsEnabled(false);
+
+        $user->setNbPhoneNumberRequests(1);
+        $user->setPhoneNumberActivationTries(0);
+        $user->setSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $user;
+
+        echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
+        foreach($usersWithSmsInfo as $user){
+            $this->setUpAccessClient($user, $this->em);
+        }
+        $this->em->flush();
+        echo 'INFO: OK !'."\n";
+
+        return 'Database successfully generated !';
 
     }
 }

@@ -78,6 +78,9 @@ services:
             - "@security.encoder_factory" 
             - "@cairn_user_cyclos_useridentification_info"
             - "%secret%" 
+            - "%sms_max_amount_without_security%" 
+            - "%sms_amount_block%" 
+            - "%sms_nb_payments_block%"
 
     cairn_user.operation_listener:
         class: Cairn\UserBundle\EventListener\OperationListener
@@ -164,11 +167,24 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
 
+    cairn_user.smsdata_validator:
+        class: Cairn\UserBundle\Validator\SmsDataValidator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.security"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
+
+
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"
         tags:
             - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType}
+
+    Cairn\UserBundle\Form\SmsDataType:
+        arguments: ['@security.authorization_checker']
+        tags: [form.type]
 
     Cairn\UserBundle\Form\ChangePasswordType:
         arguments: ['@security.password_encoder']

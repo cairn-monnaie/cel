@@ -46,7 +46,13 @@ class Security
 
     protected $secret;
 
-    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret)
+    protected $smsMaxAmountWithoutSecurity;
+
+    protected $smsAmountBlock;
+
+    protected $smsNbPaymentsBlock;
+
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret,$smsMaxAmountWithoutSecurity,$smsAmountBlock,$smsNbPaymentsBlock)
     {
         $this->userRepo = $userRepo;
         $this->operationRepo = $operationRepo;
@@ -55,6 +61,10 @@ class Security
         $this->encoderFactory = $encoderFactory;
         $this->userIdentificationInfo= $userIdentificationInfo;
         $this->secret = $secret;
+        $this->smsMaxAmountWithoutSecurity = $smsMaxAmountWithoutSecurity;
+        $this->smsAmountBlock = $smsAmountBlock;
+        $this->smsNbPaymentsBlock = $smsNbPaymentsBlock;
+
     }
 
     public function getCurrentUser()
@@ -257,7 +267,10 @@ class Security
            return true; 
         }
         
-       //criteria 3 : number of current day payments (lower than threshold ?)
+        //criteria 3 : amount in a single payment
+        if( $operation->getAmount() >= $this->smsMaxAmountWithoutSecurity ){return true;}
+
+       //criteria 4 : number of current day payments (lower than threshold ?)
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
@@ -271,4 +284,27 @@ class Security
         return false;
     }
 
+    /**
+     * Used for SMS payments
+     */
+    public function paymentIsSuspicious(Operation $operation)
+    {
+        if(! $operation->isSmsPayment()){ return false; }
+
+        $debitor = $operation->getDebitor();
+
+        if( $operation->getAmount() >= $this->smsAmountBlock ){return true;}
+
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$debitor)
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+        if(count($operations) >= $this->smsNbPaymentsBlock){ return true; }
+
+        return false;
+
+    }
 }

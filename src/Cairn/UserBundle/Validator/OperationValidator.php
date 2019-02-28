@@ -192,10 +192,10 @@ class OperationValidator extends ConstraintValidator
                 $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
             }
             if(! $debitorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('PAIEMENT SMS NON AUTORISÉ : Rendez-vous sur votre espace membre pour l\'activer');
+                $this->context->addViolation('PAIEMENT SMS NON AUTORISÉ ');
             }
             if(! $creditorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('PAIEMENT NON AUTORISÉ : Le créditeur n\'a pas autorisé le paiement SMS');
+                $this->context->addViolation('OPERATION SMS NON AUTORISÉE POUR '.$creditorUser->getSmsData()->getIdentifier());
             }
             if(count($this->context->getViolations()) == 0){
                 $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());
