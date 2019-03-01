@@ -52,7 +52,7 @@ class RegistrationListener
         $this->userManager->editUser($userDTO);                          
 
         if($this->container->get('cairn_user.api')->isApiCall()){
-            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card','plainPassword'));
+            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
             $response = new Response($serializedUser);
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
@@ -139,7 +139,11 @@ class RegistrationListener
     {
         $request = $event->getRequest();
         $type = $request->query->get('type'); 
-        if(!$type){
+
+        $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
+
+        if(!$currentUser && ($type != 'person') && ($type != 'pro')  ){
+            $request->query->set('type','person'); 
             $type = 'person'; 
         }
 
@@ -160,6 +164,7 @@ class RegistrationListener
             $user->addRole('ROLE_SUPER_ADMIN');
             break;
         default:
+            $request->query->set('type','person'); 
             break;
         }
     }
@@ -187,7 +192,7 @@ class RegistrationListener
         $user->setCyclosID($cyclosID);
 
         if($this->container->get('cairn_user.api')->isApiCall()){
-            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('localGroupReferent','singleReferent','referents','beneficiaries','card','plainPassword'));
+            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
             $response = new Response($serializedUser);
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_CREATED);

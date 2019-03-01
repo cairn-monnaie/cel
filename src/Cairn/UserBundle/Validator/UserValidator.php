@@ -102,7 +102,7 @@ class UserValidator extends ConstraintValidator
             }
         }
 
-        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
+        if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
             $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
                 ->atPath('plainPassword')
                 ->addViolation();
