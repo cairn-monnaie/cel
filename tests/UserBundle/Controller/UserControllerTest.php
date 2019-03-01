@@ -461,6 +461,56 @@ class UserControllerTest extends BaseControllerTest
 
     /**
      *
+     *@dataProvider provideDataForResetPassword 
+     */
+    public function testResetPassword($identifier,$isCorrectUsername, $isLegit, $isEmailSent, $expectedMessage)
+    {
+        $crawler = $this->client->request('GET','resetting/request');
+
+        $this->client->enableProfiler();
+
+        $form = $crawler->selectButton('Réinitialiser le mot de passe')->form();
+        $form['username']->setValue($identifier); //username also means email here
+        $crawler = $this->client->submit($form);
+
+        if($isCorrectUsername){
+            $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$identifier));
+            $this->em->refresh($currentUser);
+
+            // If legit, we just assert content of the email, because this controller action if used from FOS
+            // therefore, it does not need to be tested
+            if($isLegit){
+                ;
+            }else{
+                if($isEmailSent){
+                    $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+                    $this->assertTrue($mailCollector->getMessageCount() == 1);
+                }
+
+                $this->assertFalse($currentUser->isEnabled());
+                $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
+                $crawler = $this->client->followRedirect();
+                $crawler = $this->client->followRedirect();
+
+                $this->assertContains($expectedMessage, $this->client->getResponse()->getContent() );
+            }
+        }else{
+            $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+            $this->assertTrue($mailCollector->getMessageCount() == 0);
+        }
+
+    }
+
+    public function provideDataForResetPassword()
+    {
+        return array(
+            'user is disabled'=>array('tout_1_fromage',true,false,false,'est bloqué'),
+            'user has never log in'=>array('NaturaVie',true,false,true,'Vous ne pouvez pas changer'),
+        );
+    }
+
+    /**
+     *
      *@dataProvider provideReferentsAndTargets
      */
     public function testViewProfile($referent,$target,$isReferent)

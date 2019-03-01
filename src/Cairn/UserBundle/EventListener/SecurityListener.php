@@ -24,6 +24,7 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
+use Cyclos;
 
 /**
  * This class contains called functions when events defined in Event\SecurityEvents are dispatched
@@ -45,13 +46,25 @@ class SecurityListener
         $session = $event->getRequest()->getSession();
         $router = $this->container->get('router');          
 
-        if($user->getLastLogin() == NULL){
-            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car vous ne vous êtes jamais connecté. Attendez une nouvelle validation par un administrateur, un email vous sera envoyé avec votre nouveau mot de passe.');
+        if(! $user){ return;}
+
+        if(! $user->isEnabled()){
+            $session->getFlashBag()->add('error','Ce compte est bloqué. L\'opération ne peut donc être poursuivie.');
+            $logoutUrl = $router->generate('fos_user_security_logout');
+            $event->setResponse(new RedirectResponse($logoutUrl));
+            return;
+        }
+
+        if(!$user->getLastLogin() ){
+            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
             $logoutUrl = $router->generate('fos_user_security_logout');
             $event->setResponse(new RedirectResponse($logoutUrl));
 
-            $user->setEnabled(false);
+            $body = 'Une demande de changement de mot de passe a été effectuée avant même votre première connexion sur votre compte. Pour des raisons de sécurité, votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation . Veuillez contacter l\'Association';
+            $this->container->get('cairn_user.access_platform')->disable(array($user),'Changement de mot de passe',$body);
             $this->container->get('doctrine.orm.entity_manager')->flush();
+
+            return;
         }
     }
 
@@ -67,7 +80,24 @@ class SecurityListener
         $currentPassword = $form->get('current_password')->getData(); 
         $newPassword = $user->getPlainPassword();
 
-        $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
+        try{
+            $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
+        }catch(\Exception $e){
+            if($e instanceof Cyclos\ServiceException){
+                if($e->errorCode == 'VALIDATION'){
+                    for($i = 0; $i < count($e->error->validation->allErrors); $i++){
+                        if(strpos($e->error->validation->allErrors[$i],'only these characters') !== false){
+                            //retourner à la page précédente
+                            $request = $this->container->get('request_stack')->getCurrentRequest();
+                            $request->getSession()->getFlashBag()->add('error','Votre mot de passe contient un caractère non traité');
+                            $event->setResponse(new RedirectResponse($request->getRequestUri()));
+                            return;
+                        }
+                    }
+                }
+            }
+            throw $e;
+        }
         if($user->isFirstLogin()){
             $user->setFirstLogin(false);
         }

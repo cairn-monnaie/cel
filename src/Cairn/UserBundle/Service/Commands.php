@@ -56,10 +56,10 @@ class Commands
         $smsRepo = $this->em->getRepository('CairnUserBundle:Sms');
 
         $ob = $operationRepo->createQueryBuilder('o');                 
-        $scheduledFailedTransactions = $ob->where('o.paymentID is NULL')                      
+        $scheduledAbortedTransactions = $ob->where('o.paymentID is NULL')                      
             ->getQuery()->getResult();
 
-        foreach($scheduledFailedTransactions as $transaction){
+        foreach($scheduledAbortedTransactions as $transaction){
             $this->em->remove($transaction);
         }
 
@@ -311,6 +311,10 @@ class Commands
 
     }
 
+    /**
+     * Here, we setup Cyclos access clients for users with phone number
+     * Then, we create aborted and EXPIRED SMS with these same phone numbers
+     */
     public function setUpAccessClient($user, $em)
     {
         echo 'Setting up access client for '.$user->getName()."\n";
@@ -339,6 +343,12 @@ class Commands
 
             $em->persist($smsData);
         }
+
+        $sms = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_WAITING_KEY,rand(0,25));
+        $sms2 = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
+
+        $sms->setRequestedAt(date_modify( new \Datetime(), '-15 minutes'));
+        $em->persist($sms);
         echo 'INFO: OK !'."\n";
 
         //in the end of the process, admin user will be up, as before, to request cyclos
@@ -347,7 +357,7 @@ class Commands
 
     }
     /**
-     * Here we create an operation and its aborted copy (paymentID is NULL)
+     * Here we create an operation, its aborted copy (paymentID is NULL) 
      */
     public function createOperation($entryVO, $type)
     {
@@ -399,6 +409,7 @@ class Commands
 
         $this->em->persist($operation);
         $this->em->persist($abortedOperation);
+
         echo 'INFO: OK !'. "\n";
 
     }

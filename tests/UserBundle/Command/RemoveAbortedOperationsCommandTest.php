@@ -9,6 +9,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Input\StringInput;
 
+use Cairn\UserBundle\Entity\Sms;
+
 use Cyclos;
 
 class RemoveAbortedOperationsCommandTest extends KernelTestCase
@@ -16,7 +18,9 @@ class RemoveAbortedOperationsCommandTest extends KernelTestCase
 
     /**
      *
-     * Tests that all aborted operations ( <=> PaymentID is NULL) have been removed
+     * Tests that all aborted operations have been removed
+     * If payment is SMS payment, then STATE is WAITING_KEY
+     * If payment is anything else, PaymentID is NULL 
      */
     public function testRemoveAbortedOperationsCommand()
     {
@@ -26,6 +30,7 @@ class RemoveAbortedOperationsCommandTest extends KernelTestCase
         $container = $kernel->getContainer();
         $em = $container->get('doctrine.orm.entity_manager');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+        $smsRepo = $em->getRepository('CairnUserBundle:Sms');
 
         $application = new Application($kernel);
         $application->add(new RemoveAbortedOperationsCommand());
@@ -47,6 +52,12 @@ class RemoveAbortedOperationsCommandTest extends KernelTestCase
         //assert the database content AFTER command execution
         $abortedOperations = $operationRepo->findBy(array('paymentID'=>NULL));
         $this->assertTrue(count($abortedOperations) == 0);
+
+        $abortedSms = $smsRepo->findByState(Sms::STATE_WAITING_KEY);
+        $this->assertTrue(count($abortedSms) == 0);
+
+        $expiredSms = $smsRepo->findByState(Sms::STATE_EXPIRED);
+        $this->assertTrue(count($abortedSms) == 0);
 
     }
 
