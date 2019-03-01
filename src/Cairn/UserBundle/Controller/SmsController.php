@@ -26,7 +26,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 
 /**
- * This class contains actions that need no role at all. Mostly, those can be done before login as anonymous user. 
+ * This class contains actions related to sms payments 
  */
 class SmsController extends Controller
 {
@@ -48,9 +48,9 @@ class SmsController extends Controller
     public function smsReceptionAction(Request $request)
     {
 //
-        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+//        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
 //        $this->smsAction('0612345678','LOGIN');
-//        $this->smsAction('0612345678','PAYER 1500 maltobar');
+        $this->smsAction('0612345678','PAYER 1 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
 //        $this->smsAction('0612345678','1111');
 //        $this->smsAction('0612345678','2222');
@@ -147,7 +147,9 @@ class SmsController extends Controller
             $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PERSON')) ? $debitorUsers[0] : $debitorUsers[1];
         }elseif($isUniquePhoneNumber){
             $debitorUser = $debitorUsers[0];
-        }       
+        }else{
+            return;
+        }      
 
         //2.1)Then, we ensure that user is active, and then sms actions are enabled for this user
         if(! $debitorUser->isEnabled()){

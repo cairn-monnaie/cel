@@ -40,8 +40,6 @@ final class SecurityEvents
         'cairn_user_cyclos_accountsconfig_account_edit',
         'fos_user_change_password',
         'cairn_user_users_smsdata_edit',
-//        'cairn_user_users_sms_enable',
-//        'cairn_user_users_sms_disable'
     ];
 
     /**
