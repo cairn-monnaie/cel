@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\Sms;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -683,7 +684,6 @@ class Commands
         $smsData = new SmsData($user);
         $smsData->setPhoneNumber('0711111111');
         $smsData->setIdentifier('CRABEARNOLD');
-        $smsData->setSmsEnabled(false);
         $user->setNbPhoneNumberRequests(3);
         $user->setSmsData($smsData);
 
@@ -730,6 +730,17 @@ class Commands
 
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
+
+        $user = $userRepo->findOneByUsername('comblant_michel'); 
+        echo 'INFO: '. $user->getName(). ' has an unexisting access client'."\n";
+        $smsData = new SmsData($user);
+
+        $smsData->setPhoneNumber('0788888888');
+        $smsData->setSmsClient('dlncnlcdlkkncsjdj');
+
+        $user->setNbPhoneNumberRequests(1);
+        $user->setPhoneNumberActivationTries(0);
+        $user->setSmsData($smsData);
 
         echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
         foreach($usersWithSmsInfo as $user){

@@ -47,20 +47,20 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideDataForSmsParsing()
     {
         return array(
-            'invalid format : no action'=>array('12.5 SHOP', false, true, 'Action invalide'),
+            'invalid format : no action'=>array('12.5 SHOP', false, true, 'Envoyer PAYER, SOLDE'),
             'invalid format : no amount'=>array('PAYER SHOP',false,true,'Format du montant'),
             'invalid format : negative amount'=>array('PAYER -12.5 SHOP',false,true,'Format du montant'),
             'invalid format : no identifier'=>array('PAYER 12.5',false,true,'IDENTIFIANT INCONNU'),
-            'invalid format : action SOLDE'=>array('SOLD',false,false,'Action invalide'),
+            'invalid format : action SOLDE'=>array('SOLD',false,false,'Envoyer PAYER, SOLDE'),
             'invalid format : action SOLDE + texte'=>array('SOLDE OUT!',false,false,'Demande de solde invalide'),
-            'invalid format : code with some letter'=>array('12e74',false,false,'Action invalide'),
+            'invalid format : code with some letter'=>array('12e74',false,false,'Envoyer PAYER, SOLDE'),
             'invalid format : code with two many figures'=>array('123456',false,false, '4 chiffres'),
-            'invalid format : code with not enough figures'=>array('123',false,false,'Action invalide'),
+            'invalid format : code with not enough figures'=>array('123',false,false,'Envoyer PAYER, SOLDE'),
             'valid format : uppercase'=>array('PAYER 12.5 SHOP',true,true,''),
             'valid format : lowercase'=>array('payer 12.5 shop',true,true,''),
             'valid format : mix upper/lowercase'=>array('PaYer 12.5 SHoP',true,true,''),
-            'invalid format : action PAYER 2'=>array('PAYE 12.5 SHOP',false,true,'Action invalide'),
-            'invalid format : action PAYER 3'=>array('PAY 12.5 SHOP',false,true,'Action invalide'),
+            'invalid format : action PAYER 2'=>array('PAYE 12.5 SHOP',false,true,'Envoyer PAYER, SOLDE'),
+            'invalid format : action PAYER 3'=>array('PAY 12.5 SHOP',false,true,'Envoyer PAYER, SOLDE'),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
             'invalid format : float amount with 0 decimals'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
@@ -85,10 +85,11 @@ class DefaultControllerTest extends BaseControllerTest
     }
 
      /**
+     * nbEmails does not count for the code if needed. It is only the "conclusion" mails && texts
      *
      *@dataProvider provideDataForSmsOperation
      */
-    public function testSmsOperation($phoneNumber, $content, $needsCode, $code, $isValidCode,$expectMessages)
+    public function testSmsOperation($phoneNumber, $content, $needsCode, $code, $isValidCode,$expectMessages,$nbEmails = 1)
     {
         $client = static::createClient();
         $client->enableProfiler();
@@ -98,28 +99,46 @@ class DefaultControllerTest extends BaseControllerTest
         if($expectMessages){
             //TODO : replace email by sms
             $mailCollector = $client->getProfile()->getCollector('swiftmailer');
-            $this->assertSame(1, $mailCollector->getMessageCount());
-            $message = $mailCollector->getMessages()[0];
-            $this->assertInstanceOf('Swift_Message', $message);
-            $this->assertContains($expectMessages[0], $message->getBody());
-            $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
 
-            if($needsCode){
+            if(! $needsCode){
+                $this->assertEquals($nbEmails, $mailCollector->getMessageCount());
+                $body = '';
+
+                //we gather all the emails content in one
+                for($i=0; $i < $nbEmails; $i++){
+                    $message = $mailCollector->getMessages()[$i]->getBody();
+                    $body .= $message;
+                }
+
+                //then we assert that each expected message is contained in at least one of the emails
+                for($i=0; $i < $nbEmails; $i++){
+                    $this->assertContains($expectMessages[$i], $body);
+                }
+
+            }else{
+                $this->assertEquals(1, $mailCollector->getMessageCount());
+                $this->assertContains($expectMessages[0], $mailCollector->getMessages()[0]->getBody());
                 $client->enableProfiler();
                 $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$code);
 
                 if($isValidCode){
                     $mailCollector = $client->getProfile()->getCollector('swiftmailer');
-                    $this->assertSame(1, $mailCollector->getMessageCount());
-                    $message = $mailCollector->getMessages()[0];
-                    $this->assertInstanceOf('Swift_Message', $message);
-                    $this->assertContains($expectMessages[1], $message->getBody());
-                }else{
-                    $mailCollector = $client->getProfile()->getCollector('swiftmailer');
-                    $this->assertSame(1, $mailCollector->getMessageCount());
-                    $message = $mailCollector->getMessages()[0];
-                    $this->assertInstanceOf('Swift_Message', $message);
-                    $this->assertContains($expectMessages[1], $message->getBody());
+
+                    $this->assertTrue( $nbEmails == $mailCollector->getMessageCount());
+
+                    $body = '';
+                    //we gather all the emails content in one
+                    for($i=0; $i < $nbEmails; $i++){
+                        $message = $mailCollector->getMessages()[$i]->getBody();
+                        $body .= $message;
+                    }
+    
+                    //then we assert that each expected message is contained in at least one of the emails
+                    //First expected message is for code, so we start from one
+                    for($i=1; $i < $nbEmails+1; $i++){
+                        $this->assertContains($expectMessages[$i], $body);
+                    }
+
                 }
             }
             //committing modifications
@@ -132,48 +151,61 @@ class DefaultControllerTest extends BaseControllerTest
 
     }
   
+    /**
+     * nbEmails does not count for the code if needed. It is only the "conclusion" mails && texts
+     */
     public function provideDataForSmsOperation()
     {
-        $wrongCodeMsg = 'ECHEC CODE';
-        $validPaymentMsg = 'données du paiement';
+        $askCodeMsg = 'code de sécurité';
+        $wrongCodeMsg = 'ÉCHEC CODE';
+        $validDebMsg = 'été accepté';
+        $validCredMsg = 'avez reçu';
+
         return array(
-            'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,array('COMPTE E-CAIRN INTROUVABLE')),
-            'balance : not active'=>array('0744444444','SOLDE',false,'1111',true,array('inactif')),
+            'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,NULL),
+            'balance : not active'=>array('0744444444','SOLDE',false,'1111',true,array('actuellement bloqué')),
             'balance : valid code + sms for pro & person'=>array('0612345678','SOLDE',true,'1111',true,
-                                                                    array('CONFIRMER CODE','SOLDE COMPTE E-CAIRN')),
+                                                                    array($askCodeMsg,'Votre solde compte')),
 
             'balance : invalid code + sms for pro & person'=>array('0612345678','SOLDE',true,'2222',false,
-                                                                    array('CONFIRMER CODE',$wrongCodeMsg)),
+                                                                    array($askCodeMsg,$wrongCodeMsg)),
 
             'login : no pro'=>array('0612345678','LOGIN',false,'1111',true,NULL),
-            'login : pro + valid code '=>array('0611223344','LOGIN',true,'1111',true,array('CONFIRMER CODE','IDENTIFIANT SMS E-CAIRN')),
-            'login : pro + wrong code '=>array('0611223344','LOGIN',true,'2222',false,array('CONFIRMER CODE',$wrongCodeMsg)),
+            'login : pro + valid code '=>array('0611223344','LOGIN',true,'1111',true,array($askCodeMsg,'IDENTIFIANT SMS E-CAIRN')),
+            'login : pro + wrong code '=>array('0611223344','LOGIN',true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
 
             'balance : invalid sms'=>array('0612345678','SOLD',false,'1111',true,array('SMS INVALIDE')),
             'balance : invalid sms'=>array('0612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
             'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA',false,'1111',true,
-                                                                array('IDENTIFIANT SMS INTROUVABLE')),
+                                                                array('professionnel incorrect')),
             'payment mistake : person to person with ID SMS'=>array('0612345678','PAYER10CRABEARNOLD',false,'1111',true,
-                                                                array('CREDITEUR NON PRO')),
+                                                                array('non professionnel')),
 
             'payment : balance error'=>array('0612345678','PAYER1000000MALTOBAR',false,'1111',true,
                                                                 array('SOLDE INSUFFISANT')),
-            'payment : creditor inactive'=>array('0612345678','PAYER100MANDRAGORE',false,'1111',true,array('CREDITEUR INACTIF')),
-            'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('NON AUTORISÉ')),
-            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('NON AUTORISÉ')),
+            'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées par')),
+            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('actuellement bloquées')),
+            'payment : debitor is disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('actuellement bloqué')),
 
             'payment : creditor=debitor'=>array('0611223344','PAYER100MALTOBAR',false,'1111',true,
                                                         array('DEBITEUR ET CREDITEUR IDENTIQUES')),
 
-            'payment : too low amount'=>array('0612345678','PAYER0.001MALTOBAR',false,'1111',true,array('MONTANT TROP FAIBLE')),
-            'payment : valid, no code'=>array('0612345678','PAYER15MALTOBAR',false,'1111',true,array($validPaymentMsg)),
-            'payment : pro to pro,valid, no code'=>array('0611223344','PAYER15NICOPROD',false,'1111',true,array($validPaymentMsg)),
-            'payment : valid + code'=>array('0612345678','PAYER100MALTOBAR',true,'1111',true,array('CONFIRMER CODE',$validPaymentMsg)),
-            'payment : person to pro,valid, no code'=>array('0612345678','PAYER12.522maltobar',false,'1111',true,array($validPaymentMsg)),
-          'payment : valid, no code'=>array('0612345678','PAYER12.5220000maltobar',false,'1111',true,array($validPaymentMsg)),
+            'payment : too low amount'=>array('0612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
+            'payment : valid, no code'=>array('0612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : pro to pro,valid, no code'=>array('0611223344','PAYER15NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+          'payment : valid + code'=>array('0612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
+            'payment : person to pro,valid, no code'=>array('0612345678','PAYER12.522maltobar',false,'1111',true,
+                                                                    array($validDebMsg,$validCredMsg),2),
+          'payment : valid,no code'=>array('0612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : invalid sms'=>array('0612345678','PAYER12.maltobar',false,'1111',true,array('SMS INVALIDE')),
             'payment : invalid sms'=>array('0612345678','PAYERSHOP',false,'1111',true,array('Format du montant')),
-            'payment : valid sms'=>array('0612345678','PAYER00012maltobar',false,'1111',true,array($validPaymentMsg)),
+          'payment : valid sms'=>array('0612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+
+            'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,array('ERREUR TECHNIQUE')),
+            'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,array('rien à valider')),
+
+            'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('PAIEMENT SMS BLOQUE','tentative de paiement','tentative de paiement'),3),
+
         );
     }
 
@@ -193,6 +225,9 @@ class DefaultControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/inscription?type='.$type);
         if(!$expectValid){
+            if($this->client->getResponse()->isRedirect()){
+                $this->client->followRedirect();
+            }
             $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
             $this->assertTrue($this->client->getResponse()->isRedirect('/register/informations/?type='.$type));
@@ -220,7 +255,7 @@ class DefaultControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideRegistrationUsers
      */
-    public function testRegistration($type,$email,$name, $street1,$zipCode,$description, $emailConfirmed)
+    public function testRegistrationAction($type,$email,$name, $street1,$zipCode,$description, $emailConfirmed)
     {
         $adminUsername = $this->testAdmin;
 
@@ -271,7 +306,6 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
             $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
-            $this->assertSame(1, $crawler->filter('div.alert-success')->count());    
         }
 
         $this->em->refresh($newUser);
@@ -288,9 +322,9 @@ class DefaultControllerTest extends BaseControllerTest
     {
         return array(
 //            array('localGroup','gl_grenoble@cairn-monnaie.com','Groupe Local Grenoble','7 rue Très Cloîtres','38000','Groupe Local de Grenoble',true),
-//            array('localGroup','gl_voiron@cairn-monnaie.com','Groupe Local Voiron','12 rue Mainssieux','38500','Groupe Local de Voiron',true),
-            array('pro','lib_harry_morgan@test.com','Librairie Harry Morgan','10 rue Millet','38000','Librairie',false),
-            array('person','john_doe@test.com','John Doe','15 rue du test','38000','Je suis cairnivore',false),
+            array('localGroup','gl_paladru@cairn-monnaie.com','Groupe Local Paladru','1 rue du Test','1','Groupe Local du Paladru',true),
+            array('pro','lib_harry_morgan@test.com','Librairie Harry Morgan','10 rue Millet','1','Librairie',false),
+            array('person','john_doe@test.com','John Doe','15 rue du test','1','Je suis cairnivore',false),
         );
     }
 
@@ -348,9 +382,6 @@ class DefaultControllerTest extends BaseControllerTest
             'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
             'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
             //            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
-            'too short username'                                      => array_replace($baseData, array('username'=>'test')),
-            'too long username'                                       => array_replace($baseData, array('username'=>'testTooLongUsername')),
-            'username with special character'                         => array_replace($baseData, array('username'=>'test@')),
             //            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
             'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
             'too short password'                                      => array_replace($baseData, array('plainPassword'=>'@bcdefg')),

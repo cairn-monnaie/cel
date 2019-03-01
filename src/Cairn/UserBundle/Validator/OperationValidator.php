@@ -139,7 +139,7 @@ class OperationValidator extends ConstraintValidator
         //************ Common validation, independent of operation type ************//
         if($operation->getAmount() < 0.01){
             if($operation->isSmsPayment()){
-                $message = 'MONTANT TROP FAIBLE';
+                $message = 'Montant indiqué trop faible';
                 $this->context->addViolation($message);
             }else{
                 $this->context->buildViolation('Montant trop faible : doit être supérieur à 0.01')
@@ -180,22 +180,16 @@ class OperationValidator extends ConstraintValidator
             $creditorUser = $operation->getCreditor();
 
             if(! $debitorUser->isEnabled()){
-                $message = 'COMPTE E-CAIRN INACTIF';
-                $this->context->addViolation($message);
-            }
-            if(! $creditorUser->isEnabled()){
-                $message = 'COMPTE E-CAIRN DU CREDITEUR INACTIF';
+                $message = 'Votre compte [e]-Cairn est inactif';
                 $this->context->addViolation($message);
             }
 
             if($debitorUser === $creditorUser){
                 $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
             }
-            if(! $debitorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('PAIEMENT SMS NON AUTORISÉ ');
-            }
+
             if(! $creditorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('OPERATION SMS NON AUTORISÉE POUR '.$creditorUser->getSmsData()->getIdentifier());
+                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées par '.$creditorUser->getSmsData()->getIdentifier());
             }
             if(count($this->context->getViolations()) == 0){
                 $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());
