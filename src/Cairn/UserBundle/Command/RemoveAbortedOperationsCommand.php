@@ -26,6 +26,6 @@ class RemoveAbortedOperationsCommand extends ContainerAwareCommand
     {
         $commandsService = $this->getContainer()->get('cairn_user.commands');
         $commandsService->removeAbortedOperations();
-        $output->writeln('The status of operations has been updated successfully !');
+        $output->writeln('Transaction operations and expired SMS have been updated successfully !');
     }
 }
