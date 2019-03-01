@@ -58,9 +58,9 @@ class BankingControllerTest extends BaseControllerTest
             if($frequency == 'unique'){
                 $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
                 $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
-                $form['cairn_userbundle_simpleoperation[fromAccount][accountNumber]']->setValue($debitorICC);
+                $form['cairn_userbundle_simpleoperation[fromAccount][number]']->setValue($debitorICC);
                 $form['cairn_userbundle_simpleoperation[toAccount][email]']->setValue($email);
-                $form['cairn_userbundle_simpleoperation[toAccount][accountNumber]']->setValue($ICC);
+                $form['cairn_userbundle_simpleoperation[toAccount][number]']->setValue($ICC);
                 $form['cairn_userbundle_simpleoperation[reason]']->setValue('Test virement simple');
                 $form['cairn_userbundle_simpleoperation[description]']->setValue('Test virement simple');
                 $form['cairn_userbundle_simpleoperation[executionDate][day]']->select($day);
@@ -179,25 +179,25 @@ class BankingControllerTest extends BaseControllerTest
         $debitorICC = $debitorAccount->number;
 
         $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
-            'fromAccount'=> array('accountNumber'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
-            'toAccount'=> array('accountNumber'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
+            'fromAccount'=> array('number'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
+            'toAccount'=> array('number'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
             'firstDate'=> new \Datetime(),'lastDate'=>date_modify(new \Datetime(),'+1 months') ,'periodicity'=>'1', 'isValid'=>true );
 
         return array(
             'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
             'undersize amount'=>array_replace($baseData,array('amount'=>'0.0099','isValid'=>false)),
-            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('accountNumber'=>$debitorICC + 1),
+            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('number'=>$debitorICC + 1),
                                                                                               'isValid'=>false)),
-            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>$creditorICC + 1),
+            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>$creditorICC + 1),
                                                                                              'isValid'=>false)),
-            'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>'',
+            'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>'',
                                                                             'email'=>'test@test.com'),'isValid'=>false)),
-            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>'','email'=>''),
+            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>'','email'=>''),
                                                                         'isValid'=>false)),
-            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('accountNumber'=>''))),
-            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('accountNumber'=>''),'isValid'=>false)),
+            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>''))),
+            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('number'=>''),'isValid'=>false)),
             'identical accounts'=>array_replace($baseData,array(
-                'toAccount'=>array('accountNumber'=>$debitorAccount->number,'email'=>$debitorUser->getEmail()),
+                'toAccount'=>array('number'=>$debitorAccount->number,'email'=>$debitorUser->getEmail()),
                 'isValid'=>false)),
             'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
             'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
@@ -342,9 +342,6 @@ class BankingControllerTest extends BaseControllerTest
         return array(
             'pro'=>$baseData,
             'person'=>array_replace($baseData,array('downloader'=>'cretine_agnes')),
-//            'admin'=>array_replace($baseData,array('downloader'=>'glGrenoble','isLegit'=>false)),
-//            'super_admin pdf'=>array_replace($baseData,array('downloader'=>$adminUsername,'isLegit'=>true,'format'=>'pdf')),
-//            'super_admin csv'=>array_replace($baseData,array('downloader'=>$adminUsername,'isLegit'=>true,'format'=>'csv')),
             'today=before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year)),
             'today<before'=>array_replace($baseData,array('isValid'=>false,'pastDay'=>$day,'pastMonth'=>$month,'pastYear'=>$year,
                                                           'endDay'=>$pastDay,'endMonth'=>$pastMonth,'endYear'=>$pastYear)),

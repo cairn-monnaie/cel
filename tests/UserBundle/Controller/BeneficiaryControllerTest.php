@@ -71,14 +71,29 @@ class BeneficiaryControllerTest extends BaseControllerTest
     public function provideBeneficiariesToAdd()
     {
         return array(
-            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.fr','changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
-            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.fr','changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
-            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr','changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
-            'valid benef'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr','changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
-            'pro adds person'=>array('current'=>'labonnepioche','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'person adds person'=>array('current'=>'cretine_agnes','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
-            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr','changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.fr',
+                                       'changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
+
+            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.fr',
+                                     'changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
+
+            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
+                                   'changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
+
+            'pro adds pro'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
+                                 'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+
+            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr',
+                                   'changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+
+            'pro adds person'=>array('current'=>'labonnepioche','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
+                                     'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+
+            'person adds person'=>array('current'=>'cretine_agnes','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
+                                        'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+
+            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr',
+                                     'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
 
         );
     }

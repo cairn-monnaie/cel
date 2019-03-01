@@ -238,13 +238,19 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or limit amount of sms payments without validation
      */
-    public function editSmsDataAction(Request $request)
+    public function editSmsDataAction(Request $request, User $user)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
-        $user = $this->getUser();
+        $currentUser = $this->getUser();
+
+        $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN');
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($user);
+
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
 
         if(! ($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')) ){
             throw new AccessDeniedException('Réserver aux comptes adhérents');
@@ -255,8 +261,25 @@ class UserController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
+        if( $user->getSmsData() && !$user->getSmsData()->isSmsEnabled()){
+            $session->getFlashBag()->add('error','Les SMS ont été bloqués pour votre compte. Cette action vous est inaccessible !');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
         $smsData = ($res = $user->getSmsData()) ? $res : new SmsData($user);
         $previousPhoneNumber = $smsData->getPhoneNumber();
+
+        //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
+        if( $user->hasRole('ROLE_PRO') && $isAdmin && !$user->getSmsData() ){
+            $session->getFlashBag()->add('info','Ce professionnel n\'a jamais saisi ses coordonnées SMS');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
+        if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
+            $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
+        }
+
 
         $formSmsData = $this->createForm(SmsDataType::class, $smsData);
         $formCode = $this->createFormBuilder()
@@ -268,9 +291,13 @@ class UserController extends Controller
         if($formSmsData->isSubmitted() && $formSmsData->isValid()){
 
             if($previousPhoneNumber != $smsData->getPhoneNumber()){ //request is new phone number
-                if($user->getNbPhoneNumberRequests() >= 3){
+                if($user !== $currentUser ){
+                    throw new AccessDeniedException('Action réservée à '.$user->getName());
+                }
+
+                if($currentUser->getNbPhoneNumberRequests() >= 3){
                     $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
                 }
 
                 //give a new code to be validated
@@ -280,10 +307,10 @@ class UserController extends Controller
                     $code = rand(1000,9999);
                 }
     
-                $session_code = $encoder->encodePassword($code,$user->getSalt());
+                $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
                 $session->set('activationCode', $session_code);
     
-                $user->setNbPhoneNumberRequests($user->getNbPhoneNumberRequests() + 1);
+                $currentUser->setNbPhoneNumberRequests($currentUser->getNbPhoneNumberRequests() + 1);
     
 
                 //at this step, flush is impossible because entitymanager would consider $smsData object as a brand new object
@@ -308,7 +335,7 @@ class UserController extends Controller
                 $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber,'Code de validation : '. $code);
                 $em->flush();
 
-               $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
+                $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
                 if($existSmsData){
                     $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des paiements par SMS');
                 }
@@ -318,7 +345,7 @@ class UserController extends Controller
                     array('formSmsData'=>$formSmsData->createView(),
                           'formCode'=>$formCode->createView()));
     
-            }else{//just change security values. Means that phoneNumber was already associated and $smsData is not new
+            }else{//just change ID SMS Means that phoneNumber was already associated and $smsData is not new
                 $em->flush();
                 $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
                 return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
@@ -367,9 +394,17 @@ class UserController extends Controller
                     $smsData->setSmsClient($smsClient);
 
                     //by default, access client is blocked and must be unblocked while enabling sms operations
-                    $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
+//                    $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
                 }
 
+                 //if user had a phone number before, we check if there was a pro & personal number associated
+                 //if so, we warn the user that, right now, SMS payment is possible for pro
+                if($hasPreviousPhoneNumber){
+                    $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
+                    if(count($existingUsers) == 2){
+                        $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des paiements par SMS');
+                    }
+                }
                 $em->persist($user);
                 $smsData->setUser($user);
                 $user->setSmsData($smsData);
@@ -851,7 +886,13 @@ class UserController extends Controller
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
                         $isRemoved = $this->removeUser($user, $currentUser);
-                        $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
+
+                        if($isRemoved){
+                            $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
+                        }else{
+                            $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
+                            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                        }
                     }else{//is ROLE_PRO or ROLE_PERSON
                         $user->setRemovalRequest(true);
                         $this->get('cairn_user.access_platform')->disable(array($user));
@@ -859,6 +900,7 @@ class UserController extends Controller
                         $redirection = 'fos_user_security_logout';
                         $session->getFlashBag()->add('success','Votre demande de suppression d\'espace membre a été prise en compte');
                     }
+
                     $em->flush();
 
                     return $this->redirectToRoute($redirection);
@@ -894,6 +936,7 @@ class UserController extends Controller
         $referents = $user->getReferents();
 
         $saveName = $user->getName();
+        $isPro = $user->hasRole('ROLE_PRO');
 
         $params = new \stdClass();
         $params->status = 'REMOVED';
@@ -926,29 +969,32 @@ class UserController extends Controller
             $subject = 'Ce n\'est qu\'un au revoir !';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $emailTo;
-            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('currentUser'=>$currentUser,'user'=>$user));
 
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-            $subject = 'Un professionnel a été supprimé de la plateforme';
-            $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
-            foreach($referents as $referent){
-                $to = $referent->getEmail();
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+            if($isPro){
+                $subject = 'Un professionnel a été supprimé de la plateforme';
+                $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
+                foreach($referents as $referent){
+                    $to = $referent->getEmail();
+                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                }
             }
 
             return true;
 
-        }catch(Cyclos\ServiceException $e){
-            if($e->errorCode == 'VALIDATION'){
-                $subject = 'Demande de suppression annulée';
-                $from = $messageNotificator->getNoReplyEmail();
-                $to = $user->getEmail();
-                $body = 'Vous avez demandé à supprimer votre espace membre, mais certains de vos comptes ont un solde non nul. Elle n\'a donc pas pu être validée. Veuillez solder vos comptes.';
+        }catch(\Exception $e){
 
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                return false;
+            if( ($e instanceof Cyclos\ServiceException) && ($e->errorCode == 'VALIDATION')){
 
+                $errors = $exception->error->validation->allErrors;
+                for($i = 0; $i < count($errors); $i++){
+                    if( strpos( $errors[$i], 'has a non-zero balance') !== false ){
+                        return false;
+                    }
+                }
+                throw $e;
             }else{
                 throw $e;
             }
@@ -995,6 +1041,7 @@ class UserController extends Controller
 
                 if($notRemovedUsers != ''){
                     $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
+                    $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
                 }else{
                     $session->getFlashBag()->add('success','Tous les membres ont pas pu être supprimés avec succès'); 
                 }
