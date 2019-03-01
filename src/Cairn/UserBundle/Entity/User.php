@@ -150,6 +150,16 @@ class User extends BaseUser
         return NULL;
     }
 
+    public function isAdherent()
+    {
+        return ($this->hasRole('ROLE_PRO') || $this->hasRole('ROLE_ADHERENT'));
+    }
+
+    public function isAdmin()
+    {
+        return ($this->hasRole('ROLE_ADMIN') || $this->hasRole('ROLE_SUPER_ADMIN'));
+    }
+
     static function randomPassword() {
         $alphabet = 'abcdefghijklmnDEFGHIJKLMNOPQRSTUVWXYZ1234567890@_-#';
         $pass = array(); 

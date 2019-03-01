@@ -38,9 +38,15 @@ class SmsDataValidator extends ConstraintValidator
         $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($smsData->getPhoneNumber());
 
         $isNewPhoneNumber = true;
-        foreach($usersWithPhoneNumber as $userWithPhoneNumber){
-            if($userWithPhoneNumber === $currentUser){
-                $isNewPhoneNumber = false;
+
+        //if current user is adherent and is not in the list of users owning the phone number, it means that it is an edit
+        if($currentUser->isAdmin()){
+            $isNewPhoneNumber = false;
+        }else{
+            foreach($usersWithPhoneNumber as $userWithPhoneNumber){
+                if($userWithPhoneNumber === $currentUser){
+                    $isNewPhoneNumber = false;
+                }
             }
         }
 

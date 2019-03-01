@@ -130,113 +130,11 @@ class UserController extends Controller
 
     }
 
-    public function enableSmsPaymentsAction(Request $request, User $user)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $session = $request->getSession();
-
-        $currentUser = $this->getUser();
-
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }
-
-        $smsData = $user->getSmsData();
-        if(! $smsData){
-            $session->getFlashBag()->add('info','Aucun numéro de téléphone associé');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        if(! $user->isEnabled()){
-            $session->getFlashBag()->add('error','Le compte de '.$user->getName().' est inactif. Le paiement SMS est donc inaccessible');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-        
-        if($smsData->isSmsEnabled()){
-            $session->getFlashBag()->add('info','Le paiement par SMS est déjà autorisé');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-
-        $form = $this->get('form.factory')->create();
-
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
-            $securityService = $this->get('cairn_user.security');
-
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'BLOCKED');
-            $securityService->changeAccessClientStatus($accessClientVO,'UNBLOCKED');
-            $smsData->setSmsEnabled(true);
-
-
-            $em->flush();
-
-            $session->getFlashBag()->add('success','Le paiement par SMS est désormais autorisé !');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        return $this->render('CairnUserBundle:User:confirm_enable_sms.html.twig',array('form'=>$form->createView(),'user'=>$user));
-
-    }
-
-    public function disableSmsPaymentsAction(Request $request, User $user)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $session = $request->getSession();
-
-        $currentUser = $this->getUser();
-
-
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }
-
-        $smsData = $user->getSmsData();
-        if(! $smsData){
-            $session->getFlashBag()->add('info','Aucun numéro de téléphone associé');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        if(! $smsData->isSmsEnabled()){
-            $session->getFlashBag()->add('info','Le paiement par SMS est déjà bloqué');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        $form = $this->get('form.factory')->create();
-
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
-            $securityService = $this->get('cairn_user.security');
-
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
-            $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
-            $smsData->setSmsEnabled(false);
-
-//            if($form->getData()['dissociateCard']){
-//                $card = $user->getCard();
-//                if($card){
-//                    $user->setCard(NULL);
-//                    $em->remove($card);
-//                }else{
-//                    $session->getFlashBag()->add('info','Aucune carte de sécurité associée au compte');
-//                }
-//            }
-            $em->flush();
-
-            $session->getFlashBag()->add('success','Le paiement par SMS est désormais bloqué !');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        return $this->render('CairnUserBundle:User:confirm_disable_sms.html.twig',array('form'=>$form->createView(),'user'=>$user));
-
-
-        $session->getFlashBag()->add('success','Le paiement par SMS est désormais bloqué !');
-        return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-
-    }
 
     /**
      * Changes the current user's sms data
      *
-     * This action permits to change current user's sms data, such as phone number, or limit amount of sms payments without validation
+     * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
     public function editSmsDataAction(Request $request, User $user)
     {
@@ -248,6 +146,7 @@ class UserController extends Controller
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($user);
 
+        //****************** All cases where edit sms is not allowed ****************//
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
@@ -261,10 +160,6 @@ class UserController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
-        if( $user->getSmsData() && !$user->getSmsData()->isSmsEnabled()){
-            $session->getFlashBag()->add('error','Les SMS ont été bloqués pour votre compte. Cette action vous est inaccessible !');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
 
         $smsData = ($res = $user->getSmsData()) ? $res : new SmsData($user);
         $previousPhoneNumber = $smsData->getPhoneNumber();
@@ -280,6 +175,7 @@ class UserController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
         }
 
+        //************************ end of cases where edit sms is disallowed *************************//
 
         $formSmsData = $this->createForm(SmsDataType::class, $smsData);
         $formCode = $this->createFormBuilder()
@@ -337,7 +233,7 @@ class UserController extends Controller
 
                 $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
                 if($existSmsData){
-                    $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des paiements par SMS');
+                    $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des opérations par SMS');
                 }
     
                 $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
@@ -346,6 +242,13 @@ class UserController extends Controller
                           'formCode'=>$formCode->createView()));
     
             }else{//just change ID SMS Means that phoneNumber was already associated and $smsData is not new
+
+                if($smsData->isSmsEnabled() ){
+                    $session->getFlashBag()->add('info','Les opérations SMS sont autorisées pour le numéro '.$smsData->getPhoneNumber());
+                }else{
+                    $session->getFlashBag()->add('info','Les opérations SMS n\'ont pas été autorisées pour le numéro '.$smsData->getPhoneNumber());
+                }
+
                 $em->flush();
                 $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
                 return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
@@ -402,7 +305,7 @@ class UserController extends Controller
                 if($hasPreviousPhoneNumber){
                     $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
                     if(count($existingUsers) == 2){
-                        $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des paiements par SMS');
+                        $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des opérations par SMS');
                     }
                 }
                 $em->persist($user);

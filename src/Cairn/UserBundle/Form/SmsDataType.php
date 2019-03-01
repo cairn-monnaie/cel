@@ -8,7 +8,6 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\AbstractType;
 
-use Cairn\UserBundle\Validator\UserPhoneNumber;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
@@ -32,11 +31,9 @@ class SmsDataType extends AbstractType
     {
 
         $builder
-            ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable',
-//                                                          'constraints'=> new UserPhoneNumber()
-            ));
-//            ->add('smsEnabled', CheckboxType::class, array('label'=>'Autoriser les  actions SMS',
-//                                                          'required'=>false));
+            ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable'))
+            ->add('smsEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
+                                                              'required'=>false));
 //           ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',
 //                       'constraints'=> new Assert\Range(array('min'=> 0,'max'=>50,
 //                                                 'minMessage' => 'Un nombre négatif n\'a pas de sens !',
