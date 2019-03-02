@@ -147,6 +147,12 @@ class CardController extends Controller
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $currentUser = $this->getUser();
+
+        if($session->get('requestCard')){
+            $session->getFlashBag()->add('info','La demande a déjà été effectuée.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+        }
+
         if(!$currentUser->isAdherent()){
             $session->getFlashBag()->add('info','Action réservée aux adhérents.');
             return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
@@ -169,6 +175,8 @@ class CardController extends Controller
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
         $session->getFlashBag()->add('success','La demande a bien été enregistrée. L\'Association en a été informée. ');
+
+        $session->set('requestCard',true);
         return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
 
     }
@@ -186,6 +194,8 @@ class CardController extends Controller
         $availableCards = $cardRepo->findAvailableCards();
 
         $beforeDefaultDate = new \Datetime(date('Y-m-d 23:59'));
+        $afterDefaultDate = date_modify(new \Datetime(date('Y-m-d 23:59')), '- '.$this->getParameter('card_association_delay').' days');
+
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
                 'label' => 'affiché par',
@@ -196,7 +206,13 @@ class CardController extends Controller
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $beforeDefaultDate,
-                'required'=>false))
+                ))
+            ->add('after',     DateTimeType::class, array(
+                'label' => 'générées après',
+                'date_widget' => 'single_text',
+                'time_widget' => 'single_text',
+                'data'=> $afterDefaultDate,
+                ))
             ->add('code',  TextType::class,array(
                 'label'=>'Code',
                 'required'=>false))
@@ -210,6 +226,7 @@ class CardController extends Controller
                 $dataForm = $form->getData();            
                 $orderBy = $dataForm['orderBy'];
                 $before = $dataForm['before'];
+                $after = $dataForm['after'];
                 $code = $dataForm['code'];
 
                 $cb = $cardRepo->createQueryBuilder('c');
@@ -217,13 +234,18 @@ class CardController extends Controller
                     ->orderBy('c.creationDate',$orderBy);
 
                 if($before){
-                    $cb->andWhere('c.creationDate <= :creationDate')
-                       ->setParameter('creationDate',$before);
+                    $cb->andWhere('c.creationDate <= :beforeDate')
+                       ->setParameter('beforeDate',$before);
 
                 }
+                if($after){
+                    $cb->andWhere('c.creationDate >= :afterDate')
+                       ->setParameter('afterDate',$after);
+                }
+
                 if($code){
                     $cb->andWhere('c.code = :code')
-                       ->setParameter('code',$code);
+                       ->setParameter('code',$this->get('cairn_user.security')->vigenereDecode($code));
                 }
 
                 $availableCards = $cb->getQuery()->getResult();

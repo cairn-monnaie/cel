@@ -9,7 +9,9 @@
 {% block body %}
     {{parent()}} 
     
-    <h2> Détruire la carte de code {{card.code}} </h2>
+    {% set code = security_service.vigenereEncode(card.code) %}
+
+    <h2> Détruire la carte de code {{code}} </h2>
     <div>                                                                          
         {{ form_start(form) }}
         {{form_end(form) }}

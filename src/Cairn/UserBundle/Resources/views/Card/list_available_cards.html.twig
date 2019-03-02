@@ -16,8 +16,9 @@
 
     <ul>
         {% for card in availableCards %}
-            <li> Code : {{card.code}} </li>
-            <li> Date de génération : {{card.creationDate | date('Y-m-d H:i:s')}}
+            {% set code = security_service.vigenereEncode(card.code) %}
+            <li> Code : {{code}} </li>
+            <li> Date de génération : {{card.creationDate | date('d/m/Y H:i:s')}}
            <li><a href="{{path('cairn_user_card_destruct', {'id': card.id})}}"> Détruire</a></li>
         {% else %}  
             Aucune carte en attente d'association ne correspond à votre recherche!

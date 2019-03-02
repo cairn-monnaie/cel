@@ -43,6 +43,7 @@ twig:
     globals:
         card_association_delay: '%card_association_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
+        security_service: '@cairn_user.security'
 
 # Doctrine Configuration
 doctrine:
