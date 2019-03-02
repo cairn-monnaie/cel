@@ -235,13 +235,13 @@ class CardControllerTest extends BaseControllerTest
     /**
      * if $current is installed super admin : can download a card for himself
      * if $current is referent of $target : can download card for $target
-     * if $current is not current of $target : code 403
+     * if $current is not referent of $target : code 403
      * if $current does not have card : redirection
      * if $target has a  card : redirection
      *
      *@dataProvider provideUsersForCardDownload
      */
-    public function testDownloadCard($current, $target,$expectConfirm,$expectMessage)
+    public function testDownloadAndAssociateCard($current, $target,$expectConfirm,$expectMessage)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -442,8 +442,6 @@ class CardControllerTest extends BaseControllerTest
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler, '1111');
         $crawler = $this->client->followRedirect();
-
-
 
     }
 

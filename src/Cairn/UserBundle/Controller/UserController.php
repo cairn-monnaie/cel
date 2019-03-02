@@ -872,7 +872,7 @@ class UserController extends Controller
             $subject = 'Ce n\'est qu\'un au revoir !';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $emailTo;
-            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('currentUser'=>$currentUser,'user'=>$user));
+            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('currentUser'=>$currentUser));
 
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
@@ -891,7 +891,7 @@ class UserController extends Controller
 
             if( ($e instanceof Cyclos\ServiceException) && ($e->errorCode == 'VALIDATION')){
 
-                $errors = $exception->error->validation->allErrors;
+                $errors = $e->error->validation->allErrors;
                 for($i = 0; $i < count($errors); $i++){
                     if( strpos( $errors[$i], 'has a non-zero balance') !== false ){
                         return false;
@@ -913,6 +913,7 @@ class UserController extends Controller
     public function removePendingUsersAction(Request $request, $_format)
     {
         $session = $request->getSession();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -937,6 +938,14 @@ class UserController extends Controller
                     if(!$isRemoved){
                         $user->setRemovalRequest(false);
                         $notRemovedUsers = $notRemovedUsers.', '.$user->getName();
+
+                        $subject = 'Demande de suppression non aboutie';
+                        $from = $messageNotificator->getNoReplyEmail();
+                        $to = $user->getEmail();
+                        $body = 'Votre demande de suppression de compte [e]-Cairn n\'a pas pu aboutir. Vérifiez que votre compte est bien soldé. Si oui, veuillez prendre contact avec l\'Association.'."\n"."\n".'Le Cairn,';
+            
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
                     }
                 }
 
@@ -944,7 +953,7 @@ class UserController extends Controller
 
                 if($notRemovedUsers != ''){
                     $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
-                    $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
+                    $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont probablement plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
                 }else{
                     $session->getFlashBag()->add('success','Tous les membres ont pas pu être supprimés avec succès'); 
                 }

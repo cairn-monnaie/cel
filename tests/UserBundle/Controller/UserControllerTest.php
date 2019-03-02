@@ -21,30 +21,6 @@ class UserControllerTest extends BaseControllerTest
         parent::__construct($name, $data, $dataName);
     }
 
-    public function provideDataForDisableSms()
-    {
-        $adminUsername = $this->testAdmin;
-
-        return array(
-            'valid user request for himself'=>array('current'=>'maltobar','target'=>'maltobar','isReferent'=>true,
-                                                    'isValid'=>true,'expectedMessage'=>'désormais bloqué'),
-
-          'valid referent request'=>array('current'=>$adminUsername,'target'=>'maltobar','isReferent'=>true,
-                                          'isValid'=>true,'expectedMessage'=>'désormais bloqué'),
-
-            'already disabled sms'=>array('current'=>'benoit_perso', 'target'=>'benoit_perso','isReferent'=>true,
-                                         'isValid'=>false,'expectedMessage'=>'déjà bloqué'),
-
-            'no phone number associated'=>array('current'=>'pain_beauvoir', 'target'=>'pain_beauvoir','isReferent'=>true,
-                                         'isValid'=>false,'expectedMessage'=>'Aucun numéro'),
-
-            'not referent'=>array('current'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,
-                                            'isValid'=>true,'expectedMessage'=>'désormais autorisé'),
-
-        );
-    }
-
-
     /**
      * Need to check that UserPhoneNumberValidator is called + that user can make payment with his new number
      *
@@ -681,4 +657,56 @@ class UserControllerTest extends BaseControllerTest
 
     }
 
+    /**
+     *
+     *@dataProvider provideDataForRemovePendingUsers
+     */
+    public function testRemovePendingUsers($login, $removedUsers, $notRemovedUsers )
+    {
+        $crawler = $this->login($login,'@@bbccdd');
+
+        $this->client->enableProfiler();
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+
+        //sensible operation
+        $url = '/user/remove-pending';
+        $crawler = $this->client->request('GET',$url);
+        $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler, '1111');
+        $crawler = $this->client->followRedirect();
+
+        $form = $crawler->selectButton('confirmation_save')->form();
+        $crawler =  $this->client->submit($form);
+
+        foreach($removedUsers as $username){
+            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+            $this->assertTrue($user == NULL);
+        }
+        foreach($notRemovedUsers as $username){
+            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+            $this->assertTrue($user != NULL);
+        }
+
+//        $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+//        $this->assertTrue($mailCollector->getMessageCount() >= 1);
+//        $message = $mailCollector->getMessages()[0];
+//        $this->assertInstanceOf('Swift_Message', $message);
+//        //                    $this->assertContains('Nouvelle carte', $message->getSubject());
+//        $this->assertContains('supprimé avec succès', $message->getBody());
+//        $this->assertContains($currentUser->getName(), $message->getBody());
+//
+//        $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+//        $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+
+    }
+
+    public function provideDataForRemovePendingUsers()
+    {
+        return array(
+            'result'=> array($this->testAdmin, array('Biocoop'), array('Alpes_EcoTour') )
+        );
+    }
 }

@@ -6,50 +6,50 @@ cairn_user_welcome:
     requirements:
         _format: html|json
 
-cairn_user_api_get_tokens:
-    path: oauth/get-tokens
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
-
-cairn_user_api_users_options:
-    path: api/users
-    methods: OPTIONS
-    defaults: { _controller: CairnUserBundle:User:options, _format: json }
-
-cairn_user_api_users_get:
-    path: api/users/get/{id}
-    methods: GET
-    defaults: { _controller: CairnUserBundle:User:viewProfile, _format: json }
-
-cairn_user_api_users_list:
-    path: api/users/list
-    methods: GET
-    defaults: { _controller: CairnUserBundle:User:list, _format: json }
-
-cairn_user_api_users_post:
-    path: api/users/post
-    methods: POST
-    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
-
-cairn_user_api_users_put:
-    path: api/users/put
-    methods: POST
-    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
-
-cairn_user_api_users_delete:
-    path: api/users/delete/{id}
-    methods: DELETE
-    defaults: { _controller: CairnUserBundle:User:delete, _format: json }
-
-cairn_user_api_users_change_password:
-    path: api/users/change-password
-    methods: POST
-    defaults: { _controller: FOSUserBundle:ChangePassword:changePassword, _format: json }
-
-cairn_user_api_users_card_association:
-    path: api/users/{id}/associate-card
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: json }
+#cairn_user_api_get_tokens:
+#    path: oauth/get-tokens
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
+#
+#cairn_user_api_users_options:
+#    path: api/users
+#    methods: OPTIONS
+#    defaults: { _controller: CairnUserBundle:User:options, _format: json }
+#
+#cairn_user_api_users_get:
+#    path: api/users/get/{id}
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:User:viewProfile, _format: json }
+#
+#cairn_user_api_users_list:
+#    path: api/users/list
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:User:list, _format: json }
+#
+#cairn_user_api_users_post:
+#    path: api/users/post
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
+#
+#cairn_user_api_users_put:
+#    path: api/users/put
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
+#
+#cairn_user_api_users_delete:
+#    path: api/users/delete/{id}
+#    methods: DELETE
+#    defaults: { _controller: CairnUserBundle:User:delete, _format: json }
+#
+#cairn_user_api_users_change_password:
+#    path: api/users/change-password
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:ChangePassword:changePassword, _format: json }
+#
+#cairn_user_api_users_card_association:
+#    path: api/users/{id}/associate-card
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: json }
 
 
 cairn_user_registration:
@@ -77,43 +77,43 @@ cairn_user_profile_view:
     requirements:
         id: \d+
 
-cairn_user_api_beneficiaries_options:
-    path: api/beneficiaries
-    methods: OPTIONS
-    defaults: { _controller: CairnUserBundle:Beneficiary:options, _format: json }
-
-cairn_user_api_beneficiaries_get:
-    path:     api/beneficiaries/get/{id}
-    methods: GET
-    defaults: { _controller: CairnUserBundle:Beneficiary:viewBeneficiary, _format: json }
-    requirements:
-        id: \d+
+#cairn_user_api_beneficiaries_options:
+#    path: api/beneficiaries
+#    methods: OPTIONS
+#    defaults: { _controller: CairnUserBundle:Beneficiary:options, _format: json }
+#
+#cairn_user_api_beneficiaries_get:
+#    path:     api/beneficiaries/get/{id}
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:Beneficiary:viewBeneficiary, _format: json }
+#    requirements:
+#        id: \d+
 
 cairn_user_beneficiaries_list:
     path:     user/beneficiaries/list
     methods: GET
     defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: html }
 
-cairn_user_api_beneficiaries_list:
-    path:     api/beneficiaries/get
-    methods: GET
-    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
+#cairn_user_api_beneficiaries_list:
+#    path:     api/beneficiaries/get
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
 
 cairn_user_beneficiaries_add:
     path:     user/beneficiaries/add
     defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: html }
 
-cairn_user_api_beneficiaries_post:
-    path:     api/beneficiaries/post
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
+#cairn_user_api_beneficiaries_post:
+#    path:     api/beneficiaries/post
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
 
-cairn_user_beneficiaries_edit:
-    path:     user/beneficiaries/edit/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Beneficiary:editBeneficiary, _format: html  }
-    requirements:
-        id: \d+
-        _format: html|json
+#cairn_user_beneficiaries_edit:
+#    path:     user/beneficiaries/edit/{id}.{_format}
+#    defaults: { _controller: CairnUserBundle:Beneficiary:editBeneficiary, _format: html  }
+#    requirements:
+#        id: \d+
+#        _format: html|json
 
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{id}.{_format}
@@ -121,11 +121,11 @@ cairn_user_beneficiaries_remove:
     requirements:
         id: \d+
 
-cairn_user_api_beneficiaries_delete:
-    path:     api/beneficiaries/delete/{id}
-    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
-    requirements:
-        id: \d+
+#cairn_user_api_beneficiaries_delete:
+#    path:     api/beneficiaries/delete/{id}
+#    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
+#    requirements:
+#        id: \d+
 
 cairn_user_list_users_home:
     path:     users.{_format}
@@ -159,11 +159,8 @@ cairn_user_users_remove:
         _format: html|json
 
 cairn_user_users_remove_pending:
-    path:     user/remove-pending.{_format}
+    path:     user/remove-pending
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
-    requirements:
-        id: \d+
-        _format: html|json
 
 cairn_user_users_smsdata_edit:
     path:     user/sms-data/edit/{id}

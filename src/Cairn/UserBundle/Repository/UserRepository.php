@@ -72,7 +72,7 @@ class UserRepository extends EntityRepository
     {
         $ub = $this->createQueryBuilder('u');                  
         $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
-        $ub->andWhere('u.confirmationtoken is null')     
+        $ub->andWhere('u.confirmationToken is null')     
             ->andWhere('u.lastLogin is not NULL')
             ->orderBy('u.name','ASC');
         if($isEnabled != NULL){
@@ -89,7 +89,7 @@ class UserRepository extends EntityRepository
         $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
         $ub->leftJoin('u.card','c')                                           
             ->andWhere('c.id is NULL') //card is the owning-side in the association user/card
-            ->andWhere('u.confirmationtoken is null')
+            ->andWhere('u.confirmationToken is null')
             ->andWhere('u.enabled = true')
             ->orderBy('u.name','ASC');                                    
         

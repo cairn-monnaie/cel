@@ -100,12 +100,15 @@ class DefaultController extends Controller
 
                 switch ($type){
                 case "conversion":
+                    $operation->setCreditor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getCreditorName()));
                     $operation->setType(Operation::TYPE_CONVERSION);
                     break;
                 case "deposit":
+                    $operation->setCreditor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getCreditorName()));
                     $operation->setType(Operation::TYPE_DEPOSIT);
                     break;
                 case "withdrawal":
+                    $operation->setDebitor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getDebitorName()));
                     $operation->setType(Operation::TYPE_WITHDRAWAL);
                     break;
                 default:
@@ -148,7 +151,7 @@ class DefaultController extends Controller
 
         $user = $this->getUser();
         if($user){
-            if($user->hasRole('ROLE_ADHERENT')){
+            if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }
@@ -159,6 +162,8 @@ class DefaultController extends Controller
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
+
+            $session->set('type',$type);
             return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
         }else{
             return $this->render('CairnUserBundle:Registration:index.html.twig');
