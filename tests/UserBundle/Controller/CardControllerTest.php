@@ -63,6 +63,66 @@ class CardControllerTest extends BaseControllerTest
     }
 
     /**
+     *
+     *@dataProvider provideDataForRequestCard
+     */
+    public function testRequestCard($login, $isAdherent, $hasCard,$expectMessage )
+    {
+        $crawler = $this->login($login, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+
+        $this->client->enableProfiler();
+
+        $url = '/card/request';
+        $crawler = $this->client->request('GET',$url );
+
+        if(! $isAdherent){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $crawler = $this->client->followRedirect();
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            return;
+        }
+
+        if( $hasCard){
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $crawler = $this->client->followRedirect();
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            return;
+        }
+
+        $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+
+        //assert email
+        $this->assertSame(2, $mailCollector->getMessageCount());
+        $messages = $mailCollector->getMessages();
+
+        foreach($messages as $message){
+            $this->assertInstanceOf('Swift_Message', $message);
+            $this->assertContains('Envoi postal', $message->getSubject());
+            $this->assertContains('par voie postale', $message->getBody());
+            $this->assertContains($currentUser->getCity(), $message->getBody());
+            $this->assertContains($currentUser->getAddress()->getStreet1(), $message->getBody());
+            $this->assertContains($currentUser->getAddress()->getZipCity()->getZipCode(), $message->getBody());
+            $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+            
+            $to = key($message->getTo());
+            $this->assertTrue( ( $to == $currentUser->getEmail()) || ($to == $this->container->getParameter('cairn_email_management') ));
+        }
+    }
+
+    public function provideDataForRequestCard()
+    {
+        return array(
+            'is admin' => array('gl_grenoble',false,true,'réservée aux adhérents'),
+            'has card' => array('benoit_perso',true,true,'déjà une carte'),
+            'valid : adherent has no card' => array('episol',true,false,''),
+
+        );
+
+    }
+
+    /**
      *Tests the card association using a key
      *@dataProvider provideUsersForCardAssociation
      */

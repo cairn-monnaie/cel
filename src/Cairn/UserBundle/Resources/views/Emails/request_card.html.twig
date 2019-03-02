@@ -1,0 +1,21 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/request_card.html.twig #}
+
+{% if toAdmin %}
+    Une demande d'envoi de carte de sécurité Cairn par voie postale a été effectuée par {{app.user.name}}.
+    Ces données de compte [e]-Cairn sont : {{app.user.username}} et {{app.user.email}} </br>
+    Adresse postale : {{app.user.address.street1}}
+                      {{app.user.address.zipCity.zipCode}}, {{app.user.city}}
+
+
+    Le Cairn,
+
+{% else %}
+    Vous avez demandé l'envoi d'une carte de sécurité Cairn par voie postale.
+    Conformément aux informations que vous avez renseignées sur votre compte [e]-Cairn, elle vous sera envoyée à l'adresse suivante :
+    Adresse postale : {{app.user.address.street1}}
+                      {{app.user.address.zipCity.zipCode}}, {{app.user.city}}
+
+    Le Cairn,
+{% endif %}
+
+

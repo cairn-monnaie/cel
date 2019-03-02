@@ -141,6 +141,38 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:card_operation.html.twig',array('user'=>$user));
     }
 
+    public function requestCardAction(Request $request)
+    {
+        $session = $request->getSession();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+
+        $currentUser = $this->getUser();
+        if(!$currentUser->isAdherent()){
+            $session->getFlashBag()->add('info','Action réservée aux adhérents.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+
+        }
+
+        if($currentUser->getCard()){
+            $session->getFlashBag()->add('info','Vous avez déjà une carte de sécurité associée ');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+        }
+
+        $subject = 'Envoi postal de carte de sécurité Cairn';
+        $from = $this->getParameter('cairn_email_noreply');
+        $to = $currentUser->getEmail();
+        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>false));
+        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+        $to = $this->getParameter('cairn_email_management');
+        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>true));
+        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+        $session->getFlashBag()->add('success','La demande a bien été enregistrée. L\'Association en a été informée. ');
+        return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+
+    }
+
     /**
      * Lists all the available cards
      *
