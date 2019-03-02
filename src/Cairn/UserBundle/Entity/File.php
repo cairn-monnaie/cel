@@ -6,14 +6,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Image
+ * File
  *
- * @ORM\Table(name="image")
- * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\ImageRepository")
+ * @ORM\Table(name="File")
+ * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\FileRepository")
  * @ORM\HasLifecycleCallbacks
  *
  */
-class Image
+class File
 {
     /**
      * @var int
@@ -58,7 +58,7 @@ class Image
      *
      * @param string $url
      *
-     * @return Image
+     * @return File
      */
     public function setUrl($url)
     {
@@ -82,7 +82,7 @@ class Image
      *
      * @param string $alt
      *
-     * @return Image
+     * @return File
      */
     public function setAlt($alt)
     {
@@ -116,9 +116,9 @@ class Image
             $this->url = null;
             $this->alt = null;
         }else{
-            //little trick to allow PreUpdate callback to be called if the user had no image before
+            //little trick to allow PreUpdate callback to be called if the user had no file before
             //if no attribute is modified, PreUpdate is not called, then PreUpload function is not called and
-            //finally the image is not updated
+            //finally the file is not updated
             $this->url = 'xxx';
         }
 

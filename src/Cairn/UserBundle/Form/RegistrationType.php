@@ -8,13 +8,14 @@ use Cairn\UserBundle\Repository\UserRepository;
 
 use Cairn\UserBundle\Form\AddressType;
 use Cairn\UserBundle\Form\ImageType;
+use Cairn\UserBundle\Form\IdentityDocumentType;
 use Symfony\Component\Form\AbstractType;
+
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\PasswordType;
-use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
 use Symfony\Component\Form\FormEvent;
@@ -38,6 +39,7 @@ class RegistrationType extends AbstractType
     {
         $builder->add('name', TextType::class,array('label'=>'Nom de la structure'))
             ->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
+            ->remove('username')
             ->remove('plainPassword');
 
         $builder->addEventListener(
@@ -47,6 +49,10 @@ class RegistrationType extends AbstractType
                 $form = $event->getForm();
                 if(null === $user){
                     return;
+                }
+
+                if($user->isAdherent()){
+                    $form->add('identityDocument', IdentityDocumentType::class,array('label'=>'Pièce d\'identité','required'=>false));
                 }
 
                 if($user->hasRole('ROLE_PRO')){
@@ -67,6 +73,9 @@ class RegistrationType extends AbstractType
                             'required'=>false
                         ));
                     }
+
+                    $form->add('image', ImageType::class,array('label'=>'Votre logo d\'entreprise'));
+
                 }elseif($user->hasRole('ROLE_PERSON')){
                     $form->add('name', TextType::class,array('label'=>'Nom et prénom'))
                         ->add('description',TextareaType::class,array('label'=>
@@ -74,8 +83,20 @@ class RegistrationType extends AbstractType
                 }
             }
         );
-        $builder->add('address', AddressType::class)
-            ->add('image', ImageType::class,array('label'=>'Votre logo'));
+
+        $builder->addEventListener(
+            FormEvents::SUBMIT,
+            function (FormEvent $event) {
+                $user = $event->getData();
+                $form = $event->getForm();
+                if(null === $user){
+                    return;
+                }
+                $user->setUsername('test_user3');
+            }
+        );
+
+        $builder->add('address', AddressType::class);
     }
 
 

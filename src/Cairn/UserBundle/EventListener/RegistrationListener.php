@@ -138,12 +138,14 @@ class RegistrationListener
     public function onRegistrationInitialize(UserEvent $event)
     {
         $request = $event->getRequest();
-        $type = $request->query->get('type'); 
+        $session = $request->getSession();
+
+        $type = $session->get('type');
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
 
         if(!$currentUser && ($type != 'person') && ($type != 'pro')  ){
-            $request->query->set('type','person'); 
+            $session->set('type','person'); 
             $type = 'person'; 
         }
 
@@ -164,7 +166,7 @@ class RegistrationListener
             $user->addRole('ROLE_SUPER_ADMIN');
             break;
         default:
-            $request->query->set('type','person'); 
+            $session->set('type','person'); 
             break;
         }
     }

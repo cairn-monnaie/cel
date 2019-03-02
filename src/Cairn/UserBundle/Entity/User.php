@@ -77,9 +77,14 @@ class User extends BaseUser
     private $beneficiaries;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Image", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
      */
     private $image;
+
+    /**
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
+     */
+    private $identityDocument;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Card", mappedBy="user", cascade={"persist","remove"})
@@ -152,7 +157,7 @@ class User extends BaseUser
 
     public function isAdherent()
     {
-        return ($this->hasRole('ROLE_PRO') || $this->hasRole('ROLE_ADHERENT'));
+        return ($this->hasRole('ROLE_PRO') || $this->hasRole('ROLE_PERSON'));
     }
 
     public function isAdmin()
@@ -358,11 +363,11 @@ class User extends BaseUser
     /**
      * Set image
      *
-     * @param \Cairn\UserBundle\Entity\Image $image
+     * @param \Cairn\UserBundle\Entity\File $image
      *
      * @return User
      */
-    public function setImage(\Cairn\UserBundle\Entity\Image $image = null)
+    public function setImage(\Cairn\UserBundle\Entity\File $image = null)
     {
         $this->image = $image;
 
@@ -372,13 +377,37 @@ class User extends BaseUser
     /**
      * Get image
      *
-     * @return \Cairn\UserBundle\Entity\Image
+     * @return \Cairn\UserBundle\Entity\File
      */
     public function getImage()
     {
         return $this->image;
     }
 
+     /**
+     * Set identityDocument
+     *
+     * @param \Cairn\UserBundle\Entity\File $identityDocument
+     *
+     * @return User
+     */
+    public function setIdentityDocument(\Cairn\UserBundle\Entity\File $identityDocument = null)
+    {
+        $this->identityDocument = $identityDocument;
+
+        return $this;
+    }
+
+    /**
+     * Get identityDocument
+     *
+     * @return \Cairn\UserBundle\Entity\File
+     */
+    public function getIdentityDocument()
+    {
+        return $this->identityDocument;
+    }
+   
     /**
      * Add beneficiary
      *
