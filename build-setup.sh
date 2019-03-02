@@ -15,5 +15,3 @@ echo " Generating administrator user"
 php bin/console cairn.user:create-install-admin admin_network @@bbccdd --env=$1 
 
 echo "Build script finished ! "
-
-
