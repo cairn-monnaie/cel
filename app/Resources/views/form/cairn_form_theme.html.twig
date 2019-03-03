@@ -1,0 +1,35 @@
+{% block zipcities_widget %}
+    {% spaceless %}
+        {% set attr = attr|merge({class: (attr.class|default('') ~ 'zipcity_autocomplete')|trim}) %}
+        {{ form_label(form) }}
+        {{ form_errors(form) }}
+        <input type="text" autocomplete="off" class="{{ attr.class }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
+    {% endspaceless %}
+    <script>
+        function defer(method) {
+            if (window.jQuery) {
+                method();
+            } else {
+                setTimeout(function() { defer(method) }, 50);
+            }
+        }
+        defer(function(){
+            //
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ path('cairn_zipcities_ajax') }}",
+                success: function (response) {
+                    var zipCities = response;
+                    var data = {};
+                    for (var i = 0; i < zipCities.length; i++) {
+                        data[zipCities[i]] = '';
+                    }
+                    $('input.zipcity_autocomplete').autocomplete({
+                        data: data,
+                        limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}
