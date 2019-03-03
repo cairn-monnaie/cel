@@ -1,4 +1,4 @@
-Digital Cairn
+[e]-Cairn
 =======
 
 # Requirements
@@ -59,41 +59,44 @@ Digital Cairn
  * **Setup the application**
 
      * Build docker images   
-       `docker-compose build`
+       `sudo docker-compose build`
 
      * Build the cyclos database.  
        The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container. This way, the dump restore is automatically executed at container's creation.  
        `sudo docker-compose up -d cyclos-db`  
 
      * Check out the logs while the database is building from the basic cyclos-dump-minimal.sql file  
-       `docker-compose logs -f cyclos-db`  
+       `sudo docker-compose logs -f cyclos-db`  
 
      * One the database has been fully restored, start the cyclos app  
-       `docker-compose up -d cyclos-app`  
+       `sudo docker-compose up -d cyclos-app`  
 
      * Then, start the database container, and check that it is listening on port 3306  
-       `docker-compose up -d db`  
-       `docker-compose logs -f db`   
+       `sudo docker-compose up -d db`  
+       `sudo docker-compose logs -f db`   
        Otherwise, restart the container and check again  
-       `docker-compose restart db`  
-       `docker-compose logs -f db`  
+       `sudo docker-compose restart db`  
+       `sudo docker-compose logs -f db`  
   
      * Start the remaining containers  
-       `docker-compose up -d`  
+       `sudo docker-compose up -d`  
 
      * Install dependencies from composer.json 
-       `docker-compose exec engine ../composer.phar update`  
+       `sudo docker-compose exec engine composer update`  
       
      * Change the set of cities   
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
      * Launch Cyclos configuration script and initialize mysql database  
-       `docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
+       `sudo docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
      **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
-     * Enable engine's user to write logs, cache files and web static files(images)  
-       `docker-compose exec engine chown -R www-data:www-data var web`  
+    * Install assets
+       `sudo docker-compose exec engine php bin/console assets:install`
 
+     * Enable engine's user to write logs, cache files and web static files(images)  
+       `sudo docker-compose exec engine chown -R www-data:www-data var web`
+       
 ## Development
 
  * **Access applications**    
@@ -105,13 +108,12 @@ Digital Cairn
      As a volume is mounted on the project's root directory, any change on your host machine is automatically replicated in the container. Hence, there is no need to rebuild or restart the engine's container.
 
  * **Update the database schema**  
-    `docker-compose exec engine doctrine:migrations:diff`  
-    `docker-compose exec engine doctrine:migrations:migrate`  
+    `sudo docker-compose exec engine doctrine:migrations:migrate`  
 
  * **Logs**  
      Using the same method of binding volumes between host and containers, all the log files are gathered in the `docker/logs` directory.  
     
- * **Emails**
+ * **Emails**  
     An useful feature while developing a web app is email catching. Here, we use **mailcatcher**, listening on port 1025 to catch any message sent through our app. Therefore, we must deliver messages to port 1025 using smtp protocol.
 
     Open the file `app/config/parameters.yml` with your favorite editor. 
@@ -120,7 +122,14 @@ Digital Cairn
      `mailer_host: email-catcher`  
      `mailer_port: 1025`    
     Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.  
-
+ 
+ * **Xdebug**  
+    You can use Xdebug by setting ```XDEBUG_ENABLED=true```
+    and set ```XDEBUG_REMOTE_HOST``` to your local network computer ip address in your ```.env``` file
+    Then docker build and up.
+    
+    /!\ The port is not ```9000``` (default for Xdebug) but ```9001```.
+    
 ## Testing
       
  All the information provided in the _Development_ subsection is also relevant here. Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
@@ -131,9 +140,9 @@ Digital Cairn
 
  * **Generating test data**  
     This will (re)create a scratch MySQL test database
-    `docker-compose exec engine ./build-setup.sh test admin:admin`    
+    `sudo docker-compose exec engine ./build-setup.sh test admin:admin`    
 
-    `docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
+    `sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
     This script first generates a set of users with an identical password : @@bbccdd, based on cyclos adherents data. 
     Then, it creates a set of security cards.
     Finally, it creates Operation entries based on Cyclos payments data. 
@@ -143,7 +152,7 @@ Digital Cairn
       * the symfony command GenerateDatabaseCommand.php
 
  * **Launching tests**  
-    `docker-compose exec engine ./vendor/bin/phpunit`  
+    `sudo docker-compose exec engine ./vendor/bin/phpunit`  
      The bootstrap script is automatically called when phpunit is requested. It can be found in `tests/bootstrap.php`. It executes two symfony custom console commands in order to fill the MySQL database with respect to the Cyclos database for consistency purposes. If the testing database already contains users, the command does nothing.  
       
  * **Tests isolation**  

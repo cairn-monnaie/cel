@@ -37,10 +37,9 @@ class RegistrationType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('name', TextType::class,array('label'=>'Nom de la structure'))
-            ->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
-            ->remove('username')
-            ->remove('plainPassword');
+        $builder->remove('username');
+        $builder->remove('plainPassword');
+        $builder->add('address', AddressType::class);
 
         $builder->addEventListener(
             FormEvents::POST_SET_DATA,
@@ -56,11 +55,11 @@ class RegistrationType extends AbstractType
                 }
 
                 if($user->hasRole('ROLE_PRO')){
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
+                    //$form->add('image', ImageType::class,array('label'=>'Logo'));
+                    $form->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'));
                     if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
-                        $form->add('singleReferent', EntityType::class, array(                       
-                            //                            'constraints'=>array(
-                            //                                new Assert\NotNull()
-                            //                            ),
+                        $form->add('singleReferent', EntityType::class, array(
                             'label'=>'Groupe local référent',
                             'class'=> User::class,                                         
                             'choice_label'=>'name',                                        
@@ -77,26 +76,15 @@ class RegistrationType extends AbstractType
                     $form->add('image', ImageType::class,array('label'=>'Votre logo d\'entreprise'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
-                    $form->add('name', TextType::class,array('label'=>'Nom et prénom'))
-                        ->add('description',TextareaType::class,array('label'=>
+                    $form->add('name', TextType::class,array('label'=>'Votre nom'));
+                    $form->add('firstname', TextType::class,array('label'=>'Votre prénom'));
+                    $form->add('description',TextareaType::class,array('label'=>
                                     'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
                 }
             }
         );
-
-        $builder->addEventListener(
-            FormEvents::SUBMIT,
-            function (FormEvent $event) {
-                $user = $event->getData();
-                $form = $event->getForm();
-                if(null === $user){
-                    return;
-                }
-                $user->setUsername('test_user3');
-            }
-        );
-
-        $builder->add('address', AddressType::class);
+        $builder->add('address', AddressType::class)
+            ->add('image', ImageType::class,array('label'=>'Votre logo'));
     }
 
 

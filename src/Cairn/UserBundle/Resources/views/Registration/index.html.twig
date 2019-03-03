@@ -9,24 +9,24 @@
         <div class="row">
             {% if is_granted('ROLE_SUPER_ADMIN') %}
                 <div class="col s6">
-                    <a href="{{path('cairn_user_registration',{type:'superAdmin'} ) }}" >
-                        <img src="{{asset('admin.jpg')}}" alt="Un Administrateur" class="responsive-img">
+                    <a href="{{path('cairn_user_registration_type',{type:'superAdmin'} ) }}" >
+                        <img src="{{asset('bundles/cairnuser/img/admin.jpg')}}" alt="Un Administrateur" class="responsive-img">
                     </a>
                 </div>
                 <div class="col s6">
-                    <a href="{{path('cairn_user_registration',{type:'localGroup'} ) }}" >
-                        <img src="{{asset('gl.jpg')}}" alt="Un Groupe local"  class="responsive-img">
+                    <a href="{{path('cairn_user_registration_type',{type:'localGroup'} ) }}" >
+                        <img src="{{asset('bundles/cairnuser/img/gl.jpg')}}" alt="Un Groupe local"  class="responsive-img">
                     </a>
                 </div>
             {% endif %}
             <div class="col s6">
-                <a href="{{path('cairn_user_registration',{type:'pro'} ) }}" >
-                    <img src="{{asset('pro.jpg')}}" alt="Un proffesionel" class="responsive-img">
+                <a href="{{path('cairn_user_registration_type',{type:'pro'} ) }}" >
+                    <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}" alt="Un proffesionel" class="responsive-img">
                 </a>
             </div>
             <div class="col s6">
-                <a href="{{path('cairn_user_registration',{type:'person'} ) }}" >
-                    <img src="{{asset('part.jpg')}}" alt="Un particulier"  class="responsive-img">
+                <a href="{{path('cairn_user_registration_type',{type:'person'} ) }}" >
+                    <img src="{{asset('bundles/cairnuser/img/part.jpg')}}" alt="Un particulier"  class="responsive-img">
                 </a>
             </div>
         </div>
@@ -37,13 +37,13 @@
         <h2> Qui êtes-vous ? </h2>
         <div class="row">
             <div class="col s6">
-                <a href="{{path('cairn_user_registration',{type:'pro'} ) }}" >
-                    <img src="{{asset('pro.jpg')}}" alt="Un proffesionel" class="responsive-img">
+                <a href="{{path('cairn_user_registration_type',{type:'pro'} ) }}" >
+                    <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}" alt="Un proffesionel" class="responsive-img">
                 </a>
             </div>
             <div class="col s6">
-                <a href="{{path('cairn_user_registration',{type:'person'} ) }}" >
-                    <img src="{{asset('part.jpg')}}" alt="Un particulier"  class="responsive-img">
+                <a href="{{path('cairn_user_registration_type',{type:'person'} ) }}" >
+                    <img src="{{asset('bundles/cairnuser/img/part.jpg')}}" alt="Un particulier"  class="responsive-img">
                 </a>
             </div>
         </div>

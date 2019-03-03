@@ -33,7 +33,12 @@ class User extends BaseUser
     /**
      * @ORM\Column(name="name", type="string", unique=false, nullable=false)
      */
-    private $name; 
+    private $name;
+
+    /**
+     * @ORM\Column(name="firstname", type="string", unique=false, nullable=true)
+     */
+    private $firstname;
 
     /**
      * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
@@ -165,6 +170,20 @@ class User extends BaseUser
         return ($this->hasRole('ROLE_ADMIN') || $this->hasRole('ROLE_SUPER_ADMIN'));
     }
 
+    static function makeUsername($lastname, $firstname = '' , $extra = '')
+    {
+        $lastname = preg_replace('/[-\/]+/', ' ', $lastname);
+        $ln = explode(' ', $lastname);
+        if (strlen($ln[0]) < 3 && count($ln) > 1)
+            $ln = $ln[0] . $ln[1];
+        else
+            $ln = $ln[0];
+        $username = strtolower(substr(explode(' ', $firstname)[0], 0, 1) . $ln);
+        $username = preg_replace('/[^a-z0-9]/', '', $username);
+        $username .= $extra;
+        return $username;
+    }
+
     static function randomPassword() {
         $alphabet = 'abcdefghijklmnDEFGHIJKLMNOPQRSTUVWXYZ1234567890@_-#';
         $pass = array(); 
@@ -202,16 +221,6 @@ class User extends BaseUser
     {
         return $this->cyclosID;
     }
-
-    //    public function fromDTOToEntity($userDTO)
-    //    {
-    //        $this->setUsername($userDTO->username);
-    //        $this->setEmail($userDTO->email);
-    //        $this->setPassword($userDTO->passwords->value);
-    //        if(property_exists($userDTO,'id')){
-    //            $this->setCyclosID($userDTO->id);
-    //        }
-    //    }   
 
     public function fromEntityToDTO()
     {
@@ -407,7 +416,7 @@ class User extends BaseUser
     {
         return $this->identityDocument;
     }
-   
+
     /**
      * Add beneficiary
      *
@@ -740,5 +749,39 @@ class User extends BaseUser
             }
         }
         return NULL;
+    }
+
+    /**
+     * Set firstname.
+     *
+     * @param string|null $firstname
+     *
+     * @return User
+     */
+    public function setFirstname($firstname = null)
+    {
+        $this->firstname = $firstname;
+
+        return $this;
+    }
+
+    /**
+     * Get firstname.
+     *
+     * @return string|null
+     */
+    public function getFirstname()
+    {
+        return $this->firstname;
+    }
+
+    /**
+     * Get firstLogin.
+     *
+     * @return bool
+     */
+    public function getFirstLogin()
+    {
+        return $this->firstLogin;
     }
 }
