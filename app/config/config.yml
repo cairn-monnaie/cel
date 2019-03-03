@@ -43,6 +43,9 @@ twig:
     globals:
         card_association_delay: '%card_association_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
+    form_themes:
+        - 'form/materialize_form_theme.html.twig'
+        - 'form/cairn_form_theme.html.twig'
 
 # Doctrine Configuration
 doctrine:
@@ -100,6 +103,7 @@ fos_user:
     profile:
         form:
             type: Cairn\UserBundle\Form\ProfileType
+            validation_groups: [CairnProfile]
     change_password:
         form:
             type: Cairn\UserBundle\Form\ChangePasswordType
@@ -110,6 +114,7 @@ fos_user:
     registration:
         form:
             type: Cairn\UserBundle\Form\RegistrationType
+            validation_groups: [CairnRegistration]
         confirmation:
             enabled:    true # change to false to disable registration email confirmation  
             template:   CairnUserBundle:Emails:email_confirmation.html.twig
@@ -123,9 +128,8 @@ fos_oauth_server:
     service:
         user_provider: fos_user.user_provider.username
 
-#assetic:
-#    debug:          '%kernel.debug%'
-#    use_controller: '%kernel.debug%'
+assetic:
+    bundles: [ JqueryBundle ]
 
 knp_snappy:  
     pdf:
