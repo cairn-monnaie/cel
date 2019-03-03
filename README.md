@@ -91,9 +91,12 @@
        `sudo docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
      **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
-     * Enable engine's user to write logs, cache files and web static files(images)  
-       `sudo docker-compose exec engine chown -R www-data:www-data var web`  
+    * Install assets
+       `sudo docker-compose exec engine php bin/console assets:install`
 
+     * Enable engine's user to write logs, cache files and web static files(images)  
+       `sudo docker-compose exec engine chown -R www-data:www-data var web`
+       
 ## Development
 
  * **Access applications**    
