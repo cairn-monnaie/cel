@@ -205,7 +205,7 @@ class SecurityListenerTest extends KernelTestCase
 
         $event = new InteractiveLoginEvent($request,$token);
         $this->eventDispatcher->dispatch(SecurityEvents::INTERACTIVE_LOGIN,$event); 
-        $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
+        $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_token'),NULL);
 
         //wrong password
         $session = new Session(new MockArraySessionStorage());
@@ -219,7 +219,7 @@ class SecurityListenerTest extends KernelTestCase
         }catch(\Exception $e){
             $this->assertEquals($e->errorCode, 'LOGIN');
         }
-        $this->assertEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
+        $this->assertEquals($event->getRequest()->getSession()->get('cyclos_token'),NULL);
 
     }
 
@@ -293,6 +293,15 @@ class SecurityListenerTest extends KernelTestCase
         $this->assertFalse($event->getUser()->isEnabled());
         $logout = '/logout';
         $this->assertTrue($event->getResponse()->isRedirect($logout));
+
+        //user is disabled
+        $this->user->setEnabled(false);
+        $event = new GetResponseNullableUserEvent($this->user, $request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::RESETTING_SEND_EMAIL_INITIALIZE,$event); 
+        $this->assertFalse($event->getUser()->isEnabled());
+        $logout = '/logout';
+        $this->assertTrue($event->getResponse()->isRedirect($logout));
+
     }
 
 

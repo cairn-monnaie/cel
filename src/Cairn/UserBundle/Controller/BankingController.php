@@ -318,17 +318,6 @@ class BankingController extends Controller
         return ( ($frequency == 'unique') || ($frequency == 'recurring') );
     }
 
-    public function clearingBankAction()
-    {
-        ;
-    }
-
-    public function processBankingTransfer($type,$amount)
-    {
-        ;
-    }
-
-
 
     /**
      * Automatically add a first line to the operation description $description, depending on the type $type 
