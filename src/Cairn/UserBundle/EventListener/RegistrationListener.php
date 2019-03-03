@@ -138,7 +138,7 @@ class RegistrationListener
     public function onRegistrationInitialize(UserEvent $event)
     {
         $request = $event->getRequest();
-        $type = $request->query->get('type'); 
+        $type = $request->get('type');
         if(!$type){
             $type = 'person'; 
         }
@@ -177,12 +177,13 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
+        //2. CREATE USERNAME
         if (!$user->getUsername()) {
-
             $username = $this->generateUsername($user);
             $user->setUsername($username);
         }
 
+        //3. CYCLOS
         //set cyclos ID here to pass the constraint cyclos_id not null
         $cyclosID = rand(1, 1000000000);
         $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
@@ -203,10 +204,11 @@ class RegistrationListener
 
     private function generateUsername(User $user)
     {
-        if (!$user->getFirstname() || !$user->getLastname()) {
+        if (!$user->getName()) {
             return null;
         }
-        $username = User::makeUsername($user->getLastname(),$user->getFirstname());
+
+        $username = User::makeUsername($user->getName(),$user->getFirstname());
         $em = $this->container->get('doctrine.orm.entity_manager');
         $qb = $em->createQueryBuilder();
         $usernames = $qb->select('u')->from('CairnUserBundle:User', 'u')
@@ -216,12 +218,17 @@ class RegistrationListener
             ->getResult();
 
         if (count($usernames)) {
-            $count = 1;
-            $first = $usernames[0]->getUsername();
-            if(preg_match_all('/\d+/', $first, $numbers)) {
-                $count = end($numbers[0]) + 1;
+            if (count($usernames)==1 && $usernames[0]->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO')){
+                //if only one exist and is the part version of the pro we want create
+                $username = $username.'_pro';
+            }else{
+                $count = 1;
+                $first = $usernames[0]->getUsername();
+                if(preg_match_all('/\d+/', $first, $numbers)) {
+                    $count = end($numbers[0]) + 1;
+                }
+                $username = $username . + $count;
             }
-            $username = $username . + $count;
         }
         return $username;
     }

@@ -44,28 +44,27 @@ class UserValidator extends ConstraintValidator
      */
     public function validate($user, Constraint $constraint)
     {
-        //check length for example
-        if(strlen($user->getUsername()) < 3){
-            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
-                ->atPath('username')
-                ->addViolation();
-        }
-
-        if(preg_match('#[^\w\.]#',$user->getUsername())){
-            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
-                ->atPath('username')
-                ->addViolation();
-            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
-                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
-                    ->atPath('username')
-                    ->addViolation();
-            }
-        }
-        if(strlen($user->getUsername()) > 16){
-            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
-                ->atPath('username')
-                ->addViolation();
-        }
+//        if(strlen($user->getUsername()) < 3){
+//            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
+//                ->atPath('username')
+//                ->addViolation();
+//        }
+//
+//        if(preg_match('#[^\w\.]#',$user->getUsername())){
+//            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
+//                ->atPath('username')
+//                ->addViolation();
+//            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
+//                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
+//                    ->atPath('username')
+//                    ->addViolation();
+//            }
+//        }
+//        if(strlen($user->getUsername()) > 16){
+//            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
+//                ->atPath('username')
+//                ->addViolation();
+//        }
         if(strlen($user->getName()) < 3){
             $this->context->buildViolation('Le nom doit contenir au minimum 3 caractères.')
                 ->atPath('name')
@@ -84,11 +83,11 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
-            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
+//        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
+//            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
+//                ->atPath('plainPassword')
+//                ->addViolation();
+//        }
 
 //        //we use tildes and not hashes because hashes can be used to generate a random password
 //        if(preg_match('~'.$user->getPlainPassword().'~', $user->getUsername())){
