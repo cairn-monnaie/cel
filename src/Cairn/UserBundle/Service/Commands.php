@@ -344,8 +344,7 @@ class Commands
             $em->persist($smsData);
         }
 
-        $sms = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_WAITING_KEY,rand(0,25));
-        $sms2 = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
+        $sms = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
 
         $sms->setRequestedAt(date_modify( new \Datetime(), '-15 minutes'));
         $em->persist($sms);
@@ -443,6 +442,7 @@ class Commands
             $cyclosPros = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($prosGroup->id,array('DISABLED'));
             $cyclosPersons = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($personsGroup->id,array('DISABLED'));
             $cyclosAdmins =  $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminsGroup->id,array('DISABLED'));
+
 
             $cyclosMembers = array_merge($cyclosPros, $cyclosPersons,$cyclosAdmins);
 

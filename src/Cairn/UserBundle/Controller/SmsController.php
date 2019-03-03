@@ -50,9 +50,9 @@ class SmsController extends Controller
 //
 //        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
 //        $this->smsAction('0612345678','LOGIN');
-        $this->smsAction('0612345678','PAYER 1 maltobar');
+//        $this->smsAction('0612345678','PAYER 1 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
-//        $this->smsAction('0612345678','1111');
+        $this->smsAction('0612345678','1111');
 //        $this->smsAction('0612345678','2222');
         return new Response('ok');
 
@@ -170,7 +170,14 @@ class SmsController extends Controller
             $accessClient = $securityService->getSmsClient($debitorUser);
 
             if(!$accessClient){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE :  Veuillez prendre contact avec l\'Association.');
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+
+                $subject = 'Accès client Cyclos';
+                $from = $this->getParameter('cairn_email_noreply');
+                $to = $this->getParameter('cairn_email_technical_services');
+                $body = 'L\'utilisateur '.$debitorUser->getUsername().' n\'a aucun accès client Cyclos ';
+
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                 return; 
             }
             $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
@@ -180,11 +187,21 @@ class SmsController extends Controller
         }catch(\Exception $e){
 
             if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez prendre contact avec l\'Association.');
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+
+                $subject = 'Accès client Cyclos';
+                $from = $this->getParameter('cairn_email_noreply');
+                $to = $this->getParameter('cairn_email_technical_services');
+                $body = 'L\'accès client de '.$debitorUser->getUsername().' est invalide';
+
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+                return;
+
             }else{
-                $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : Veuillez prendre contact avec l\'Association.');
+                $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : L\'Association en a été informée.');
+                throw $e;
             }
-            return;
         }
 
         //4) Parse SMS content
@@ -347,7 +364,7 @@ class SmsController extends Controller
             }
 
             $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez contacter l\'Association');
-            return;
+            throw $e;
         }
 
         $operation->setFromAccountNumber($res->fromAccount->number);
