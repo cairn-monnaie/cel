@@ -146,27 +146,25 @@ class DefaultController extends Controller
      */
     public function registrationAction(Request $request)
     {
-        $session = $request->getSession();
-        $checker = $this->get('security.authorization_checker');
-
         $user = $this->getUser();
         if($user){
             if($user->hasRole('ROLE_ADHERENT')){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }
+        return $this->render('CairnUserBundle:Registration:index.html.twig');
+    }
 
-        $type = $request->query->get('type'); 
-
+    public function registrationByTypeAction(string $type){
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
+            $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
-            return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
+            return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
-            return $this->render('CairnUserBundle:Registration:index.html.twig');
+            return $this->redirectToRoute('CairnUserBundle:Registration:index.html.twig');
         }
-
     }
 
     public function zipCitiesAction(Request $request){
