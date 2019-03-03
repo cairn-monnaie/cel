@@ -92,7 +92,8 @@ class ExceptionListenerTest extends KernelTestCase
         $this->assertTrue($event->getResponse()->isRedirect($logout));
 
         $messages_flash = $event->getRequest()->getSession()->getFlashBag()->get('error',array());
-        $this->assertContains('Problème de connexion',$messages_flash[0]);
+        $this->assertContains('problème technique',$messages_flash[0]);
+        $this->assertContains('phase de connexion',$messages_flash[0]);
 
 
         //test ENTITY_NOT_FOUND
@@ -141,7 +142,7 @@ class ExceptionListenerTest extends KernelTestCase
         $this->assertTrue($event->getResponse()->isRedirect($welcome));
 
         $messages_flash = $event->getRequest()->getSession()->getFlashBag()->get('error',array());
-        $this->assertContains('erreur technique',$messages_flash[0]);
+        $this->assertContains('problème technique',$messages_flash[0]);
 
         //test ConnectionException
         $exception = new Cyclos\ConnectionException();
