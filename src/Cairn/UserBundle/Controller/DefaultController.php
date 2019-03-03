@@ -81,6 +81,7 @@ class DefaultController extends Controller
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
+            $session = new Session();
             $session->set('registration_type',$type);
             return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
