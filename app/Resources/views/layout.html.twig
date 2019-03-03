@@ -11,11 +11,8 @@
         {% endblock %}
         <meta name="viewport" content="width=device-width" />
         <title>{% block title %}[e]Cairn{% endblock %}</title>
-        <style>
-            .login_splash{
-                background-image: url({{ asset('bundles/cairnuser/img/Stone_stack_together.jpg') }});
-            }
-        </style>
+        {% block stylesheets %}
+        {% endblock %}
     </head>
     <body class="{% block body_class %}{% endblock%}">
         <nav class="orange lighten-1" role="navigation">

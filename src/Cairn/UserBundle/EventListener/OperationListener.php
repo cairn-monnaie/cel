@@ -29,12 +29,15 @@ class OperationListener
         $this->bridgeToSymfony = $bridgeToSymfony;
     }
 
+    /**
+     * Deals with asynchronous operations made in Cyclos in order to update our database
+     *
+     * If a transaction has been scheduled in the future and has finally been executed, the operation type must be edit from
+     * SCHEDULED to EXECUTED. If the future transaction has failed, type becomes FAILED
+     *
+     */
     public function postLoad(Operation $operation, LifecycleEventArgs $args)
     {
-        if(!$operation instanceof Operation){
-            return;
-        }
-
         $entityManager = $args->getEntityManager();
 
         if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
@@ -52,7 +55,6 @@ class OperationListener
                 $entityManager->flush();
             }
         }
-
     }
 
 }

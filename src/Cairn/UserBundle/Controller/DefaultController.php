@@ -2,12 +2,17 @@
 
 namespace Cairn\UserBundle\Controller;
 
+use Cairn\UserBundle\CairnUserBundle;
+use Cairn\UserBundle\Entity\ZipCity;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\Operation;
+
 use Cairn\UserCyclosBundle\Entity\UserManager;
+use Cairn\UserCyclosBundle\Entity\BankingManager;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -15,7 +20,10 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;                   
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\RegistrationType;
+use Cairn\UserBundle\Form\OperationType;
+use Cairn\UserBundle\Form\SimpleOperationType;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +33,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 
 
 use Cyclos;
@@ -40,16 +49,14 @@ class DefaultController extends Controller
      */
     private $userManager;                                                      
 
+    private $bankingManager;                                                      
+
     public function __construct()                                              
     {                                                                          
-        $this->userManager = new UserManager();                                
+        $this->userManager = new UserManager();
+        $this->bankingManager = new BankingManager();
     }   
 
-    public function getIdAction(Request $request, $_format)
-    {
-        $user = $this->getUser();
-        return $this->json(array('current_user_id'=>$user->getID()));
-    }
 
 
     /**
@@ -57,39 +64,41 @@ class DefaultController extends Controller
      *
      * The type of user is set in session here because we will need it in our RegistrationEventListener.
      */
-    public function registrationAction(Request $request, $_format)
+    public function registrationAction(Request $request)
     {
-        $session = $request->getSession();
-        $checker = $this->get('security.authorization_checker');
-
         $user = $this->getUser();
         if($user){
-            if($user->hasRole('ROLE_PRO')){
+            if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }
+        return $this->render('CairnUserBundle:Registration:index.html.twig');
+    }
 
-        $type = $request->query->get('type'); 
-        if($type == NULL){
-            return $this->render('CairnUserBundle:Registration:index.html.twig');
-        }
-        elseif( ($type == 'pro') || ($type == 'localGroup') || ($type == 'superAdmin')){
-            if( ($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
+    public function registrationByTypeAction(string $type){
+        if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
+            $checker = $this->get('security.authorization_checker');
+            if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
-
             $session->set('registration_type',$type);
-            if($_format == 'json'){
-                $registrationData = array('name'=>'','username'=>'','email'=>'','description'=>'');
-                return $this->json($registrationData);
-            }
-            return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
-        }elseif($type == 'adherent'){
-            return $this->render('CairnUserBundle:Registration:register_adherent_content.html.twig');
+            return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
-            return $this->redirectToRoute('cairn_user_registration',array('format'=>$_format));
+            return $this->redirectToRoute('CairnUserBundle:Registration:index.html.twig');
         }
-    }    
+    }
 
+    public function zipCitiesAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $zipCities = $em->getRepository(ZipCity::class)->findAll();
+            $returnArray = array();
+            foreach ($zipCities as $zipCity){
+                $returnArray[] = $zipCity->getName();
+            }
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
 
 }

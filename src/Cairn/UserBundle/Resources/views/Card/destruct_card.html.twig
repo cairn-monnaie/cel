@@ -1,0 +1,25 @@
+{# src/Cairn/UserBundle/Resources/views/Card/destruct_card.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+    
+    {% set code = security_service.vigenereEncode(card.code) %}
+
+    <h2> Détruire la carte de code {{code}} </h2>
+    <div>                                                                          
+        {{ form_start(form) }}
+        {{form_end(form) }}
+    </div>                                                                         
+
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+

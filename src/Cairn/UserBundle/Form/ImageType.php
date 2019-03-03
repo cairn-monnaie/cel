@@ -19,7 +19,7 @@ class ImageType extends AbstractType
             ->add('file', FileType::class,array('label'=>'image','required'=>false,
                 'constraints'=>array(
                     new Assert\File(array(
-                        'maxSize'=>'200k',
+                        'maxSize'=>'500k',
                         'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}'
                     )),
                     new Assert\Image(array(
@@ -37,7 +37,7 @@ class ImageType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults(array(
-            'data_class' => 'Cairn\UserBundle\Entity\Image'
+            'data_class' => 'Cairn\UserBundle\Entity\File'
         ));
     }
 

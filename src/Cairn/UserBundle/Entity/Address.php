@@ -45,9 +45,6 @@ class Address
      */
     private $zipCity;
 
-    /**
-     */
-    private $user;
 
 
     /**
@@ -109,29 +106,6 @@ class Address
         return $this->street2;
     }
 
-    /**
-     * Set user
-     *
-     * @param \Entity\User $user
-     *
-     * @return Address
-     */
-    public function setUser($user)
-    {
-        $this->user = $user;
-
-        return $this;
-    }
-
-    /**
-     * Get user
-     *
-     * @return \Entity\User
-     */
-    public function getUser()
-    {
-        return $this->user;
-    }
 
     /**
      * Set zipCity

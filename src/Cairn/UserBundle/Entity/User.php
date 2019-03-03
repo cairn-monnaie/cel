@@ -18,7 +18,6 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Table(name="cairn_user")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
- * @UniqueEntity(fields = {"name"},message="Ce nom est déjà utilisé") 
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
  */
 class User extends BaseUser
@@ -32,13 +31,18 @@ class User extends BaseUser
     protected $id;
 
     /**
-     * @ORM\Column(name="name", type="string", unique=true, nullable=true)
+     * @ORM\Column(name="name", type="string", unique=false, nullable=false)
      */
-    private $name; 
+    private $name;
 
     /**
-     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
-     * @Assert\Length(min=19, minMessage="Contient exactement {{ limit }} chiffres")
+     * @ORM\Column(name="firstname", type="string", unique=false, nullable=true)
+     */
+    private $firstname;
+
+    /**
+     * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID; 
 
@@ -60,6 +64,11 @@ class User extends BaseUser
     private $creationDate; 
 
     /**
+     * @ORM\Column(name="nb_phone_number_requests", type="smallint", unique=false, nullable=false)
+     */
+    private $nbPhoneNumberRequests; 
+
+    /**
      * @var ArrayCollection
      *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
      *@ORM\JoinColumn(referencedColumnName="id")
@@ -73,9 +82,14 @@ class User extends BaseUser
     private $beneficiaries;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Image", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
      */
     private $image;
+
+    /**
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
+     */
+    private $identityDocument;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Card", mappedBy="user", cascade={"persist","remove"})
@@ -83,9 +97,9 @@ class User extends BaseUser
     private $card;
 
     /**
-     * @ORM\Column(name="nb_cards", type="smallint", unique=false, nullable=false)
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
      */
-    private $nbCards;
+    private $smsData;
 
     /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
@@ -96,6 +110,16 @@ class User extends BaseUser
      * @ORM\Column(name="card_key_tries", type="smallint", unique=false, nullable=false)
      */
     private $cardKeyTries;
+
+    /**
+     * @ORM\Column(name="phone_number_activation_tries", type="smallint", unique=false, nullable=false)
+     */
+    private $phoneNumberActivationTries;
+
+    /**
+     * @ORM\Column(name="card_association_tries", type="smallint", unique=false, nullable=false)
+     */
+    private $cardAssociationTries;
 
     /**
      * @ORM\Column(name="removal_request", type="boolean", unique=false, nullable=false)
@@ -116,14 +140,48 @@ class User extends BaseUser
         $this->referents = new ArrayCollection();
         $this->setPasswordTries(0);
         $this->setCardKeyTries(0);
-        $this->setNbCards(0);
+        $this->setCardAssociationTries(0);
         $this->removalRequest = false;
         $this->firstLogin = true;
+        $this->setNbPhoneNumberRequests(0);
+        $this->setPhoneNumberActivationTries(0);
     }
 
     public function getCity()
     {
         return $this->getAddress()->getZipCity()->getCity();
+    }
+
+    public function getPhoneNumber()
+    {
+        if($this->getSmsData()){
+            return $this->getSmsData()->getPhoneNumber();
+        }
+        return NULL;
+    }
+
+    public function isAdherent()
+    {
+        return ($this->hasRole('ROLE_PRO') || $this->hasRole('ROLE_PERSON'));
+    }
+
+    public function isAdmin()
+    {
+        return ($this->hasRole('ROLE_ADMIN') || $this->hasRole('ROLE_SUPER_ADMIN'));
+    }
+
+    static function makeUsername($lastname, $firstname = '' , $extra = '')
+    {
+        $lastname = preg_replace('/[-\/]+/', ' ', $lastname);
+        $ln = explode(' ', $lastname);
+        if (strlen($ln[0]) < 3 && count($ln) > 1)
+            $ln = $ln[0] . $ln[1];
+        else
+            $ln = $ln[0];
+        $username = strtolower(substr(explode(' ', $firstname)[0], 0, 1) . $ln);
+        $username = preg_replace('/[^a-z0-9]/', '', $username);
+        $username .= $extra;
+        return $username;
     }
 
     static function randomPassword() {
@@ -164,16 +222,6 @@ class User extends BaseUser
         return $this->cyclosID;
     }
 
-    //    public function fromDTOToEntity($userDTO)
-    //    {
-    //        $this->setUsername($userDTO->username);
-    //        $this->setEmail($userDTO->email);
-    //        $this->setPassword($userDTO->passwords->value);
-    //        if(property_exists($userDTO,'id')){
-    //            $this->setCyclosID($userDTO->id);
-    //        }
-    //    }   
-
     public function fromEntityToDTO()
     {
         $userDTO = new \stdClass();
@@ -190,9 +238,6 @@ class User extends BaseUser
         return $userDTO;
     }
 
-    /**
-     *@ORM\PreUpdate
-     */ 
     private function saveDTO()
     {
         $userManager = new UserManager();
@@ -225,6 +270,32 @@ class User extends BaseUser
     {
         return $this->name;
     }
+
+
+    /**
+     * Set nbPhoneNumberRequests
+     *
+     * @param int $nbPhoneNumberRequests
+     *
+     * @return User
+     */
+    public function setNbPhoneNumberRequests($nbPhoneNumberRequests)
+    {
+        $this->nbPhoneNumberRequests = $nbPhoneNumberRequests;
+
+        return $this;
+    }
+
+    /**
+     * Get nbPhoneNumberRequests
+     *
+     * @return int
+     */
+    public function getNbPhoneNumberRequests()
+    {
+        return $this->nbPhoneNumberRequests;
+    }
+
 
     /**
      * Set creationDate
@@ -301,11 +372,11 @@ class User extends BaseUser
     /**
      * Set image
      *
-     * @param \Cairn\UserBundle\Entity\Image $image
+     * @param \Cairn\UserBundle\Entity\File $image
      *
      * @return User
      */
-    public function setImage(\Cairn\UserBundle\Entity\Image $image = null)
+    public function setImage(\Cairn\UserBundle\Entity\File $image = null)
     {
         $this->image = $image;
 
@@ -315,11 +386,35 @@ class User extends BaseUser
     /**
      * Get image
      *
-     * @return \Cairn\UserBundle\Entity\Image
+     * @return \Cairn\UserBundle\Entity\File
      */
     public function getImage()
     {
         return $this->image;
+    }
+
+     /**
+     * Set identityDocument
+     *
+     * @param \Cairn\UserBundle\Entity\File $identityDocument
+     *
+     * @return User
+     */
+    public function setIdentityDocument(\Cairn\UserBundle\Entity\File $identityDocument = null)
+    {
+        $this->identityDocument = $identityDocument;
+
+        return $this;
+    }
+
+    /**
+     * Get identityDocument
+     *
+     * @return \Cairn\UserBundle\Entity\File
+     */
+    public function getIdentityDocument()
+    {
+        return $this->identityDocument;
     }
 
     /**
@@ -393,7 +488,7 @@ class User extends BaseUser
     /**
      * Get passwordTries
      *
-     * @return integer
+     * @return int
      */
     public function getPasswordTries()
     {
@@ -403,16 +498,13 @@ class User extends BaseUser
     /**
      * Set cardKeyTries
      *
-     * @param integer $cardKeyTries
+     * @param int $cardKeyTries
      *
      * @return User
      */
     public function setCardKeyTries($cardKeyTries)
     {
         $this->cardKeyTries = $cardKeyTries;
-        if($this->cardKeyTries >= 3){
-            $this->setEnabled(false);
-        }
 
         return $this;
     }
@@ -420,11 +512,62 @@ class User extends BaseUser
     /**
      * Get cardKeyTries
      *
-     * @return integer
+     * @return int
      */
     public function getCardKeyTries()
     {
         return $this->cardKeyTries;
+    }
+
+    /**
+     * Set phoneNumberActivationTries
+     *
+     * @param int $phoneNumberActivationTries
+     *
+     * @return User
+     */
+    public function setPhoneNumberActivationTries($phoneNumberActivationTries)
+    {
+        $this->phoneNumberActivationTries = $phoneNumberActivationTries;
+
+        return $this;
+    }
+
+    /**
+     * Get phoneNumberActivationTries
+     *
+     * @return int
+     */
+    public function getPhoneNumberActivationTries()
+    {
+        return $this->phoneNumberActivationTries;
+    }
+
+    /**
+     * Set cardAssociationTries
+     *
+     * @param int $cardAssociationTries
+     *
+     * @return User
+     */
+    public function setCardAssociationTries($cardAssociationTries)
+    {
+        $this->cardAssociationTries = $cardAssociationTries;
+        if($this->cardAssociationTries >= 3){
+            $this->setEnabled(false);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get cardAssociationTries
+     *
+     * @return int
+     */
+    public function getCardAssociationTries()
+    {
+        return $this->cardAssociationTries;
     }
 
     /**
@@ -436,9 +579,6 @@ class User extends BaseUser
      */
     public function setCard(\Cairn\UserBundle\Entity\Card $card = null)
     {
-        if($card){
-            $this->setNbCards($this->getNbCards() + 1);
-        }
         $this->card = $card;
 
         return $this;
@@ -455,27 +595,27 @@ class User extends BaseUser
     }
 
     /**
-     * Set nbCards
+     * Set smsData
      *
-     * @param integer $nbCards
+     * @param \Cairn\UserBundle\Entity\SmsData $smsData
      *
      * @return User
      */
-    public function setNbCards($nbCards)
+    public function setSmsData(\Cairn\UserBundle\Entity\SmsData $smsData = null)
     {
-        $this->nbCards = $nbCards;
+        $this->smsData = $smsData;
 
         return $this;
     }
 
     /**
-     * Get nbCards
+     * Get smsData
      *
-     * @return integer
+     * @return \Cairn\UserBundle\Entity\SmsData
      */
-    public function getNbCards()
+    public function getSmsData()
     {
-        return $this->nbCards;
+        return $this->smsData;
     }
 
     /**
@@ -609,5 +749,39 @@ class User extends BaseUser
             }
         }
         return NULL;
+    }
+
+    /**
+     * Set firstname.
+     *
+     * @param string|null $firstname
+     *
+     * @return User
+     */
+    public function setFirstname($firstname = null)
+    {
+        $this->firstname = $firstname;
+
+        return $this;
+    }
+
+    /**
+     * Get firstname.
+     *
+     * @return string|null
+     */
+    public function getFirstname()
+    {
+        return $this->firstname;
+    }
+
+    /**
+     * Get firstLogin.
+     *
+     * @return bool
+     */
+    public function getFirstLogin()
+    {
+        return $this->firstLogin;
     }
 }

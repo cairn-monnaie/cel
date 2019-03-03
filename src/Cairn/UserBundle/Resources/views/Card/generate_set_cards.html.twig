@@ -1,0 +1,26 @@
+{# src/Cairn/UserBundle/Resources/views/Card/generate_set_cards.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+    
+    <h2>Générer des cartes de sécurité </h2>
+    <h3>Saisir une quantité </h3>
+
+    Nombre de cartes générables : {{nbPrintableCards}}
+    <div>                                                                          
+        {{ form_start(form) }}
+        {{form_end(form) }}
+    </div>                                                                         
+
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+

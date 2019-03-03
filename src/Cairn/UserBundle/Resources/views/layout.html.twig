@@ -5,7 +5,6 @@
 {% block title %}{% endblock %}                                                                 
                                                                                
 {% block body %}
-
 <nav>
     {% if is_granted("ROLE_ADMIN") %}
 
@@ -21,7 +20,7 @@
             <a class="menu-item" href="{{path('cairn_user_banknotes_home')}}">Les billets</a>
         </li>#}
         <li>    
-            <a class="menu-item" href="{{path('cairn_user_users_home')}}">Les membres</a>
+            <a class="menu-item" href="{{path('cairn_user_list_users_home')}}">Les membres</a>
         </li>
 
         <li>
@@ -30,9 +29,9 @@
                 <ul class="menu_list">
                     {% if is_granted("ROLE_SUPER_ADMIN") %}
                         <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"> Virements </a></li>
-                        <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}"> Dépôt </a></li>
+{#                        <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}"> Dépôt </a></li>
                         <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}"> Retrait </a></li>
-                        <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}"> Conversion </a></li>
+                        <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}"> Conversion </a></li> #}
 
                     {% endif %}
 
@@ -90,4 +89,3 @@
 
 {% block javascripts %}
 {% endblock %}
-

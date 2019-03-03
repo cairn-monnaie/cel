@@ -32,7 +32,7 @@ class AccountTypeControllerTest extends BaseControllerTest
      */
     public function testAddAccountType($nature,$login,$isLegit,$expectForm, $name,$isValid, $creditLimit)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'));
 
         $this->login($login,'@@bbccdd');
 
@@ -98,7 +98,7 @@ class AccountTypeControllerTest extends BaseControllerTest
      */
     public function testRemoveAccountType($login,$isLegit, $nature, $isValid)
     {
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_network_cairn'));
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'));
 
         $this->login($login,'@@bbccdd');
 

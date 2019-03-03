@@ -75,9 +75,9 @@ class Operation
     private $reason;
 
     /**
-     * @var int
+     * @var float
      *
-     * @ORM\Column(name="amount", type="integer")
+     * @ORM\Column(name="amount", type="float")
      */
     private $amount;
 
@@ -101,14 +101,29 @@ class Operation
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
      *@ORM\JoinColumn(nullable=true)
      */
-    private $stakeholder;
+    private $creditor;
 
     /**
      * @var string
      *
-     *@ORM\Column(name="stakeholderName", type="string", length=50)
+     *@ORM\Column(name="creditorName", type="string", length=50)
      */
-    private $stakeholderName;
+    private $creditorName;
+
+     /**
+     * @var \Cairn\UserBundle\Entity\User
+     *
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
+     *@ORM\JoinColumn(nullable=true)
+     */
+    private $debitor;
+
+    /**
+     * @var string
+     *
+     *@ORM\Column(name="debitorName", type="string", length=50)
+     */
+    private $debitorName;
 
     /**
      * @var array
@@ -120,6 +135,7 @@ class Operation
      */
     private $toAccount;
 
+    //WARNING : VALUES SHOULD NOT CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
     const TYPE_TRANSACTION_EXECUTED = 0;
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
@@ -128,10 +144,47 @@ class Operation
     const TYPE_DEPOSIT = 5;
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
+    const TYPE_SMS_PAYMENT = 8;
 
+    public function isSmsPayment()
+    {
+        return ($this->getType() == self::TYPE_SMS_PAYMENT) ;
+    }
+
+    public static function getTypeName($type)
+    {
+        switch ($type){
+        case "0":
+            return 'transaction';
+            break;
+        case "2":
+            return 'scheduled transaction';
+            break;
+        case "3":
+            return 'conversion';
+            break;
+        case "4":
+            return 'reconversion';
+            break;
+        case "5":
+            return 'deposit';
+            break;
+        case "6":
+            return 'withdrawal';
+            break;
+        case "7":
+            return 'failed transaction';
+            break;
+        case "8":
+            return 'sms payment';
+            break;
+        default:
+            return NULL;
+        }
+    }
     public static function getFromOperationTypes()
     {
-        return array(self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getDebitOperationTypes()
@@ -142,6 +195,16 @@ class Operation
     public static function getToOperationTypes()
     {
         return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+    }
+
+    public static function getExecutedTypes()
+    {
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+    }
+
+    public static function getScheduledTypes()
+    {
+        return array(self::TYPE_TRANSACTION_SCHEDULED);
     }
 
     /**
@@ -181,8 +244,10 @@ class Operation
         $copy->setDescription($operation->getDescription());          
         $copy->setFromAccountNumber($operation->getFromAccountNumber());          
         $copy->setToAccountNumber($operation->getToAccountNumber());          
-        $copy->setStakeholder($operation->getStakeholder());          
-        $copy->setStakeholderName($operation->getStakeholderName());  
+        $copy->setCreditor($operation->getCreditor());          
+        $copy->setCreditorName($operation->getCreditorName());  
+        $copy->setDebitor($operation->getDebitor());          
+        $copy->setDebitorName($operation->getDebitorName());  
         $copy->setExecutionDate($operation->getExecutionDate());
         $copy->setSubmissionDate($operation->getSubmissionDate());
         $copy->setType($operation->getType());
@@ -371,7 +436,7 @@ class Operation
     /**
      * Set amount
      *
-     * @param integer $amount
+     * @param float $amount
      *
      * @return Operation
      */
@@ -385,7 +450,7 @@ class Operation
     /**
      * Get amount
      *
-     * @return int
+     * @return float
      */
     public function getAmount()
     {
@@ -441,43 +506,43 @@ class Operation
     }
 
     /**
-     * Set stakeholder
+     * Set creditor
      *
      * @param \Cairn\UserBundle\Entity\User $user
      *
      * @return Operation
      */
-    public function setStakeholder(\Cairn\UserBundle\Entity\User $user = NULL)
+    public function setCreditor(\Cairn\UserBundle\Entity\User $user = NULL)
     {
-        $this->stakeholder = $user;
+        $this->creditor = $user;
 
         if($user){
-            $this->stakeholderName = $user->getName();
+            $this->creditorName = $user->getName();
         }
 
         return $this;
     }
 
     /**
-     * Get stakeholder
+     * Get creditor
      *
      * @return \Cairn\UserBundle\Entity\User
      */
-    public function getStakeholder()
+    public function getCreditor()
     {
-        return $this->stakeholder;
+        return $this->creditor;
     }
 
     /**
-     * Set stakeholder's name
+     * Set creditor's name
      *
      * @param string
      *
      * @return Operation
      */
-    public function setStakeholderName($name)
+    public function setCreditorName($name)
     {
-        $this->stakeholderName = $name;
+        $this->creditorName = $name;
 
         return $this;
     }
@@ -487,9 +552,61 @@ class Operation
      *
      * @return string
      */
-    public function getStakeholderName()
+    public function getCreditorName()
     {
-        return $this->stakeholderName;
+        return $this->creditorName;
+    }
+
+    /**
+     * Set debitor
+     *
+     * @param \Cairn\UserBundle\Entity\User $user
+     *
+     * @return Operation
+     */
+    public function setDebitor(\Cairn\UserBundle\Entity\User $user = NULL)
+    {
+        $this->debitor = $user;
+
+        if($user){
+            $this->debitorName = $user->getName();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get debitor
+     *
+     * @return \Cairn\UserBundle\Entity\User
+     */
+    public function getDebitor()
+    {
+        return $this->debitor;
+    }
+
+    /**
+     * Set debitor's name
+     *
+     * @param string
+     *
+     * @return Operation
+     */
+    public function setDebitorName($name)
+    {
+        $this->debitorName = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get name
+     *
+     * @return string
+     */
+    public function getDebitorName()
+    {
+        return $this->debitorName;
     }
 
     /**

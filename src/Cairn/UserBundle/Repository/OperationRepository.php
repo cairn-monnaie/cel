@@ -2,6 +2,10 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Cairn\UserBundle\Entity\User;
+
+use Doctrine\ORM\QueryBuilder;
+
 /**
  * OperationRepository
  *
@@ -10,4 +14,82 @@ namespace Cairn\UserBundle\Repository;
  */
 class OperationRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function whereType(QueryBuilder $ob, $type)
+    {
+        $ob->andWhere('o.type = :type')                                           
+            ->setParameter('type',$type);
+        return $this;
+    }
+
+    //TODO : rajouter la recherche par accountNumber ici : 
+    //si un utilisateur est supprimé, la requête par userID va fail 
+    public function whereDebitor(QueryBuilder $ob, User $user)
+    {
+        $ob->andWhere('o.debitor = :debitor')                                           
+            ->setParameter('debitor',$user);
+        return $this;
+    }
+
+    public function whereDebitorAccountNumber(QueryBuilder $ob, $accountNumber)
+    {
+        $ob->andWhere('o.fromAccountNumber = :number')                                           
+            ->setParameter('number',$accountNumber);
+        return $this;
+    }
+
+    public function whereCreditor(QueryBuilder $ob, User $user)
+    {
+        $ob->andWhere('o.creditor = :creditor')                                           
+            ->setParameter('creditor',$user);
+        return $this;
+    }
+
+    public function whereCreditorAccountNumber(QueryBuilder $ob, $accountNumber)
+    {
+        $ob->andWhere('o.toAccountNumber = :number')                                           
+            ->setParameter('number',$accountNumber);
+        return $this;
+    }
+
+
+    public function whereAmountComparedWith(QueryBuilder $ob, $amount, $operator)
+    {
+        switch ($operator){
+            case 'gt':
+                $ob->andWhere('o.amount >= :amount');
+                break;
+            case 'lt':
+                $ob->andWhere('o.amount <= :amount');
+                break;
+            case 'eq':
+                $ob->andWhere('o.amount = :amount');
+                break;
+            default:
+                throw new \Exception('Undefined comparison operator');
+        }
+
+        $ob->setParameter('amount',$amount);
+        return $this;
+
+    }
+
+    public function countTotalAmount(QueryBuilder $ob)
+    {
+        return $ob->select('SUM(o.amount) as totalAmount')
+               ->getQuery()
+               ->getSingleScalarResult();
+    }
+
+    public function whereCurrentDay(QueryBuilder $ob)
+    {
+        $ob->andWhere('o.executionDate BETWEEN :start AND :end')
+            ->setParameter('start', new \Datetime(date('Y-m-d'))) // 00:00:00
+            ->setParameter('end', new \Datetime()) //now
+            ;
+        return $this;
+
+    }
+
+
 }

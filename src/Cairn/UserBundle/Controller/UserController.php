@@ -13,6 +13,7 @@ use Cairn\UserBundle\Event\InputCardKeyEvent;
 
 //manage Entities
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
@@ -26,12 +27,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 //manage Forms
+use Cairn\UserBundle\Form\SmsDataType;
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\RegistrationType;
 use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\BeneficiaryType;
 use Cairn\UserBundle\Form\ProfileFormType;
 use Cairn\UserBundle\Form\ChangePasswordType;
+use Cairn\UserBundle\Form\PhoneNumberType;
 
 use Cairn\UserBundle\Validator\UserPassword;
 
@@ -51,6 +54,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Config\Definition\Exception\Exception;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 use Symfony\Component\Validator\Constraints as Assert;
@@ -58,7 +62,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * This class contains all actions related to user experience
  *
- * @Security("is_granted('ROLE_PRO')")
+ * @Security("is_granted('ROLE_ADHERENT')")
  */
 class UserController extends Controller
 {
@@ -76,7 +80,7 @@ class UserController extends Controller
 
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
-        //last users registered
+        //last pros registered
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
@@ -96,34 +100,29 @@ class UserController extends Controller
 
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
-        $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
-            ->andWhere('o.paymentID is not NULL')
-            ->andWhere('o.type = :type')
-            ->setParameter('type',Operation::TYPE_TRANSACTION_EXECUTED)
-            ->orderBy('o.executionDate','ASC')
-            ->setMaxResults(15)
-            ->getQuery()->getResult();
-
-        $ob = $operationRepo->createQueryBuilder('o');
         $processedTransactions = $ob->where(
-            $ob->expr()->orX(
-                $ob->expr()->andX(
-                    $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                    $ob->expr()->in('o.type',Operation::getFromOperationTypes())
-                ),
-                $ob->expr()->andX(
-                    $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                    $ob->expr()->in('o.type',Operation::getToOperationTypes())
-                )
-            ))
+             $ob->expr()->orX(
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                 ),
+                 $ob->expr()->andX(
+                     $ob->expr()->in('o.toAccountNumber', $accountNumbers),
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                 )
+             ))
             ->andWhere('o.paymentID is not NULL')
             ->orderBy('o.executionDate','ASC')
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
-        if($checker->isGranted('ROLE_PRO')){
+        if($checker->isGranted('ROLE_ADHERENT')){
             if($_format == 'json'){
-                $response = array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions, 'lastUsers'=>$users);
+                $response = $this->get('serializer')->serialize($users[0], 'json');
+                //$response = array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions, 'lastUsers'=>$users);
+                $response = new Response($response);
+                $response->headers->set('Content-Type', 'application/json');
+                return $response;
                 return $this->json($response);
             }
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastUsers'=>$users));
@@ -131,90 +130,251 @@ class UserController extends Controller
 
     }
 
+
+    /**
+     * Changes the current user's sms data
+     *
+     * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
+     */
+    public function editSmsDataAction(Request $request, User $user)
+    {
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $currentUser = $this->getUser();
+
+        $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN');
+
+        $encoder = $this->get('security.encoder_factory')->getEncoder($user);
+
+        //****************** All cases where edit sms is not allowed ****************//
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
+
+        if(! ($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')) ){
+            throw new AccessDeniedException('Réserver aux comptes adhérents');
+        }
+
+        if(! $user->getCard()){
+            $session->getFlashBag()->add('error','Pas de carte de sécurité associée !');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
+
+        $smsData = ($res = $user->getSmsData()) ? $res : new SmsData($user);
+        $previousPhoneNumber = $smsData->getPhoneNumber();
+
+        //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
+        if( $user->hasRole('ROLE_PRO') && $isAdmin && !$user->getSmsData() ){
+            $session->getFlashBag()->add('info','Ce professionnel n\'a jamais saisi ses coordonnées SMS');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
+        if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
+            $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
+        }
+
+        //************************ end of cases where edit sms is disallowed *************************//
+
+        $formSmsData = $this->createForm(SmsDataType::class, $smsData);
+        $formCode = $this->createFormBuilder()
+            ->add('code', PasswordType::class,array('label'=>'Code de validation'))
+            ->add('save', SubmitType::class,array('label'=>'Valider'))
+            ->getForm();
+
+        $formSmsData->handleRequest($request);
+        if($formSmsData->isSubmitted() && $formSmsData->isValid()){
+
+            if($previousPhoneNumber != $smsData->getPhoneNumber()){ //request is new phone number
+                if($user !== $currentUser ){
+                    throw new AccessDeniedException('Action réservée à '.$user->getName());
+                }
+
+                if($currentUser->getNbPhoneNumberRequests() >= 3){
+                    $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+                    return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
+                }
+
+                //give a new code to be validated
+                if($this->getParameter('kernel.environment') != 'prod'){
+                    $code = 1111;
+                }else{
+                    $code = rand(1000,9999);
+                }
+    
+                $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
+                $session->set('activationCode', $session_code);
+    
+                $currentUser->setNbPhoneNumberRequests($currentUser->getNbPhoneNumberRequests() + 1);
+    
+
+                //at this step, flush is impossible because entitymanager would consider $smsData object as a brand new object
+                //then, an exception would be thrown due to unique key constraint error
+                //that's why we retrieve the instance right away and refresh it to not flush modifications, as it should be done only
+                //after code validation from the second form
+                $newPhoneNumber = $smsData->getPhoneNumber(); //let's save it before refresh
+
+                if($previousPhoneNumber){ //otherwise, nothing to refresh
+                    //detach is necessary for serialization of associated entities before setting it in session
+                    $em->detach($smsData);
+                    $session->set('smsData',$smsData);
+                    $session->set('hasPreviousPhoneNumber',true);
+                    $smsData = $em->merge($session->get('smsData'));
+                    $em->refresh($smsData);
+                }else{
+                    $session->set('hasPreviousPhoneNumber',false);
+                    $session->set('smsData',$this->get('cairn_user.api')->serialize($smsData));
+                }
+
+                // send SMS with validation code to current user's new phone number
+                $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber,'Code de validation : '. $code);
+                $em->flush();
+
+                $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
+                if($existSmsData){
+                    $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des opérations par SMS');
+                }
+    
+                $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
+                return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
+                    array('formSmsData'=>$formSmsData->createView(),
+                          'formCode'=>$formCode->createView()));
+    
+            }else{//just change ID SMS Means that phoneNumber was already associated and $smsData is not new
+
+                if($smsData->isSmsEnabled() ){
+                    $session->getFlashBag()->add('info','Les opérations SMS sont autorisées pour le numéro '.$smsData->getPhoneNumber());
+                }else{
+                    $session->getFlashBag()->add('info','Les opérations SMS n\'ont pas été autorisées pour le numéro '.$smsData->getPhoneNumber());
+                }
+
+                $em->flush();
+                $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
+                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            }
+
+         }
+
+        $formCode->handleRequest($request);
+        if($formCode->isSubmitted() && $formCode->isValid()){
+            $providedCode = $formCode->getData()['code'];
+            
+            $session_code = $session->get('activationCode');
+
+
+            //no activation code proposed (means that no phone number association requested)
+            if(!$session_code){
+                $session->getFlashBag()->add('info','Aucune demande d\'ajout de numéro enregistrée');
+                return new RedirectResponse($request->getRequestUri());
+            }
+
+            //valid code
+            if($encoder->encodePassword($providedCode,$user->getSalt()) == $session_code){
+
+                $hasPreviousPhoneNumber = $session->get('hasPreviousPhoneNumber');
+
+                if($hasPreviousPhoneNumber){
+                    $smsData = $em->merge($session->get('smsData'));
+                   
+                }else{
+                    $res = $this->get('cairn_user.api')->deserialize($session->get('smsData'),'Cairn\UserBundle\Entity\SmsData');
+                   $smsData = $em->merge($res);
+                }
+
+                $user->setNbPhoneNumberRequests(0);
+                $user->setPhoneNumberActivationTries(0);
+
+
+                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),array('BLOCKED','ACTIVE'));
+                if(! $accessClientVO){
+                    $securityService = $this->get('cairn_user.security');
+                    $securityService->createAccessClient($user,'client_sms');
+                    $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
+
+                    $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                    $smsClient = $securityService->vigenereEncode($smsClient.$this->getParameter('secret'));
+                    $smsData->setSmsClient($smsClient);
+
+                    //by default, access client is blocked and must be unblocked while enabling sms operations
+//                    $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
+                }
+
+                 //if user had a phone number before, we check if there was a pro & personal number associated
+                 //if so, we warn the user that, right now, SMS payment is possible for pro
+                if($hasPreviousPhoneNumber){
+                    $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
+                    if(count($existingUsers) == 2){
+                        $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des opérations par SMS');
+                    }
+                }
+                $em->persist($user);
+                $smsData->setUser($user);
+                $user->setSmsData($smsData);
+                $em->persist($smsData);
+                $em->flush();
+                $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
+                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+
+            //invalid code
+            }else{
+                $user->setPhoneNumberActivationTries($user->getPhoneNumberActivationTries() + 1);
+                $remainingTries = 3 - $user->getPhoneNumberActivationTries();
+                if($remainingTries > 0){
+                    $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte');
+                }else{
+                    $this->get('cairn_user.access_platform')->disable(array($user),'Compte bloqué','Echecs');
+                    $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
+                }
+
+                $em->flush();
+                return new RedirectResponse($request->getRequestUri());
+
+            }
+        }
+
+        return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
+            array('formSmsData'=>$formSmsData->createView(),
+                  'formCode'=>$formCode->createView()));
+    }
+
     /**
      *Get the list of all users grouped by roles
      *
      */
-    public function usersAction(Request $request, $_format)
+    public function listUsersAction(Request $request, $_format)
     {
         $currentUserID = $this->getUser()->getID();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
-        $ub = $userRepo->createQueryBuilder('u');
 
-        //validated pros who the current user is referent of 
-        $validatedPros = new \stdClass();
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
+        $pros = new \stdClass();
+        $pros->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',true);
+        $pros->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',false);
+        $pros->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PRO');
+        $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
 
-        $listEnabledPros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
+        $persons = new \stdClass();
+        $persons->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',true);
+        $persons->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',false);
+        $persons->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PERSON');
+        $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
 
-        //blocked pros who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
-        $listBlockedPros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->andWhere('u.lastLogin is not NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
+        $admins = new \stdClass();
+        $admins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',true);
+        $admins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',false);
+        $admins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_ADMIN');
 
-        $validatedPros->enabledPros = $listEnabledPros;
-        $validatedPros->blockedPros = $listBlockedPros;
-
-        //never validated pros who the current user is referent of 
-        $pendingUsers = new \stdClass();
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_PRO')->whereReferent($ub, $currentUserID);
-        $pendingUsers->pros = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->andWhere('u.lastLogin is NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //blocked admins who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_ADMIN')->whereReferent($ub, $currentUserID);
-        $pendingUsers->admins = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = false')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all members waiting for a card who the current user is referent of 
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereReferent($ub, $currentUserID);
-        $pendingCards = $ub
-            ->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->join('u.card','c')
-            ->andWhere('c.fields is NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all ROLE_ADMIN
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_ADMIN');
-        $listAdmins = $ub->andWhere('u.confirmationToken is NULL')
-            ->andWhere('u.enabled = true')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
-        //all ROLE_SUPER_ADMIN
-        $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($ub,'ROLE_SUPER_ADMIN');
-        $listSuperAdmins = $ub->andWhere('u.confirmationToken is NULL')
-            ->orderBy('u.name','ASC')
-            ->getQuery()->getResult(); 
-
+        $superAdmins = new \stdClass();
+        $superAdmins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',true);
+        $superAdmins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',false);
+        $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
 
         $allUsers = array(
-            'validPros'=>$validatedPros, 
-            'pendingUsers'=>$pendingUsers,
-            'pendingCards'=>$pendingCards,
-            'listAdmins'=>$listAdmins,
-            'listSuperAdmins'=>$listSuperAdmins
+            'pros'=>$pros, 
+            'persons'=>$persons,
+            'admins'=>$admins,
+            'superAdmins'=>$superAdmins,
         );
 
         if($_format == 'json'){
@@ -224,314 +384,347 @@ class UserController extends Controller
     }
 
 
+//    public function getAction(Request $request, User $user)
+//    {
+//
+//    }
+    /**
+     * List API options related to user URI 
+     *
+     */
+    public function optionsAction(Request $request)                           
+    {   
+        $template = array(
+            'notes'=> '',
+            'path'=> '',
+            'method'=> '',
+            'Parameters'=> array(
+                'query'=>array(),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(),
+                'access denied'=> array(),
+                'error'=> array()
+            )
+        );
+
+        $options = array();
+        $options['get users list'] = array(
+            'notes'=> 'Request list of users',
+            'path'=> 'api/users',
+            'method'=> 'GET',
+            'Parameters'=> array(
+                'query'=>array(),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful request'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'you do not have access to these users'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['get user profile'] = array(
+            'notes'=> 'Request profile data for an user with id {id}',
+            'path'=> "api/users/{id}",
+            'method'=> 'GET',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=>array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    )
+                ),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful request'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'forbidden access'
+                 ),
+                'undefined user'=> array(
+                     'status code'=> '404',
+                     'reason'=> 'no user with given id'
+                 ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['post'] = array(
+            'notes'=> 'Create a new user using provided data',
+            'path'=> 'api/users',
+            'method'=> 'POST',
+            'Parameters'=> array(
+                'query'=>array(
+                    'type'=>array(
+                        'description'=> 'kind of user to add',
+                        'data_type'=> 'string',
+                        'values'=> array('pro','localGroup','superAdmin')
+                    )
+                ),
+                'body'=>array(
+                    'name'=>array(
+                        'description'=> 'User name (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'username'=>array(
+                        'description'=> 'User login (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'address'=>array(
+                        'address1'=> array(
+                            'description'=> 'User main address (required)',
+                            'data_type'=> 'string'
+                        ),
+                        'address2'=> array(
+                            'description'=> 'User complement address',
+                            'data_type'=> 'string'
+                        ),
+                        'city'=> array(
+                            'description'=> 'User current city (required)',
+                            'data_type'=> 'string'
+                        ),
+                        'zipcode'=> array(
+                            'description'=> 'Zipcode of the city (required)',
+                            'data_type'=> 'int'
+                        ),
+
+                    ),
+                    'description'=>array(
+                        'description'=> 'Provide a few words on user\'s activity',
+                        'data_type'=> 'text'
+                    ),
+                    'logo'=>array(
+                        'description'=> 'User avatar',
+                        'data_type'=> 'image',
+                        'mimeTypes'=> array('image/jpeg','image/jpg','image/png','image/gif')
+                    )
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '201',
+                     'reason'=> 'successful user creation'
+                ),
+                'access denied'=> array(
+                     'status code'=> '403',
+                     'reason'=> 'Given current user\'s role, creating a user is not authorized'
+                 ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );        
+
+        $options['put'] = array(
+            'notes'=> ' Update user with id {id} using provided properties',
+            'path'=> 'api/users/{id}',
+            'method'=> 'PUT',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=>array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    )
+                ),
+                'body'=>array(
+                    'name'=>array(
+                        'description'=> 'User name',
+                        'data_type'=> 'string'
+                    ),
+                    'username'=>array(
+                        'description'=> 'User login',
+                        'data_type'=> 'string'
+                    ),
+                    'address'=>array(
+                        'address1'=> array(
+                            'description'=> 'User main address',
+                            'data_type'=> 'string'
+                        ),
+                        'address2'=> array(
+                            'description'=> 'User complement address',
+                            'data_type'=> 'string'
+                        ),
+                        'city'=> array(
+                            'description'=> 'User current city',
+                            'data_type'=> 'string'
+                        ),
+                        'zipcode'=> array(
+                            'description'=> 'Zipcode of the city',
+                            'data_type'=> 'int'
+                        ),
+
+                    ),
+                    'description'=>array(
+                        'description'=> 'Provide a few words on user\'s activity',
+                        'data_type'=> 'text'
+                    ),
+                    'logo'=>array(
+                        'description'=> 'User avatar',
+                        'data_type'=> 'image',
+                        'mimeTypes'=> 'image/jpeg','image/jpg','image/png','image/gif'
+                    )
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user update'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+
+        $options['delete'] = array(
+            'notes'=> 'Request delete user with id {id}',
+            'path'=> 'api/users/{id}',
+            'method'=> 'DELETE',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=> array(
+                      'description'=> 'user id (required)',
+                      'data_type'=> 'int'
+                  )
+                ),
+                'body'=>array()
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user update'
+                ),
+                'access denied'=> array(
+                 'status code'=> '403',
+                 'reason'=> 'forbidden removal on given user => not referent or not the user himself'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+        $options['Change_password'] = array(
+            'notes'=> 'Change password',
+            'path'=> 'api/users/change-password',
+            'method'=> 'PATCH',
+            'Parameters'=> array(
+                'query'=> array(),
+                'body'=> array(
+                    'current password'=> array(
+                      'description'=> 'User current password (required)',
+                      'data_type'=> 'string'
+                    ),
+                    'new password'=> array(
+                      'description'=> 'User requested password (required)',
+                      'data_type'=> 'string'
+                    ),
+                    'confirm new password'=> array(
+                      'description'=> 'Confirm requested password (required)',
+                      'data_type'=> 'string'
+                    ),
+                ),
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful password change'
+                ),
+                'error'=> array(
+                     'status code'=> '500',
+                     'reason'=> 'API Internal error'
+                )
+            )
+        );
+        $options['associate_card'] = array(
+            'notes'=> 'Associate a security card to a user',
+            'path'=> 'api/users/{id}/associate-card',
+            'method'=> 'PATCH',
+            'Parameters'=> array(
+                'query'=>array(
+                    'id'=> array(
+                        'description'=> 'user id (required)',
+                        'data_type'=> 'int'
+                    ),
+                ),
+                'body'=>array(
+                    'current password'=> array(
+                        'description'=> 'User current password (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'new password'=> array(
+                        'description'=> 'User requested password (required)',
+                        'data_type'=> 'string'
+                    ),
+                    'confirm new password'=> array(
+                        'description'=> 'Confirm requested password (required)',
+                        'data_type'=> 'string'
+                    ),
+             
+                )
+            ),
+            'Response messages'=> array(
+                'success'=> array(
+                     'status code'=> '200',
+                     'reason'=> 'successful user creation'       
+                ),
+                'access denied'=> array(
+                 'status code'=> '403',
+                 'reason'=> 'forbidden removal on given user => not referent or not the user himself'
+                ),
+                'error'=> array(
+                      'status code'=> '500',
+                     'reason'=> 'error on server-side'           
+                ),
+            )
+        );
+
+        return new Response(json_encode($options));
+    }                      
+
     /**
      * View the profile of $user
      *
      * What will be displayed on the screen will depend on the current user
      *
      * @param User $user User with profile to view
-     * @Method("GET")
      */
     public function viewProfileAction(Request $request , User $user, $_format)                           
     {                                                                          
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        $currentUser = $this->getUser();
+        if( (!$this->get('security.authorization_checker')->isGranted('ROLE_ADMIN')) && $user->hasRole('ROLE_SUPER_ADMIN')){
+            throw new AccessDeniedException('Pas les droits nécessaires pour accéder au profil de cet utilisateur');
+        } 
 
         if($_format == 'json'){
-            $array_user = array('name'=>$user->getName(),
-                'username'=>$user->getUsername(),
-                'email'=>$user->getEmail(),
-                'street1'=>$user->getAddress()->getStreet1(),
-                'street2'=>$user->getAddress()->getStreet2(),
-                'zipcode'=>$user->getAddress()->getZipCity()->getZipCode(),
-                'city'=>$user->getCity(),
-                'image'=>$user->getImage()
-            );
-
-            return $this->json(array('user'=>$array_user));
+            $serializedUser = $this->get('cairn_user.api')->serialize($user);
+            $response = new Response($serializedUser);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
         }
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
 
-    /**
-     * Get the list of beneficiaries for current User
-     *
-     */
-    public function listBeneficiariesAction(Request $request, $_format)
-    {
-        $beneficiaries = $this->getUser()->getBeneficiaries();
-
-        if($_format == 'json'){
-            return $this->json(array('beneficiaries'=>$beneficiaries));
-        }
-        return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('beneficiaries'=>$beneficiaries));
-    }
-
-
-
-    /**
-     * Checks if the beneficiary exists in database, and is a current beneficiary of $user
-     *
-     *@param User $user User who is supposed to own the account
-     *@param int $ICC account cyclos ID
-
-     *@return stdClass with attributes : 'existingBeneficiary'(Beneficiary class) and 'hasBeneficiary'(boolean)
-     */
-    public function isValidBeneficiary($user, $ICC)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-        $toReturn = new \stdClass();
-
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-
-        $toReturn->account = $this->get('cairn_user_cyclos_account_info')->hasAccount($ownerVO->id,$ICC);
-
-        $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$user,'ICC'=>$ICC));
-
-        if($existingBeneficiary){
-            $toReturn->existingBeneficiary = $existingBeneficiary;
-            $toReturn->hasBeneficiary = $this->getUser()->hasBeneficiary($existingBeneficiary);
-        }
-        else{
-            $toReturn->existingBeneficiary = NULL;
-            $toReturn->hasBeneficiary = NULL; 
-        }
-        return $toReturn;
-    }
-
-
-    /**
-     * Adds a new beneficiary to the existing list
-     *
-     * This action is considered as a sensible operation
-     * Proposes a list of potential users with autocompletion, then checks if the user and the ICC match, before ensuring that the
-     * beneficiary is valid and adding it.
-     *
-     * As the User and Beneficiary class have a ManyToMany bidirectional relationship, adding it the two directions must be done
-     *
-     */
-    public function addBeneficiaryAction(Request $request, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-
-
-        $possibleUsers = $userRepo->myFindByRole(array('ROLE_PRO'));
-        $currentUser = $this->getUser();
-
-        $form = $this->createFormBuilder()
-            ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
-            ->add('email', EmailType::class, array('label' => 'email du bénéficiaire'))
-            //ICC : IntegerType does not work for bigint : rounding after 14 figures (Account Ids in Cyclos have 19)
-            ->add('ICC',   TextType::class,array('label'=>'Identifiant de Compte Cairn(ICC)'))
-            ->add('add', SubmitType::class, array('label' => 'Ajouter'))
-            ->getForm();
-
-        if($request->isMethod('POST')){
-            $form->handleRequest($request);
-            if($form->isValid()){
-                $dataForm = $form->getData();
-
-                //                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-                //                $re_name ='#^[\w\.]+$#' ;
-                //                $re_ICC = '#^[-]?[0-9]+$#';
-                //                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
-
-                $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
-                if(!$user){
-                    $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
-                    if(!$user){
-                        $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun membre');
-                        return new RedirectResponse($request->getRequestUri());
-
-                    }
-                }
-                if($user->getID() == $currentUser->getID())
-                {
-                    $session->getFlashBag()->add('error','Vous ne pouvez pas vous ajouter vous-même...');
-                    return new RedirectResponse($request->getRequestUri());
-                }
-                $ICC = preg_replace('/\s+/', '', $dataForm['ICC']);
-
-                //check that ICC exists and corresponds to this user
-                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
-                if(!$toUserVO){
-                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    if(! ($user->getUsername() == $toUserVO->username)){
-                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$user->getName());
-                        return new RedirectResponse($request->getRequestUri());
-
-                    }
-                }
-
-                //check that beneficiary is not already in database, o.w create new one
-                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$ICC));
-
-                if(!$existingBeneficiary){
-                    $beneficiary = new Beneficiary();
-                    $beneficiary->setUser($user);
-                    $beneficiary->setICC($ICC);
-                }
-                else{ 
-                    if($currentUser->hasBeneficiary($existingBeneficiary)){
-                        $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                        return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                    }
-                    $beneficiary = $existingBeneficiary;
-                }
-
-                $beneficiary->addSource($currentUser);
-                $currentUser->addBeneficiary($beneficiary);
-                $em->persist($beneficiary);                    
-                $em->persist($currentUser);
-                $em->flush();
-                $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-
-            }
-        }
-
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'pros'=>$possibleUsers));
-        }
-        return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'pros'=>$possibleUsers));
-    }
-
-    /**
-     *Edit an existing beneficiary
-     *
-     * Only the ICC can be changed. Then, this new beneficiary is verified : 
-     *  _checks that the user's beneficiary has an account with the provided ICC
-     *  _check that new beneficiary is not already a beneficiary
-     *@param Beneficiary $beneficiary Beneficiary with a given ICC is edited
-     *@Method("GET")
-     */
-    public function editBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-
-        $newBeneficiary = new Beneficiary();
-        $newBeneficiary->setUser($beneficiary->getUser());
-        $newBeneficiary->setICC($beneficiary->getICC());
-        $form = $this->createForm(BeneficiaryType::class,$newBeneficiary);
-        $currentUser = $this->getUser();
-
-        if($request->isMethod('GET')){
-            $session->set('formerICC',$beneficiary->getICC());
-        }
-        if($request->isMethod('POST')){ //form filled and submitted            
-            $formerBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$session->get('formerICC')));
-            //            $session->remove('formerICC');
-            $form->handleRequest($request);                                    
-            if($form->isValid()){                                              
-                //check that ICC exists and corresponds to this user
-                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($newBeneficiary->getICC());
-                if(!$toUserVO){
-                    $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    $benefUser = $newBeneficiary->getUser();
-                    if(! ($benefUser->getUsername() == $toUserVO->username)){
-                        $session->getFlashBag()->add('error','L\' ICC indiqué ne correspond à aucun compte de ' .$benefUser->getName());
-                        return new RedirectResponse($request->getRequestUri());
-                    }
-                }
-
-
-                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('ICC'=>$newBeneficiary->getICC()));
-                if($existingBeneficiary){
-                    $newBeneficiary = $existingBeneficiary;
-                }
-
-                if($currentUser->hasBeneficiary($newBeneficiary)){
-                    $session->getFlashBag()->add('info','Ce compte fait déjà partie de vos bénéficiaires.');
-                    return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-                }
-
-                $nbSources = count($formerBeneficiary->getSources()) ;
-                $formerBeneficiary->removeSource($currentUser);
-                $currentUser->removeBeneficiary($formerBeneficiary);
-                if($nbSources == 1){
-                    $em->remove($formerBeneficiary);
-                }
-                $currentUser->addBeneficiary($newBeneficiary);
-                $newBeneficiary->addSource($currentUser);
-
-                $em->persist($newBeneficiary);
-                $em->persist($currentUser);
-                $em->flush();
-                $session->getFlashBag()->add('success','Modification effectuée avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list', array('_format'=>$_format));
-            }                                                              
-        }                                                                  
-
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView()));
-        }
-        return $this->render('CairnUserBundle:Pro:confirm_edit_beneficiary.html.twig',array('form'=>$form->createView()));
-    }
-
-
-    /**
-     * Removes a given beneficiary
-     *
-     * Once $beneficiary is removed, we ensure that this beneficiary is associated to at least one user. Otherwise, it is removed
-     * @TODO : try the option OrphanRemoval in annotations to let Doctrine do it 
-     * @param Beneficiary $beneficiary Beneficiary to remove
-     * @Method("GET")
-     */
-    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $form = $this->createForm(ConfirmationType::class);
-        $currentUser = $this->getUser();
-
-        if(!$currentUser->hasBeneficiary($beneficiary)){
-            $session->getFlashBag()->add('error',' Donnée introuvable');
-            return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
-        }
-        if($request->isMethod('POST')){ //form filled and submitted            
-
-            $form->handleRequest($request);                                    
-            if($form->isValid()){                                              
-                if($form->get('save')->isClicked()){ 
-                    $nbSources = count($beneficiary->getSources());
-                    $beneficiary->removeSource($currentUser);
-                    $currentUser->removeBeneficiary($beneficiary);
-                    if($nbSources == 1){
-                        $em->remove($beneficiary);
-                    }
-
-                    $em->flush();
-                    $session->getFlashBag()->add('success','Suppression effectuée avec succès');
-
-                    //TODO here
-                }                                                              
-                else{
-                    $session->getFlashBag()->add('info','Suppression annulée');
-                }
-                return $this->redirectToRoute('cairn_user_beneficiaries_list',array('_format'=>$_format));
-            }                                                                  
-        }        
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'beneficiary_name'=>$beneficiary->getUser()->getName()));
-        }
-
-        return $this->render('CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',
-            array(
-                'form'=>$form->createView(),
-                'beneficiary_name'=>$beneficiary->getUser()->getName()
-            ));
-    }
 
 
     /**
@@ -542,7 +735,7 @@ class UserController extends Controller
      *
      * A user can remove its own member area, or an admin can do it if he is a referent.
      *
-     * If the user to remove is a ROLE_USER, we ensure that all his accounts have a balance to zero
+     * If the user to remove is a ROLE_ADHERENT, we ensure that all his accounts have a balance to zero
      *
      * @Method("GET")
      *
@@ -576,7 +769,7 @@ class UserController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id,NULL);
 
-        if($user->hasRole('ROLE_PRO')){
+        if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
             foreach($accounts as $account){
                 if($account->status->balance != 0){
                     $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La suppression ne peut aboutir.');
@@ -596,14 +789,21 @@ class UserController extends Controller
                     if($isAdmin){
                         $redirection = 'cairn_user_users_home';
                         $isRemoved = $this->removeUser($user, $currentUser);
-                        $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
-                    }else{//is ROLE_PRO
+
+                        if($isRemoved){
+                            $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
+                        }else{
+                            $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
+                            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                        }
+                    }else{//is ROLE_PRO or ROLE_PERSON
                         $user->setRemovalRequest(true);
-                        $user->setEnabled(false);
+                        $this->get('cairn_user.access_platform')->disable(array($user));
 
                         $redirection = 'fos_user_security_logout';
                         $session->getFlashBag()->add('success','Votre demande de suppression d\'espace membre a été prise en compte');
                     }
+
                     $em->flush();
 
                     return $this->redirectToRoute($redirection);
@@ -639,6 +839,7 @@ class UserController extends Controller
         $referents = $user->getReferents();
 
         $saveName = $user->getName();
+        $isPro = $user->hasRole('ROLE_PRO');
 
         $params = new \stdClass();
         $params->status = 'REMOVED';
@@ -653,11 +854,17 @@ class UserController extends Controller
             foreach($beneficiaries as $beneficiary){
                 $em->remove($beneficiary);
             }
-
-            //set Operations with user to remove as stakeholder to NULL
-            $operations = $operationRepo->findBy(array('stakeholder'=>$user));
+            
+            //TODO : ONE single SQL insert request instead of the two here
+            //set Operations with user to remove as creditor/debitor to NULL
+            $operations = $operationRepo->findBy(array('creditor'=>$user));
             foreach($operations as $operation){
-                $operation->setStakeholder(NULL);
+                $operation->setCreditor(NULL);
+            }
+
+            $operations = $operationRepo->findBy(array('debitor'=>$user));
+            foreach($operations as $operation){
+                $operation->setDebitor(NULL);
             }
 
             $em->remove($user);
@@ -665,29 +872,32 @@ class UserController extends Controller
             $subject = 'Ce n\'est qu\'un au revoir !';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $emailTo;
-            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('currentUser'=>$currentUser));
 
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-            $subject = 'Un professionnel a été supprimé de la plateforme';
-            $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
-            foreach($referents as $referent){
-                $to = $referent->getEmail();
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+            if($isPro){
+                $subject = 'Un professionnel a été supprimé de la plateforme';
+                $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
+                foreach($referents as $referent){
+                    $to = $referent->getEmail();
+                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                }
             }
 
             return true;
 
-        }catch(Cyclos\ServiceException $e){
-            if($e->errorCode == 'VALIDATION'){
-                $subject = 'Demande de suppression annulée';
-                $from = $messageNotificator->getNoReplyEmail();
-                $to = $user->getEmail();
-                $body = 'Vous avez demandé à supprimer votre espace membre, mais certains de vos comptes ont un solde non nul. Elle n\'a donc pas pu être validée. Mettez vos comptes à 0, et vérifiez que vous ne recevez pas des virements entre la demande et la validation';//$this->renderView('CairnUserBundle:Emails:farwell.html.twig');
+        }catch(\Exception $e){
 
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                return false;
+            if( ($e instanceof Cyclos\ServiceException) && ($e->errorCode == 'VALIDATION')){
 
+                $errors = $e->error->validation->allErrors;
+                for($i = 0; $i < count($errors); $i++){
+                    if( strpos( $errors[$i], 'has a non-zero balance') !== false ){
+                        return false;
+                    }
+                }
+                throw $e;
             }else{
                 throw $e;
             }
@@ -703,6 +913,7 @@ class UserController extends Controller
     public function removePendingUsersAction(Request $request, $_format)
     {
         $session = $request->getSession();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -725,9 +936,16 @@ class UserController extends Controller
                 foreach($listUsers as $user){
                     $isRemoved = $this->removeUser($user, $currentUser);
                     if(!$isRemoved){
-                        $user->setEnabled(true);
                         $user->setRemovalRequest(false);
                         $notRemovedUsers = $notRemovedUsers.', '.$user->getName();
+
+                        $subject = 'Demande de suppression non aboutie';
+                        $from = $messageNotificator->getNoReplyEmail();
+                        $to = $user->getEmail();
+                        $body = 'Votre demande de suppression de compte [e]-Cairn n\'a pas pu aboutir. Vérifiez que votre compte est bien soldé. Si oui, veuillez prendre contact avec l\'Association.'."\n"."\n".'Le Cairn,';
+            
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
                     }
                 }
 
@@ -735,6 +953,7 @@ class UserController extends Controller
 
                 if($notRemovedUsers != ''){
                     $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
+                    $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont probablement plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
                 }else{
                     $session->getFlashBag()->add('success','Tous les membres ont pas pu être supprimés avec succès'); 
                 }

@@ -144,80 +144,79 @@ class AdminController extends Controller
                 if(! $user->getLastLogin()){
                     try{
                         $userVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($user->getCyclosID());
-
-                        if($userVO){
-                            //remove cyclos user if one already exists in order to provide new password
-                            //as changing password for current Cyclos user needs current password (we don't know about) 
-                            $params = new \stdClass();
-                            $params->status = 'REMOVED';                                       
-                            $params->user = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-                            $this->userManager->changeStatusUser($params);  
-                        }
-
+                        $this->get('cairn_user.access_platform')->enable(array($user));
                     }catch(\Exception $e){
                         if(! $e->errorCode == 'ENTITY_NOT_FOUND'){
                             throw $e;
+                        }else{
+                            //create cyclos user
+                            $userDTO = new \stdClass();                                    
+                            $userDTO->name = $user->getName();                             
+                            $userDTO->username = $user->getUsername();                     
+                            $userDTO->login = $user->getUsername();                        
+                            $userDTO->email = $user->getEmail();                           
+
+                            $temporaryPassword = User::randomPassword();
+                            $user->setPlainPassword($temporaryPassword);
+
+                            $password = new \stdClass();                                   
+                            $password->assign = true;                                      
+                            $password->type = 'login';
+                            $password->value = $temporaryPassword;                  
+                            $password->confirmationValue = $password->value;
+                            $userDTO->passwords = $password;                               
+
+                            if($user->hasRole('ROLE_PRO')){
+                                $groupName = $this->getParameter('cyclos_group_pros');  
+                            }elseif($user->hasRole('ROLE_PERSON')){
+                                $groupName = $this->getParameter('cyclos_group_persons');  
+                            }else{                                                                 
+                                $groupName = $this->getParameter('cyclos_group_network_admins');
+                            }   
+
+                            $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
+
+                            //if webServices channel is not added, it is impossible to update/remove the cyclos user entity from 3rd party app
+                            $webServicesChannelVO = $this->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
+
+                            $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
+                            $user->setCyclosID($newUserCyclosID);
+
+
+                            //activate user and send email to user
+                            $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',
+                                array('user'=>$user,
+                                'login_url'=>$this->get('router')->generate('fos_user_security_login')));
+                            $subject = 'Plateforme numérique du Cairn';
+                            $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
+
+                            //send email to local group referent if pro
+
+                            if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){
+                                $from = $messageNotificator->getNoReplyEmail();
+                                $to = $referent->getEmail();
+                                $subject = 'Référent Pro';
+                                $body = 'Vous êtes désormais GL référent du professionnel ' . $user->getName();
+                                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                            }
+
+                            $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
+                            $em->flush();
+                            return $this->redirectToRoute('cairn_user_card_associate',array('id'=>$user->getID()));
                         }
                     }
-
-
-                    //create cyclos user
-                    $userDTO = new \stdClass();                                    
-                    $userDTO->name = $user->getName();                             
-                    $userDTO->username = $user->getUsername();                     
-//                    $userDTO->internalName = $user->getUsername();                 
-                    $userDTO->login = $user->getUsername();                        
-                    $userDTO->email = $user->getEmail();                           
-
-                    $temporaryPassword = User::randomPassword();
-                    $user->setPlainPassword($temporaryPassword);
-
-                    $password = new \stdClass();                                   
-                    $password->assign = true;                                      
-                    $password->type = 'login';
-                    $password->value = $temporaryPassword;                  
-                    $password->confirmationValue = $password->value;
-                    $userDTO->passwords = $password;                               
-
-                    if($user->hasRole('ROLE_PRO')){                                        
-                        $groupName = $this->getParameter('cyclos_group_pros');  
-                    }else{                                                                 
-                        $groupName = $this->getParameter('cyclos_group_network_admins');
-                    }   
-
-                    $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
-
-                    //if webServices channel is not added, it is impossible to update/remove the cyclos user entity from 3rd party app
-                    $webServicesChannelVO = $this->get('cairn_user_cyclos_channel_info')->getChannelVO('webServices');
-
-                    $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
-                    $user->setCyclosID($newUserCyclosID);
-
-                    $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',
-                        array('user'=>$user,
-                            'login_url'=>$this->get('router')->generate('fos_user_security_login')));
-                    $subject = 'Plateforme numérique du Cairn';
-                    $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
-
-                    $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
-                    $em->flush();
-                    return $this->render('CairnUserBundle:Card:generate_card.html.twig',array('user'=>$user,'card'=>$user->getCard()));
-
                 }else{
                     $this->get('cairn_user.access_platform')->enable(array($user));
-                    $em->flush();
                 }
             }
 
+            $em->flush();
             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
         }
 
         $responseArray = array('user' => $user,'form'=> $form->createView());
 
-        if($_format == 'json'){
-            return $this->json($responseArray);
-        }
         return $this->render('CairnUserBundle:User:activate.html.twig', $responseArray);
 
     }
@@ -285,8 +284,8 @@ class AdminController extends Controller
 
                 if($currentAdminReferent){
                     $to = $currentAdminReferent->getEmail();
-                    $subject = 'Référencement Pro';
-                    $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
+                    $subject = 'Référent Pro';
+                    $body = 'Votre GL n\'est plus référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $user->removeReferent($currentAdminReferent);
                 }
@@ -294,8 +293,8 @@ class AdminController extends Controller
                     $user->addReferent($referent);
 
                     $to = $referent->getEmail();
-                    $subject = 'Référencement Pro';
-                    $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
+                    $subject = 'Référent Pro';
+                    $body = 'Vous êtes désormais GL référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                     $session->getFlashBag()->add('success',

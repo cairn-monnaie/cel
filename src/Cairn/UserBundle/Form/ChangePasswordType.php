@@ -10,12 +10,22 @@ use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoder;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class ChangePasswordType extends AbstractType
 {
+    private $passwordEncoder;
+
+    public function __construct(UserPasswordEncoder $passwordEncoder)
+    {
+        $this->passwordEncoder = $passwordEncoder;
+    }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
@@ -31,8 +41,24 @@ class ChangePasswordType extends AbstractType
                 'first_options' => array('label' => 'Nouveau mot de passe'),
                 'second_options' => array('label' => 'Confirmation'),      
                 'invalid_message' => 'Les champs ne correspondent pas',    
-            ))                                                             
-            ->add('save',SubmitType::class,array('label'=>'Valider'));
+            ));
+        $builder->addEventListener(
+            FormEvents::SUBMIT,
+            function (FormEvent $event) {
+                $user = $event->getData();
+                $form = $event->getForm();
+                if(null === $user){
+                    return;
+                }
+                $newPassword = $form->get('plainPassword')->getData();
+                if($this->passwordEncoder->isPasswordValid($user, $newPassword)){
+                    $error = new FormError('Ce mot de passe est déjà utilisé');
+                    $form->addError($error);
+                }
+            }
+        );
+
+        $builder->add('save',SubmitType::class,array('label'=>'Valider'));
     }
 
     /**

@@ -43,6 +43,13 @@ class MessageNotificator
         $this->noreply = $noreply;
     }
 
+    //TODO : to change when SMS API avaialble
+    public function sendSMS($phoneNumber, $content)
+    {
+        $email = 'whoknows@test.com';
+        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
+    }
+
     public function getNoReplyEmail()
     {
         return $this->noreply;

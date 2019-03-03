@@ -29,7 +29,7 @@ class OperationValidator extends ConstraintValidator
     private function validateActiveAccount($account,$path)
     {
 
-        $ICC = $account['accountNumber'];
+        $ICC = $account['number'];
         if(!$ICC){                                    
             $this->context->buildViolation('Le compte n\'a pas été sélectionné')
                 ->atPath($path)                                        
@@ -54,9 +54,10 @@ class OperationValidator extends ConstraintValidator
         }
     }
 
+
     private function validatePassiveAccount($account,$path){
         $email = $account['email'];
-        $ICC = $account['accountNumber']; 
+        $ICC = $account['number']; 
 
         if(! ($ICC || $email)){ 
             $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
@@ -99,7 +100,7 @@ class OperationValidator extends ConstraintValidator
             }
             if($ICC && $email){
                 if($userVO && $user){
-                    if(! ($user->getUsername() == $userVO->username)){//email not provided so we use username instead
+                    if(! ($user->getUsername() == $userVO->username)){
                         $this->context->buildViolation('email et ICC ne correspondent pas')
                             ->atPath($path)                                          
                             ->addViolation();                                              
@@ -112,11 +113,16 @@ class OperationValidator extends ConstraintValidator
 
     }
 
-    private function validateBalance($account,$amount)
+    private function validateBalance($operationType, $account,$amount)
     {
         if(!$account->unlimited){
             if($account->status->availableBalance < $amount){
-                $this->context->buildViolation('Montant trop élevé : modifiez-le ou rechargez votre compte.')
+                if($operationType == Operation::TYPE_SMS_PAYMENT){
+                    $message = 'SOLDE INSUFFISANT : '.$account->status->availableBalance;
+                }else{
+                    $message = 'Montant trop élevé : modifiez-le ou rechargez votre compte.';
+                }
+                $this->context->buildViolation($message)
                     ->atPath('amount')
                     ->addViolation();
             }
@@ -124,48 +130,72 @@ class OperationValidator extends ConstraintValidator
     }
 
     /**
-     * Validates the provided operation information
-     *@todo : case if fromICC == toICC
+     * Validates the current Operation data
+     *
+     * The validation process depends on the operation type
      */
     public function validate($operation, Constraint $constraint)
     {
+        //************ Common validation, independent of operation type ************//
         if($operation->getAmount() < 0.01){
-            $this->context->buildViolation('Montant trop faible : doit être supérieur à 0.01')
-                ->atPath('amount')
-                ->addViolation();
+            if($operation->isSmsPayment()){
+                $message = 'Montant indiqué trop faible';
+                $this->context->addViolation($message);
+            }else{
+                $this->context->buildViolation('Montant trop faible : doit être supérieur à 0.01')
+                    ->atPath('amount')
+                    ->addViolation();
+            }
         }
 
-        $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_WITHDRAWAL);
 
-        if(in_array($operation->getType(),$array_debitor)){
+        //************ Specific validation, anything but SMS payment ************//
+        if(! $operation->isSmsPayment()){
+            $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
 
-            //the account to debit on cyclos-side is "fromAccount". Therefore, we must ensure that the debitor account exists and
-            //then, that the balance is sufficient to make the payment
-            $this->validateActiveAccount($operation->getFromAccount(),'fromAccount');
-            if(count($this->context->getViolations()) == 0){
-                $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
-                $this->validateBalance($account,$operation->getAmount());
-            }
+            if(in_array($operation->getType(),$array_debitor)){
 
-            //if not a withdrawal, make sure that creditor account exists (account number provided handly)
-            //if withdrawal, the creditor account is debit account by default, so no need to validate it
-            if(! ($operation->getType() == Operation::TYPE_WITHDRAWAL)){
+                //the account to debit on cyclos-side is "fromAccount". Therefore, we must ensure that the debitor account exists and
+                //then, that the balance is sufficient to make the payment
+                $this->validateActiveAccount($operation->getFromAccount(),'fromAccount');
+                if(count($this->context->getViolations()) == 0){
+                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['number']);
+                    $this->validateBalance($operation->getType(), $account,$operation->getAmount());
+                }
                 $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
-            }
 
-        }else{
-            //we ensure that creditor account exists
-            $this->validateActiveAccount($operation->getToAccount(),'toAccount');
-
-            //if type is CONVERSION or DEPOSIT, the debitor account is debit account on Cyclos side, so no need to validate it
-            if(! (in_array($operation->getType(), Operation::getToOperationTypes()) )){
+            }else{
+                //we ensure that creditor account exists
+                $this->validateActiveAccount($operation->getToAccount(),'toAccount');
                 $this->validatePassiveAccount($operation->getFromAccount(),'fromAccount');
                 if(count($this->context->getViolations()) == 0){
-                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['accountNumber']);
-                    $this->validateBalance($account,$operation->getAmount());
+                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['number']);
+                    $this->validateBalance($operation->getType(), $account,$operation->getAmount());
                 }
+
+            }
+        //************ Specific validation, SMS payment ************//
+        }else{ 
+            $debitorUser = $operation->getDebitor();
+            $creditorUser = $operation->getCreditor();
+
+            if(! $debitorUser->isEnabled()){
+                $message = 'Votre compte [e]-Cairn est inactif';
+                $this->context->addViolation($message);
             }
 
+            if($debitorUser === $creditorUser){
+                $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
+            }
+
+            if(! $creditorUser->getSmsData()->isSmsEnabled()){
+                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées par '.$creditorUser->getSmsData()->getIdentifier());
+            }
+            if(count($this->context->getViolations()) == 0){
+                $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());
+                $this->validateBalance($operation->getType(), $account,$operation->getAmount());
+            }
+          
         }
     } 
 

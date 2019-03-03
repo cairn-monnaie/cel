@@ -5,8 +5,13 @@ namespace Cairn\UserBundle\Service;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Repository\OperationRepository;
+use Cairn\UserBundle\Repository\CardRepository;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserCyclosBundle\Entity\UserIdentificationManager;
+use Cairn\UserCyclosBundle\Service\UserIdentificationInfo;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
@@ -23,15 +28,43 @@ class Security
      */
     protected $userRepo;
 
+    /**
+     *@var OperationRepository $operationRepo
+     */
+    protected $operationRepo;
+
+    /**
+     *@var CardRepository $cardRepo
+     */
+    protected $cardRepo;
+
     protected $tokenStorage;
 
     protected $encoderFactory;
 
-    public function __construct(UserRepository $userRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory)
+    protected $userIdentificationInfo;
+
+    protected $secret;
+
+    protected $smsMaxAmountWithoutSecurity;
+
+    protected $smsAmountBlock;
+
+    protected $smsNbPaymentsBlock;
+
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret,$smsMaxAmountWithoutSecurity,$smsAmountBlock,$smsNbPaymentsBlock)
     {
         $this->userRepo = $userRepo;
+        $this->operationRepo = $operationRepo;
+        $this->cardRepo = $cardRepo;
         $this->tokenStorage = $tokenStorage;
         $this->encoderFactory = $encoderFactory;
+        $this->userIdentificationInfo= $userIdentificationInfo;
+        $this->secret = $secret;
+        $this->smsMaxAmountWithoutSecurity = $smsMaxAmountWithoutSecurity;
+        $this->smsAmountBlock = $smsAmountBlock;
+        $this->smsNbPaymentsBlock = $smsNbPaymentsBlock;
+
     }
 
     public function getCurrentUser()
@@ -56,7 +89,7 @@ class Security
 
         $isSensibleRoute = in_array($route,$sensibleRoutes);                   
 
-        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_order'){
+        if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_associate'){
             if(! ($this->userRepo->findOneBy(array('id'=>$parameters['id'])) === $currentUser)){
                 $isSensibleUrl = true;
             }
@@ -97,17 +130,58 @@ class Security
         return false;                                                          
     }                
 
-    public function generateCardSalt(User $user)
-    {
-        $encoder = $this->encoderFactory->getEncoder($user);
 
-        if ($encoder instanceof BCryptPasswordEncoder) {                   
-            $salt = NULL;                                                  
-        } else {                                                           
-            $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
-        }                    
+    private function getKey($length){
+        $key = $this->secret;
+        if (strlen($key) >= $length){
+            return substr($key,0,$length);
+        }else{
+            return str_pad('', $length, $key);
+        }
+    }
+
+
+    //Chiffre_de_Vigenère
+    public function vigenereEncode($string){
+        $return = str_pad('', strlen($string), ' ', STR_PAD_LEFT);
+        $key = $this->getKey(strlen($string));
+        for ( $pos=0; $pos < strlen($string); $pos ++ ) {
+            $return[$pos] = chr((ord($string[$pos]) + ord($key[$pos])) % 256);
+        }
+        return base64_encode($return);
+    }
+
+    public function vigenereDecode($string){
+        $string = base64_decode($string);
+        $return = str_pad('', strlen($string), ' ', STR_PAD_LEFT);
+        $key = $this->getKey(strlen($string));
+        for ( $pos=0; $pos < strlen($string); $pos ++ ) {
+            $return[$pos] = chr((ord($string[$pos]) - ord($key[$pos])) % 256);
+        }
+        return $return;
+    }
+
+
+    public function findAvailableCode()                                        
+    {                                                                          
+        $uniqueCode = substr($this->generateCardSalt(),0,5);        
+        $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);         
+
+        while($existingCard){                                                  
+            $uniqueCode = substr($this->generateCardSalt(),0,5);    
+            $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);     
+        }                                                                      
+
+        return $uniqueCode;                                                    
+    }
+
+
+    public function generateCardSalt()
+    {
+        $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
         return $salt;
     }
+
 
     public function encodeCard(Card $card)
     {
@@ -127,4 +201,110 @@ class Security
         $card->setFields($fields);
     }
 
+
+    /**
+     *
+     */
+    public function createAccessClient(User $user, $type)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+        $userIdentificationManager->createAccessClient($user->getCyclosID(),$type);
+    }
+
+    public function changeAccessClientStatus($accessClientVO,$status)
+    {
+        $userIdentificationManager = new UserIdentificationManager();
+
+        if($status == 'ACTIVE'){
+            return $userIdentificationManager->activateAccessClient($accessClientVO);
+        }
+        return $userIdentificationManager->changeAccessClientStatus($accessClientVO,$status);
+    }
+
+    public function getSmsClient(User $user)
+    {
+        if($smsData = $user->getSmsData()){
+            return str_replace($this->secret, '', $this->vigenereDecode($smsData->getSmsClient()) );
+        }
+        return NULL;
+    }
+
+
+    /**
+     *Beware, input Operation is not persisted, and is relevant only for sms payments
+     *
+     */
+    public function paymentNeedsValidation(Operation $operation)
+    {
+        if(! $operation->isSmsPayment()){ return false; }
+
+        $debitor = $operation->getDebitor();
+        //criteria 1 : second payment to the same pro in the same day
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$debitor)
+            ->whereCreditor($ob,$operation->getCreditor())
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+
+        if(count($operations) > 0){ return true; }
+
+        //criteria 2 : threshold of amount spent in one day
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$debitor)
+            ->whereCurrentDay($ob);
+
+        $totalDayAmount = $this->operationRepo->countTotalAmount($ob);
+
+        $totalDayAmount = (!$totalDayAmount) ? 0 : $totalDayAmount;
+        $totalDayAmount += $operation->getAmount();
+
+        if($totalDayAmount > $debitor->getSmsData()->getDailyAmountThreshold()){
+           return true; 
+        }
+        
+        //criteria 3 : amount in a single payment
+        if( $operation->getAmount() >= $this->smsMaxAmountWithoutSecurity ){return true;}
+
+       //criteria 4 : number of current day payments (lower than threshold ?)
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$debitor)
+            ->whereAmountComparedWith($ob, $debitor->getSmsData()->getDailyAmountThreshold(), 'lt')
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+        if(count($operations) > $debitor->getSmsData()->getDailyNumberPaymentsThreshold()){ return true; }
+
+        return false;
+    }
+
+    /**
+     * Used for SMS payments
+     */
+    public function paymentIsSuspicious(Operation $operation)
+    {
+        if(! $operation->isSmsPayment()){ return false; }
+
+        $debitor = $operation->getDebitor();
+
+        if( $operation->getAmount() >= $this->smsAmountBlock ){return true;}
+
+        $ob = $this->operationRepo->createQueryBuilder('o');
+        $this->operationRepo
+            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereDebitor($ob,$debitor)
+            ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+        if(count($operations) >= $this->smsNbPaymentsBlock){ return true; }
+
+        return false;
+
+    }
 }

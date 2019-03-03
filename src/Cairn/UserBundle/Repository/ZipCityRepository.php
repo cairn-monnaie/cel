@@ -10,4 +10,24 @@ namespace Cairn\UserBundle\Repository;
  */
 class ZipCityRepository extends \Doctrine\ORM\EntityRepository
 {
+    public function findByName(string $name)
+    {
+        $re = '/([0-9]{5})\s(.*)/';
+        preg_match($re, $name, $matches, PREG_OFFSET_CAPTURE, 0);
+
+        if (count($matches)==3){
+            $cb = $this->createQueryBuilder('z');
+            $cb->Where('z.zipCode = :code')
+                ->andWhere('z.city = :city')
+                ->setParameter('code',$matches[1][0])
+                ->setParameter('city',$matches[2][0])
+                ->setMaxResults(1);
+
+            $result = $cb->getQuery()->getOneOrNullResult();
+            return $result;
+        }
+
+        return null;
+
+    }
 }

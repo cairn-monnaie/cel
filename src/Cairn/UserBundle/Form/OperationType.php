@@ -26,8 +26,8 @@ class OperationType extends AbstractType
             ->add('fromAccount', AccountType::class, array('label'=>'Compte à débiter',
                                                            'error_bubbling'=>true))
             ->add('toAccount',       AccountType::class, array('label'=>'Compte à créditer'))
-            ->add('reason'  , TextareaType::class       ,array('label' => 'Motif', 'required' => false))
-            ->add('description'  , TextType::class       ,array('label' => 'Description', 'required' => false))
+            ->add('reason'  , TextType::class       ,array('label' => 'Motif court'))
+            ->add('description'  , TextareaType::class       ,array('label' => 'Motif long', 'required' => false))
             ->add('save'   , SubmitType::class,         array('label' => 'Suivant'));
     }
 

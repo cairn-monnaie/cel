@@ -41,10 +41,13 @@
                             </button>
                             <br>
                             <br>
-                            <a href="{{ path('fos_user_resetting_request') }}" class="blue-grey-text">Mot de passe ou identifiant oublié ?</a> | <a href="{{ path("cairn_user_registration") }}" class="orange-text text-darken-4">Créer mon compte</a>
+                            <a href="{{ path('fos_user_resetting_request') }}">Mot de passe ou identifiant oublié ?</a>
                         </div>
-
                     </form>
+                </div>
+                <div class="row login_form center">
+                    Adhérent, vous n'utilisez pas encore le numérique ? <br><br>
+                    <a class="waves-effect waves-light btn blue" href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
                 </div>
             </div>
         </div>

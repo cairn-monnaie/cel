@@ -6,12 +6,12 @@ parameters:
     router.request_context.scheme: https
     router.request_context.base_url:
 
-    database_host: 127.0.0.1
-    database_port: ~
-    database_name: symfony
-    database_test_name : symfony
-    database_user: root
-    database_password: ~
+    database_host: db
+    database_port: 3306
+    database_name: db-name
+    database_test_name : db-name-test
+    database_user: username
+    database_password: pwd
     # You should uncomment this if you want to use pdo_sqlite
     #database_path: '%kernel.project_dir%/var/data/data.sqlite'
 
@@ -26,9 +26,11 @@ parameters:
 
     cairn_card_rows : 5
     cairn_card_cols : 5
-    card_activation_delay : 10
+    card_association_delay : 10
+
     cairn_email_noreply : noreply@cairn-monnaie.com
     cairn_email_technical_services : maintenance@cairn-monnaie.com
+    cairn_email_management: app_management@gmail.com
 
     cairn_email_activation_delay : 10
 
@@ -38,14 +40,20 @@ parameters:
     cairn_default_deposit_description :  Dépôt Cairn
     cairn_default_reconversion_description : Reconversion cairns-euros
 
-    cyclos_group_pros : Pros
+    cyclos_group_pros : 'Adhérents prestataires'
+    cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
 
-    cyclos_network_cairn   : Cdm
-    cyclos_root_prod_url : 'http://example-prod:1234/'
-    cyclos_root_test_url:  'http://example-test:4321/'
+    cyclos_root_prod_url : 'http://cyclos-app:1234/'
+    cyclos_root_test_url:  'http://cyclos-app:4321/'
 
 
+    session_timeout: 1500
     cyclos_currency_cairn : cairn
+    leading_company : 'Association Le Cairn'
+    max_printable_cards : 20
+    sms_max_amount_without_security: 10
+    sms_amount_block: 1000
+    sms_nb_payments_block: 15
 

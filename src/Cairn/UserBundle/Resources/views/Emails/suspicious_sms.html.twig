@@ -1,0 +1,20 @@
+{# src/Cairn/UserBundle/Resources/view/Emails/suspicious_sms.html.twig #}
+
+{% if not toAdmin %}
+    Une tentative de paiement d'un montant de {{operation.amount}} cairns a été enregistrée le {{operation.executionDate|date('d/m/Y')}} à {{operation.executionDate|date('H:i')}} auprès du professionnel {{operation.creditorName}}, depuis votre compte.
+    
+    Pour des raisons de sécurité, le compte a été automatiquement bloqué.
+    
+    S'il s'agit bien de vous, veuillez contacter l'Association pour régler le problème.
+    
+    Bien à vous,
+    
+    L'équipe du Cairn,
+
+{% else %}
+
+    Une tentative de paiement d'un montant de {{operation.amount}} cairns a été enregistrée le {{operation.executionDate|date('d/m/Y')}} à {{operation.executionDate|date('H:i')}} venant de {{operation.debitorName}} auprès du professionnel {{operation.creditorName}}
+    
+    Pour des raisons de sécurité, le compte a été automatiquement bloqué.
+
+{% endif %}

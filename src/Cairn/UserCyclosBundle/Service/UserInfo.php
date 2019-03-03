@@ -29,10 +29,18 @@ class UserInfo
      */
     private $groupService;
 
-    public function __construct()
+    private $leadingCompanyName;
+
+    public function __construct($leadingCompanyName)
     {
         $this->userService = new Cyclos\UserService();
         $this->groupService = new Cyclos\GroupService();
+        $this->leadingCompanyName = $leadingCompanyName;
+    }
+
+    public function getCurrentUser()
+    {
+        return $this->userService->getCurrentUser();
     }
 
     /**
@@ -50,7 +58,7 @@ class UserInfo
         if(property_exists($owner,'display')){
             return $owner->display;
         }
-        return $owner;
+        return $this->leadingCompanyName;
     }
 
     public function getProfileData($userVO)
@@ -128,10 +136,14 @@ class UserInfo
      * @param stdClass|int $groupVO either the whole groupVO object or its ID
      * @return list of users in group $name
      */
-    public function getListInGroup($groupVO)
+    public function getListInGroup($groupVO, $statuses=NULL)
     {
         $query = new \stdClass();
         $query->groups = $groupVO;
+        $query->userStatus = array('ACTIVE');
+        if($statuses){
+            $query->userStatus = array_merge($query->userStatus,$statuses);
+        }
 
         return $this->userService->search($query)->pageItems; 
     }

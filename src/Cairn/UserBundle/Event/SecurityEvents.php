@@ -26,11 +26,10 @@ final class SecurityEvents
      * WARNING : ParamConverters can't be used for controller actions matching these routes. 
      */
     const SENSIBLE_ROUTES = [
-        'cairn_user_card_generate',
-        'cairn_user_banking_withdrawal_request',
-        'cairn_user_banking_deposit_request',
-        'cairn_user_banking_reconversion_request',
-        'cairn_user_banking_conversion_request',
+        'cairn_user_card_download',
+        'cairn_user_card_generate_set',
+        'cairn_user_card_destruct',
+        'cairn_user_card_list_available',
         'fos_user_profile_edit',
         'cairn_user_beneficiaries_add',
         'cairn_user_users_block',
@@ -39,7 +38,8 @@ final class SecurityEvents
         'cairn_user_users_remove_pending',
         'cairn_user_cyclos_config_home',
         'cairn_user_cyclos_accountsconfig_account_edit',
-        'fos_user_change_password'
+        'fos_user_change_password',
+        'cairn_user_users_smsdata_edit',
     ];
 
     /**

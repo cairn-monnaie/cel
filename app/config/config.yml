@@ -18,7 +18,8 @@ framework:
     form: ~
     csrf_protection: ~
     validation: { enable_annotations: true }
-    #serializer: { enable_annotations: true }
+    serializer:
+        enabled: true 
     templating:
         engines: ['twig']
     default_locale: '%locale%'
@@ -27,8 +28,8 @@ framework:
         # https://symfony.com/doc/current/reference/configuration/framework.html#handler-id
         handler_id: session.handler.native_file
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
-        gc_maxlifetime: 1500
-        cookie_lifetime: 1500
+        gc_maxlifetime: '%session_timeout%'
+        cookie_lifetime: '%session_timeout%'
     fragments: ~
     http_method_override: true
     assets: ~
@@ -40,8 +41,12 @@ twig:
     debug: '%kernel.debug%'
     strict_variables: '%kernel.debug%'
     globals:
-        card_activation_delay: '%card_activation_delay%'
+        card_association_delay: '%card_association_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
+    form_themes:
+        - 'form/materialize_form_theme.html.twig'
+        - 'form/cairn_form_theme.html.twig'
+    security_service: '@cairn_user.security'
 
 # Doctrine Configuration
 doctrine:
@@ -65,6 +70,18 @@ doctrine:
         auto_generate_proxy_classes: '%kernel.debug%'
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
+
+doctrine_migrations:
+    dir_name: '%kernel.project_dir%/src/Migrations'
+    # namespace is arbitrary but should be different from App\Migrations
+    # as migrations classes should NOT be autoloaded
+    namespace: DoctrineMigrations
+    table_name: 'migration_versions'
+    name: 'Application Migrations'
+    # available in version >= 1.2. Possible values: "BY_YEAR", "BY_YEAR_AND_MONTH", false
+    organize_migrations: false
+        # available in version >= 1.2. Path to your custom migrations template
+    custom_template: ~
 
 # Swiftmailer Configuration
 swiftmailer:

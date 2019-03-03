@@ -70,7 +70,7 @@ class ExceptionListener
         $from = $this->messageNotificator->getNoReplyEmail();
         $to = $this->messageNotificator->getMaintenanceEmail();
 
-        $exceptionMessage = 'Message d\'erreur : '. $exception->getMessage();
+        $exceptionMessage = 'Message d\'erreur : '. $exception->getMessage(). "\n";
 
         $traceMessage = 'Trace : '. $exception->getTraceAsString();
         $fileMessage = 'Dans le fichier : ' . $exception->getFile();
@@ -98,7 +98,7 @@ class ExceptionListener
                 }
                 elseif($exception->errorCode == 'LOGIN'){
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Problème de connexion');
+                    $session->getFlashBag()->add('error','Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
@@ -107,7 +107,6 @@ class ExceptionListener
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){
-                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $session->getFlashBag()->add('error','Votre session a expiré. Veuillez vous reconnecter.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
@@ -116,10 +115,20 @@ class ExceptionListener
                     $session->getFlashBag()->add('error','Donnée introuvable');
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
+                elseif($exception->errorCode == 'VALIDATION'){
+                    $listErrors = '';
+                    for($i = 0; $i < count($exception->error->validation->allErrors); $i++){
+                        $listErrors = "\n".$exception->error->validation->allErrors[$i].$listErrors;
+                    }
+                    $body = $listErrors . $body;
 
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $session->getFlashBag()->add('error','Un problème technique est survenu pendant votre opération. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
+                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                }
                 else{
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
+                    $session->getFlashBag()->add('error','Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
             }
@@ -129,7 +138,7 @@ class ExceptionListener
                 //maintenance state : file written in web directory 
                file_put_contents("maintenance.txt", '');
 
-                $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
+                $session->getFlashBag()->add('error','Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                 //will redirect to maintenance page

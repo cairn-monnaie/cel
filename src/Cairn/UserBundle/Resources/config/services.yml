@@ -13,13 +13,28 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Operation] 
 
+    cairn_user.repository_smsdata: 
+        class: SmsDataRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\SmsData] 
+
+    cairn_user.repository_card: 
+        class: CardRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Card] 
+
+    cairn_user.api:
+        class: Cairn\UserBundle\Service\Api
+        arguments:
+            - "@request_stack"
+
     cairn_user.commands:
         class: Cairn\UserBundle\Service\Commands
         arguments:
             - "@doctrine.orm.entity_manager"
             - "@cairn_user.message_notificator"
             - "@templating"
-            - "%card_activation_delay%"
+            - "%card_association_delay%"
             - "%cairn_email_activation_delay%"
             - "@router"
             - "@service_container"
@@ -57,8 +72,15 @@ services:
         class: Cairn\UserBundle\Service\Security
         arguments:
             - "@cairn_user.repository_user"
+            - "@cairn_user.repository_operation"
+            - "@cairn_user.repository_card"
             - "@security.token_storage"
             - "@security.encoder_factory" 
+            - "@cairn_user_cyclos_useridentification_info"
+            - "%secret%" 
+            - "%sms_max_amount_without_security%" 
+            - "%sms_amount_block%" 
+            - "%sms_nb_payments_block%"
 
     cairn_user.operation_listener:
         class: Cairn\UserBundle\EventListener\OperationListener
@@ -74,9 +96,9 @@ services:
             - "@service_container"
         tags:
             - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
-            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess }
+            - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess, priority: -512 }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
-            - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEdit }
+            - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEdit, priority: -512 }
 
     cairn_user.security.input_listener:
         class: Cairn\UserBundle\EventListener\SecurityListener
@@ -108,11 +130,12 @@ services:
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:
-            - "%cyclos_network_cairn%"
+            - "%cyclos_currency_cairn%"
             - "%cyclos_group_pros%"
             - "@cairn_user_cyclos_channel_info"
             - "@cairn_user_cyclos_group_info"
             - "@cairn_user_cyclos_network_info"
+            - "@cairn_user.repository_user"
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
 
@@ -127,6 +150,14 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_password_validator }
 
+    cairn_user.user_phone_number_validator:
+        class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.security"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }
+
     cairn_user.operation_validator:
         class: Cairn\UserBundle\Validator\OperationValidator
         arguments:
@@ -135,6 +166,29 @@ services:
             - "@cairn_user_cyclos_account_info"
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
+
+    cairn_user.smsdata_validator:
+        class: Cairn\UserBundle\Validator\SmsDataValidator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.security"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
+
+
+    Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
+        arguments:
+            - "@cairn_user.api"
+        tags:
+            - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType}
+
+    Cairn\UserBundle\Form\SmsDataType:
+        arguments: ['@security.authorization_checker']
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\ChangePasswordType:
+        arguments: ['@security.password_encoder']
+        tags: [form.type]
 
     Cairn\UserBundle\Form\CreditType:
         arguments: ['@security.authorization_checker']

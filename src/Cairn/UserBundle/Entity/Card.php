@@ -23,16 +23,9 @@ class Card
     private $id;
 
     /**
-     * @var int
-     *
-     * @ORM\Column(name="number", type="smallint")
-     */
-    private $number;
-
-    /**
      * @var text
      *
-     * @ORM\Column(name="fields", type="text", length=400,nullable=true)
+     * @ORM\Column(name="fields", type="text", length=400)
      */
     private $fields;
 
@@ -50,16 +43,10 @@ class Card
      */
     private $cols;
 
-    /**
-     * @var boolean
-     *
-     * @ORM\Column(name="enabled", type="boolean")
-     */
-    private $enabled;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="card")
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(nullable=true)
      */
     private $user;
 
@@ -76,24 +63,22 @@ class Card
     private $salt;
 
     /**
-     * @var boolean
+     * @var int
      *
-     * @ORM\Column(name="is_generated", type="boolean")
+     * @ORM\Column(name="code", type="string", length=10)
      */
-    private $generated;
+    private $code;
 
 
-    public function __construct($user,$rows,$cols,$salt)
+    public function __construct($user,$rows,$cols,$salt, $code)
     {
         $this->setUser($user);
         $this->setRows($rows);
         $this->setCols($cols);
         $this->setSalt($salt);
-        $nbCards = $this->getUser()->getNbCards();
-        $this->setNumber($nbCards + 1);
-        $this->setEnabled(false);
-        $this->setGenerated(false);
+
         $this->creationDate = new \Datetime();
+        $this->setCode($code);
     }
 
     /**
@@ -106,29 +91,6 @@ class Card
         return $this->id;
     }
 
-    /**
-     * Set number
-     *
-     * @param integer $number
-     *
-     * @return Card
-     */
-    private function setNumber($number)
-    {
-        $this->number = $number;
-
-        return $this;
-    }
-
-    /**
-     * Get number
-     *
-     * @return int
-     */
-    public function getNumber()
-    {
-        return $this->number;
-    }
 
     /**
      * Generates a card with dimensions defined as global parameter
@@ -142,7 +104,7 @@ class Card
         for($row = 0; $row < $this->getRows(); $row++){
             $line = array();
             for($col =0; $col < $this->getCols();$col++){
-                if($env == 'test'){
+                if($env != 'prod'){
                     $line[] = 1111;
                 }
                 else{
@@ -157,6 +119,37 @@ class Card
 
     }
 
+    public function getKey($index)
+    {
+        $rows = $this->getRows();                                       
+
+        $pos_row = intdiv($index,$rows);                                    
+        $pos_col = $index % $rows;                                          
+        return $this->getFields()[$pos_row][$pos_col];
+    }
+
+    /**                                                                        
+     * Generates a random array index and its equivalent string cell position  
+     *                           
+     * Possible to retrieve positions from fixed index or fixed string                                              
+     * @example For a 5x5 card. index 7 equals cell position B2                
+     * @param Card $card                                                       
+     * @return stdClass with attributes cell and index                         
+     */                                                                        
+    public function generateCardPositions($position = NULL)
+    {
+        $rows = $this->getRows();
+        $nbFields = $rows * $this->getCols();
+
+        if(!$position){
+            $position = rand(0,$nbFields-1);
+        }
+        $pos_row = intdiv($position,$rows);
+        $pos_col = $position % $rows;
+        $string_pos = chr(65+ $pos_row) . strval($pos_col + 1);
+
+        return ['cell' => $string_pos ,'index'=>$position];
+    }
     /**
      * Set fields
      *
@@ -204,30 +197,6 @@ class Card
     public function getUser()
     {
         return $this->user;
-    }
-
-    /**
-     * Set enabled
-     *
-     * @param boolean $enabled
-     *
-     * @return Card
-     */
-    public function setEnabled($enabled)
-    {
-        $this->enabled = $enabled;
-
-        return $this;
-    }
-
-    /**
-     * Get enabled
-     *
-     * @return boolean
-     */
-    public function isEnabled()
-    {
-        return $this->enabled;
     }
 
     /**
@@ -302,39 +271,6 @@ class Card
         return $this;
     }
 
-    /**
-     * Get enabled
-     *
-     * @return boolean
-     */
-    public function getEnabled()
-    {
-        return $this->enabled;
-    }
-
-    /**
-     * Set generated
-     *
-     * @param boolean $generated
-     *
-     * @return Card
-     */
-    public function setGenerated($generated)
-    {
-        $this->generated = $generated;
-
-        return $this;
-    }
-
-    /**
-     * Get generated
-     *
-     * @return boolean
-     */
-    public function isGenerated()
-    {
-        return $this->generated;
-    }
 
      /**
      * Set salt
@@ -357,6 +293,29 @@ class Card
    public function getSalt()
     {
         return $this->salt;
+    }
+
+     /**
+     * Set code
+     *
+     * @param string $code
+     *
+     * @return Card
+     */
+   public function setCode($code)
+    {
+        $this->code = $code;
+        return $this;
+    }
+
+     /**
+     * Get code
+     *
+     * @return string
+     */
+   public function getCode()
+    {
+        return $this->code;
     }
 
 }

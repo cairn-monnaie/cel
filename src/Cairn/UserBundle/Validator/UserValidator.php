@@ -44,23 +44,27 @@ class UserValidator extends ConstraintValidator
      */
     public function validate($user, Constraint $constraint)
     {
-        //check length for example
-        if(strlen($user->getUsername()) < 5){
-            $this->context->buildViolation('Login trop court ! 5 caractères minimum')
-                ->atPath('username')
-                ->addViolation();
-        }
-
-        if(preg_match('#[^\w\.]#',$user->getUsername())){
-            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
-                ->atPath('username')
-                ->addViolation();
-        }
-        if(strlen($user->getUsername()) > 16){
-            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
-                ->atPath('username')
-                ->addViolation();
-        }
+//        if(strlen($user->getUsername()) < 3){
+//            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
+//                ->atPath('username')
+//                ->addViolation();
+//        }
+//
+//        if(preg_match('#[^\w\.]#',$user->getUsername())){
+//            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
+//                ->atPath('username')
+//                ->addViolation();
+//            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
+//                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
+//                    ->atPath('username')
+//                    ->addViolation();
+//            }
+//        }
+//        if(strlen($user->getUsername()) > 16){
+//            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
+//                ->atPath('username')
+//                ->addViolation();
+//        }
         if(strlen($user->getName()) < 3){
             $this->context->buildViolation('Le nom doit contenir au minimum 3 caractères.')
                 ->atPath('name')
@@ -79,7 +83,35 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
+//        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
+//            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
+//                ->atPath('plainPassword')
+//                ->addViolation();
+//        }
+        // ------------ Validate Password ---------------
+        //Cyclos 4.11.2 bug reported : character '<' provoks validation error. For this reason, we disable it here
+        if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
+            $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
+                ->atPath('plainPassword')
+                ->addViolation();
+        }else{
+            if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>', $user->getPlainPassword()) ){
+                $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
+                    ->atPath('plainPassword')
+                    ->addViolation();
+            }
+            if( preg_match('<[^a-zA-Z0-9`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
+                $list = '';
+                foreach($matches as $match){
+                    $list .= $match;
+                }
+                $this->context->buildViolation('Les caractères suivants ne sont pas autorisés : '.$list)
+                    ->atPath('plainPassword')
+                    ->addViolation();
+            }
+        }
+
+        if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
             $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
                 ->atPath('plainPassword')
                 ->addViolation();
@@ -101,17 +133,18 @@ class UserValidator extends ConstraintValidator
                 ->atPath('plainPassword')
                 ->addViolation();
         }
-        if( preg_match('#^[a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ]+$#',$user->getPlainPassword())){
-            $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,3}$#',$user->getEmail())){
-            $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 3 lettres.")
+
+
+        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',$user->getEmail())){
+            $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.")
                 ->atPath('email')
                 ->addViolation();
         }
 
+ 
+    }
+
+}
 
         //WARNING with commented code below : creates duplicated users in cyclos database. It is a problem for network and global admins if they want to change their password
         //if no violation, it necessarily means that a validation error would come from password
@@ -158,6 +191,6 @@ class UserValidator extends ConstraintValidator
 //                }
 //            }
 //        }
-
-    }
-}
+//
+//    }
+//}

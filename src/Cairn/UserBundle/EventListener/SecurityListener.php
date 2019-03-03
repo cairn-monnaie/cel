@@ -24,6 +24,7 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
+use Cyclos;
 
 /**
  * This class contains called functions when events defined in Event\SecurityEvents are dispatched
@@ -45,20 +46,30 @@ class SecurityListener
         $session = $event->getRequest()->getSession();
         $router = $this->container->get('router');          
 
-        if($user->getLastLogin() == NULL){
-            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car vous ne vous êtes jamais connecté. Attendez une nouvelle validation par un administrateur, un email vous sera envoyé avec votre nouveau mot de passe.');
+        if(! $user){ return;}
+
+        if(! $user->isEnabled()){
+            $session->getFlashBag()->add('error','Ce compte est bloqué. L\'opération ne peut donc être poursuivie.');
+            $logoutUrl = $router->generate('fos_user_security_logout');
+            $event->setResponse(new RedirectResponse($logoutUrl));
+            return;
+        }
+
+        if(!$user->getLastLogin() ){
+            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
             $logoutUrl = $router->generate('fos_user_security_logout');
             $event->setResponse(new RedirectResponse($logoutUrl));
 
-            $user->setEnabled(false);
+            $body = 'Une demande de changement de mot de passe a été effectuée avant même votre première connexion sur votre compte. Pour des raisons de sécurité, votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation . Veuillez contacter l\'Association';
+            $this->container->get('cairn_user.access_platform')->disable(array($user),'Changement de mot de passe',$body);
             $this->container->get('doctrine.orm.entity_manager')->flush();
+
+            return;
         }
     }
 
     public function onChangePassword(FormEvent $event)
     {
-
-
         $passwordManager = new PasswordManager();
         $form = $event->getForm();
         $user = $form->getData();
@@ -69,21 +80,43 @@ class SecurityListener
         $currentPassword = $form->get('current_password')->getData(); 
         $newPassword = $user->getPlainPassword();
 
-        $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
+        try{
+            $passwordManager->changePassword($currentPassword, $newPassword, $user->getCyclosID());
+        }catch(\Exception $e){
+            if($e instanceof Cyclos\ServiceException){
+                if($e->errorCode == 'VALIDATION'){
+                    for($i = 0; $i < count($e->error->validation->allErrors); $i++){
+                        if(strpos($e->error->validation->allErrors[$i],'only these characters') !== false){
+                            //retourner à la page précédente
+                            $request = $this->container->get('request_stack')->getCurrentRequest();
+                            $request->getSession()->getFlashBag()->add('error','Votre mot de passe contient un caractère non traité');
+                            $event->setResponse(new RedirectResponse($request->getRequestUri()));
+                            return;
+                        }
+                    }
+                }
+            }
+            throw $e;
+        }
         if($user->isFirstLogin()){
             $user->setFirstLogin(false);
         }
-        $event->setResponse(new RedirectResponse($profileUrl));
+
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
+        }
     }
 
-    /**
-     *
-     *@TODO : faire onLogout
-     */
+
     public function onLogin(InteractiveLoginEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+        $networkName= $this->container->getParameter('cyclos_currency_cairn');          
 
         $loginManager = new LoginManager();
 
@@ -99,11 +132,11 @@ class SecurityListener
         $networkInfo->switchToNetwork($networkName,'login',$credentials);
 
         $dto = new \stdClass();
-        $dto->amount = 10;
-        $dto->field = 'MINUTES';
+        $dto->amount = $this->container->getParameter('session_timeout');
+        $dto->field = 'SECONDS';
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
-        $session->set('cyclos_session_token',$loginResult->sessionToken); 
+        $session->set('cyclos_token',$loginResult->sessionToken); 
 
     }
 
@@ -111,12 +144,16 @@ class SecurityListener
     public function onKernelController(FilterControllerEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_network_cairn');          
+        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
 
-        $session = $event->getRequest()->getSession();
-        $token = $session->get('cyclos_session_token');
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $cyclos_token = $event->getRequest()->request->get('cyclos_token');
+        }else{
+            $session = $event->getRequest()->getSession();
+            $cyclos_token = $session->get('cyclos_token');
+        }
 
-        $networkInfo->switchToNetwork($networkName,'session_token',$token);
+        $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
     }
 
     /**
@@ -195,7 +232,7 @@ class SecurityListener
         $isExceptionCase = false;
         //check if installed admin is asking for a new security card
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-            if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_generate')){
+            if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_download')){
                 //for himself ? for someone else ?
                 $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
                 if($toUser === $currentUser){
@@ -247,28 +284,23 @@ class SecurityListener
         $position = $event->getPosition();
 
 
-        $fields = $currentCard->getFields();                             
-        $rows = $currentCard->getRows();                                              
-
-        $pos_row = intdiv($position,$rows);                                 
-        $pos_col = $position % $rows;                                       
-        $field_value = $fields[$pos_row][$pos_col];
-
+        $field_value = $currentCard->getKey($position);
 
         if($field_value == substr($encoder->encodePassword($cardKey,$salt),0,4)){
             $counter->reinitializeTries($user,'cardKey');
-            $session->set('has_input_card_key_valid',true);
+
+            if($session){
+                $session->set('has_input_card_key_valid',true);
+            }
         }
         else{
-            if($user->getCardKeyTries() >= 2){
-                $counter->incrementTries($user,'cardKey');
+            $counter->incrementTries($user,'cardKey');
+
+            if($user->getCardKeyTries() > 2){
                 $subject = 'Votre espace membre a été bloqué';
                 $body = 'Suite à 3 échecs de validation de votre carte de clés personnelles, votre espace membre a été bloqué par souci de sécurité. \n Veuillez contacter nos services pour plus d\'information';
                 $accessPlatform->disable(array($user),$subject,$body);
                 $event->setRedirect(true);
-            }
-            else{
-                $counter->incrementTries($user,'cardKey');
             }
         }
         $em->flush();

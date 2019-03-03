@@ -16,13 +16,13 @@ class AppKernel extends Kernel
             new Doctrine\Bundle\DoctrineBundle\DoctrineBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
             new AppBundle\AppBundle(),
+            new Evheniy\JqueryBundle\JqueryBundle(),
             new Cairn\UserCyclosBundle\CairnUserCyclosBundle(),
             new Cairn\UserBundle\CairnUserBundle(),
             new FOS\UserBundle\FOSUserBundle(),
             new Knp\Bundle\SnappyBundle\KnpSnappyBundle(),
             new FOS\OAuthServerBundle\FOSOAuthServerBundle(),
-            new Evheniy\JqueryBundle\JqueryBundle(),
-            new Evheniy\MaterializeBundle\MaterializeBundle(),
+            new Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle(),
         ];
 
         if (in_array($this->getEnvironment(), ['dev', 'test'], true)) {

@@ -1,27 +1,69 @@
 # Cairn/UserBundle/Resources/config/routing.yml
 
-#login:
-#    path:     /login
-#    defaults: { _controller: CairnUserBundle:Security:login }
-
 cairn_user_welcome:
     path:     .{_format} 
     defaults: { _controller: CairnUserBundle:User:index, _format: html}
     requirements:
         _format: html|json
 
+#cairn_user_api_get_tokens:
+#    path: oauth/get-tokens
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
+#
+#cairn_user_api_users_options:
+#    path: api/users
+#    methods: OPTIONS
+#    defaults: { _controller: CairnUserBundle:User:options, _format: json }
+#
+#cairn_user_api_users_get:
+#    path: api/users/get/{id}
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:User:viewProfile, _format: json }
+#
+#cairn_user_api_users_list:
+#    path: api/users/list
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:User:list, _format: json }
+#
+#cairn_user_api_users_post:
+#    path: api/users/post
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
+#
+#cairn_user_api_users_put:
+#    path: api/users/put
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
+#
+#cairn_user_api_users_delete:
+#    path: api/users/delete/{id}
+#    methods: DELETE
+#    defaults: { _controller: CairnUserBundle:User:delete, _format: json }
+#
+#cairn_user_api_users_change_password:
+#    path: api/users/change-password
+#    methods: POST
+#    defaults: { _controller: FOSUserBundle:ChangePassword:changePassword, _format: json }
+#
+#cairn_user_api_users_card_association:
+#    path: api/users/{id}/associate-card
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: json }
 
-cairn_user_api_current_user:
-    path: api/user.{_format}
-    defaults: { _controller: CairnUserBundle:Default:getId, _format: json }
-    requirements:
-        _format: json
 
 cairn_user_registration:
-    path:     inscription.{_format}
+    path:     inscription
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
-    requirements:
-        _format: html|json
+
+cairn_user_registration_type:
+    path:     inscription/{type}
+    defaults: { _controller: CairnUserBundle:Default:registrationByType, _format: html }
+
+cairn_zipcities_ajax:
+    path:     zipcities
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Default:zipCities, _format: json }
 
 cairn_user_redirect_login:
     path:     login/redirection/{message}/
@@ -39,41 +81,64 @@ cairn_user_referents_assign:
         id: \d+
 
 cairn_user_profile_view:
-    path:     user/profile/view/{id}.{_format}
+    path:     user/profile/view/{id}
     defaults: { _controller: CairnUserBundle:User:viewProfile, _format: html }
     requirements:
         id: \d+
-        _format: html|json
+
+#cairn_user_api_beneficiaries_options:
+#    path: api/beneficiaries
+#    methods: OPTIONS
+#    defaults: { _controller: CairnUserBundle:Beneficiary:options, _format: json }
+#
+#cairn_user_api_beneficiaries_get:
+#    path:     api/beneficiaries/get/{id}
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:Beneficiary:viewBeneficiary, _format: json }
+#    requirements:
+#        id: \d+
 
 cairn_user_beneficiaries_list:
-    path:     user/beneficiaries/list.{_format}
-    defaults: { _controller: CairnUserBundle:User:listBeneficiaries, _format: html }
-    requirements:
-        _format: html|json
+    path:     user/beneficiaries/list
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: html }
+
+#cairn_user_api_beneficiaries_list:
+#    path:     api/beneficiaries/get
+#    methods: GET
+#    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
 
 cairn_user_beneficiaries_add:
-    path:     user/beneficiaries/add.{_format}
-    defaults: { _controller: CairnUserBundle:User:addBeneficiary, _format: html }
-    requirements:
-        _format: html|json
+    path:     user/beneficiaries/add
+    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: html }
 
-cairn_user_beneficiaries_edit:
-    path:     user/beneficiaries/edit/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:User:editBeneficiary, _format: html  }
-    requirements:
-        id: \d+
-        _format: html|json
+#cairn_user_api_beneficiaries_post:
+#    path:     api/beneficiaries/post
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
+
+#cairn_user_beneficiaries_edit:
+#    path:     user/beneficiaries/edit/{id}.{_format}
+#    defaults: { _controller: CairnUserBundle:Beneficiary:editBeneficiary, _format: html  }
+#    requirements:
+#        id: \d+
+#        _format: html|json
 
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:User:removeBeneficiary, _format: html }
+    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: html }
     requirements:
         id: \d+
-        _format: html|json
 
-cairn_user_users_home:
+#cairn_user_api_beneficiaries_delete:
+#    path:     api/beneficiaries/delete/{id}
+#    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
+#    requirements:
+#        id: \d+
+
+cairn_user_list_users_home:
     path:     users.{_format}
-    defaults: { _controller: CairnUserBundle:User:users, _format: html }
+    defaults: { _controller: CairnUserBundle:User:listUsers, _format: html }
     requirements:
         _format: html|json
 
@@ -103,11 +168,12 @@ cairn_user_users_remove:
         _format: html|json
 
 cairn_user_users_remove_pending:
-    path:     user/remove-pending.{_format}
+    path:     user/remove-pending
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
-    requirements:
-        id: \d+
-        _format: html|json
+
+cairn_user_users_smsdata_edit:
+    path:     user/sms-data/edit/{id}
+    defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
 cairn_user_card_home:
     path:     card/home/{id}.{_format}
@@ -116,18 +182,10 @@ cairn_user_card_home:
         id: \d+
         _format: html|json
 
-cairn_user_card_order:
-    path:     card/order/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:orderCard, _format: html }
-    requirements:
-        id: \d+
-        _format: html|json
+cairn_user_card_request:
+    path:     card/request
+    defaults: { _controller: CairnUserBundle:Card:requestCard, _format: html }
 
-cairn_user_card_validate:
-    path:     card/validate.{_format}
-    defaults: { _controller: CairnUserBundle:Card:validateCard, _format: html }
-    requirements:
-        _format: html|json
 
 cairn_user_card_revoke:
     path:     card/revoke/{id}.{_format}
@@ -136,17 +194,37 @@ cairn_user_card_revoke:
         id: \d+
         _format: html|json
 
-#if you change this route's name, change it in EventListener/SecurityListener, in the function "onSensibleOperations"
-cairn_user_card_generate:
-    path:     card/generate/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:generateCard, _format: html }
+cairn_user_card_download:
+    path:     card/download/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:downloadAndAssociateCard, _format: html }
     requirements:
         id: \d+
         _format: html|json
 
-cairn_user_card_download:
-    path:     card/download/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Card:downloadCard, _format: html }
+cairn_user_card_associate:
+    path:     card/associate/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_destruct:
+    path:     card/destruct/{id}.{_format}
+    defaults: { _controller: CairnUserBundle:Card:destructCard, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_list_available:
+    path:     card/list-available
+    defaults: { _controller: CairnUserBundle:Card:listAvailableCards, _format: html }
+    requirements:
+        id: \d+
+        _format: html|json
+
+cairn_user_card_generate_set:
+    path:     card/generate-set
+    defaults: { _controller: CairnUserBundle:Card:generateSetOfCards, _format: html }
     requirements:
         id: \d+
         _format: html|json
@@ -172,8 +250,15 @@ cairn_user_banking_operations:
     path:     banking/operations/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
     requirements:
-        type: transaction|deposit|withdrawal|conversion #|reconversion
+        type: transaction
         _format: html|json
+
+#cairn_user_banking_post:
+#    path:     operations/{type}.{_format}
+#    methods: POST
+#    defaults: { _controller: CairnUserBundle:Default:synchronizeOperation, _format: json }
+#    requirements:
+#        type: deposit|withdrawal|conversion
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{type}.{_format}
@@ -197,35 +282,17 @@ cairn_user_banking_transaction_request:
         to: new|beneficiary|self
         _format: html|json
 
-cairn_user_banking_withdrawal_request:
-    path:     banking/withdrawal/request.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:withdrawalRequest, _format: html }
-    requirements:
-        _format: html|json
 
-cairn_user_banking_deposit_request:
-    path:     banking/deposit/request.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:depositRequest, _format: html }
-    requirements:
-        _format: html|json
+cairn_user_banking_sms_reception:
+    path:     sms/reception
+    defaults: { _controller: CairnUserBundle:Sms:smsReception, _format: html}
 
-#cairn_user_banking_reconversion_request:
-#    path:     banking/reconversion/request.{_format}
-#    defaults: { _controller: CairnUserBundle:Banking:reconversionRequest, _format: html }
-#    requirements:
-#        _format: html|json
-#
-cairn_user_banking_conversion_request:
-    path:     banking/conversion/request.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:conversionRequest, _format: html }
-    requirements:
-        _format: html|json
 
 cairn_user_banking_operation_confirm:
     path:     banking/operation/confirm/{id}-{type}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
-        type: transaction|deposit|withdrawal|conversion #|reconversion
+        type: transaction
         _format: html|json
 
 

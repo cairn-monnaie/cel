@@ -49,7 +49,8 @@ class SecurityListenerTest extends KernelTestCase
 
     public function __construct()
     {
-        self::$kernel = static::createKernel();                                      
+         parent::__construct();
+       self::$kernel = static::createKernel();                                      
         self::$kernel->boot();                                                       
         $this->container = self::$kernel->getContainer();
                                                                                          
@@ -128,7 +129,7 @@ class SecurityListenerTest extends KernelTestCase
 
         $this->assertFalse($event->getResponse() == NULL);
         $this->assertContains('maintenance',$event->getResponse()->getContent());
-        $this->assertNotContains('security.login.username',$event->getResponse()->getContent());
+        $this->assertNotContains('/login_check',$event->getResponse()->getContent());
 
         //delete maintenance file
         unlink('maintenance.txt');
@@ -146,7 +147,7 @@ class SecurityListenerTest extends KernelTestCase
         $session = new Session(new MockArraySessionStorage());
 
         //ajouter la carte
-        $card = new Card($this->user,5,5,NULL);
+        $card = new Card($this->user,5,5,NULL,'abcdef');
         $card->generateCard('test');
         $this->user->setCard($card);
 
@@ -204,7 +205,7 @@ class SecurityListenerTest extends KernelTestCase
 
         $event = new InteractiveLoginEvent($request,$token);
         $this->eventDispatcher->dispatch(SecurityEvents::INTERACTIVE_LOGIN,$event); 
-        $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
+        $this->assertNotEquals($event->getRequest()->getSession()->get('cyclos_token'),NULL);
 
         //wrong password
         $session = new Session(new MockArraySessionStorage());
@@ -218,7 +219,7 @@ class SecurityListenerTest extends KernelTestCase
         }catch(\Exception $e){
             $this->assertEquals($e->errorCode, 'LOGIN');
         }
-        $this->assertEquals($event->getRequest()->getSession()->get('cyclos_session_token'),NULL);
+        $this->assertEquals($event->getRequest()->getSession()->get('cyclos_token'),NULL);
 
     }
 
@@ -292,6 +293,15 @@ class SecurityListenerTest extends KernelTestCase
         $this->assertFalse($event->getUser()->isEnabled());
         $logout = '/logout';
         $this->assertTrue($event->getResponse()->isRedirect($logout));
+
+        //user is disabled
+        $this->user->setEnabled(false);
+        $event = new GetResponseNullableUserEvent($this->user, $request);
+        $this->eventDispatcher->dispatch(FOSUserEvents::RESETTING_SEND_EMAIL_INITIALIZE,$event); 
+        $this->assertFalse($event->getUser()->isEnabled());
+        $logout = '/logout';
+        $this->assertTrue($event->getResponse()->isRedirect($logout));
+
     }
 
 
