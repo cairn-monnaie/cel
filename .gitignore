@@ -23,7 +23,6 @@
 !var/SymfonyRequirements.php
 /vendor/
 /web/bundles/
-composer.lock
 .web-server-pid
 bootstrap.php.cache
 /app/config/parameters.yml
