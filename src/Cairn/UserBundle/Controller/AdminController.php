@@ -166,7 +166,7 @@ class AdminController extends Controller
                             $password->confirmationValue = $password->value;
                             $userDTO->passwords = $password;                               
 
-                            if($user->hasRole('ROLE_PRO')){                                        
+                            if($user->hasRole('ROLE_PRO')){
                                 $groupName = $this->getParameter('cyclos_group_pros');  
                             }elseif($user->hasRole('ROLE_PERSON')){
                                 $groupName = $this->getParameter('cyclos_group_persons');  
@@ -182,11 +182,23 @@ class AdminController extends Controller
                             $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
                             $user->setCyclosID($newUserCyclosID);
 
+
+                            //activate user and send email to user
                             $body = $this->renderView('CairnUserBundle:Emails:welcome.html.twig',
                                 array('user'=>$user,
                                 'login_url'=>$this->get('router')->generate('fos_user_security_login')));
                             $subject = 'Plateforme numérique du Cairn';
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
+
+                            //send email to local group referent if pro
+
+                            if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){
+                                $from = $messageNotificator->getNoReplyEmail();
+                                $to = $referent->getEmail();
+                                $subject = 'Référent Pro';
+                                $body = 'Vous êtes désormais GL référent du professionnel ' . $user->getName();
+                                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                            }
 
                             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
                             $em->flush();
@@ -272,8 +284,8 @@ class AdminController extends Controller
 
                 if($currentAdminReferent){
                     $to = $currentAdminReferent->getEmail();
-                    $subject = 'Référencement Pro';
-                    $body = 'Vous n\'êtes plus référent du professionnel ' . $user->getName();
+                    $subject = 'Référent Pro';
+                    $body = 'Votre GL n\'est plus référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $user->removeReferent($currentAdminReferent);
                 }
@@ -281,8 +293,8 @@ class AdminController extends Controller
                     $user->addReferent($referent);
 
                     $to = $referent->getEmail();
-                    $subject = 'Référencement Pro';
-                    $body = 'Vous êtes désormais référent du professionnel ' . $user->getName();
+                    $subject = 'Référent Pro';
+                    $body = 'Vous êtes désormais GL référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                     $session->getFlashBag()->add('success',

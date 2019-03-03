@@ -201,7 +201,9 @@ class DefaultControllerTest extends BaseControllerTest
             'payment : invalid sms'=>array('0612345678','PAYERSHOP',false,'1111',true,array('Format du montant')),
           'payment : valid sms'=>array('0612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
-            'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,array('ERREUR TECHNIQUE')),
+          'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,
+                                                        array('ERREUR TECHNIQUE','aucun accès client'),2),
+
             'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,array('rien à valider')),
 
             'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('PAIEMENT SMS BLOQUE','tentative de paiement','tentative de paiement'),3),
@@ -275,6 +277,12 @@ class DefaultControllerTest extends BaseControllerTest
         $form['fos_user_registration_form[address][zipCity]']->select($zipCode);
         $form['fos_user_registration_form[description]']->setValue($description);
 
+        $this->assertNotContains('fos_user_registration_form[username]',$this->client->getResponse()->getContent());
+
+        if( $type == 'adherent'){
+            $this->assertNotContains('fos_user_registration_form[image]',$this->client->getResponse()->getContent());
+        }
+
         $crawler =  $this->client->submit($form);
 
         $crawler = $this->client->followRedirect();
@@ -321,7 +329,6 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideRegistrationUsers()
     {
         return array(
-//            array('localGroup','gl_grenoble@cairn-monnaie.com','Groupe Local Grenoble','7 rue Très Cloîtres','38000','Groupe Local de Grenoble',true),
             array('localGroup','gl_paladru@cairn-monnaie.com','Groupe Local Paladru','1 rue du Test','1','Groupe Local du Paladru',true),
             array('pro','lib_harry_morgan@test.com','Librairie Harry Morgan','10 rue Millet','1','Librairie',false),
             array('person','john_doe@test.com','John Doe','15 rue du test','1','Je suis cairnivore',false),

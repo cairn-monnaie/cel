@@ -107,7 +107,7 @@ class RegistrationListener
         if($user->hasRole('ROLE_PRO')){
             $localGroup = $userRepo->findAdminWithCity($user->getCity());
             if($localGroup){
-                if(!$user->hasReferent($localGroup)){
+                if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
                     $user->addReferent($localGroup);
                 }
             }
@@ -120,7 +120,7 @@ class RegistrationListener
             array('user'=>$user));
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
-        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail une fois votre inscription validée par l\'association.');
+        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail lorsque l\'Association aura ouvert votre compte.');
 
         $router = $this->container->get('router');          
         $loginUrl = $router->generate('fos_user_security_login');
@@ -140,12 +140,12 @@ class RegistrationListener
         $request = $event->getRequest();
         $session = $request->getSession();
 
-        $type = $session->get('type');
+        $type = $session->get('registration_type');
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
 
         if(!$currentUser && ($type != 'person') && ($type != 'pro')  ){
-            $session->set('type','person'); 
+            $session->set('registration_type','person'); 
             $type = 'person'; 
         }
 
@@ -166,13 +166,13 @@ class RegistrationListener
             $user->addRole('ROLE_SUPER_ADMIN');
             break;
         default:
-            $session->set('type','person'); 
+            $session->set('registration_type','person'); 
             break;
         }
     }
 
     /**
-     *Once the registration form is valid, this function sets up the user in Cyclos and Doctrine
+     *Once the registration form is valid, this function sets up a fake Cyclos ID and Doctrine user
      *
      * Note: FOSUserBundle EmailConfirmationListener is also listening to this event. Then, as we want to master the response in case of
      * API call, this function must be called in the end (piority defined in services.yml)

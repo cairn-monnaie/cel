@@ -92,7 +92,7 @@ class AdminControllerTest extends BaseControllerTest
     /**
      * @dataProvider provideDataForActivation
      */
-    public function testActivateUser($referent,$target, $isReferent)
+    public function testActivateUser($referent,$target, $isReferent, $nbEmails)
     {
 
         $crawler = $this->login($referent, '@@bbccdd');
@@ -125,7 +125,7 @@ class AdminControllerTest extends BaseControllerTest
 
                 //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
-                $this->assertSame(1, $mailCollector->getMessageCount());
+                $this->assertSame($nbEmails, $mailCollector->getMessageCount());
                 $message = $mailCollector->getMessages()[0];
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('activé', $message->getSubject());
@@ -150,7 +150,7 @@ class AdminControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-           'valid'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true),
+           'valid'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true,$nbEmails),
            'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true),
            'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false)
         );
