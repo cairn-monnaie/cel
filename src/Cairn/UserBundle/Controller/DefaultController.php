@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Controller;
 
+use Cairn\UserBundle\CairnUserBundle;
+use Cairn\UserBundle\Entity\ZipCity;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 use Cairn\UserBundle\Entity\User;
@@ -21,6 +23,7 @@ use Cairn\UserBundle\Form\RegistrationType;
 use Cairn\UserBundle\Form\OperationType;
 use Cairn\UserBundle\Form\SimpleOperationType;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -164,7 +167,19 @@ class DefaultController extends Controller
             return $this->render('CairnUserBundle:Registration:index.html.twig');
         }
 
-    }    
+    }
 
+    public function zipCitiesAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $zipCities = $em->getRepository(ZipCity::class)->findAll();
+            $returnArray = array();
+            foreach ($zipCities as $zipCity){
+                $returnArray[] = $zipCity->getName();
+            }
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
 
 }
