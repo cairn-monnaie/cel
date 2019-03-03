@@ -3,14 +3,11 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <!-- Compiled and minified CSS -->
+        <meta name="viewport" content="width=device-width" />
+        <title>{% block title %}[e]Cairn{% endblock %}</title>
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/css/materialize.min.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/iconfont/material-icons.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/css/ecairn.css') }}" rel="stylesheet">
-        {% block stylesheets %}
-        {% endblock %}
-        <meta name="viewport" content="width=device-width" />
-        <title>{% block title %}[e]Cairn{% endblock %}</title>
         {% block stylesheets %}
         {% endblock %}
     </head>
