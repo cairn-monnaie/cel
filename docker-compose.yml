@@ -22,16 +22,16 @@ services:
 #  phpmyadmin:
 #    image: phpmyadmin/phpmyadmin
 #    ports:
-#        - '${PMA_PORT}:80'
-#    networks:
-#      - symfony-net
+#      - '${PMA_PORT}:80'
 #    environment:
-#      - "PMA_HOST=db"
-#      - "PMA_PORT=3306"
-#      - 'PMA_USER= root' #${DB_USER}'
-#      - 'PMA_PASSWORD=  #${DB_PASSWORD}'
+#      PMA_HOST: db
+#      PMA_PORT: 3306
+#      PMA_USER: ${DB_USER}
+#      PMA_PASSWORD: ${DB_PASSWORD}
 #    depends_on:
 #      - db
+#    networks:
+#      - mlc_net
 
   engine:
     build: .
@@ -65,4 +65,4 @@ services:
 #      - '1025:1025'
 #      - '1080:1080'
 #    networks:
-#      - symfony-net
+#      - mlc_net
