@@ -19,8 +19,7 @@ class CardType extends AbstractType
     {
 
         $builder
-            ->add('field',   PasswordType::class, array('label'=>'Clé'))    
-            ->add('save'   , SubmitType::class,         array('label' => 'Confirmer'));
+            ->add('field',   PasswordType::class, array('label'=>'Clé'));
 
     }
 

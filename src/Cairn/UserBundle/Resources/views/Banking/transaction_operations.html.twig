@@ -9,12 +9,12 @@
     <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}" class="btn"><i class="material-icons left">arrow_right_alt</i>Virement ponctuel</a>
     {#<a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a>#}
     <h2> Gérer ses virements </h2>
-    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn"><i class="material-icons left">format_list_bulleted</i>Mes virements ponctuels</a>
+    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Mes virements ponctuels</a>
     {# <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a>#}
     <br>
     <br>
     {% if not is_granted('ROLE_ADMIN') %}
-        <a href="{{path('cairn_user_beneficiaries_list')}}" class="btn blue"><i class="material-icons left">favorite</i>Mes bénéficiaires enregistrés</a>
+        <a href="{{path('cairn_user_beneficiaries_list')}}" class="btn cyan"><i class="material-icons left">favorite</i>Mes bénéficiaires enregistrés</a>
         <a href="{{path('cairn_user_beneficiaries_add')}}" class="btn blue"><i class="material-icons left">person_add</i>ajouter un bénéficiaire</a>
     {% endif %}
 {% endblock %}

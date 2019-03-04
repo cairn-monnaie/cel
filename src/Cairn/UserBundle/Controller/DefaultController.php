@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Controller;
 
+use Cairn\UserBundle\CairnUserBundle;
+use Cairn\UserBundle\Entity\ZipCity;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 use Cairn\UserBundle\Entity\User;
@@ -21,6 +23,7 @@ use Cairn\UserBundle\Form\RegistrationType;
 use Cairn\UserBundle\Form\OperationType;
 use Cairn\UserBundle\Form\SimpleOperationType;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -63,30 +66,40 @@ class DefaultController extends Controller
      */
     public function registrationAction(Request $request)
     {
-        $session = $request->getSession();
-        $checker = $this->get('security.authorization_checker');
-
         $user = $this->getUser();
         if($user){
             if($user->isAdherent()){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }
+        return $this->render('CairnUserBundle:Registration:index.html.twig');
+    }
 
-        $type = $request->query->get('type'); 
-
+    public function registrationByTypeAction(string $type){
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
+            $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
-
+            $session = new Session();
             $session->set('registration_type',$type);
-            return $this->redirectToRoute('fos_user_registration_register',array('type'=>$type));
+            return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
-            return $this->render('CairnUserBundle:Registration:index.html.twig');
+            return $this->redirectToRoute('CairnUserBundle:Registration:index.html.twig');
         }
+    }
 
-    }    
-
+    public function zipCitiesAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $zipCities = $em->getRepository(ZipCity::class)->findAll();
+            $returnArray = array();
+            foreach ($zipCities as $zipCity){
+                $returnArray[] = $zipCity->getName();
+            }
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
 
 }

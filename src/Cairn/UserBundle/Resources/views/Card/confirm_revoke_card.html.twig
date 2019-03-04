@@ -7,16 +7,30 @@
 {%block stylesheets %}
 {% endblock %}
 {% block body %}
-    {{parent()}} 
-    
-    <h2>Révoquer votre carte de sécurité Cairn </h2>
-    <h3> Révoquer uniquement en cas de perte </h3>
-
-    <div>                                                                          
-        {{ form_start(form) }}
-        {{form_end(form) }}
-    </div>                                                                         
-
+    {{parent()}}
+    <div class="row">
+        <h2>Révoquer votre carte de sécurité Cairn n° {{card.number}} </h2>
+        <h3>Révoquer uniquement en cas de perte </h3>
+        <div>
+            {{ form_start(form) }}
+            <div class="input-field col s12">
+                {{ form_widget(form.current_password) }}
+                {{ form_label(form.current_password) }}
+                <span class="red-text">{{ form_errors(form.current_password) }}</span>
+            </div>
+            <div class="input-field col l2 m4 s6">
+                {{ form_widget(form.cancel) }}
+            </div>
+            <div class="input-field col l2 m4 s6">
+                {{ form_widget(form.save) }}
+            </div>
+            <div class="col s12">
+                <span class="red-text">{{ form_errors(form) }}</span>
+                {{ form_widget(form) }}
+            </div>
+            {{form_end(form) }}
+        </div>
+    </div>
 {% endblock %}              
 
 {% block javascripts %}

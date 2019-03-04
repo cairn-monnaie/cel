@@ -1,0 +1,65 @@
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  height: 100%;
+}
+
+.nav-wrapper > ul {
+  height: 100%;
+}
+
+#logo-container, #logo_user {
+  height: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+#logo-container img, #logo_user img {
+  height: 100%;
+}
+
+.login_splash .login_form {
+  margin-top: 50px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 20px 0px;
+}
+
+.teal.success {
+  /*background-color: @light-green !important;*/
+  background-color: #8bc34a !important;
+}
+
+.teal.error {
+  /*background-color: @red !important;*/
+  background-color: #f07254 !important;
+}
+
+.teal.warning {
+  /*background-color: @orange !important;*/
+  background-color: #ffe253 !important;
+}
+
+#network {
+  margin-top: 10px;
+}
+
+h1 {
+  font-size: 3rem;
+}
+
+h2 {
+  font-size: 2.5rem;
+}
+
+a:hover > img {
+  opacity: 0.5;
+}
+
+nav {
+  background-color: mediumvioletred;
+}
+
+/*# sourceMappingURL=ecairn.css.map */

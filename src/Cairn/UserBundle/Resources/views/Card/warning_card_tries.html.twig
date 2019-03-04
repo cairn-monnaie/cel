@@ -2,7 +2,9 @@
 
     {% set alreadyTried = app.user.cardKeyTries %} 
     {% if alreadyTried != 0 %}
-        {% set remaining = 3 - alreadyTried %}
-        <strong>Attention : </strong> Il vous reste {{remaining}} tentative(s) possible(s). Votre compte sera ensuite bloqué en cas d'échec.</br>
+        <div class="red-text">
+            {% set remaining = 3 - alreadyTried %}
+            <strong>Attention : </strong> Il vous reste {{remaining}} tentative(s) possible(s). Votre compte sera ensuite bloqué en cas d'échec.</br>
+        </div>
     {% endif %}
 

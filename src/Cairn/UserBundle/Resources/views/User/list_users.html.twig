@@ -17,28 +17,53 @@
     <div>
 
         <h2> les membres en attente de carte </h2>
-        <ul>
+
+        <ul class="collection">
             {% for user in pendingCards %}
-               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+                <li class="collection-item">
+                    <a href="{{path('cairn_user_profile_view', {'id': user.id})}}">
+                        {% if app.user.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+                        {% else %}
+                            <img src="{{asset('anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        {% endif %}
+                    <span class="title">{{user.name}}</span></a>
+                </li>
             {% else %}  
                 pas <em>encore</em> de membre en attente de carte !
             {% endfor %}
         </ul>
 
         <h2> les professionnels validés</h2>
-        <ul>
+        <ul class="collection">
             {% for user in validPros.enabledPros %}
-               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
-            {% else %}  
+                <li class="collection-item">
+                    <a href="{{path('cairn_user_profile_view', {'id': user.id})}}">
+                        {% if app.user.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+                        {% else %}
+                            <img src="{{asset('anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        {% endif %}
+                        <span class="title">{{user.name}}</span></a>
+                </li>
+            {% else %}
                 pas <em>encore</em> de professionel inscrit !
             {% endfor %}
         </ul>
 
         <h2> les professionnels bloqués</h2>
-        <ul>
+        <ul class="collection">
             {% for user in validPros.blockedPros %}
-               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
-            {% else %}  
+                <li class="collection-item">
+                    <a href="{{path('cairn_user_profile_view', {'id': user.id})}}">
+                        {% if app.user.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+                        {% else %}
+                            <img src="{{asset('anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        {% endif %}
+                        <span class="title">{{user.name}}</span></a>
+                </li>
+            {% else %}
                 pas  de professionel bloqué !
             {% endfor %}
         </ul>

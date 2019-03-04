@@ -34,15 +34,20 @@
                                 <span>Se souvenir de moi</span>
                             </label>
                             <br>
+                            <br>
                             <button type="submit" id="_submit" name="_submit" value="Connexion" class="waves-effect waves-light btn">
                                 Connexion
                                 <i class="material-icons right">check</i>
                             </button>
                             <br>
-                            <a href="{{ path('fos_user_resetting_request') }}">Mot de passe ou identifiant oublié ?</a> <a href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
+                            <br>
+                            <a href="{{ path('fos_user_resetting_request') }}">Mot de passe ou identifiant oublié ?</a>
                         </div>
-
                     </form>
+                </div>
+                <div class="row login_form center">
+                    Adhérent, vous n'utilisez pas encore le numérique ? <br><br>
+                    <a class="waves-effect waves-light btn blue" href="{{ path("cairn_user_registration") }}">Créer mon compte</a>
                 </div>
             </div>
         </div>

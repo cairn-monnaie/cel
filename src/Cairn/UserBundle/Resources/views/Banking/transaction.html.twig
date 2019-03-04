@@ -15,54 +15,5 @@
 
     {{include("CairnUserBundle:Banking:accounts_list.html.twig",{'accounts':fromAccounts,'type':'debit'})}}
 
-    <table>
-        <tr>
-            <td>
-                <div>
-                <ul>
-                    {% for account in toAccounts %}
-                            <li class="account" id="account"> <em class="account_owner"> 
-                            {% if account.owner.display is defined %}
-                                {{account.owner.display}} 
-                            {% else %}
-                                {{account.owner}} 
-                            {% endif %}
-                            </em> </br> 
-                            <span class="account_id">{{account.number}} </span></li>
-                    {% else %}
-                        Pas encore de compte à créditer
-                    {% endfor %}
-                </ul>
-                </div>
-            </td>
-        </tr>
-    </table>
-
 {% endblock %}
 
-{% block javascripts %}
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
-
-    <script>
-        jQuery(function ($) {
-            $creditAccountOwner = $('[id$="toAccount_owner"]');    
-            $creditAccountId = $('[id$="toAccount_id"]');    
-           
-            $debitAccountOwner = $('[id$="fromAccount_owner"]');    
-            $debitAccountId = $('[id$="fromAccount_id"]');    
-
-            $containerAccount = $('.account'); 
-            $containerAccount.click(function (e){
-                if($(this).attr('id') == 'account_credit'){
-                    $creditAccountOwner.val($(this).children("em")[0].innerText) ;
-                    $creditAccountId.val($(this).children("span:last")[0].innerText);
-                }
-                else{
-                    $debitAccountOwner.val($(this).children("em")[0].innerText) ;
-                    $debitAccountId.val($(this).children("span:last")[0].innerText);
-                }
-            });
-        });
-    </script>
-{% endblock %}

@@ -15,7 +15,7 @@
                     {% if user.image.url is defined %}
                         <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
                     {% else %}
-                        <img src="{{asset('purple-unknown.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        <img src="{{asset('anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
                     {% endif %}<br>
                     {{ user.name }}
                 </h5>
