@@ -193,13 +193,13 @@ class RegistrationListener
         }
         $user->setCyclosID($cyclosID);
 
-        if($this->container->get('cairn_user.api')->isApiCall()){
-            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
-            $response = new Response($serializedUser);
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_CREATED);
-            $event->setResponse($response);
-        }
+//        if($this->container->get('cairn_user.api')->isApiCall()){
+//            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
+//            $response = new Response($serializedUser);
+//            $response->headers->set('Content-Type', 'application/json');
+//            $response->setStatusCode(Response::HTTP_CREATED);
+//            $event->setResponse($response);
+//        }
     }
 
 

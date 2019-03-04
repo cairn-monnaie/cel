@@ -794,11 +794,15 @@ class BankingController extends Controller
                 //                var_dump($futureInstallments);
                 //                return new Response('ok');
                 $ob = $operationRepo->createQueryBuilder('o');
-                $futureInstallments = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
+                $futureInstallmentQuery = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
                     ->andWhere('o.paymentID is not NULL')
                     ->andWhere($ob->expr()->in('o.type',array(Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_SCHEDULED_FAILED)))
                     ->orderBy('o.executionDate','ASC')
-                    ->getQuery()->getResult();
+                    ->getQuery();
+                //double query on purpose, because of the "onPostLoad" event on Operation EntityListener that might change the status
+                //of a scheduled operation after first load
+                $futureInstallments = $futureInstallmentQuery->getResult();
+                $futureInstallments = $futureInstallmentQuery->getResult();
 
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
                     array('processedTransactions'=>$processedTransactions ,

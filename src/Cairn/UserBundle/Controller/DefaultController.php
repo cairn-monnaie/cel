@@ -68,7 +68,7 @@ class DefaultController extends Controller
 
         $user = $this->getUser();
         if($user){
-            if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
+            if($user->isAdherent()){
                 throw new AccessDeniedException('Vous avez déjà un espace membre.');
             }
         }

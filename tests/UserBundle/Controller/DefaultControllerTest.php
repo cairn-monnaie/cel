@@ -287,7 +287,6 @@ class DefaultControllerTest extends BaseControllerTest
 
         $crawler = $this->client->followRedirect();
 
-
         $this->assertSame(1,$crawler->filter('html:contains("registration.check_email")')->count());
 
         $crawler = $this->client->request('GET','/logout');
@@ -329,7 +328,6 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideRegistrationUsers()
     {
         return array(
-            array('localGroup','gl_paladru@cairn-monnaie.com','Groupe Local Paladru','1 rue du Test','1','Groupe Local du Paladru',true),
             array('pro','lib_harry_morgan@test.com','Librairie Harry Morgan','10 rue Millet','1','Librairie',false),
             array('person','john_doe@test.com','John Doe','15 rue du test','1','Je suis cairnivore',false),
         );

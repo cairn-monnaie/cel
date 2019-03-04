@@ -244,12 +244,12 @@ cairn_user_banking_operations:
         type: transaction
         _format: html|json
 
-#cairn_user_banking_post:
-#    path:     operations/{type}.{_format}
-#    methods: POST
-#    defaults: { _controller: CairnUserBundle:Default:synchronizeOperation, _format: json }
-#    requirements:
-#        type: deposit|withdrawal|conversion
+cairn_user_banking_post:
+    path:     operations/{type}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Security:synchronizeOperation, _format: json }
+    requirements:
+        type: deposit|withdrawal|conversion
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{type}.{_format}

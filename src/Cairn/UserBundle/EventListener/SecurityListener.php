@@ -136,7 +136,7 @@ class SecurityListener
         $dto->field = 'SECONDS';
         //get cyclos token and set in session
         $loginResult = $loginManager->login($dto);
-        $session->set('cyclos_token',$loginResult->sessionToken); 
+        $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken)); 
 
     }
 
@@ -145,12 +145,13 @@ class SecurityListener
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName=$this->container->getParameter('cyclos_currency_cairn');          
+        $securityService = $this->container->get('cairn_user.security');
 
         if($this->container->get('cairn_user.api')->isApiCall()){
-            $cyclos_token = $event->getRequest()->request->get('cyclos_token');
+            $cyclos_token = $securityService->vigenereDecode($event->getRequest()->request->get('cyclos_token'));
         }else{
             $session = $event->getRequest()->getSession();
-            $cyclos_token = $session->get('cyclos_token');
+            $cyclos_token = $securityService->vigenereDecode($session->get('cyclos_token'));
         }
 
         $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
