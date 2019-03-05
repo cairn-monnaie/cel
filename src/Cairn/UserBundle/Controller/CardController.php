@@ -141,14 +141,14 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:card_operation.html.twig',array('user'=>$user));
     }
 
-    public function requestCardAction(Request $request)
+    public function orderCardAction(Request $request)
     {
         $session = $request->getSession();
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $currentUser = $this->getUser();
 
-        if($session->get('requestCard')){
+        if($session->get('orderCard')){
             $session->getFlashBag()->add('info','La demande a déjà été effectuée.');
             return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
         }
@@ -176,7 +176,7 @@ class CardController extends Controller
 
         $session->getFlashBag()->add('success','La demande a bien été enregistrée. L\'Association en a été informée. ');
 
-        $session->set('requestCard',true);
+        $session->set('orderCard',true);
         return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
 
     }

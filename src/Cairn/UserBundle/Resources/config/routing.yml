@@ -53,7 +53,7 @@ cairn_user_welcome:
 
 
 cairn_user_registration:
-    path:     inscription
+    path:     inscription/
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
 
 cairn_user_registration_type:
@@ -64,10 +64,6 @@ cairn_zipcities_ajax:
     path:     zipcities
     methods: POST
     defaults: { _controller: CairnUserBundle:Default:zipCities, _format: json }
-
-cairn_user_redirect_login:
-    path:     login/redirection/{message}/
-    defaults: { _controller: CairnUserBundle:Default:redirectToLogin }
 
 
 cairn_user_card_security_layer:
@@ -182,8 +178,8 @@ cairn_user_card_home:
         id: \d+
         _format: html|json
 
-cairn_user_card_request:
-    path:     card/request
+cairn_user_card_order:
+    path:     card/order
     defaults: { _controller: CairnUserBundle:Card:requestCard, _format: html }
 
 

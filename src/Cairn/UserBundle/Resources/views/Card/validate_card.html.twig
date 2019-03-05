@@ -10,12 +10,14 @@
     {{parent()}} 
     <div class="row">
         <div class="col s12">
-            <h2>Valider votre carte de sécurité Cairn n° {{card.number}} </h2>
+            {% set code = security_service.vigenereEncode(card.code) %}
+
+            <h2>Valider votre carte de sécurité Cairn de code {{code}} </h2>
             <h3>Pour vérifier votre identité, merci de saisir une clé</h3>
             {{include("CairnUserBundle:Card:warning_card_tries.html.twig",{'card': card})}}
         </div>
         {{ form_start(form) }}
-        <p>Clé contenue dans la case numérotée <strong>{{position}}</strong> de votre carte n° {{card.number}}</p>
+        <p>Clé contenue dans la case numérotée <strong>{{position}}</strong> de votre carte de code {{code}}</p>
         <div class="input-field col s10 m4">
             {{ form_widget(form.field) }}
             {{ form_label(form.field) }}

@@ -75,17 +75,17 @@ class DefaultController extends Controller
         return $this->render('CairnUserBundle:Registration:index.html.twig');
     }
 
-    public function registrationByTypeAction(string $type){
+    public function registrationByTypeAction(Request $request, string $type){
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
             $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
             }
-            $session = new Session();
+            $session = $request->getSession();
             $session->set('registration_type',$type);
             return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
-            return $this->redirectToRoute('CairnUserBundle:Registration:index.html.twig');
+            return $this->redirectToRoute('cairn_user_registration');
         }
     }
 

@@ -59,8 +59,9 @@ class DefaultControllerTest extends BaseControllerTest
             'valid format : uppercase'=>array('PAYER 12.5 SHOP',true,true,''),
             'valid format : lowercase'=>array('payer 12.5 shop',true,true,''),
             'valid format : mix upper/lowercase'=>array('PaYer 12.5 SHoP',true,true,''),
-            'invalid format : action PAYER 2'=>array('PAYE 12.5 SHOP',false,true,'Envoyer PAYER, SOLDE'),
-            'invalid format : action PAYER 3'=>array('PAY 12.5 SHOP',false,true,'Envoyer PAYER, SOLDE'),
+            'valid format : action PAYE 2'=>array('PAYE 12.5 SHOP',true,true,''),
+            'valid format : action PAYER 3'=>array('PAY 12.5 SHOP',true,true,''),
+            'valid format : action PAYER 4'=>array('PAYEZ 12.5 SHOP',true,true,''),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
             'invalid format : float amount with 0 decimals'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
@@ -202,7 +203,7 @@ class DefaultControllerTest extends BaseControllerTest
           'payment : valid sms'=>array('0612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
           'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,
-                                                        array('ERREUR TECHNIQUE','aucun accès client'),2),
+                                                        array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
             'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,array('rien à valider')),
 
@@ -225,14 +226,17 @@ class DefaultControllerTest extends BaseControllerTest
             $currentUser = NULL;
         }
 
-        $crawler = $this->client->request('GET','/inscription?type='.$type);
+        $crawler = $this->client->request('GET','/inscription/'.$type);
         if(!$expectValid){
             if($this->client->getResponse()->isRedirect()){
-                $this->client->followRedirect();
+                $isRedirectToLogin = $this->client->getResponse()->isRedirect('http://localhost/login');
+                $isRedirectToSubmit = $this->client->getResponse()->isRedirect('/inscription/');
+                $this->assertTrue($isRedirectToLogin || $isRedirectToSubmit);
+            }else{
+                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }
-            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
-            $this->assertTrue($this->client->getResponse()->isRedirect('/register/informations/?type='.$type));
+            $this->assertContains('fos_user_registration_form',$this->client->getResponse()->getContent());
         }
     }
 
@@ -248,8 +252,7 @@ class DefaultControllerTest extends BaseControllerTest
             array('login'=>true,'username'=>$adminUsername,'type'=>'person', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'person', 'expectValid'=>true,'expectMessage'=>''),
-          array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
-            array('login'=>false,'username'=>'','type'=>'', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
+            array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
             array('login'=>false,'username'=>'','type'=>'xxx', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
         );
     }
@@ -267,14 +270,13 @@ class DefaultControllerTest extends BaseControllerTest
         $crawler = $this->login($login, $password);
 
 
-        $crawler = $this->client->request('GET','/inscription?type='.$type);
-        $crawler = $this->client->followRedirect();
+        $crawler = $this->client->request('GET','/inscription/'.$type);
 
         $form = $crawler->selectButton('Inscription')->form();
         $form['fos_user_registration_form[email]']->setValue($email);
         $form['fos_user_registration_form[name]']->setValue($name);
         $form['fos_user_registration_form[address][street1]']->setValue($street1);
-        $form['fos_user_registration_form[address][zipCity]']->select($zipCode);
+        $form['fos_user_registration_form[address][zipCity]']->setValue($zipCode);
         $form['fos_user_registration_form[description]']->setValue($description);
 
         $this->assertNotContains('fos_user_registration_form[username]',$this->client->getResponse()->getContent());
@@ -287,7 +289,10 @@ class DefaultControllerTest extends BaseControllerTest
 
         $crawler = $this->client->followRedirect();
 
-        $this->assertSame(1,$crawler->filter('html:contains("registration.check_email")')->count());
+        $this->assertSame(1,$crawler->filter('html:contains("Inscription enregistrée")')->count());
+        $this->assertContains('Inscription enregistrée',$this->client->getResponse()->getContent());
+        $this->assertContains($email,$this->client->getResponse()->getContent());
+        $this->assertContains(htmlspecialchars('lien d\'activation',ENT_QUOTES),$this->client->getResponse()->getContent());
 
         $crawler = $this->client->request('GET','/logout');
 
@@ -310,17 +315,16 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
 
-
-            $crawler = $this->client->followRedirect();
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse email")')->count());
         }
 
         $this->em->refresh($newUser);
         $this->assertTrue(!$newUser->isEnabled());
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));
-        }
-        if($type == 'localGroup'){
+        }elseif($type == 'person'){
+            $this->assertTrue($newUser->hasRole('ROLE_PERSON'));
+        }elseif($type == 'localGroup'){
             $this->assertTrue($newUser->hasRole('ROLE_ADMIN'));
         }
     }
@@ -328,8 +332,9 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideRegistrationUsers()
     {
         return array(
-            array('pro','lib_harry_morgan@test.com','Librairie Harry Morgan','10 rue Millet','1','Librairie',false),
-            array('person','john_doe@test.com','John Doe','15 rue du test','1','Je suis cairnivore',false),
+            'pro grenoble'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
+            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
+            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
         );
     }
 

@@ -80,6 +80,11 @@ class RegistrationType extends AbstractType
                     $form->add('firstname', TextType::class,array('label'=>'Votre prénom'));
                     $form->add('description',TextareaType::class,array('label'=>
                                     'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
+                }else{
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
+                    $form->add('description',TextareaType::class,array('label'=>
+                                    'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
+
                 }
             }
         );
