@@ -9,7 +9,9 @@
 {% block body %}
     {{parent()}}
     <div class="row">
-        <h2>Révoquer votre carte de sécurité Cairn n° {{card.number}} </h2>
+        {% set code = security_service.vigenereEncode(card.code) %}
+
+        <h2>Révoquer votre carte de sécurité Cairn de code {{code}}</h2>
         <h3>Révoquer uniquement en cas de perte </h3>
         <div>
             {{ form_start(form) }}

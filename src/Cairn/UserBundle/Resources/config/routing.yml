@@ -180,7 +180,7 @@ cairn_user_card_home:
 
 cairn_user_card_order:
     path:     card/order
-    defaults: { _controller: CairnUserBundle:Card:requestCard, _format: html }
+    defaults: { _controller: CairnUserBundle:Card:orderCard, _format: html }
 
 
 cairn_user_card_revoke:

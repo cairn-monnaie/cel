@@ -150,7 +150,7 @@ class AdminControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-           'valid'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true,2),
+           'valid, already log in'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true,1),
            'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true,0),
            'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false,0)
         );

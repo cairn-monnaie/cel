@@ -293,7 +293,7 @@ class UserController extends Controller
                     $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
 
                     $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
-                    $smsClient = $securityService->vigenereEncode($smsClient.$this->getParameter('secret'));
+                    $smsClient = $securityService->vigenereEncode($smsClient);
                     $smsData->setSmsClient($smsClient);
 
                     //by default, access client is blocked and must be unblocked while enabling sms operations

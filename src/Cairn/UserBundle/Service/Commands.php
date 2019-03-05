@@ -333,7 +333,7 @@ class Commands
             $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
             $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
 
-            $smsClient = $securityService->vigenereEncode($smsClient.$this->container->getParameter('secret'));
+            $smsClient = $securityService->vigenereEncode($smsClient);
             $smsData->setSmsClient($smsClient);
 
 //            if(! $smsData->isSmsEnabled()){
@@ -623,12 +623,12 @@ class Commands
         $user->setRemovalRequest(true);
         echo 'INFO: OK !'."\n";
 
-        //user is blocked
+        //user is blocked but has already been able to log in
         $user = $userRepo->findOneByUsername('tout_1_fromage'); 
-        echo 'INFO: '.$user->getName(). ' is blocked'."\n";
+        echo 'INFO: '.$user->getName(). ' is blocked but has already logged in'."\n";
         $user->setEnabled(false);
+        $user->setLastLogin(new \Datetime());
         echo 'INFO: OK !'."\n";
-
 
         //users have ROLE_ADMIN as referent
         $user1 = $userRepo->findOneByUsername('episol'); 
@@ -637,9 +637,9 @@ class Commands
         $admin1 = $userRepo->findOneByUsername('gl_grenoble'); 
         $admin2  = $userRepo->findOneByUsername('gl_voiron'); 
 
-        echo 'INFO: '.$admin1->getName(). ' becomes referent of'. $user1->getName()."\n";
+        echo 'INFO: '.$admin1->getName(). ' becomes referent of '. $user1->getName()."\n";
         $user1->addReferent($admin1);
-        echo 'INFO: '.$admin2->getName(). ' becomes referent of'. $user2->getName()."\n";
+        echo 'INFO: '.$admin2->getName(). ' becomes referent of '. $user2->getName()."\n";
         $user2->addReferent($admin2);
         echo 'INFO: OK !'."\n";
 

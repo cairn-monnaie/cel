@@ -501,7 +501,7 @@ class CardController extends Controller
                     $currentUser->setCardAssociationTries($user->getCardAssociationTries() + 1);
                     $remainingTries = 3 - $user->getCardAssociationTries();
 
-                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' à partir de sa date d\'impression. Peut-être a-t-elle expirée ?');
+                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être a-t-elle expirée ?');
                     $em->flush();
 
                     if($this->get('cairn_user.api')->isApiCall()){

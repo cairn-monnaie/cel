@@ -55,7 +55,7 @@ class UserControllerTest extends BaseControllerTest
 
         }else{
             $formSmsData = $crawler->selectButton('cairn_userbundle_smsdata_save')->form();
-            if($currentUser->hasRole('ROLE_ADMIN') || $currentUser->hasRole('ROLE_SUPER_ADMIN')){
+            if($currentUser->isAdmin()){
                 $formSmsData['cairn_userbundle_smsdata[identifier]']->setValue($smsData['identifier']);
                 $this->assertNotContains('cairn_userbundle_smsdata[phoneNumber]',$this->client->getResponse()->getContent());
             }else{
@@ -78,6 +78,7 @@ class UserControllerTest extends BaseControllerTest
             $crawler = $this->client->submit($formSmsData);
 
             $this->em->refresh($currentUser);
+            $this->em->refresh($targetUser);
 
             if($isPhoneNumberEdit){
                 if($isValidData){
@@ -159,6 +160,7 @@ class UserControllerTest extends BaseControllerTest
                     $crawler = $this->client->followRedirect();
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
+
                     if($isSmsEnabled){
                         $this->assertTrue($targetUser->getSmsData()->isSmsEnabled());
                     }else{
@@ -213,9 +215,9 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>$validCodeMsg
                                                           )),
 
-            'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
-                                                                    'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
-                                                                    'expectedMessages'=>$validCodeMsg)),
+          'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+                                                                  'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
+                                                                  'expectedMessages'=>$validCodeMsg)),
 
             'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
                                                                     'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
@@ -269,24 +271,6 @@ class UserControllerTest extends BaseControllerTest
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_prod','target'=>'nico_faus_prod',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
                                                             )),
-
-//            'negative daily amount threshold'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
-//                                            'isPhoneNumberEdit'=>false,'smsData'=>array('amountPerDay'=>'-5'),
-//                                            'expectedMessage'=>'pas de sens')),
-//
-//            'too high daily amount threshold'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
-//                                            'isPhoneNumberEdit'=>false,'smsData'=>array('amountPerDay'=>'1000'),
-//                                            'expectedMessage'=>'Au dessus de')),
-//
-//            'negative daily number of payments'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
-//                                            'isPhoneNumberEdit'=>false,'smsData'=>array('paymentsPerDay'=>'-5'),
-//                                            'expectedMessage'=>'pas de sens')),
-//
-//            'too high daily number of payments'=>array_replace_recursive($baseData,array('login'=>'maltobar','isValidData'=>false,
-//                                            'isPhoneNumberEdit'=>false,'smsData'=>array('paymentsPerDay'=>'1000'),
-//                                            'expectedMessage'=>'Au dessus de')),
-//
-//
         );
     }
 

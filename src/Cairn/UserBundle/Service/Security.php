@@ -224,7 +224,7 @@ class Security
     public function getSmsClient(User $user)
     {
         if($smsData = $user->getSmsData()){
-            return str_replace($this->secret, '', $this->vigenereDecode($smsData->getSmsClient()) );
+            return $this->vigenereDecode($smsData->getSmsClient()) ;
         }
         return NULL;
     }

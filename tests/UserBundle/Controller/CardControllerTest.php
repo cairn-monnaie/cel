@@ -57,16 +57,16 @@ class CardControllerTest extends BaseControllerTest
             'referent for user with no card'=>array('referent'=>$adminUsername,'target'=>'episol','isReferent'=>true,2),
             'non referent'=> array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,0),
             'pro with card'=> array('referent'=>'vie_integrative','target'=>'vie_integrative','isReferent'=>false,1),
-            'pro without card'=>array('referent'=>'episol','target'=>'episol','isReferent'=>false,1),
+            'pro without card'=>array('referent'=>'episol','target'=>'episol','isReferent'=>false,2),
             'non referent'=>array('referent'=>'vie_integrative','target'=>'DrDBrew','isReferent'=>false,0),
         );
     }
 
     /**
      *
-     *@dataProvider provideDataForRequestCard
+     *@dataProvider provideDataForOrderCard
      */
-    public function testRequestCard($login, $isAdherent, $hasCard,$expectMessage )
+    public function testOrderCard($login, $isAdherent, $hasCard,$expectMessage )
     {
         $crawler = $this->login($login, '@@bbccdd');
 
@@ -74,7 +74,7 @@ class CardControllerTest extends BaseControllerTest
 
         $this->client->enableProfiler();
 
-        $url = '/card/request';
+        $url = '/card/order';
         $crawler = $this->client->request('GET',$url );
 
         if(! $isAdherent){
@@ -111,7 +111,7 @@ class CardControllerTest extends BaseControllerTest
         }
     }
 
-    public function provideDataForRequestCard()
+    public function provideDataForOrderCard()
     {
         return array(
             'is admin' => array('gl_grenoble',false,true,'réservée aux adhérents'),
