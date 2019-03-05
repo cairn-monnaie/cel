@@ -2,9 +2,9 @@
 {% trans_default_domain 'FOSUserBundle' %}
 
 <div class="row">
-    <h2>Inscription {%  if (app.request.query.get('type') == "person") %}particulier{% elseif(app.request.query.get('type') == "pro") %}pro{% endif %}</h2>
+    <h2 class="center-align">Inscription {%  if (app.request.query.get('type') == "person") %}particulier{% elseif(app.request.query.get('type') == "pro") %}pro{% endif %}</h2>
     {{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
-    <div class="input-field col s4">
+    <div class="input-field col s12 m4">
         {{ form_errors(form.email) }}
         <i class="material-icons prefix">mail_outline</i>
         {{ form_widget(form.email) }}
@@ -12,20 +12,21 @@
         <span class="red-text">{{ form_errors(form.email) }}</span>
     </div>
     {% if form.firstname is defined %}
-        <div class="input-field col s4">
+        <div class="input-field col s12 m4">
             <i class="material-icons prefix">person_outline</i>
             {{ form_errors(form.firstname) }}
             {{ form_widget(form.firstname) }}
             {{ form_label(form.firstname) }}
         </div>
-        <div class="input-field col s4">
+        <div class="input-field col s12 m4">
+            <i class="material-icons prefix hide-on-med-and-up"></i>
             {{ form_errors(form.name) }}
             {{ form_widget(form.name) }}
             {{ form_label(form.name) }}
             <span class="red-text">{{ form_errors(form.name) }}</span>
         </div>
     {% else %}
-        <div class="input-field col s8">
+        <div class="input-field col s12 m4">
             {{ form_errors(form.name) }}
             <i class="material-icons prefix">person_outline</i>
             {{ form_widget(form.name) }}
@@ -33,38 +34,50 @@
             <span class="red-text">{{ form_errors(form.name) }}</span>
         </div>
     {% endif %}
-    <div class="input-field col s6">
-        {{ form_errors(form.address.street1) }}
-        <i class="material-icons prefix">home</i>
-        {{ form_widget(form.address.street1) }}
-        {{ form_label(form.address.street1) }}
-        <span class="red-text">{{ form_errors(form.address.street1) }}</span>
+    <div class="col s12 m6">
+        <div class="row">
+            <div class="input-field col s12">
+                {{ form_errors(form.address.street1) }}
+                <i class="material-icons prefix">home</i>
+                {{ form_widget(form.address.street1) }}
+                {{ form_label(form.address.street1) }}
+                <span class="red-text">{{ form_errors(form.address.street1) }}</span>
+            </div>
+            <div class="input-field col s12">
+                {{ form_errors(form.address.street2) }}
+                <i class="material-icons prefix"></i>
+                {{ form_widget(form.address.street2) }}
+                {{ form_label(form.address.street2) }}
+                <span class="red-text">{{ form_errors(form.address.street2) }}</span>
+            </div>
+            <div class="input-field col s12">
+                {{ form_errors(form.address.zipCity) }}
+                <i class="material-icons prefix">place</i>
+                {{ form_widget(form.address.zipCity) }}
+                {{ form_label(form.address.zipCity) }}
+            </div>
+        </div>
     </div>
-    <div class="input-field col s6">
-        {{ form_errors(form.address.street2) }}
-        {{ form_widget(form.address.street2) }}
-        {{ form_label(form.address.street2) }}
-        <span class="red-text">{{ form_errors(form.address.street2) }}</span>
-    </div>
-    <div class="input-field col s6">
-        {{ form_errors(form.address.zipCity) }}
-        <i class="material-icons prefix">place</i>
-        {{ form_widget(form.address.zipCity) }}
-        {{ form_label(form.address.zipCity) }}
-    </div>
+    <div class="col s12 m6">
+        <div class="row">
     {% if form.image is defined %}
-        {{ form_row(form.image) }}
-    {#<div class="file-field input-field col s6">#}
-        {#{{ form_errors(form.image) }}#}
-        {#<div class="btn">#}
-            {#<span>{{ form_label(form.image) }}</span>#}
-            {#{{ form_widget(form.image) }}#}
-        {#</div>#}
-        {#<div class="file-path-wrapper">#}
-            {#<input class="file-path validate" type="text">#}
-        {#</div>#}
-    {#</div>#}
+        <div class="col s12">
+            {{ form_errors(form.image) }}
+            {{ form_label(form.image) }}
+        </div>
+        <div class="col s12">
+            {{ form_widget(form.image) }}
+        </div>
     {% endif %}
+            <div class="col s12">
+                {{ form_errors(form.identityDocument) }}
+                {{ form_label(form.identityDocument) }}
+            </div>
+            <div class="col s12">
+                {{ form_widget(form.identityDocument) }}
+            </div>
+        </div>
+    </div>
     <div class="input-field col s12">
         <i class="material-icons prefix">message</i>
         {{ form_widget(form.description) }}
@@ -76,3 +89,5 @@
     </div>
     {{ form_end(form) }}
 </div>
+<br>
+<br>

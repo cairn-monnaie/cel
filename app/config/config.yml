@@ -44,6 +44,7 @@ twig:
         card_association_delay: '%card_association_delay%'
         cairn_email_activation_delay: '%cairn_email_activation_delay%'
         security_service: '@cairn_user.security'
+        register_url: '%cairn_default_register_url%'
     form_themes:
         - 'form/materialize_form_theme.html.twig'
         - 'form/cairn_form_theme.html.twig'
