@@ -122,7 +122,7 @@ class BankingControllerTest extends BaseControllerTest
             'valid with email only'=>array_replace($baseData,array('ICC'=>'')),
             'valid with ICC only'=>array_replace($baseData,array('email'=>'')),
             'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
- //           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
+//           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }
 
