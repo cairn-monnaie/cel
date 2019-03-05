@@ -40,33 +40,6 @@ services:
     networks:
       - mlc_net
 
-  cyclos-app:
-    image: cyclos/cyclos:4.8.2
-    environment:
-      - DB_HOST=cyclos-db
-      - DB_NAME=cyclos
-      - DB_USER=cyclos
-      - DB_PASSWORD=cyclos
-    # build: ./cyclos
-    restart: always
-    ports:
-      - '${CYCLOS_PORT}:8080'
-    networks:
-      - mlc_net
-
-  cyclos-db:
-      # build: ./cyclosdb
-      image: cyclos/db
-      volumes:
-        - ./cyclos-dump-minimal.sql:/docker-entrypoint-initdb.d/cyclos-dump-minimal.sql #dump done automatically by postgre
-      environment:
-        - POSTGRES_DB=cyclos
-        - POSTGRES_USER=cyclos
-        - POSTGRES_PASSWORD=cyclos
-      restart: always
-      networks:
-        - mlc_net
-
   front:
     image: nginx:latest
     ports:
