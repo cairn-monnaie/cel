@@ -19,19 +19,6 @@ services:
     networks:
       - mlc_net
 
-#  phpmyadmin:
-#    image: phpmyadmin/phpmyadmin
-#    ports:
-#      - '${PMA_PORT}:80'
-#    environment:
-#      PMA_HOST: db
-#      PMA_PORT: 3306
-#      PMA_USER: ${DB_USER}
-#      PMA_PASSWORD: ${DB_PASSWORD}
-#    depends_on:
-#      - db
-#    networks:
-#      - mlc_net
 
   engine:
     build:
@@ -54,32 +41,6 @@ services:
     networks:
       - mlc_net
 
-  cyclos-app:
-    image: cyclos/cyclos:4.8.2
-    environment:
-      - DB_HOST=cyclos-db
-      - DB_NAME=cyclos
-      - DB_USER=cyclos
-      - DB_PASSWORD=cyclos
-    # build: ./cyclos
-    restart: always
-    ports:
-      - '${CYCLOS_PORT}:8080'
-    networks:
-      - mlc_net
-
-  cyclos-db:
-      # build: ./cyclosdb
-      image: cyclos/db
-      volumes:
-        - ./cyclos-dump-minimal.sql:/docker-entrypoint-initdb.d/cyclos-dump-minimal.sql #dump done automatically by postgre
-      environment:
-        - POSTGRES_DB=cyclos
-        - POSTGRES_USER=cyclos
-        - POSTGRES_PASSWORD=cyclos
-      restart: always
-      networks:
-        - mlc_net
 
   front:
     image: nginx:latest
@@ -103,16 +64,16 @@ services:
     networks:
       - mlc_net
 
-#  phpmyadmin:
-#    image: phpmyadmin/phpmyadmin
-#    ports:
-#        - '${PMA_PORT}:80'
-#    networks:
-#      - mlc_net
-#    environment:
-#      - "PMA_HOST=db"
-#      - "PMA_PORT=3306"
-#      - 'PMA_USER= root' #${DB_USER}'
-#      - 'PMA_PASSWORD=  #${DB_PASSWORD}'
-#    depends_on:
-#      - db
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+        - '${PMA_PORT}:80'
+    networks:
+      - mlc_net
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: '${DB_USER}'
+      PMA_PASSWORD: '${DB_PASSWORD}'
+    depends_on:
+      - db
