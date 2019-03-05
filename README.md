@@ -88,8 +88,7 @@
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
      * Launch Cyclos configuration script and initialize mysql database  
-       `sudo docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
-     **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
+       `sudo docker-compose exec engine ./build-setup.sh $env` _note_ : $env = (dev / test / prod)   
 
     * Install assets
        `sudo docker-compose exec engine composer install`
@@ -140,7 +139,7 @@
 
  * **Generating test data**  
     This will (re)create a scratch MySQL test database
-    `sudo docker-compose exec engine ./build-setup.sh test admin:admin`    
+    `sudo docker-compose exec engine ./build-setup.sh test`    
 
     `sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
     This script first generates a set of users with an identical password : @@bbccdd, based on cyclos adherents data. 
