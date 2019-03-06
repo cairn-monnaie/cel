@@ -712,6 +712,13 @@ class UserController extends Controller
     public function viewProfileAction(Request $request , User $user, $_format)                           
     {                                                                          
         $currentUser = $this->getUser();
+
+        $personVisitingPro = ($currentUser->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO'));
+
+        if(! ( ($user === $currentUser) || $user->hasReferent($currentUser) ) ){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }
+
         if( (!$this->get('security.authorization_checker')->isGranted('ROLE_ADMIN')) && $user->hasRole('ROLE_SUPER_ADMIN')){
             throw new AccessDeniedException('Pas les droits nécessaires pour accéder au profil de cet utilisateur');
         } 

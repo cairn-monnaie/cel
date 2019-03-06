@@ -473,7 +473,7 @@ class UserControllerTest extends BaseControllerTest
      *
      *@dataProvider provideReferentsAndTargets
      */
-    public function testViewProfile($referent,$target,$isReferent)
+    public function testViewProfile($referent,$target,$isLegit)
     {
         $crawler = $this->login($referent, '@@bbccdd');
 
@@ -490,35 +490,84 @@ class UserControllerTest extends BaseControllerTest
         $this->assertContains(htmlspecialchars($targetUser->getAddress()->getStreet1(),ENT_QUOTES),$this->client->getResponse()->getContent());
         $this->assertContains($targetUser->getAddress()->getZipCity()->getZipCode(),$this->client->getResponse()->getContent());
 
-//        if($targetUser->getPhoneNumber()){
-//                 $this->assertContains($targetUser->getPhoneNumber(),$this->client->getResponse()->getContent());
-//        }
-
-        if($targetUser->hasRole('ROLE_PRO')){
-            if($currentUser->hasRole('ROLE_ADMIN')){
-                $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
-            }elseif($currentUser->hasRole('ROLE_SUPER_ADMIN')){
-                $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign"]')->count());
-            }else{
-                $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
-            }
+        if(! $isLegit){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            return;
         }
-        if( ($isReferent || $targetUser === $currentUser)){
-            $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
 
-            if($targetUser == $currentUser){
+
+        $hasCard = $targetUser->getCard();
+
+        if($targetUser->isAdherent()){
+
+            $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit"]')->count());
+
+            if($currentUser === $targetUser){//adherent watching his own profile
                 $this->assertSame(1,$crawler->filter('a[href*="profile/change-password"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/edit"]')->count());
-            }else{
+
+                if($targetUser->hasRole('ROLE_PRO')){
+                    $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                }else{//ROLE_PERSON
+                    $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                }
+
+                $this->assertsame(0,$crawler->filter('a[href*="card/download"]')->count());
+
+                if($hasCard){
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
+                }else{
+                    $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
+                }
+
+            }else{//admin, as referent, watching adherent's profile
+
+                if($targetUser->isEnabled()){
+                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/block"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="admin/users/activate"]')->count());
+                }else{
+                    $this->assertSame(0,$crawler->filter('a[href*="admin/users/block"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate"]')->count());
+                }
+
                 $this->assertSame(0,$crawler->filter('a[href*="profile/change-password"]')->count());
                 $this->assertSame(0,$crawler->filter('a[href*="profile/edit"]')->count());
+
+                if($targetUser->hasRole('ROLE_PRO')){
+                    if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                        $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
+                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                    }else{//is GL --> cannot assign referent
+                        $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
+                        $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                    }
+                }else{//person's profile : no referent data
+                    $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                }
+
+                if($hasCard){
+                    $this->assertSame(0,$crawler->filter('a[href*="card/download"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
+                }else{
+                    $this->assertSame(1,$crawler->filter('a[href*="card/download"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
+                }
+
             }
-        }else{
-            $this->assertSame(0,$crawler->filter('a[href*="user/remove"]')->count());
         }
+
     }
 
     public function provideReferentsAndTargets()
@@ -526,12 +575,18 @@ class UserControllerTest extends BaseControllerTest
 
         $adminUsername = $this->testAdmin;
         return array(
-            array('referent'=>$adminUsername,'target'=>$adminUsername,'isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'DrDBrew','isReferent'=>true),
-            array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false),
-            array('referent'=>'hirundo_archi','target'=>'hirundo_archi','isReferent'=>false),
-            array('referent'=>'maltobar','target'=>'maltobar','isReferent'=>false),
-            array('referent'=>$adminUsername,'target'=>'nico_faus_prod','isReferent'=>true),
+            'superadmin for enabled pro'=>array('referent'=>$adminUsername,'target'=>'DrDBrew','isLegit'=>true),
+            'admin for enabled pro'=>array('referent'=>'gl_grenoble','target'=>'episol','isLegit'=>true),
+            'admin not referent'=>array('referent'=>$adminUsername,'target'=>'vie_integrative','isLegit'=>false),
+            'superadmin for enabled person'=>array('referent'=>$adminUsername,'target'=>'crabe_arnold','isLegit'=>true),
+            'enabled pro for himself'=>array('referent'=>'DrDBrew','target'=>'DrDBrew','isLegit'=>true),
+            'superadmin for disabled pro'=>array('referent'=>$adminUsername,'target'=>'la_mandragore','isLegit'=>true),
+            'superadmin for pro without card'=>array('referent'=>$adminUsername,'target'=>'episol','isLegit'=>true),
+            'pro without card for himself'=>array('referent'=>'episol','target'=>'episol','isLegit'=>true),
+            'pro for other pro'=>array('referent'=>'episol','target'=>'DrDBrew','isLegit'=>false),
+            'person for other person'=>array('referent'=>'crabe_arnold','target'=>'nico_faus_perso','isLegit'=>false),
+            'pro for person'=>array('referent'=>'maltobar','target'=>'benoit_perso','isLegit'=>false),
+            'person for pro'=>array('referent'=>'benoit_perso','target'=>'maltobar','isLegit'=>false),
         );
     }
 
