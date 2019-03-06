@@ -166,7 +166,7 @@ class UserController extends Controller
 
         //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
         if( $user->hasRole('ROLE_PRO') && $isAdmin && !$user->getSmsData() ){
-            $session->getFlashBag()->add('info','Ce professionnel n\'a jamais saisi ses coordonnées SMS');
+            $session->getFlashBag()->add('info','Ce professionnel n\'a pas saisi ses coordonnées SMS');
             return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
@@ -265,7 +265,7 @@ class UserController extends Controller
 
             //no activation code proposed (means that no phone number association requested)
             if(!$session_code){
-                $session->getFlashBag()->add('info','Aucune demande d\'ajout de numéro enregistrée');
+                $session->getFlashBag()->add('info','Aucune demande d\'ajout de numéro de téléphone enregistrée');
                 return new RedirectResponse($request->getRequestUri());
             }
 
@@ -323,7 +323,8 @@ class UserController extends Controller
                 if($remainingTries > 0){
                     $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte');
                 }else{
-                    $this->get('cairn_user.access_platform')->disable(array($user),'Compte bloqué','Echecs');
+                    $body = 'Vous avez commis 3 erreurs en tentant de valider votre nouveau de numéro de téléphone. Pour des raisons de sécurité, votre compte e-Cairn a été bloqué. Veuillez contacter l\'Association pour résoudre le problème.';
+                    $this->get('cairn_user.access_platform')->disable(array($user),'Compte e-Cairn bloqué',$body);
                     $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
                 }
 
@@ -962,7 +963,7 @@ class UserController extends Controller
                     $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
                     $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont probablement plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
                 }else{
-                    $session->getFlashBag()->add('success','Tous les membres ont pas pu être supprimés avec succès'); 
+                    $session->getFlashBag()->add('success','Tous les membres ont pu être supprimés avec succès'); 
                 }
                 return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
 

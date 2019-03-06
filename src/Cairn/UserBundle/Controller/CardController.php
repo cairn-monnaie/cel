@@ -328,7 +328,7 @@ class CardController extends Controller
 
         $card = $user->getCard();
         if(!$card){
-            $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée.Vous pouvez aller en chercher une nouvelle.');
+            $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée.Vous pouvez aller en chercher une nouvelle, ou la commander par voie postale.');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
 
@@ -511,7 +511,7 @@ class CardController extends Controller
                     $currentUser->setCardAssociationTries($user->getCardAssociationTries() + 1);
                     $remainingTries = 3 - $user->getCardAssociationTries();
 
-                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être a-t-elle expirée ?');
+                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être votre carte a-t-elle expirée ?');
                     $em->flush();
 
 //                    if($this->get('cairn_user.api')->isApiCall()){
@@ -529,14 +529,14 @@ class CardController extends Controller
                     $this->get('cairn_user.security')->encodeCard($newCard);
                     $em->flush();
 
-                    if($this->get('cairn_user.api')->isApiCall()){
-                        $response =  new Response('card association : OK !');
-                        $response->setStatusCode(Response::HTTP_OK);
-                        $response->headers->set('Content-Type', 'application/json');
-                        return $response;
-                    }
+//                    if($this->get('cairn_user.api')->isApiCall()){
+//                        $response =  new Response('card association : OK !');
+//                        $response->setStatusCode(Response::HTTP_OK);
+//                        $response->headers->set('Content-Type', 'application/json');
+//                        return $response;
+//                    }
 
-                    $session->getFlashBag()->add('success','La carte a été associée avec succès.');
+                    $session->getFlashBag()->add('success','La carte de sécurité a été associée avec succès.');
                     return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
                 }
 
@@ -602,7 +602,7 @@ class CardController extends Controller
             $em->flush();
             $filename = sprintf('carte-sécurité-cairn-'.$card->getID().'-%s.pdf',$user->getUserName());
     
-            $session->getFlashBag()->add('success','La carte a été associée à '.$user->getName().' !');
+            $session->getFlashBag()->add('success','La carte de sécurité a été associée à '.$user->getName().' !');
             $session->getFlashBag()->add('info','Pensez à supprimer le fichier de votre ordinateur dès que la carte a été imprimée !');
    
             return new Response(

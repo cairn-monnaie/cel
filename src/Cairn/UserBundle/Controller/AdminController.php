@@ -188,6 +188,7 @@ class AdminController extends Controller
                                 array('user'=>$user,
                                 'login_url'=>$this->get('router')->generate('fos_user_security_login')));
                             $subject = 'Plateforme numérique du Cairn';
+
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
                             //send email to local group referent if pro
@@ -284,7 +285,7 @@ class AdminController extends Controller
 
                 if($currentAdminReferent){
                     $to = $currentAdminReferent->getEmail();
-                    $subject = 'Référent Pro';
+                    $subject = 'Référent Professionnel e-Cairn';
                     $body = 'Votre GL n\'est plus référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $user->removeReferent($currentAdminReferent);
@@ -293,7 +294,7 @@ class AdminController extends Controller
                     $user->addReferent($referent);
 
                     $to = $referent->getEmail();
-                    $subject = 'Référent Pro';
+                    $subject = 'Référent Professionnel e-Cairn';
                     $body = 'Vous êtes désormais GL référent du professionnel ' . $user->getName();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
