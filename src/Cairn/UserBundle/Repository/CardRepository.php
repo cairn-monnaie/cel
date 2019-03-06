@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Doctrine\ORM\QueryBuilder;
+
 /**
  * CardRepository
  *
@@ -26,5 +28,18 @@ class CardRepository extends \Doctrine\ORM\EntityRepository
     public function findAvailableCards()
     {
         return $this->findBy(array('user'=>NULL));
+    }
+
+    public function whereAvailable(QueryBuilder $cb)
+    {
+        $cb->andWhere('c.user is NULL'); 
+        return $this;
+    }
+
+    public function whereExpiresBefore(QueryBuilder $cb, $date)
+    {
+        $cb->andWhere('c.expirationDate <= :expirationDate')
+           ->setParameter('expirationDate',$date); 
+        return $this;
     }
 }

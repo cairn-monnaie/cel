@@ -195,6 +195,7 @@ class CardController extends Controller
 
         $beforeDefaultDate = new \Datetime(date('Y-m-d 23:59'));
         $afterDefaultDate = date_modify(new \Datetime(date('Y-m-d 23:59')), '- '.$this->getParameter('card_association_delay').' days');
+        $expirationBefore = date_modify(new \Datetime(), '+ '.$this->getParameter('card_association_delay').' days');
 
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
@@ -213,6 +214,12 @@ class CardController extends Controller
                 'time_widget' => 'single_text',
                 'data'=> $afterDefaultDate,
                 ))
+            ->add('expires_before',     DateTimeType::class, array(
+                'label' => 'expirent avant',
+                'date_widget' => 'single_text',
+                'time_widget' => 'single_text',
+                'data'=> $expirationBefore,
+                ))
             ->add('code',  TextType::class,array(
                 'label'=>'Code',
                 'required'=>false))
@@ -227,6 +234,7 @@ class CardController extends Controller
                 $orderBy = $dataForm['orderBy'];
                 $before = $dataForm['before'];
                 $after = $dataForm['after'];
+                $expires_before = $dataForm['expires_before'];
                 $code = $dataForm['code'];
 
                 $cb = $cardRepo->createQueryBuilder('c');
@@ -236,13 +244,15 @@ class CardController extends Controller
                 if($before){
                     $cb->andWhere('c.creationDate <= :beforeDate')
                        ->setParameter('beforeDate',$before);
-
-                }
+              }
                 if($after){
                     $cb->andWhere('c.creationDate >= :afterDate')
                        ->setParameter('afterDate',$after);
                 }
-
+                if($expires_before){
+                    $cb->andWhere('c.expirationDate <= :expirationDate')
+                       ->setParameter('expirationDate',$expires_before);
+                }
                 if($code){
                     $cb->andWhere('c.code = :code')
                        ->setParameter('code',$this->get('cairn_user.security')->vigenereDecode($code));
@@ -425,7 +435,7 @@ class CardController extends Controller
 
                     $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
-                    $card = new Card(NULL,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode);
+                    $card = new Card(NULL,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,$this->getParameter('card_association_delay'));
                     $card->generateCard($this->getParameter('kernel.environment'));
                     $fields = $card->getFields();
 
@@ -504,14 +514,15 @@ class CardController extends Controller
                     $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être a-t-elle expirée ?');
                     $em->flush();
 
-                    if($this->get('cairn_user.api')->isApiCall()){
-                        $response =  new Response('card association : FAILED !');
-                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                        $response->headers->set('Content-Type', 'application/json');
-                        return $response;
-                    }
+//                    if($this->get('cairn_user.api')->isApiCall()){
+//                        $response =  new Response('card association : FAILED !');
+//                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
+//                        $response->headers->set('Content-Type', 'application/json');
+//                        return $response;
+//                    }
                     return new RedirectResponse($request->getRequestUri());
                 }else{
+                    $newCard->setExpirationDate(NULL);
                     $currentUser->setCardAssociationTries(0);
                     $user->setCard($newCard);
                     $newCard->setUser($user);
@@ -577,7 +588,7 @@ class CardController extends Controller
             $salt = $this->get('cairn_user.security')->generateCardSalt();
             $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
-            $card = new Card($user,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode);
+            $card = new Card($user,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);
 
             $card->generateCard($this->getParameter('kernel.environment'));
 

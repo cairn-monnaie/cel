@@ -56,6 +56,11 @@ class Card
     private $creationDate;
 
     /**
+     * @ORM\Column(name="expiration_date", type="datetime", unique=false, nullable=true)
+     */
+    private $expirationDate;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="salt", type="string", length=400,nullable=false)
@@ -70,7 +75,7 @@ class Card
     private $code;
 
 
-    public function __construct($user,$rows,$cols,$salt, $code)
+    public function __construct($user,$rows,$cols,$salt, $code, $expirationDelay)
     {
         $this->setUser($user);
         $this->setRows($rows);
@@ -79,6 +84,11 @@ class Card
 
         $this->creationDate = new \Datetime();
         $this->setCode($code);
+
+        if($expirationDelay){
+            $delay = date_modify(new \Datetime(),'+ '.$expirationDelay.' days');
+            $this->setExpirationDate($delay);
+        }
     }
 
     /**
@@ -271,6 +281,29 @@ class Card
         return $this;
     }
 
+    /**
+     * Get expirationDate
+     *
+     * @return \DateTime
+     */
+    public function getExpirationDate()
+    {
+        return $this->expirationDate;
+    }
+
+    /**
+     * Set expirationDate
+     *
+     * @param \DateTime $expirationDate
+     *
+     * @return Card
+     */
+    public function setExpirationDate($expirationDate)
+    {
+        $this->expirationDate = $expirationDate;
+
+        return $this;
+    }
 
      /**
      * Set salt

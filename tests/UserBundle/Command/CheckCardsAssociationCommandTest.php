@@ -36,16 +36,15 @@ class CheckCardsAssociationCommandTest extends KernelTestCase
 
         $securityService = $container->get('cairn_user.security');
 
-        $associationDelay = $container->getParameter('card_association_delay');
-        $limitDate = date_modify(new \Datetime(), '-'.$associationDelay.' days');
-        $creationDate = date_modify($limitDate, $date);                
+        $creationDate = date_modify(new \Datetime(), '-15 days' );                
 
 
         $salt = $securityService->generateCardSalt();
         $uniqueCode = $securityService->findAvailableCode();
-        $card = new Card(NULL,$container->getParameter('cairn_card_rows'),$container->getParameter('cairn_card_cols'),$salt,$uniqueCode);
+        $card = new Card(NULL,$container->getParameter('cairn_card_rows'),$container->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);
         $card->generateCard($container->getParameter('kernel.environment'));
         $card->setCreationDate($creationDate);
+        $card->setExpirationDate(date_modify(new \Datetime(), $date));
 
         $em->persist($card);
         $em->flush();
@@ -79,7 +78,7 @@ class CheckCardsAssociationCommandTest extends KernelTestCase
             array('date'=>'+2 days'  ,'isRemoved'=>false),
             array('date'=>'+3 days'  ,'isRemoved'=>false),
             array('date'=>'+5 days'  ,'isRemoved'=>false),
-            array('date'=>'+0 days'  ,'isRemoved'=>false),
+            array('date'=>'+0 days'  ,'isRemoved'=>true),
             array('date'=>'-1 days'  ,'isRemoved'=>true),
             array('date'=>'-10 days' ,'isRemoved'=>true),
             array('date'=>'-2 months','isRemoved'=>true),

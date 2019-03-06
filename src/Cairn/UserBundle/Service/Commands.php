@@ -231,27 +231,24 @@ class Commands
     }
 
     /**
-     * searches printed and unassociated cards, and removes them if the association delay has passed
+     * searches unassociated cards, and removes them if the association delay has passed
      *
-     * Everyday, this action is requested to look for unassociated. A maximal delay is defined.
+     * Everyday, this action is requested to look for unassociated cards. A maximal delay is defined.
      * If the deadline is missed, the card is automatically removed for security reasons : the card might have been lost
      *
      */
     public function checkCardsAssociation()
     {
         $cardRepo = $this->em->getRepository('CairnUserBundle:Card');
-        $cards = $cardRepo->findAvailableCards();
 
-        $from = $this->messageNotificator->getNoReplyEmail();
+        $cb = $cardRepo->createQueryBuilder('c');
 
-        $today = new \Datetime(date('Y-m-d H:i:s'));
-        foreach($cards as $card){
-            $creationDate = $card->getCreationDate();
-            $expirationDate = date_modify(new \Datetime($creationDate->format('Y-m-d H:i:s')),'+ '.$this->cardAssociationDelay.' days');
-            $interval = $today->diff($expirationDate);
-            if( $interval->invert == 1 ){
-                $this->em->remove($card);
-            }
+        $cardRepo->whereAvailable($cb)->whereExpiresBefore($cb,new \Datetime());
+        
+        $expiredCards = $cb->getQuery()->getResult();
+                    
+        foreach($expiredCards as $expiredCard){
+            $this->em->remove($expiredCard);
         }
 
         $this->em->flush();
@@ -296,7 +293,7 @@ class Commands
             $doctrineUser->setDescription('Test user blablablabla');             
 
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
+            $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             //encode user's card
@@ -475,7 +472,7 @@ class Commands
 
         for($i=0; $i < $nbPrintedCards; $i++){
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode);
+            $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             $this->em->persist($card);
@@ -546,8 +543,7 @@ class Commands
         //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
         $admin->setFirstLogin(false);
         $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-        $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),
-            'aaaa',$uniqueCode);
+        $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
         //encode user's card

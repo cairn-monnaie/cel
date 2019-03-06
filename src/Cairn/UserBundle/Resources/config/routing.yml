@@ -132,7 +132,7 @@ cairn_user_beneficiaries_remove:
 #    requirements:
 #        id: \d+
 
-cairn_user_list_users_home:
+cairn_user_users_home:
     path:     users.{_format}
     defaults: { _controller: CairnUserBundle:User:listUsers, _format: html }
     requirements:
