@@ -147,7 +147,7 @@ class SecurityListenerTest extends KernelTestCase
         $session = new Session(new MockArraySessionStorage());
 
         //ajouter la carte
-        $card = new Card($this->user,5,5,NULL,'abcdef');
+        $card = new Card($this->user,5,5,NULL,'abcdef',20);
         $card->generateCard('test');
         $this->user->setCard($card);
 

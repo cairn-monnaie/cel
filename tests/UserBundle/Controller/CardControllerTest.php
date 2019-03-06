@@ -172,6 +172,8 @@ class CardControllerTest extends BaseControllerTest
 
                 $this->assertSame(0,$currentUser->getCardAssociationTries());
                 $this->assertNotEquals($targetUser->getCard(), NULL);
+                $this->assertEquals($targetUser->getCard()->getExpirationDate(), NULL);
+
             }
         }
     }
@@ -272,6 +274,7 @@ class CardControllerTest extends BaseControllerTest
 
                 $this->em->refresh($targetUser);
                 $this->assertNotEquals($targetUser->getCard(),NULL);
+                $this->assertEquals($targetUser->getCard()->getExpirationDate(), NULL);
                 $this->assertTrue($this->client->getResponse()->headers->contains(
                     'Content-Type',
                     'application/pdf'));
