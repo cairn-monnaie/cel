@@ -49,11 +49,13 @@ class RegistrationType extends AbstractType
                 if(null === $user){
                     return;
                 }
-
                 if($user->isAdherent()){
-                    $form->add('identityDocument', IdentityDocumentType::class,array('label'=>'Pièce d\'identité','required'=>false));
+                    $form->add('identityDocument', IdentityDocumentType::class,
+                        array(
+                            'label'=>'Votre pièce d\'identité',
+                            'attr' => array('class'=>'identity-document'),
+                            'required'=>false));
                 }
-
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
                     //$form->add('image', ImageType::class,array('label'=>'Logo'));
@@ -73,7 +75,7 @@ class RegistrationType extends AbstractType
                         ));
                     }
 
-                    $form->add('image', ImageType::class,array('label'=>'Votre logo d\'entreprise'));
+                    $form->add('image', ImageType::class,array('label'=>'Votre logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
                     $form->add('name', TextType::class,array('label'=>'Votre nom'));
@@ -88,8 +90,7 @@ class RegistrationType extends AbstractType
                 }
             }
         );
-        $builder->add('address', AddressType::class)
-            ->add('image', ImageType::class,array('label'=>'Votre logo'));
+        $builder->add('address', AddressType::class);
     }
 
 

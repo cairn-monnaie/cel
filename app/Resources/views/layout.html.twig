@@ -7,12 +7,14 @@
         <title>{% block title %}[e]Cairn{% endblock %}</title>
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/css/materialize.min.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/iconfont/material-icons.css') }}">
-        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/css/ecairn.css') }}" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/dropify/css/dropify.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/css/ecairn.css') }}">
+        <script src="{{ asset('bundles/cairnuser/js/vanilla_top.js') }}"></script>
         {% block stylesheets %}
         {% endblock %}
     </head>
     <body class="{% block body_class %}{% endblock%}">
-        <nav class="orange lighten-1" role="navigation">
+        <nav class="" role="navigation">
             <div class="nav-wrapper container">
                 <a id="logo-container" href="{{ path('cairn_user_welcome') }}" class="brand-logo"><img src="{{asset('bundles/cairnuser/img/e-cairn.png')}}" alt="Logo du Cairn"></a>
                 <ul class="right hide-on-med-and-down">
@@ -93,6 +95,7 @@
         <!-- Compiled and minified JavaScript -->
         {% include "JqueryBundle:Jquery:jquery.html.twig" %}
         <script src="{{ asset('bundles/cairnuser/materialize/js/materialize.min.js') }}"></script>
+        <script src="{{ asset('bundles/cairnuser/dropify/js/dropify.min.js') }}"></script>
         <script src="{{ asset('bundles/cairnuser/js/app.js') }}"></script>
         {% block javascripts %}
         {% endblock %}

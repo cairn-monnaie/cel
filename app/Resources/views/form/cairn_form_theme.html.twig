@@ -6,13 +6,6 @@
         <input type="text" autocomplete="off" class="{{ attr.class }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
     {% endspaceless %}
     <script>
-        function defer(method) {
-            if (window.jQuery) {
-                method();
-            } else {
-                setTimeout(function() { defer(method) }, 50);
-            }
-        }
         defer(function(){
             //
             jQuery.ajax({
@@ -24,10 +17,71 @@
                     for (var i = 0; i < zipCities.length; i++) {
                         data[zipCities[i]] = '';
                     }
-                    $('input.zipcity_autocomplete').autocomplete({
+                    $('#{{ id }}').autocomplete({
                         data: data,
                         limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
                     });
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+
+{% block cairn_userbundle_image_widget %}
+    {% spaceless %}
+        {% set attr = attr|merge({class: (attr.class|default('') ~ 'cairn_userbundle_image')|trim}) %}
+        {{ form_errors(form) }}
+        <input type="file" class="{{ attr.class }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
+    {% endspaceless %}
+    <script>
+        defer(function(){
+            $('#{{ id }}').dropify({
+                allowedFileExtensions: ['gif','png','jpg','jpeg'],
+                messages: {
+                    'default': '',//'Glissez déposez un fichier ici ou cliquez',
+                    'replace': '',//'Glissez déposez ou cliquez pour remplacer',
+                    'remove':  'Supprimer',
+                    'error':   'Oups, quelque chose a mal tourné'
+                },
+                error: {
+                    'fileSize': 'Ce fichier est trop gros ({{ value }} max).',
+                    'minWidth': 'L\'image n\'est pas assez large ({{ value }}}px min).',
+                    'maxWidth': 'L\'image est trop large ({{ value }}}px max).',
+                    'minHeight': 'L\'image n\'est pas haute ({{ value }}}px min).',
+                    'maxHeight': 'L\'image est trop haute ({{ value }}px max).',
+                    'imageFormat': 'Ce format n\'est pas autorisé ({{ value }} seulement).',
+                    'fileExtension': 'Ce format n\'est pas autorisé ({{ value }} seulement).'
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block cairn_userbundle_id_document_widget %}
+    {% spaceless %}
+        {% set attr = attr|merge({class: (attr.class|default('') ~ 'cairn_userbundle_id_document')|trim}) %}
+        {{ form_errors(form) }}
+        <input type="file" class="{{ attr.class }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
+    {% endspaceless %}
+    <script>
+        defer(function(){
+            $('#{{ id }}').dropify({
+                allowedFileExtensions: ['jpg','jpeg','png','pdf'],
+                messages: {
+                    'default': '',//'Glissez déposez un fichier ici ou cliquez',
+                    'replace': '',//'Glissez déposez ou cliquez pour remplacer',
+                    'remove':  'Supprimer',
+                    'error':   'Oups, quelque chose a mal tourné'
+                },
+                error: {
+                    'fileSize': 'Ce fichier est trop gros ({{ value }} max).',
+                    'minWidth': 'L\'image n\'est pas assez large ({{ value }}}px min).',
+                    'maxWidth': 'L\'image est trop large ({{ value }}}px max).',
+                    'minHeight': 'L\'image n\'est pas haute ({{ value }}}px min).',
+                    'maxHeight': 'L\'image est trop haute ({{ value }}px max).',
+                    'imageFormat': 'Ce format n\'est pas autorisé ({{ value }} seulement).',
+                    'fileExtension': 'Ce format n\'est pas autorisé ({{ value }} seulement).'
                 }
             });
         });

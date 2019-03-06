@@ -79,14 +79,13 @@
        By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
 
      * Launch Cyclos configuration script and initialize mysql database  
-       `sudo docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
-     **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
+       `sudo docker-compose exec engine ./build-setup.sh $env` _note_ : $env = (dev / test / prod)   
 
      Cette commande, dans un environnement de dev/test, va créer une base de données vide, créer le schéma de BDD à partir des migrations et, finalement, créer un ROLE\_SUPER\_ADMIN avec les identifiants de l'admin réseau Cyclos par défaut : (login = admin\_network et pwd = @@bbccdd )
      
      
     * Install assets
-       `sudo docker-compose exec engine php bin/console assets:install`
+       `sudo docker-compose exec engine composer install`
 
      * Enable engine's user to write logs, cache files and web static files(images)  
        `sudo docker-compose exec engine chown -R www-data:www-data var web`
@@ -141,7 +140,7 @@
 
  * **Generating test data**  
     This will (re)create a scratch MySQL test database
-    `sudo docker-compose exec engine ./build-setup.sh test admin:admin`    
+    `sudo docker-compose exec engine ./build-setup.sh test`    
 
     `sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
     This script first generates a set of users with an identical password : @@bbccdd, based on cyclos adherents data. 

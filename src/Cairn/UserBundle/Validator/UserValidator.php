@@ -83,11 +83,11 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-//        if(preg_match('#'.$user->getUsername().'#',$user->getPlainPassword())){
-//            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
-//                ->atPath('plainPassword')
-//                ->addViolation();
-//        }
+        if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
+            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
+                ->atPath('plainPassword')
+                ->addViolation();
+        }
         // ------------ Validate Password ---------------
         //Cyclos 4.11.2 bug reported : character '<' provoks validation error. For this reason, we disable it here
         if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
@@ -117,12 +117,6 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-//        //we use tildes and not hashes because hashes can be used to generate a random password
-//        if(preg_match('~'.$user->getPlainPassword().'~', $user->getUsername())){
-//            $this->context->buildViolation('Le mot de passe ne peut pas être contenu dans le pseudo.')
-//                ->atPath('plainPassword')
-//                ->addViolation();
-//        }
         if(strlen($user->getPlainPassword()) > 25){
             $this->context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
                 ->atPath('plainPassword')

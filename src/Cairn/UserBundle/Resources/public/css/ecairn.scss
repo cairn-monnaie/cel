@@ -1,3 +1,7 @@
+$crevette: rgb(240, 114, 84);
+$yellow: rgb(255, 226, 83);
+$maincolor: rgb(240, 114, 84);
+
 html {
   height: 100%;
 }
@@ -16,10 +20,16 @@ body {
 #logo-container img,#logo_user img{
   height: 100%;
 }
-.login_splash .login_form{
-  margin-top: 50px;
-  background: rgba(255,255,255,0.8);
-  padding: 20px 0px;
+.login_splash{
+  background-color: $crevette;
+   .login_form{
+    margin-top: 50px;
+    background: rgba(255,255,255,0.8);
+    padding: 20px 0px;
+  }
+  nav{
+    display: none;
+  }
 }
 .teal.success{
   /*background-color: @light-green !important;*/
@@ -27,11 +37,11 @@ body {
 }
 .teal.error{
   /*background-color: @red !important;*/
-  background-color: rgb(240, 114, 84) !important;
+  background-color: $crevette !important;
 }
 .teal.warning{
   /*background-color: @orange !important;*/
-  background-color: rgb(255, 226, 83) !important;
+  background-color: $yellow !important;
 }
 #network{
   margin-top: 10px;
@@ -46,5 +56,5 @@ a:hover > img{
   opacity: 0.5;
 }
 nav{
-  background-color: mediumvioletred;
+  background-color: $crevette;
 }
