@@ -4,6 +4,7 @@
 # Requirements
  * docker && docker-compose
  * git
+ * Install [api repo](https://github.com/cairn-monnaie/api/tree/cairn)
 
 # Install
 
@@ -25,7 +26,7 @@
     Copy the template file containing symfony app global variables and open it with your favorite editor.  
       `cp app/config/parameters.yml.dist app/config/parameters.yml`
 
-    Some of these parameters rely directly on the docker-compose.yml file  
+    Some of these parameters rely directly on this `docker-compose.yml` file and the [api repo](https://github.com/cairn-monnaie/api/tree/cairn) docker_compose.yml   
       `database_host: db (name of the docker service containing MySQL database)`  
       `database_port: 3306 (port listener in the db container)`  
       `database_name: db-name`  
@@ -35,7 +36,7 @@
       `cyclos_group_pros: xxx (name of the group of professionals in your cyclos application)`  
       `cyclos_group_network_admins: 'Network administrators'`  
       `cyclos_group_global_admins: 'Global administrators'`  
-      `cyclos_currency_cairn: '<currency>' (name of the currency provided in docker-compose of api application)
+      `cyclos_currency_cairn: '<currency>' (name of services.api.environment.CURRENCY_SLUG  in docker-compose of api repo)`
 
     Customize parameters according to your use among the following list
       `mailer_transport: smtp`  
@@ -61,16 +62,6 @@
      * Build docker images   
        `sudo docker-compose build`
 
-     * Build the cyclos database.  
-       The cyclos-dump-minimal.sql dump file is mounted in the docker-entrypoint directory of the container. This way, the dump restore is automatically executed at container's creation.  
-       `sudo docker-compose up -d cyclos-db`  
-
-     * Check out the logs while the database is building from the basic cyclos-dump-minimal.sql file  
-       `sudo docker-compose logs -f cyclos-db`  
-
-     * One the database has been fully restored, start the cyclos app  
-       `sudo docker-compose up -d cyclos-app`  
-
      * Then, start the database container, and check that it is listening on port 3306  
        `sudo docker-compose up -d db`  
        `sudo docker-compose logs -f db`   
@@ -91,6 +82,9 @@
        `sudo docker-compose exec engine ./build-setup.sh $env admin:admin` _note_ : $env = (dev / test / prod)   
      **WARNING** : admin:admin are the credentials of the main administrator on Cyclos-side (given credentials in the cyclos-dump-minimal.sql file). In production, you must of course change them
 
+     Cette commande, dans un environnement de dev/test, va créer une base de données vide, créer le schéma de BDD à partir des migrations et, finalement, créer un ROLE\_SUPER\_ADMIN avec les identifiants de l'admin réseau Cyclos par défaut : (login = admin\_network et pwd = @@bbccdd )
+     
+     
     * Install assets
        `sudo docker-compose exec engine php bin/console assets:install`
 
@@ -98,6 +92,13 @@
        `sudo docker-compose exec engine chown -R www-data:www-data var web`
        
 ## Development
+ * **Generate data**
+     ```
+     sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=dev admin_network @@bbccdd
+     ```
+     Cette commande, à l'heure actuelle,  ne peut pas être reproduite sur n'importe quel réseau Cyclos contenant n'importe quel jeu de données. Elle a été développée, dans un premier temps, pour les besoins du Cairn. Elle permet d'avoir une variété de données permettant de tester plein de cas différents. Il y a donc un besoin de maîtrise du script de génération de données Cyclos pour adapter celui des données Symfony. [dépôt api, branche cairn](https://github.com/cairn-monnaie/api/tree/cairn)
+     
+     Une fois la génération terminée, on a tout un panel d'utilisateurs avec des données différentes (les messages de log affichés pendant l execution du script permettent d'obtenir des informations, voir les scripts pour compléter)
 
  * **Access applications**    
      From now on, you can access the main application, phpmyadmin and the cyclos underlying application.  
