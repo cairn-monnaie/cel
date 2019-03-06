@@ -48,11 +48,11 @@ class SmsController extends Controller
     public function smsReceptionAction(Request $request)
     {
 //
-//        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
 //        $this->smsAction('0612345678','LOGIN');
 //        $this->smsAction('0612345678','PAYER 1 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
-        $this->smsAction('0612345678','1111');
+//        $this->smsAction('0612345678','1111');
 //        $this->smsAction('0612345678','2222');
         return new Response('ok');
 
@@ -69,7 +69,7 @@ class SmsController extends Controller
         //3)Regex analysis
         //TODO : make it more flexible
         //PAYER autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER)(\d+([,\.]\d+)?)([A-Z]{1}\w+)$#',$content,$matches_payment);
+        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)(\d+([,\.]\d+)?)([A-Z]{1}\w+)$#',$content,$matches_payment);
         preg_match('#^SOLDE$#',$content,$matches_balance);
         preg_match('#^\d{4}$#',$content, $matches_code);
         preg_match('#^LOGIN$#',$content, $matches_login);
@@ -80,11 +80,11 @@ class SmsController extends Controller
         $error = NULL;
 
         if(! ($matches_payment || $matches_balance || $matches_code || $matches_login)){
-            if(! preg_match('#^(PAYER|SOLDE|LOGIN|\d{4})#',$content)){
+            if(! preg_match('#^(PAY|SOLDE|LOGIN|\d{4})#',$content)){
                 $error = 'Envoyer PAYER, SOLDE ou un code à 4 chiffres en cas de validation de paiement';
             }else{
-                if(preg_match('#^PAYER#',$content)){ //is payment request
-                    if(! preg_match('#^PAYER\d+([,\.]\d+)?$#',$content)){//invalid amount format
+                if(preg_match('#^PAY#',$content)){ //is payment request
+                    if(! preg_match('#^PAY[A-Z]{0,2}\d+([,\.]\d+)?$#',$content)){//invalid amount format
                         $error = 'Format du montant invalide : '."\n".'Veuillez respecter le format suivant : 12.49';
                     }else{
                         $error = 'IDENTIFIANT INCONNU'."\n";
@@ -192,7 +192,7 @@ class SmsController extends Controller
                 $subject = 'Accès client Cyclos';
                 $from = $this->getParameter('cairn_email_noreply');
                 $to = $this->getParameter('cairn_email_technical_services');
-                $body = 'L\'accès client de '.$debitorUser->getUsername().' est invalide';
+                $body = 'Accès client invalide pour '.$debitorUser->getUsername();
 
                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
@@ -245,7 +245,7 @@ class SmsController extends Controller
             $remainingTries = 3 - $nbTries;
 
             if( ($nbTries  > 0) && ($remainingTries > 0)){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ÉCHEC CODE CARTE SECURITE : '.$remainingTries.' essais restant(s)');
+                $messageNotificator->sendSMS($debitorPhoneNumber,'ÉCHEC CODE CARTE SECURITE : '.$remainingTries.' essai(s) restant(s)');
                 return;
             }elseif($remainingTries == 0){
                 $messageNotificator->sendSMS($debitorPhoneNumber,'ECHEC CODE CARTE SECURITE : Le compte a été bloqué. Veuillez contacter l\'Association');
