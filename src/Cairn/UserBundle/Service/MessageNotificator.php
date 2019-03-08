@@ -5,6 +5,7 @@ namespace Cairn\UserBundle\Service;
 
 use Symfony\Component\Security\Core\User\UserInterface;
 use Cairn\UserBundle\Repository\UserRepository;
+use Cairn\UserBundle\Entity\Sms;
 
 /**
  * This class contains services related to the notifications/mailing.
@@ -48,6 +49,9 @@ class MessageNotificator
     {
         $email = 'whoknows@test.com';
         $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
+        $sms = new Sms($phoneNumber,$content,Sms::STATE_SENT);
+
+        return $sms;
     }
 
     public function getNoReplyEmail()

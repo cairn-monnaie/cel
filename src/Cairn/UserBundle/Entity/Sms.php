@@ -38,9 +38,9 @@ class Sms
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="requested_at", type="datetime")
+     * @ORM\Column(name="sent_at", type="datetime")
      */
-    private $requestedAt;
+    private $sentAt;
 
     /**
      * @var int
@@ -52,19 +52,26 @@ class Sms
     /**
      * @var string
      *
-     * @ORM\Column(name="card_position", type="integer")
+     * @ORM\Column(name="card_position", type="integer",nullable=true)
      */
     private $cardPosition;
 
+    //states of received sms
     const STATE_WAITING_KEY = 0;
     const STATE_EXPIRED = 1;
+    const STATE_PROCESSED = 2;
+    const STATE_SPAM = 3;
 
-    public function __construct($phoneNumber,$content,$state,$cardPosition)
+    //state of sent SMS
+    const STATE_SENT = 4;
+
+
+    public function __construct($phoneNumber,$content,$state,$cardPosition = NULL)
     {
         $this->phoneNumber = $phoneNumber;
         $this->content = $content;
         $this->state = $state;
-        $this->requestedAt = new \Datetime();
+        $this->sentAt = new \Datetime();
         $this->cardPosition = $cardPosition;
     }
 
@@ -127,27 +134,27 @@ class Sms
     }
 
     /**
-     * Set requestedAt.
+     * Set sentAt.
      *
-     * @param \DateTime $requestedAt
+     * @param \DateTime $sentAt
      *
      * @return Sms
      */
-    public function setRequestedAt($requestedAt)
+    public function setSentAt($sentAt)
     {
-        $this->requestedAt = $requestedAt;
+        $this->sentAt = $sentAt;
 
         return $this;
     }
 
     /**
-     * Get requestedAt.
+     * Get sentAt.
      *
      * @return \DateTime
      */
-    public function getRequestedAt()
+    public function getSentAt()
     {
-        return $this->requestedAt;
+        return $this->sentAt;
     }
 
     /**

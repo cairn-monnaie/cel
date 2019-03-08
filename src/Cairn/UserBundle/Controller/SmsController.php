@@ -47,9 +47,8 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-//
         $this->smsAction($request->query->get('phone'),$request->query->get('content'));
-//        $this->smsAction('0612345678','LOGIN');
+//        $this->smsAction('0611223344','LOGIN');
 //        $this->smsAction('0612345678','PAYER 1 maltobar');
 //        $this->smsAction('0612345678','SOLDE');
 //        $this->smsAction('0612345678','1111');
@@ -153,13 +152,18 @@ class SmsController extends Controller
 
         //2.1)Then, we ensure that user is active, and then sms actions are enabled for this user
         if(! $debitorUser->isEnabled()){
-             $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: Votre compte est actuellement bloqué. Veuillez prendre contact avec l\'Association.');
+             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: Votre compte est actuellement bloqué. Veuillez prendre contact avec l\'Association.');
+             $em->persist($sms);
+             $em->flush();
              return;
         }
 
         //2.2)Then, we ensure that sms actions are enabled for this user
         if(! $debitorUser->getSmsData()->isSmsEnabled()){
-             $messageNotificator->sendSMS($debitorPhoneNumber,'OPERATION SMS NON AUTORISÉE: Les opérations SMS depuis votre numéro sont actuellement bloquées');
+             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'OPERATION SMS NON AUTORISÉE: Les opérations SMS depuis votre numéro sont actuellement bloquées');
+             $em->persist($sms);
+             $em->flush();
+
              return;
         }
 
@@ -170,7 +174,10 @@ class SmsController extends Controller
             $accessClient = $securityService->getSmsClient($debitorUser);
 
             if(!$accessClient){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+                $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+
+                $em->persist($sms);
+                $em->flush();
 
                 $subject = 'Accès client Cyclos';
                 $from = $this->getParameter('cairn_email_noreply');
@@ -187,7 +194,10 @@ class SmsController extends Controller
         }catch(\Exception $e){
 
             if($e->errorCode == 'INVALID_ACCESS_CLIENT'){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+                $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.');
+
+                $em->persist($sms);
+                $em->flush();
 
                 $subject = 'Accès client Cyclos';
                 $from = $this->getParameter('cairn_email_noreply');
@@ -199,7 +209,11 @@ class SmsController extends Controller
                 return;
 
             }else{
-                $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : L\'Association en a été informée.');
+                $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'CONNEXION IMPOSSIBLE : L\'Association en a été informée.');
+
+                $em->persist($sms);
+                $em->flush();
+
                 throw $e;
             }
         }
@@ -208,7 +222,9 @@ class SmsController extends Controller
         $parsedSms = $this->parseSms($content);
         if( $parsedSms->error){
             $reason = 'SMS INVALIDE'."\n".$parsedSms->error;
-            $messageNotificator->sendSMS($debitorPhoneNumber,$reason);
+            $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,$reason);
+            $em->persist($smsError);
+            $em->flush();
             return;
         }
 
@@ -217,27 +233,33 @@ class SmsController extends Controller
             if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
                return;
             }
-            $sms = $this->setUpSmsValidation($em, $debitorUser, $content);
-            $em->persist($sms);
+            $this->setUpSmsValidation($em, $debitorUser, $content);
             $em->flush();
             return;
         }elseif($parsedSms->isOperationValidation){
-            $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
+            $smsPending = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
                                                                           'state'=>Sms::STATE_WAITING_KEY));
 
-            if(!$sms){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR : rien à valider');
+            if(!$smsPending){
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR : rien à valider');
+                $em->persist($smsSent);
+                $em->flush();
                 return;
-            }
+            }elseif($smsPending->getSentAt()->diff(new \Datetime())->i > 5){
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'DÉLAI DE VALIDATION EXPIRÉ');
 
-            if($sms->getRequestedAt()->diff(new \Datetime())->i > 5){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'DÉLAI DE VALIDATION EXPIRÉ');
-                $sms->setState(Sms::STATE_EXPIRED);
+                $smsPending->setState(Sms::STATE_EXPIRED);
+                $em->persist($smsSent);
                 $em->flush();
 
                 return;
             }
-            $event = new InputCardKeyEvent($debitorUser,$parsedSms->cardKey,$sms->getCardPosition(), NULL);
+
+            //pending SMS (state = WAITING_KEY) must be treated
+            $smsValidation = new Sms($debitorPhoneNumber, $parsedSms->cardKey,Sms::STATE_PROCESSED, $smsPending->getCardPosition());
+            $em->persist($smsValidation);
+
+            $event = new InputCardKeyEvent($debitorUser,$parsedSms->cardKey,$smsPending->getCardPosition(), NULL);
             $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
 
             $card = $debitorUser->getCard();
@@ -245,42 +267,54 @@ class SmsController extends Controller
             $remainingTries = 3 - $nbTries;
 
             if( ($nbTries  > 0) && ($remainingTries > 0)){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ÉCHEC CODE CARTE SECURITE : '.$remainingTries.' essai(s) restant(s)');
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'ÉCHEC CODE CARTE SECURITE : '.$remainingTries.' essai(s) restant(s)');
+                $em->persist($smsSent);
+                $em->flush();
                 return;
             }elseif($remainingTries == 0){
-                $messageNotificator->sendSMS($debitorPhoneNumber,'ECHEC CODE CARTE SECURITE : Le compte a été bloqué. Veuillez contacter l\'Association');
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'ECHEC CODE CARTE SECURITE : Le compte a été bloqué. Veuillez contacter l\'Association');
+                $em->persist($smsSent);
+                $em->flush();
+
                 return;
             }
 
             //get initial sms request
-            $parsedInitialSms = $this->parseSms($sms->getContent());
+            $parsedInitialSms = $this->parseSms($smsPending->getContent());
             if($parsedInitialSms->isSmsIdentifier){
                 if($debitorUser->hasRole('ROLE_PRO')){
-                    $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
+                    $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'IDENTIFIANT SMS E-CAIRN : '.$debitorUser->getUsername());
+                    $em->persist($smsSent);
                 }
-                return;
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
                 $this->executePayment($debitorUser, $parsedInitialSms, false);    
             }else{//initial sms was about account balance
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
-                $messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance);
+                $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance);
+
+                $em->persist($smsBalance);
             }
           
-            //once pending request has been executed, the corresponding sms can be removed
-            $em->remove($sms);
+            //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+            $smsPending->setState(Sms::STATE_PROCESSED);
             $em->flush();
             return;
         }
 
         //last option : request is a payment to be validated
-        return $this->executePayment($debitorUser,$parsedSms, true);    
+        $this->executePayment($debitorUser,$parsedSms, true);    
+        $em->flush();
+        return;
 
     }
 
 
-    //TODO : changer l'état du SMS
-    public function executePayment($debitorUser, $parsedSms, $toValidate)
+    /**
+     *
+     * If toAnalyze is false, it means that the request has already been analyzed and don't need any check : just process it
+     */
+    public function executePayment($debitorUser, $parsedSms, $toAnalyze)
     {
         $em = $this->getDoctrine()->getManager();
         $messageNotificator = $this->get('cairn_user.message_notificator');
@@ -288,16 +322,22 @@ class SmsController extends Controller
 
         $debitorPhoneNumber = $debitorUser->getPhoneNumber();
 
+
         $creditorSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
         if(! $creditorSmsData){//should not occur if validation has already been done
-            $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant du professionnel incorrect');
+            $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant du professionnel incorrect');
+            $em->persist($smsError);
+            $em->flush();
             return;
         }
 
         $creditorUser = $creditorSmsData->getUser();
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            $messageNotificator->sendSMS($debitorPhoneNumber,'Créditeur non professionnel');
+            $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Créditeur non professionnel');
+            $em->persist($smsError);
+            $em->flush();
+
             return;
         }
 
@@ -313,7 +353,7 @@ class SmsController extends Controller
         $operation->setCreditor($creditorUser);
 
 
-        if($toValidate){
+        if($toAnalyze){
             $validator = $this->get('validator');
             $listErrors = $validator->validate($operation);
 
@@ -322,7 +362,10 @@ class SmsController extends Controller
                 foreach($listErrors as $error){
                     $content = $content.$error->getMessage()."\n";
                 }
-                $messageNotificator->sendSMS($debitorPhoneNumber, $content);
+                $smsErrors = $messageNotificator->sendSMS($debitorPhoneNumber, $content);
+                $em->persist($smsErrors);
+                $em->flush();
+
                 return;
             }
         }
@@ -358,12 +401,19 @@ class SmsController extends Controller
                 if($e->errorCode == 'INSUFFICIENT_BALANCE'){ 
                     $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID());
                     $balance = $account->status->balance; 
-                    $messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE INSUFFISANT : Votre solde actuel est de '.$balance);
+                    $smsError=$messageNotificator->sendSMS($debitorPhoneNumber,'SOLDE INSUFFISANT : Votre solde actuel est de '.$balance);
+
+                    $em->persist($smsError);
+                    $em->flush();
+
                     return;
                 }
             }
 
-            $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez contacter l\'Association');
+            $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez contacter l\'Association');
+            $em->persist($smsError);
+            $em->flush();
+
             throw $e;
         }
 
@@ -371,7 +421,11 @@ class SmsController extends Controller
         $operation->setToAccountNumber($res->toAccount->number);
         $operation->setAmount($res->totalAmount->amount);
 
-        if($toValidate){
+        if($toAnalyze){
+
+            //the state of SMS paymentRequest is WAITING_KEY if needs validation, PROCESSED in all other cases
+            $smsPaymentRequest = new Sms($debitorPhoneNumber, $parsedSms->content,Sms::STATE_PROCESSED,NULL );
+
             $needsValidation = $securityService->paymentNeedsValidation($operation);
             $isSuspicious = $securityService->paymentIsSuspicious($operation);
             if($isSuspicious) {
@@ -383,7 +437,7 @@ class SmsController extends Controller
 
                 $messageNotificator->notifyByEmail($subject, $this->getParameter('cairn_email_noreply'),$debitorUser->getEmail(), $body);
 
-                $messageNotificator->sendSMS($debitorPhoneNumber,'PAIEMENT SMS BLOQUE : opération jugée suspicieuse. Veuillez contacter l\'Association');
+                $smsBlocked = $messageNotificator->sendSMS($debitorPhoneNumber,'PAIEMENT SMS BLOQUE : opération jugée suspicieuse. Veuillez contacter l\'Association');
 
                 $body = $this->get('templating')->render('CairnUserBundle:Emails:suspicious_sms.html.twig',array(
                     'operation'=>$operation,'toAdmin'=>true));
@@ -391,34 +445,40 @@ class SmsController extends Controller
                 $messageNotificator->notifyByEmail($subject, $this->getParameter('cairn_email_noreply'),$this->getParameter('cairn_email_management'), $body);
 
                 $debitorUser->getSmsData()->setSmsEnabled(false);
+
+                $em->persist($smsPaymentRequest); 
+                $em->persist($smsBlocked);
                 $em->flush();
                 return;
             }elseif($needsValidation){
-                $sms = $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content);
-                $em->persist($sms);
+                $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content);
                 $em->flush();
                 return;
+            }else{//payment is checked, but is neither suspicious or to be validated
+                $em->persist($smsPaymentRequest); 
             }
         }
 
         $paymentVO = $this->bankingManager->makePayment($res->payment);
 
         $operation->setPaymentID($paymentVO->id);
-        $em->persist($operation);
-        $em->flush();
 
         //notify debitor that payment has been executed successfully
         $debitorBalance = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID())->status->balance;
 
         $messageDebitor = 'Votre paiement de '.$operation->getAmount().' à '.$creditorUser->getName().' a été accepté.'."\n".'Votre nouveau solde: '.$debitorBalance ;
-        $messageNotificator->sendSMS($debitorPhoneNumber,$messageDebitor);
+        $smsSuccessDebitor = $messageNotificator->sendSMS($debitorPhoneNumber,$messageDebitor);
+
 
         //to notify creditor with creditor data, we need to connect to Cyclos with his access client
         $messageCreditor = 'Vous avez reçu un paiement de '.$operation->getAmount().' de la part de '.$debitorUser->getName() ;
+        $smsSuccessCreditor = $messageNotificator->sendSMS($creditorPhoneNumber,$messageCreditor);
+   
 
-        $messageNotificator->sendSMS($creditorPhoneNumber,$messageCreditor);
-    
-        return;
+        $em->persist($operation);
+        $em->persist($smsSuccessDebitor);
+        $em->persist($smsSuccessCreditor);
+//        $em->flush();
 
     }
 
@@ -437,7 +497,7 @@ class SmsController extends Controller
             $str_index = $sms->getCardPosition();
             $str_pos = $card->generateCardPositions($str_index)['cell'];
             $waiting_op = 'Opération précédente annulée : '.$sms->getContent()."\n";
-            $em->remove($sms);
+            $sms->setState(Sms::STATE_PROCESSED);
         }else{
             $positions = $card->generateCardPositions();
             $str_pos = $positions['cell'] ;
@@ -445,10 +505,11 @@ class SmsController extends Controller
         }
 
 
-        $sms = new Sms($phoneNumber,$content,Sms::STATE_WAITING_KEY,$str_index);
-        $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,$waiting_op.'Veuillez rentrer votre code de sécurité '.$str_pos);
-        return $sms;
+        $smsReceived = new Sms($phoneNumber,$content,Sms::STATE_WAITING_KEY,$str_index);
+        $smsSent = $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,$waiting_op.'Veuillez rentrer votre code de sécurité '.$str_pos);
 
+        $em->persist($smsReceived);
+        $em->persist($smsSent);
     }
 
 }

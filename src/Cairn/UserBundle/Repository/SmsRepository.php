@@ -14,20 +14,38 @@ use Doctrine\ORM\QueryBuilder;
 class SmsRepository extends \Doctrine\ORM\EntityRepository
 {
 
+    public function wherePhoneNumbers(QueryBuilder $sb, $phoneNumbers)
+    {
+        $sb->andWhere( $sb->expr()->in('s.phoneNumber', $phoneNumbers));
+        return $this;
+    }
+
+
     public function whereState(QueryBuilder $sb, $state)
     {
         $sb->andWhere('s.state = :state')                                           
             ->setParameter('state',$state);
         return $this;
-
     }
 
     public function whereOlderThan(QueryBuilder $sb, $date)
     {
-        $sb->andWhere('s.requestedAt < :date')
-            ->setParameter('date',$date);
+        $sb->andWhere('s.sentAt < :beforeDate')
+            ->setParameter('beforeDate',$date);
         return $this;
+    }
 
+    public function whereMoreRecentThan(QueryBuilder $sb, $date)
+    {
+        $sb->andWhere('s.sentAt > :afterDate')
+            ->setParameter('afterDate',$date);
+        return $this;
+    }
+
+    public function whereContentContains(QueryBuilder $sb, $content)
+    {
+        $sb->andWhere($sb->expr()->like('s.content', $sb->expr()->literal($content.'%')) );
+        return $this;
     }
 
 }

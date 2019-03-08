@@ -343,7 +343,7 @@ class Commands
 
         $sms = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
 
-        $sms->setRequestedAt(date_modify( new \Datetime(), '-15 minutes'));
+        $sms->setSentAt(date_modify( new \Datetime(), '-15 minutes'));
         $em->persist($sms);
         echo 'INFO: OK !'."\n";
 
