@@ -734,6 +734,51 @@ class UserController extends Controller
     }                      
 
 
+    /**
+     * Set the enabled attribute of user with provided ID to false
+     *
+     * An email is sent to the user being blocked
+     *
+     * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
+     * @Method("GET")
+     */ 
+    public function blockUserAction(Request $request, User $user)
+    {
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $currentUser = $this->getUser();
+
+        if(! ( ($user === $currentUser) || $user->hasReferent($currentUser) ) ){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }elseif(!$user->isEnabled()){
+            $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+        }
+
+        $form = $this->createForm(ConfirmationType::class);
+
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+            if($form->get('save')->isClicked()){
+
+                $subject = 'Opposition à votre compte e-Cairn';
+                $body = 'Une opposition de votre compte a été réalisée par' .$currentUser->getName();
+
+                $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
+                $session->getFlashBag()->add('success','L\'opposition du compte de ' . $user->getName() . ' a été effectuée avec succès. Il ne peut plus accéder à la plateforme.');
+                $em->flush();
+            }
+
+            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+
+        }
+
+        $responseArray = array('user' => $user,'form'=> $form->createView());
+
+        return $this->render('CairnUserBundle:User:block.html.twig', $responseArray);
+    }
+
 
     /**
      *Removes a user with id given in query
@@ -780,7 +825,7 @@ class UserController extends Controller
         if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
             foreach($accounts as $account){
                 if($account->status->balance != 0){
-                    $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La suppression ne peut aboutir.');
+                    $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La clôture du compte ne peut aboutir.');
                     return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id' => $user->getID()));
                 }
             }
@@ -809,7 +854,7 @@ class UserController extends Controller
                         $this->get('cairn_user.access_platform')->disable(array($user));
 
                         $redirection = 'fos_user_security_logout';
-                        $session->getFlashBag()->add('success','Votre demande de suppression d\'espace membre a été prise en compte');
+                        $session->getFlashBag()->add('success','Votre demande de clôture d\'espace membre a été prise en compte');
                     }
 
                     $em->flush();
@@ -817,7 +862,7 @@ class UserController extends Controller
                     return $this->redirectToRoute($redirection);
                 }
                 else{
-                    $session->getFlashBag()->add('info','La demande de suppression a été annulée.');
+                    $session->getFlashBag()->add('info','La demande de clôture a été annulée.');
                     return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
                 }
             }
@@ -947,10 +992,10 @@ class UserController extends Controller
                         $user->setRemovalRequest(false);
                         $notRemovedUsers = $notRemovedUsers.', '.$user->getName();
 
-                        $subject = 'Demande de suppression non aboutie';
+                        $subject = 'Demande de clôture non aboutie';
                         $from = $messageNotificator->getNoReplyEmail();
                         $to = $user->getEmail();
-                        $body = 'Votre demande de suppression de compte [e]-Cairn n\'a pas pu aboutir. Vérifiez que votre compte est bien soldé. Si oui, veuillez prendre contact avec l\'Association.'."\n"."\n".'Le Cairn,';
+                        $body = 'Votre demande de clôture de compte [e]-Cairn n\'a pas pu aboutir. Vérifiez que votre compte est bien soldé. Si oui, veuillez prendre contact avec l\'Association.'."\n"."\n".'Le Cairn,';
             
                         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
@@ -960,15 +1005,15 @@ class UserController extends Controller
                 $em->flush();
 
                 if($notRemovedUsers != ''){
-                    $session->getFlashBag()->add('info','Les membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
+                    $session->getFlashBag()->add('info','Les comptes des membres suivants n\'ont pas pu être supprimés : ' .$notRemovedUsers); 
                     $session->getFlashBag()->add('info','Raison : Leurs comptes ne sont probablement plus soldés, même s\'ils l\'étaient au moment de leur demande'); 
                 }else{
-                    $session->getFlashBag()->add('success','Tous les membres ont pu être supprimés avec succès'); 
+                    $session->getFlashBag()->add('success','Tous les comptes ont pu être clôturés avec succès'); 
                 }
                 return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
 
             }else{
-                $session->getFlashBag()->add('info','Opération annulée'); 
+                $session->getFlashBag()->add('info','Demande de clôture annulée'); 
                 return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
             }
         }

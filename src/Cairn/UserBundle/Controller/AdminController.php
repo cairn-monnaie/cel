@@ -59,54 +59,6 @@ class AdminController extends Controller
     }   
 
 
-    /**
-     * Set the enabled attribute of user with provided ID to false
-     *
-     * An email is sent to the user being (re)activated
-     *
-     * @throws  AccessDeniedException Current user making request is not a referent of the user being involved
-     * @Method("GET")
-     */ 
-    public function blockUserAction(Request $request, User $user, $_format)
-    {
-        $session = $request->getSession();
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-
-        $currentUser = $this->getUser();
-
-        if(! $user->hasReferent($currentUser)){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }elseif(!$user->isEnabled()){
-            $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-        }
-
-        $form = $this->createForm(ConfirmationType::class);
-
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
-            if($form->get('save')->isClicked()){
-
-                $subject = 'Votre espace membre Cairn a été désactivé';
-                $body = 'Votre espace membre a été bloqué par ' .$currentUser->getName();
-
-                $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
-                $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été bloqué avec succès. Il ne peut plus accéder à la plateforme.');
-                $em->flush();
-            }
-
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
-
-        }
-
-        $responseArray = array('user' => $user,'form'=> $form->createView());
-
-        if($_format == 'json'){
-            return $this->json($responseArray);
-        }
-        return $this->render('CairnUserBundle:User:block.html.twig', $responseArray);
-    }
-
 
     /**
      * Set the enabled attribute of user with provided ID to true

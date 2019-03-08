@@ -34,7 +34,7 @@ class AdminControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/admin/users/block/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/user/block/'.$targetUser->getID());
 
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler, '1111');
@@ -86,6 +86,9 @@ class AdminControllerTest extends BaseControllerTest
             'valid + has sms enabled'           => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
            'already blocked' => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true),
             'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false)
+            'adherent for himself'    =>array('referent'=>'NaturaVie','target'=>'NaturaVie','isReferent'=>true)
+            'adherent for other'    =>array('referent'=>'NaturaVie','target'=>'maltobar','isReferent'=>false)
+
         );
     }
 

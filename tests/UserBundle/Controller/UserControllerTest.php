@@ -500,6 +500,7 @@ class UserControllerTest extends BaseControllerTest
 
         if($targetUser->isAdherent()){
 
+            $this->assertSame(1,$crawler->filter('a[href*="user/block"]')->count());
             $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
             $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit"]')->count());
 
@@ -583,6 +584,7 @@ class UserControllerTest extends BaseControllerTest
             'superadmin for disabled pro'=>array('referent'=>$adminUsername,'target'=>'la_mandragore','isLegit'=>true),
             'superadmin for pro without card'=>array('referent'=>$adminUsername,'target'=>'episol','isLegit'=>true),
             'pro without card for himself'=>array('referent'=>'episol','target'=>'episol','isLegit'=>true),
+            'person for himself'=>array('referent'=>'benoit_perso','target'=>'benoit_perso','isLegit'=>true),
             'pro for other pro'=>array('referent'=>'episol','target'=>'DrDBrew','isLegit'=>false),
             'person for other person'=>array('referent'=>'crabe_arnold','target'=>'nico_faus_perso','isLegit'=>false),
             'pro for person'=>array('referent'=>'maltobar','target'=>'benoit_perso','isLegit'=>false),
