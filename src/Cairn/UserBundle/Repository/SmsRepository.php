@@ -48,4 +48,13 @@ class SmsRepository extends \Doctrine\ORM\EntityRepository
         return $this;
     }
 
+    public function whereCurrentDay(QueryBuilder $sb)
+    {
+        $sb->andWhere('s.sentAt BETWEEN :start AND :end')
+            ->setParameter('start', new \Datetime(date('Y-m-d'))) // 00:00:00
+            ->setParameter('end', new \Datetime()) //now
+            ;
+        return $this;
+    }
+
 }

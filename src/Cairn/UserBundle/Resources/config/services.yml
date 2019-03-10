@@ -3,6 +3,11 @@ services:
     #        class: Cairn\UserBundle\Example
     #        arguments: ["@service_id", "plain_value", "%parameter%"]
 
+    cairn_user.repository_sms: 
+        class: SmsRepository                                                  
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Sms] 
+
     cairn_user.repository_user: 
         class: UserRepository                                                  
         factory: ["@doctrine.orm.entity_manager", getRepository]
@@ -46,9 +51,15 @@ services:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:
             - "@cairn_user.repository_user"
+            - "@cairn_user.repository_sms"
             - "@mailer" 
+            - "@templating"
             - "%cairn_email_technical_services%"
             - "%cairn_email_noreply%"
+            - "%cairn_email_activation_delay%"
+            - "%kernel.environment%"
+            - "%sms_api_token%"
+            - "%sms_provider_url%"
 
     cairn_user.bridge_symfony:
         class: Cairn\UserBundle\Service\BridgeToSymfony

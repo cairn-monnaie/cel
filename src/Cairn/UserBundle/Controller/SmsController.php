@@ -221,8 +221,13 @@ class SmsController extends Controller
         //4) Parse SMS content
         $parsedSms = $this->parseSms($content);
         if( $parsedSms->error){
+
+            $smsFormat = new Sms($debitorPhoneNumber, $content, Sms::STATE_PROCESSED, NULL);
+
             $reason = 'SMS INVALIDE'."\n".$parsedSms->error;
             $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,$reason);
+
+            $em->persist($smsFormat);
             $em->persist($smsError);
             $em->flush();
             return;
@@ -241,8 +246,9 @@ class SmsController extends Controller
                                                                           'state'=>Sms::STATE_WAITING_KEY));
 
             if(!$smsPending){
-                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR : rien à valider');
-                $em->persist($smsSent);
+                $smsUseless = new Sms($debitorPhoneNumber, $parsedSms->cardKey,Sms::STATE_PROCESSED, NULL);
+                $em->persist($smsUseless);
+
                 $em->flush();
                 return;
             }elseif($smsPending->getSentAt()->diff(new \Datetime())->i > 5){
@@ -497,7 +503,7 @@ class SmsController extends Controller
             $str_index = $sms->getCardPosition();
             $str_pos = $card->generateCardPositions($str_index)['cell'];
             $waiting_op = 'Opération précédente annulée : '.$sms->getContent()."\n";
-            $sms->setState(Sms::STATE_PROCESSED);
+            $sms->setState(Sms::STATE_CANCELED);
         }else{
             $positions = $card->generateCardPositions();
             $str_pos = $positions['cell'] ;

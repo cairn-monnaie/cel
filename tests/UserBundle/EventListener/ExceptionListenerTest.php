@@ -122,7 +122,7 @@ class ExceptionListenerTest extends KernelTestCase
         $this->eventDispatcher->dispatch(KernelEvents::EXCEPTION,$event); 
         $this->assertTrue($event->getResponse()->isRedirect($logout));
 
-        $messages_flash = $event->getRequest()->getSession()->getFlashBag()->get('error',array());
+        $messages_flash = $event->getRequest()->getSession()->getFlashBag()->get('info',array());
         $this->assertContains('session a expiré',$messages_flash[0]);
 
         //test NULL_POINTER
