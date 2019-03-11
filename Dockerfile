@@ -41,6 +41,4 @@ RUN cd /var/www/Symfony \
 
 WORKDIR /var/www/Symfony
 
-EXPOSE 9000
-
 CMD ["php-fpm"]
