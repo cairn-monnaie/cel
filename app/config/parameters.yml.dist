@@ -41,7 +41,6 @@ parameters:
     cairn_default_reconversion_description : Reconversion cairns-euros
 
     cairn_default_register_url : ~
-
     cyclos_group_pros : 'Adhérents prestataires'
     cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
@@ -55,7 +54,10 @@ parameters:
     cyclos_currency_cairn : cairn
     leading_company : 'Association Le Cairn'
     max_printable_cards : 20
+
     sms_max_amount_without_security: 10
     sms_amount_block: 1000
     sms_nb_payments_block: 15
+    sms_api_token : ThisTokenIsNotSoSecretChangeIt
+    sms_provider_url : 'https://sms-provider.com'
 

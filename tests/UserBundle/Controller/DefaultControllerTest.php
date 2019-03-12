@@ -142,9 +142,6 @@ class DefaultControllerTest extends BaseControllerTest
 
                 }
             }
-            //committing modifications
-//            \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
-//            \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::beginTransaction();
         }else{
             $mailCollector = $client->getProfile()->getCollector('swiftmailer');
             $this->assertSame(0, $mailCollector->getMessageCount());
@@ -166,7 +163,7 @@ class DefaultControllerTest extends BaseControllerTest
             'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,NULL),
             'balance : not active'=>array('0744444444','SOLDE',false,'1111',true,array('actuellement bloqué')),
             'balance : valid code + sms for pro & person'=>array('0612345678','SOLDE',true,'1111',true,
-                                                                    array($askCodeMsg,'Votre solde compte')),
+                                                                  array($askCodeMsg,'Votre solde compte')),
 
             'balance : invalid code + sms for pro & person'=>array('0612345678','SOLDE',true,'2222',false,
                                                                     array($askCodeMsg,$wrongCodeMsg)),
@@ -208,7 +205,7 @@ class DefaultControllerTest extends BaseControllerTest
           'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,
                                                         array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
-            'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,array('rien à valider')),
+            'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,NULL),
 
             'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('PAIEMENT SMS BLOQUE','tentative de paiement','tentative de paiement'),3),
 

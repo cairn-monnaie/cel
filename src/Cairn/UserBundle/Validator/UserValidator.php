@@ -83,51 +83,49 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
-            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
         // ------------ Validate Password ---------------
         //Cyclos 4.11.2 bug reported : character '<' provoks validation error. For this reason, we disable it here
-        if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
-            $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }else{
-            if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>', $user->getPlainPassword()) ){
-                $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
+        if($user->getPlainPassword){
+            if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
+                $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
                     ->atPath('plainPassword')
                     ->addViolation();
-            }
-            if( preg_match('<[^a-zA-Z0-9`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
-                $list = '';
-                foreach($matches as $match){
-                    $list .= $match;
+            }else{
+                if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>', $user->getPlainPassword()) ){
+                    $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
+                        ->atPath('plainPassword')
+                        ->addViolation();
                 }
-                $this->context->buildViolation('Les caractères suivants ne sont pas autorisés : '.$list)
+                if( preg_match('<[^a-zA-Z0-9`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
+                    $list = '';
+                    foreach($matches as $match){
+                        $list .= $match;
+                    }
+                    $this->context->buildViolation('Les caractères suivants ne sont pas autorisés : '.$list)
+                        ->atPath('plainPassword')
+                        ->addViolation();
+                }
+            }
+
+            if($username = $user->getUsername()){
+                if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
+                    $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
+                        ->atPath('plainPassword')
+                        ->addViolation();
+                }
+            }
+
+            if(strlen($user->getPlainPassword()) > 25){
+                $this->context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
+                    ->atPath('plainPassword')
+                    ->addViolation();
+            }
+            if(strlen($user->getPlainPassword()) < 8){
+                $this->context->buildViolation('Le mot de passe doit contenir plus de 8 caractères.')
                     ->atPath('plainPassword')
                     ->addViolation();
             }
         }
-
-        if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
-            $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-
-        if(strlen($user->getPlainPassword()) > 25){
-            $this->context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-        if(strlen($user->getPlainPassword()) < 8){
-            $this->context->buildViolation('Le mot de passe doit contenir plus de 8 caractères.')
-                ->atPath('plainPassword')
-                ->addViolation();
-        }
-
 
         if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',$user->getEmail())){
             $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.")

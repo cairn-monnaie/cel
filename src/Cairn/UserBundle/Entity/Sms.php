@@ -57,13 +57,15 @@ class Sms
     private $cardPosition;
 
     //states of received sms
+    //WARNING : DO NOT CHANGE values of current constants
     const STATE_WAITING_KEY = 0;
     const STATE_EXPIRED = 1;
     const STATE_PROCESSED = 2;
-    const STATE_SPAM = 3;
+    const STATE_CANCELED = 3;
+    const STATE_SPAM = 4;
 
     //state of sent SMS
-    const STATE_SENT = 4;
+    const STATE_SENT = 5;
 
 
     public function __construct($phoneNumber,$content,$state,$cardPosition = NULL)

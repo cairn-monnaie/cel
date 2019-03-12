@@ -143,11 +143,10 @@ cairn_user_users_search:
     defaults: { _controller: CairnUserBundle:User:searchUser }
 
 cairn_user_users_block:
-    path:     admin/users/block/{id}.{_format}
-    defaults: { _controller: CairnUserBundle:Admin:blockUser, _format: html }
+    path:     user/block/{id}
+    defaults: { _controller: CairnUserBundle:User:blockUser, _format: html }
     requirements:
         id: \d+
-        _format: html|json
 
 cairn_user_users_activate:
     path:     admin/users/activate/{id}.{_format}
