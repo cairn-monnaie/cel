@@ -53,7 +53,28 @@ class UserRepository extends EntityRepository
             ->andWhere('r.id = :id')                                           
             ->setParameter('id',$userID);
         return $this;
+    }
 
+    public function whereEnabled(QueryBuilder $qb, $isEnabled)
+    {
+        $qb->andWhere('u.enabled = :enabled')                                           
+            ->setParameter('enabled',$isEnabled);
+        return $this;
+    }
+
+    public function whereConfirmed(QueryBuilder $qb)
+    {
+        $qb->andWhere('u.confirmationToken is NULL')     
+            ->andWhere('u.lastLogin is not NULL'); 
+        return $this;
+    }
+
+    public function wherePending(QueryBuilder $qb)
+    {
+        $qb->andWhere('u.confirmationToken is NULL')     
+            ->andWhere('u.enabled = false')                                    
+            ->andWhere('u.lastLogin is NULL'); 
+        return $this;
     }
 
     public function findPendingUsers($referentID, $role)

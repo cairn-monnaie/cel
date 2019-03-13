@@ -319,7 +319,8 @@ class DefaultControllerTest extends BaseControllerTest
         }
 
         $this->em->refresh($newUser);
-        $this->assertTrue(!$newUser->isEnabled());
+        $this->assertUserIsEnabled($newUser, true);
+
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));
         }elseif($type == 'person'){

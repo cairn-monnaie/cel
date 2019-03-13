@@ -131,15 +131,15 @@ class UserControllerTest extends BaseControllerTest
 
 
                         if($currentUser->getPhoneNumberActivationTries() >= 3){
-                            $this->assertFalse($currentUser->isEnabled());
                             $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
                             $crawler = $this->client->followRedirect();
                             $crawler = $this->client->followRedirect();
 
                             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
+                            $this->assertUserIsDisabled($currentUser,true);
                         }else{
-                            $this->assertTrue($currentUser->isEnabled());
+                            $this->assertUserIsEnabled($currentUser, false);
 //                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
 //                            $crawler = $this->client->followRedirect();
 
@@ -445,14 +445,10 @@ class UserControllerTest extends BaseControllerTest
                 if($isEmailSent){
                     $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
                     $this->assertTrue($mailCollector->getMessageCount() == 1);
+                    $this->assertUserIsDisabled($currentUser, true);
+                }else{
+                    $this->assertUserIsDisabled($currentUser, false);
                 }
-
-                $this->assertFalse($currentUser->isEnabled());
-                $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
-                $crawler = $this->client->followRedirect();
-                $crawler = $this->client->followRedirect();
-
-                $this->assertContains($expectedMessage, $this->client->getResponse()->getContent() );
             }
         }else{
             $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -670,8 +666,7 @@ class UserControllerTest extends BaseControllerTest
 
                     $this->assertNotEquals($targetUser,NULL);
                     $this->assertEquals($targetUser->getRemovalRequest(),true);
-                    $this->assertEquals($targetUser->isEnabled(),false);
-
+                    $this->assertUserIsDisabled($targetUser, true);
                 }
             }       
         }

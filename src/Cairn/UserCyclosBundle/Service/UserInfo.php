@@ -22,6 +22,14 @@ class UserInfo
     private $userService;
 
     /**
+     * Deals with all user status management.
+     *
+     * This attribute is an instance of a Cyclos Service class proposed in the Cyclos WebServices PHP API.
+     *@var Cyclos\UserStatusService $userStatusService                                            
+     */
+    private $userStatusService;
+
+    /**
      * Deals with all group management.
      *
      * This attribute is an instance of a Cyclos Service class proposed in the Cyclos WebServices PHP API.
@@ -34,6 +42,7 @@ class UserInfo
     public function __construct($leadingCompanyName)
     {
         $this->userService = new Cyclos\UserService();
+        $this->userStatusService = new Cyclos\UserStatusService();
         $this->groupService = new Cyclos\GroupService();
         $this->leadingCompanyName = $leadingCompanyName;
     }
@@ -116,7 +125,15 @@ class UserInfo
         return $this->userService->search($query)->pageItems;
     }
 
+    public function searchUsers($query)
+    {
+        return $this->userService->search($query)->pageItems; 
+    }
 
+    public function getUserStatus($userID)
+    {
+        return $this->userStatusService->getData($userID)->status;
+    }
 
     /**
      *Returns true if $userName belongs to group $groupName, false otherwise
@@ -131,19 +148,16 @@ class UserInfo
     }
 
     /*
-     * Returns the list of users in group $name
+     * Returns the list of users in group $groupVO
      *
      * @param stdClass|int $groupVO either the whole groupVO object or its ID
-     * @return list of users in group $name
+     * @return list of users in group $goupVO
      */
     public function getListInGroup($groupVO, $statuses=NULL)
     {
         $query = new \stdClass();
         $query->groups = $groupVO;
-        $query->userStatus = array('ACTIVE');
-        if($statuses){
-            $query->userStatus = array_merge($query->userStatus,$statuses);
-        }
+        $query->userStatus = $statuses;
 
         return $this->userService->search($query)->pageItems; 
     }

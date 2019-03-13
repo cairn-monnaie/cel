@@ -43,9 +43,12 @@ class AdminControllerTest extends BaseControllerTest
         if(! $isReferent){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }else{
+
             if(! $targetUser->isEnabled()){
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("déjà bloqué")')->count());
+
+                $this->assertUserIsDisabled($targetUser, false);
             }else{
                 $this->client->enableProfiler();
 
@@ -53,7 +56,6 @@ class AdminControllerTest extends BaseControllerTest
                 $crawler =  $this->client->submit($form);
 
                 $this->em->refresh($targetUser);
-                $this->assertFalse($targetUser->isEnabled());
 
                 if($smsData = $targetUser->getSmsData()){
                     $this->assertFalse($smsData->isSmsEnabled());
@@ -63,8 +65,8 @@ class AdminControllerTest extends BaseControllerTest
                 $this->assertSame(1, $mailCollector->getMessageCount());
                 $message = $mailCollector->getMessages()[0];
                 $this->assertInstanceOf('Swift_Message', $message);
-                $this->assertContains('désactivé', $message->getSubject());
-                $this->assertContains('bloqué', $message->getBody());
+                $this->assertContains('Opposition', $message->getSubject());
+                $this->assertContains('opposition', $message->getBody());
                 $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
@@ -72,7 +74,10 @@ class AdminControllerTest extends BaseControllerTest
                 $crawler = $this->client->followRedirect();
 
                 //assert targetUser can't connect
-                $crawler = $this->login($targetUser->getUsername(), '@@bbccdd');
+                $crawler = $this->login($target, '@@bbccdd');
+                $this->assertContains('login_check',$this->client->getResponse()->getContent());
+
+                $this->assertUserIsDisabled($targetUser, true);
             }
         }
 
@@ -85,10 +90,9 @@ class AdminControllerTest extends BaseControllerTest
         return array(
             'valid + has sms enabled'           => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
            'already blocked' => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true),
-            'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false)
-            'adherent for himself'    =>array('referent'=>'NaturaVie','target'=>'NaturaVie','isReferent'=>true)
-            'adherent for other'    =>array('referent'=>'NaturaVie','target'=>'maltobar','isReferent'=>false)
-
+            'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false),
+            'adherent for himself'    =>array('referent'=>'apogee_du_vin','target'=>'apogee_du_vin','isReferent'=>true),
+            'adherent for other'    =>array('referent'=>'apogee_du_vin','target'=>'maltobar','isReferent'=>false),
         );
     }
 
@@ -115,6 +119,8 @@ class AdminControllerTest extends BaseControllerTest
             if($targetUser->isEnabled()){
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("déjà accessible")')->count());
+
+                $this->assertUserIsEnabled($targetUser, false);
             }else{
                 $this->client->enableProfiler();
 
@@ -122,7 +128,6 @@ class AdminControllerTest extends BaseControllerTest
                 $crawler =  $this->client->submit($form);
 
                 $this->em->refresh($targetUser);
-                $this->assertTrue($targetUser->isEnabled());
                 $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($targetUser);
                 $this->assertNotEquals($userVO, NULL);
 
@@ -133,7 +138,7 @@ class AdminControllerTest extends BaseControllerTest
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('activé', $message->getSubject());
                 $this->assertContains('accessible', $message->getBody());
-                $this->assertContains($currentUser->getName(), $message->getBody());
+//                $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));
 
@@ -141,7 +146,9 @@ class AdminControllerTest extends BaseControllerTest
 
                 //assert targetUser can connect
                 $crawler = $this->login($targetUser->getUsername(), '@@bbccdd');
-                $this->assertSame(1,$crawler->filter('html:contains("Espace Professionnel")')->count());
+                $this->assertSame(1,$crawler->filter('html:contains("Espace")')->count());
+
+                $this->assertUserIsEnabled($targetUser,true);
 
             }
         }
@@ -154,8 +161,8 @@ class AdminControllerTest extends BaseControllerTest
 
         return array(
            'valid, already log in'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true,1),
-           'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true,0),
-           'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false,0)
+//           'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true,0),
+//           'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false,0)
         );
     }
 

@@ -45,6 +45,7 @@ parameters:
     cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
+    cyclos_anonymous_user : anonyme
 
     cyclos_root_prod_url : 'http://cyclos-app:1234/'
     cyclos_root_test_url:  'http://cyclos-app:4321/'

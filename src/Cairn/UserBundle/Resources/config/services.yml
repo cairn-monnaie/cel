@@ -75,6 +75,10 @@ services:
         arguments:
             - "@cairn_user.repository_user"
             - "@cairn_user.message_notificator"
+            - "@cairn_user.security"
+            - "@cairn_user_cyclos_network_info"
+            - "%cyclos_anonymous_user%"
+            - "%cyclos_currency_cairn%"
 
     cairn_user.datetime_checker:
         class: Cairn\UserBundle\Service\DateTimeChecker
