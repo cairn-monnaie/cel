@@ -1,37 +1,61 @@
-
 {% trans_default_domain 'FOSUserBundle' %}
 
 <div class="row">
-    <h2 class="center-align">Inscription {%  if (app.request.query.get('type') == "person") %}particulier{% elseif(app.request.query.get('type') == "pro") %}pro{% endif %}</h2>
-    {{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
-    {{ form_errors(form) }}
+{{ form_start(form, { 'action': path('fos_user_profile_edit'), 'attr': { 'class': 'fos_user_profile_edit' } }) }}
+    <div class="input-field col s6 m4 offset-s3 offset-m4 center-align">
+        {% if app.user.image.url is defined %}
+            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+        {% else %}
+            <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+        {% endif %}
+
+    </div>
+    <div class="col s12">
+        <h2 class="center-align">{{ app.user }}</h2>
+    </div>
+    <div class="input-field col s12 m4">
+        {{ form_widget(form.username) }}
+        {{ form_label(form.username) }}
+    </div>
     <div class="input-field col s12 m4">
         {{ form_errors(form.email) }}
         <i class="material-icons prefix">mail_outline</i>
         {{ form_widget(form.email) }}
         {{ form_label(form.email) }}
     </div>
+    <div class="input-field col s12 m4">
+        {{ form_errors(form.current_password) }}
+        <i class="material-icons prefix">lock</i>
+        {{ form_widget(form.current_password) }}
+        {{ form_label(form.current_password) }}
+    </div>
     {% if form.firstname is defined %}
-        <div class="input-field col s12 m4">
+        <div class="input-field col s12 m6">
             <i class="material-icons prefix">person_outline</i>
             {{ form_errors(form.firstname) }}
             {{ form_widget(form.firstname) }}
             {{ form_label(form.firstname) }}
         </div>
-        <div class="input-field col s12 m4">
+        <div class="input-field col s12 m6">
             <i class="material-icons prefix hide-on-med-and-up"></i>
             {{ form_errors(form.name) }}
             {{ form_widget(form.name) }}
             {{ form_label(form.name) }}
         </div>
     {% else %}
-        <div class="input-field col s12 m4">
+        <div class="input-field col s12">
             {{ form_errors(form.name) }}
             <i class="material-icons prefix">person_outline</i>
             {{ form_widget(form.name) }}
             {{ form_label(form.name) }}
         </div>
     {% endif %}
+    <div class="input-field col s12">
+        {{ form_errors(form.description) }}
+        <i class="material-icons prefix">chat</i>
+        {{ form_widget(form.description) }}
+        {{ form_label(form.description) }}
+    </div>
     <div class="col s12 m6">
         <div class="row">
             <div class="input-field col s12">
@@ -55,35 +79,20 @@
         </div>
     </div>
     <div class="col s12 m6">
-        <div class="row">
-    {% if form.image is defined %}
-        <div class="col s12">
-            {{ form_errors(form.image) }}
-            {{ form_label(form.image) }}
-        </div>
-        <div class="col s12">
-            {{ form_widget(form.image) }}
-        </div>
-    {% endif %}
+        {% if form.image is defined %}
             <div class="col s12">
-                {{ form_errors(form.identityDocument) }}
-                {{ form_label(form.identityDocument) }}
+                {{ form_errors(form.image) }}
+                {{ form_label(form.image) }}
             </div>
             <div class="col s12">
-                {{ form_widget(form.identityDocument) }}
+                {{ form_widget(form.image) }}
             </div>
-        </div>
+        {% endif %}
     </div>
-    <div class="input-field col s12">
-        {{ form_errors(form.description) }}
-        <i class="material-icons prefix">message</i>
-        {{ form_widget(form.description) }}
-        {{ form_label(form.description) }}
+    <div class="col s12 right-align">
+        <button type="submit" class="btn" ><i class="material-icons left">check</i>Enregistrer</button>
     </div>
-    <div class="col s12">
-        <button type="submit"class="btn">Inscription</button>
-    </div>
-    {{ form_end(form) }}
+    {{ form_widget(form) }}
+
+{{ form_end(form) }}
 </div>
-<br>
-<br>
