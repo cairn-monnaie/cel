@@ -22,7 +22,8 @@ class LoadUser implements FixtureInterface
             $user->setName($baseData['name'] . $i);                                        
             $user->setUsername($baseData['username'] . $i);                            
             $user->setEmail('testuser'.$i.'@test.com');                            
-            $user->setCyclosID($i);                            
+            $user->setCyclosID($i);
+            $user->setMainICC(null);
             $user->setPlainPassword(User::randomPassword());                            
             $user->setEnabled(true);                            
             $user->addRole('ROLE_PRO');

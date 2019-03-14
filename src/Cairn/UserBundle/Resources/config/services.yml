@@ -1,34 +1,37 @@
 services:
-    #    cairn_user.example:
-    #        class: Cairn\UserBundle\Example
-    #        arguments: ["@service_id", "plain_value", "%parameter%"]
 
-    cairn_user.repository_sms: 
-        class: SmsRepository                                                  
+    Cairn\UserBundle\Controller\:
+        resource: '../../Controller'
+        public: true
+        tags: ['controller.service_arguments']
+
+    cairn_user.repository_sms:
+        class: SmsRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
-        arguments: [Cairn\UserBundle\Entity\Sms] 
+        arguments: [Cairn\UserBundle\Entity\Sms]
 
     cairn_user.repository_user: 
-        class: UserRepository                                                  
+        class: UserRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
-        arguments: [Cairn\UserBundle\Entity\User] 
+        arguments: [Cairn\UserBundle\Entity\User]
 
     cairn_user.repository_operation: 
-        class: OperationRepository                                                  
+        class: OperationRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
-        arguments: [Cairn\UserBundle\Entity\Operation] 
+        arguments: [Cairn\UserBundle\Entity\Operation]
 
     cairn_user.repository_smsdata: 
-        class: SmsDataRepository                                                  
+        class: SmsDataRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
-        arguments: [Cairn\UserBundle\Entity\SmsData] 
+        arguments: [Cairn\UserBundle\Entity\SmsData]
 
     cairn_user.repository_card: 
-        class: CardRepository                                                  
+        class: CardRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
-        arguments: [Cairn\UserBundle\Entity\Card] 
+        arguments: [Cairn\UserBundle\Entity\Card]
 
     cairn_user.api:
+        public: true
         class: Cairn\UserBundle\Service\Api
         arguments:
             - "@request_stack"
@@ -80,6 +83,7 @@ services:
         class: Cairn\UserBundle\Service\DateTimeChecker
 
     cairn_user.security:
+        public: true
         class: Cairn\UserBundle\Service\Security
         arguments:
             - "@cairn_user.repository_user"
@@ -186,12 +190,19 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
 
-
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"
         tags:
             - { name: form.type_extension, extended_type: Symfony\Component\Form\Extension\Core\Type\FormType}
+
+    cairn_user.zipcity_to_sting_transformer:
+        class: Cairn\UserBundle\Form\DataTransformer\ZipCityToStringTransformer
+        arguments: ["@doctrine.orm.entity_manager"]
+
+    cairn_user.account_to_sting_transformer:
+        class: Cairn\UserBundle\Form\DataTransformer\AccountToStringTransformer
+        arguments: ["@doctrine.orm.entity_manager","@cairn_user.bridge_symfony","@cairn_user_cyclos_user_info","@cairn_user_cyclos_account_info"]
 
     Cairn\UserBundle\Form\SmsDataType:
         arguments: ['@security.authorization_checker']
@@ -211,4 +222,21 @@ services:
 
     Cairn\UserBundle\Form\DepositType:                              
         arguments: ['@security.token_storage']                                 
+        tags: [form.type]
+
+
+    Cairn\UserBundle\Form\OperationType:
+        arguments: ['@security.token_storage','@validator',"@cairn_user_cyclos_account_info","@cairn_user.bridge_symfony"]
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\RegistrationType:
+        arguments: ['@security.authorization_checker',"@doctrine.orm.entity_manager"]
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\ZipCitySelectorType:
+        arguments: ["@cairn_user.zipcity_to_sting_transformer"]
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\AccountType:
+        arguments: ["@cairn_user.account_to_sting_transformer"]
         tags: [form.type]

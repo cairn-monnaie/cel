@@ -102,4 +102,17 @@ class DefaultController extends Controller
         return new Response("Ajax only",400);
     }
 
+    public function accountsAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $users = $em->getRepository(User::class)->findAll();
+            $returnArray = array();
+            foreach ($users as $user){
+                $returnArray[] = array('name' => $user->getAutocompleteLabel() ,'icon' => ($user->getImage() ? '/uploads/img/' . $user->getImage()->getId() .'.'. $user->getImage()->getUrl(): '')) ;
+            }
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
+
 }

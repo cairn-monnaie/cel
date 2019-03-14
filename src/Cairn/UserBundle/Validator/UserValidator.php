@@ -85,7 +85,7 @@ class UserValidator extends ConstraintValidator
 
         // ------------ Validate Password ---------------
         //Cyclos 4.11.2 bug reported : character '<' provoks validation error. For this reason, we disable it here
-        if($user->getPlainPassword){
+        if($user->getPlainPassword()){
             if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
                 $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
                     ->atPath('plainPassword')

@@ -4,6 +4,7 @@
 <div class="row">
     <h2 class="center-align">Inscription {%  if (app.request.query.get('type') == "person") %}particulier{% elseif(app.request.query.get('type') == "pro") %}pro{% endif %}</h2>
     {{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
+    {{ form_errors(form) }}
     <div class="input-field col s12 m4">
         {{ form_errors(form.email) }}
         <i class="material-icons prefix">mail_outline</i>

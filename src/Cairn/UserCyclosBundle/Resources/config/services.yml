@@ -6,6 +6,7 @@ services:
             - "%leading_company%"
 
     cairn_user_cyclos_network_info:
+        public: true
         class: Cairn\UserCyclosBundle\Service\NetworkInfo
         arguments:
             - "%cyclos_root_prod_url%"

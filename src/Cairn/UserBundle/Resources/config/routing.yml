@@ -65,6 +65,10 @@ cairn_zipcities_ajax:
     methods: POST
     defaults: { _controller: CairnUserBundle:Default:zipCities, _format: json }
 
+cairn_accounts_ajax:
+    path:     accounts
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Default:accounts, _format: json }
 
 cairn_user_card_security_layer:
     path:     security/card/

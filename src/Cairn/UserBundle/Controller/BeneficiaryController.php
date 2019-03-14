@@ -2,6 +2,7 @@
 
 namespace Cairn\UserBundle\Controller;
 
+use Cairn\UserBundle\Form\AccountType;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 //manage Cyclos
@@ -245,71 +246,6 @@ class BeneficiaryController extends Controller
 
 
     /**
-     * Checks if the beneficiary is valid
-     *
-     * First, we check that the user matches the account number $ICC.
-     * Then, we ensure that beneficiary exists in database, and whether he is a current beneficiary of $user or not
-     *
-     *@param User $user User who is supposed to own the account
-     *@param int $ICC account cyclos ID
-
-     *@return stdClass with attributes : isValid and error message if not
-     */
-    public function isValidBeneficiary($dataForm)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-        $response = new \stdClass();
-        $response->isValid = true;
-
-
-        $user = $userRepo->findOneBy(array('email'=>$dataForm['email']));
-        if(!$user){
-            $user = $userRepo->findOneBy(array('name'=>$dataForm['name']));
-            if(!$user){
-                $response->isValid = false;
-                $response->errorMessage = 'Votre recherche ne correspond à aucun membre';
-                return $response;
-            }
-        }
-
-        $ICC = preg_replace('/\s+/', '', $dataForm['ICC']);
-
-        $currentUser = $this->getUser();
-
-        if($user === $currentUser){
-            $response->isValid = false;
-            $response->errorMessage = 'Vous ne pouvez pas vous ajouter vous-même...';
-            return $response;
-        }
-
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-
-        $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($ICC);
-        if( (!$toUserVO) || ($toUserVO->id != $user->getCyclosID()) ){
-            $response->isValid = false;
-            $response->errorMessage = 'L\'identifiant indiqué ne correspond à aucun compte de' . $user->getName();
-            return $response;
-        }
-
-        $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$user,'ICC'=>$ICC));
-
-        if($existingBeneficiary && $this->getUser()->hasBeneficiary($existingBeneficiary)){
-            $response->isValid = false;
-            $response->errorMessage = $user->getName().' est déjà votre un bénéficiaire enregistré ';
-            return $response;
-        }
-
-        $response->existingBeneficiary = $existingBeneficiary;
-        $response->user = $user;
-        $response->ICC = $ICC;
-
-        return $response;
-    }
-
-
-    /**
      * Adds a new beneficiary to the existing list
      *
      * This action is considered as a sensible operation
@@ -333,10 +269,7 @@ class BeneficiaryController extends Controller
         $possibleBeneficiaries = array_merge($possiblePros, $possiblePersons);
 
         $form = $this->createFormBuilder()
-            ->add('name', TextType::class, array('label' => 'Nom du bénéficiaire'))
-            ->add('email', EmailType::class, array('label' => 'Email du bénéficiaire'))
-            //ICC : IntegerType does not work for bigint : rounding after 14 figures (Account Ids in Cyclos have 19)
-            ->add('ICC',   TextType::class,array('label'=>'Identifiant de Compte Cairn(ICC)'))
+            ->add('cairn_user', AccountType::class, array('label' => 'Nom du bénéficiaire','attr'=>array('placeholder'=>'email ou nom')))
             ->add('add', SubmitType::class, array('label' => 'Ajouter'))
             ->getForm();
 
@@ -345,34 +278,35 @@ class BeneficiaryController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-                //                $re_email ='#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#' ;
-                //                $re_name ='#^[\w\.]+$#' ;
-                //                $re_ICC = '#^[-]?[0-9]+$#';
-                //                preg_match_all($re_email,$dataForm['email'], $matches_email, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_name, $dataForm['name'], $matches_name, PREG_SET_ORDER, 0);
-                //                preg_match_all($re_ICC, $dataForm['ICC'], $matches_ICC, PREG_SET_ORDER, 0);
-
-
-                $result = $this->isValidBeneficiary($dataForm);
-                if(! $result->isValid){
+                if($dataForm['cairn_user'] == null){
                     if( $this->get('cairn_user.api')->isApiCall()){
-                        $response = new Response($result->errorMessage);
+                        $response = new Response('Votre recherche ne correspond à aucun compte');
                         $response->setStatusCode(Response::HTTP_BAD_REQUEST);
                         $response->headers->set('Content-Type', 'application/json');
                         return $response;
                     }
-                    $session->getFlashBag()->add('error',$result->errorMessage);
+                    $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
                     return new RedirectResponse($request->getRequestUri());
                 }
 
+                if ($dataForm['cairn_user'] == $currentUser){
+                    if( $this->get('cairn_user.api')->isApiCall()){
+                        $response = new Response('Oups, vous ne pouvez pas vous ajouter vous-même...');
+                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                        $response->headers->set('Content-Type', 'application/json');
+                        return $response;
+                    }
+                    $session->getFlashBag()->add('error','Oups, vous ne pouvez pas vous ajouter vous-même...');
+                    return new RedirectResponse($request->getRequestUri());
+                }
 
                 //check that beneficiary is not already in database, o.w create new one
-                $existingBeneficiary = $result->existingBeneficiary;
+                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$dataForm['cairn_user'],'ICC'=>$dataForm['cairn_user']->getMainICC()));
 
                 if(! $existingBeneficiary){
                     $beneficiary = new Beneficiary();
-                    $beneficiary->setUser($result->user);
-                    $beneficiary->setICC($result->ICC);
+                    $beneficiary->setUser($dataForm['cairn_user']);
+                    $beneficiary->setICC($dataForm['cairn_user']->getMainICC());
                 }
                 else{ 
                     $beneficiary = $existingBeneficiary;

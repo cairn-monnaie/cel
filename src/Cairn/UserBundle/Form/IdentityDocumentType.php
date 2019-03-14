@@ -16,7 +16,7 @@ class IdentityDocumentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('file', FileType::class,array('label'=>'Pièce d\'identité','required'=>false,
+            ->add('file', FileType::class,array('label'=>'image','required'=>true,
                 'constraints'=>array(
                     new Assert\File(array(
                         'maxSize'=>'500k',
@@ -26,11 +26,11 @@ class IdentityDocumentType extends AbstractType
                         'mimeTypesMessage'=>'Les formats valides sont pdf, jpeg, jpg, et png',
                         'mimeTypes'=>array('image/jpeg','image/jpg','image/png','application/pdf')
                     ))
-                )
+                ),
             ));
 
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -49,5 +49,10 @@ class IdentityDocumentType extends AbstractType
         return 'cairn_userbundle_id_document';
     }
 
+
+    public function getParent()
+    {
+        return FileType::class;
+    }
 
 }

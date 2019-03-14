@@ -9,43 +9,34 @@
 
 {% block body %}
     {{parent()}} 
-     <h2> Espace Professionnel {{ app.user.name }}</h2>                                                  
-    <h3> {{ 'now'|date('d - m -Y') }} </h3>                                                                               
+     <h2> <i class="material-icons left">favorite</i> Mes bénéficiaires </h2>
 
-    <div class="body_wrapper">
-        <div id="table_upper_block">
-            <p> Mes bénéficiaires </p>
-            <div class="a_bloc_actions">
-                <ul>    
-                    <li><a href="{{path('cairn_user_beneficiaries_add')}}">Ajouter </a></li>
-                </ul>
-            </div>
-        </div>
-        <table>                                                                    
-             <thead>                                                                    
-                 <tr>                                                                   
-                     <th> Nom </th>                                                    
-                     <th> Coordonnées de compte</th>                                          
-                     <th> Actions </th>                                                 
-                 </tr>                                                                  
-             </thead>                                                                   
-                                                                                        
-             <tbody>                                                                    
-             {% for beneficiary in beneficiaries %}                                      
-                 <tr>                                                                   
-                     <td>{{ beneficiary.user.name}} </td>                                    
-                     <td>{{ beneficiary.ICC}}</td>                                                              
-                     <td><a href="{{path('cairn_user_beneficiaries_remove', {'id' : beneficiary.id})}}"> Supprimer</a> 
-                         |
-                         <a href="{{path('cairn_user_beneficiaries_edit', {'id' : beneficiary.id})}}"> Modifier</a>           
-                    </td>                                 
-                 </tr>                                                                  
-             {% else %}
-                Pas encore de bénéficiaire !
-             {% endfor %}                                                               
-             </tbody>                                                                   
-        </table>    
-    </div>
-{% endblock %}              
+    <a href="{{path('cairn_user_beneficiaries_add')}}" class="btn blue"><i class="material-icons left">person_add</i>ajouter un bénéficiaire</a>
+
+    <table>
+         <thead>
+             <tr>
+                 <th> Nom </th>
+                 <th> Coordonnées de compte</th>
+                 <th> Actions </th>
+             </tr>
+         </thead>
+
+         <tbody>
+         {% for beneficiary in beneficiaries %}
+             <tr>
+                 <td>{{ beneficiary.user}} </td>
+                 <td>{{ beneficiary.ICC}}</td>
+                 <td><a href="{{path('cairn_user_beneficiaries_remove', {'id' : beneficiary.id})}}" class="red-text"><i class="material-icons left">close</i> Supprimer</a>
+                </td>
+             </tr>
+         {% else %}
+             <tr>
+                 <td colspan="3" style="text-align: center">Pas encore de bénéficiaire !</td>
+             </tr>
+         {% endfor %}
+         </tbody>
+    </table>
+{% endblock %}
 
 

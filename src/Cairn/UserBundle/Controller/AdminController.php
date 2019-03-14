@@ -114,7 +114,7 @@ class AdminController extends Controller
                             $password = new \stdClass();                                   
                             $password->assign = true;                                      
                             $password->type = 'login';
-                            $password->value = $temporaryPassword;                  
+                            $password->value = $temporaryPassword;
                             $password->confirmationValue = $password->value;
                             $userDTO->passwords = $password;                               
 
@@ -124,7 +124,7 @@ class AdminController extends Controller
                                 $groupName = $this->getParameter('cyclos_group_persons');  
                             }else{                                                                 
                                 $groupName = $this->getParameter('cyclos_group_network_admins');
-                            }   
+                            }
 
                             $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
 
@@ -133,6 +133,9 @@ class AdminController extends Controller
 
                             $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
                             $user->setCyclosID($newUserCyclosID);
+                            $icc_account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($newUserCyclosID);
+                            $icc = $icc_account->number;
+                            $user->setMainICC($icc);
 
 
                             //activate user and send email to user

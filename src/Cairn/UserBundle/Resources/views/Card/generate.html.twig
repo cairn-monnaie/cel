@@ -3,9 +3,6 @@
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
 {% block title %}{% endblock %}                                                                 
-                                                                               
-{%block stylesheets %}
-{% endblock %}
 
 {% block body %}
     {{parent()}} 
@@ -18,9 +15,3 @@
         {{form_end(form) }}   
     </div>
 {% endblock %}              
-
-{% block javascripts %}
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
-
-{% endblock %}

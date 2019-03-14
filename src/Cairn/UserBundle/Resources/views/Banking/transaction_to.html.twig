@@ -8,14 +8,14 @@
         <h2>Nouveau virement</h2>
         <div id="transaction_to">
             {% if (accounts | length  > 1) %}
-            <a href="{{path('cairn_user_banking_transaction_request',{'frequency': frequency, 'to':'self'})}}">Entre vos comptes</a>
+            <a href="{{path('cairn_user_banking_transaction_request',{'frequency': frequency, 'to':'self'})}}"  class="btn teal"><i class="material-icons left">swap_horiz</i>Entre vos comptes</a>
             {% endif %}
             {% if (app.user.beneficiaries | length > 0) %}
             <a href="{{path('cairn_user_banking_transaction_request',{'frequency':frequency,'to':'beneficiary'})}}" class="btn cyan"><i class="material-icons left">favorite</i>Vers un bénéficiaire enregistré</a>
+            {% else %}
+                <a href="{{path('cairn_user_beneficiaries_add')}}" class="btn blue"><i class="material-icons left">person_add</i>ajouter un bénéficiaire</a>
             {% endif %}
-            <a href="{{path('cairn_user_banking_transaction_request',{'frequency':frequency,'to':'new'})}}" class="btn"><i class="material-icons left">person_add</i>Vers un nouveau bénéficiaire</a>
+            {#<a href="{{path('cairn_user_banking_transaction_request',{'frequency':frequency,'to':'new'})}}" class="btn blue"><i class="material-icons left">person_add</i>Vers un nouveau bénéficiaire</a>#}
         </div>
     </div>
 {% endblock %}
-
-
