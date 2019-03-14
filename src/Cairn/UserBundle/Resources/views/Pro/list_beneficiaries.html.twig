@@ -16,6 +16,7 @@
     <table>
          <thead>
              <tr>
+                 <th> </th>
                  <th> Nom </th>
                  <th> Coordonnées de compte</th>
                  <th> Actions </th>
@@ -25,6 +26,7 @@
          <tbody>
          {% for beneficiary in beneficiaries %}
              <tr>
+                 <td>{% if beneficiary.user.image %}<img class="circle responsive-img" src="/{{ beneficiary.user.image.webPath}}" alt="" style="width: 40px;">{% endif %}</td>
                  <td>{{ beneficiary.user}} </td>
                  <td>{{ beneficiary.ICC}}</td>
                  <td><a href="{{path('cairn_user_beneficiaries_remove', {'id' : beneficiary.id})}}" class="red-text"><i class="material-icons left">close</i> Supprimer</a>
@@ -32,7 +34,7 @@
              </tr>
          {% else %}
              <tr>
-                 <td colspan="3" style="text-align: center">Pas encore de bénéficiaire !</td>
+                 <td colspan="4" style="text-align: center">Pas encore de bénéficiaire !</td>
              </tr>
          {% endfor %}
          </tbody>

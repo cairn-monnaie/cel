@@ -3,6 +3,7 @@
 namespace Cairn\UserBundle\Controller;
 
 use Cairn\UserBundle\CairnUserBundle;
+use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\ZipCity;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
@@ -108,7 +109,24 @@ class DefaultController extends Controller
             $users = $em->getRepository(User::class)->findAll();
             $returnArray = array();
             foreach ($users as $user){
-                $returnArray[] = array('name' => $user->getAutocompleteLabel() ,'icon' => ($user->getImage() ? '/uploads/img/' . $user->getImage()->getId() .'.'. $user->getImage()->getUrl(): '')) ;
+                $image = $user->getImage();
+                $returnArray[] = array('name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
+            }
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
+
+    public function beneficiaryImageAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $beneficiary = $em->getRepository(Beneficiary::class)->find($request->get('id'));
+            $returnArray = array() ;
+            if ($beneficiary && $image = $beneficiary->getUser()->getImage()){
+                $returnArray = array(
+                    'name' => $beneficiary->getUser()->getAutocompleteLabel() ,
+                    'icon' => (($image && $image->getUrl()) ? '/'.$image->getWebPath() : ''),
+                    'alt' => $beneficiary->getUser()->getName()) ;
             }
             return new JsonResponse($returnArray);
         }

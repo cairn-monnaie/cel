@@ -65,6 +65,11 @@ cairn_zipcities_ajax:
     methods: POST
     defaults: { _controller: CairnUserBundle:Default:zipCities, _format: json }
 
+cairn_beneficiary_image_ajax:
+    path:     beneficiary/image
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Default:beneficiaryImage, _format: json }
+
 cairn_accounts_ajax:
     path:     accounts
     methods: POST

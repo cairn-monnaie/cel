@@ -1,43 +1,24 @@
 $(document).ready(function() {
-    $('select').material_select();
-    $('.sidenav').hide();
-    $('.sidenav-trigger').hide();
-    $('.sidenav').sideNav({
-        menuWidth: 300, // Default is 300
-        edge: 'left', // Choose the horizontal origin
-        closeOnClick: true, // Closes side-nav on <a> clicks, useful for Angular/Meteor
-        draggable: true, // Choose whether you can drag to open on touch screens,
-        onOpen: function(el) { /* Do Stuff */ }, // A function to be called when sideNav is opened
-        onClose: function(el) { /* Do Stuff */ }, // A function to be called when sideNav is closed
-    });
-    $('.modal').modal();
-    $('.tooltipped').tooltip();
-    $(".dropdown-button").dropdown();
+    M.AutoInit();
 
-    $('.datepicker').pickadate({
-        selectMonths: true, // Creates a dropdown to control month
-        selectYears: 2, // Creates a dropdown of 15 years to control year,
-        close: 'Ok',
-        closeOnSelect: true // Close upon selecting a date,
+    $('.datepicker_cairn').attr('type','text').datepicker({
+        autoClose: true,
+        showClearBtn: false,
+        format: 'dd-mm-yyyy',
+        firstDay: 1,
+        i18n: {
+            months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+            monthsShort: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'],
+            weekdays: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+            weekdaysShort: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+            clear: 'Effacer',
+            close: 'Fermer',
+            cancel: 'Annuler'
+        },
     });
 });
 
-jQuery.extend( jQuery.fn.pickadate.defaults, {
-    monthsFull: [ 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre' ],
-    monthsShort: [ 'Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec' ],
-    weekdaysFull: [ 'Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi' ],
-    weekdaysShort: [ 'Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam' ],
-    today: 'Aujourd\'hui',
-    clear: 'Effacer',
-    close: 'Fermer',
-    firstDay: 1,
-    format: 'yyyy-mm-dd',
-    formatSubmit: 'yyyy-mm-dd',
-    labelMonthNext:"Mois suivant",
-    labelMonthPrev:"Mois précédent",
-    labelMonthSelect:"Sélectionner un mois",
-    labelYearSelect:"Sélectionner une année"
-});
+
 
 defer(function(){
     $("[name*=\"[identityDocument][file]\"]").dropify({

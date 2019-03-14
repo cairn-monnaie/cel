@@ -11,6 +11,18 @@ body {
   width: 100%;
 }
 
+.rotateimg90 {
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+input[type=date]::-webkit-input-placeholder {
+  visibility: hidden !important;
+}
+
 .card-code, .card-position {
   display: inline-block;
   background: #eaeaea;
