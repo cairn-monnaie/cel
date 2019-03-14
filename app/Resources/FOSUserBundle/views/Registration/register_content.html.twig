@@ -80,7 +80,13 @@
         {{ form_widget(form.description) }}
         {{ form_label(form.description) }}
     </div>
-    <div class="col s12">
+    <div class="col s6">
+        <label>
+            <input type="checkbox" name="terms" value="Yes" required/>
+            <span>J'ai lu et j'accepte <a href="{{ cgu_url }}" target="_blank">les CGU du e-cairn</a></span>
+        </label>
+    </div>
+    <div class="col s6 right-align">
         <button type="submit"class="btn">Inscription</button>
     </div>
     {{ form_end(form) }}

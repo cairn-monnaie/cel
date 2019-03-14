@@ -41,6 +41,7 @@ parameters:
     cairn_default_reconversion_description : Reconversion cairns-euros
 
     cairn_default_register_url : ~
+    cairn_default_cgu_url : ~
     cyclos_group_pros : 'Adhérents prestataires'
     cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
