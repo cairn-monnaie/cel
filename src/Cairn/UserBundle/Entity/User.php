@@ -44,7 +44,14 @@ class User extends BaseUser
      * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
-    private $cyclosID; 
+    private $cyclosID;
+
+
+    /**
+     * @orm\column(name="main_icc", type="bigint", unique=true, nullable=true)
+     * @Assert\Length(min=9, minMessage="Contient au moins {{ limit }} chiffres")
+     */
+    private $mainICC;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Address", cascade={"persist","remove"})
@@ -147,6 +154,19 @@ class User extends BaseUser
         $this->setPhoneNumberActivationTries(0);
     }
 
+    public function __toString()
+    {
+        if ($this->getFirstname()){
+            return $this->getFirstname().' '.$this->getName();
+        }else{
+            return $this->getName();
+        }
+    }
+
+    public function getAutocompleteLabel(){
+        return $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ('.  $this->getEmail() .')';
+    }
+
     public function getCity()
     {
         return $this->getAddress()->getZipCity()->getCity();
@@ -220,6 +240,31 @@ class User extends BaseUser
     public function getCyclosID()
     {
         return $this->cyclosID;
+    }
+
+
+    /**
+     * Set mainICC
+     *
+     * @param integer $main_icc
+     *
+     * @return User
+     */
+    public function setMainICC($main_icc)
+    {
+        $this->mainICC = $main_icc;
+
+        return $this;
+    }
+
+    /**
+     * Get mainICC
+     *
+     * @return integer
+     */
+    public function getMainICC()
+    {
+        return $this->mainICC;
     }
 
     public function fromEntityToDTO()

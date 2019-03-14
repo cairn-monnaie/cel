@@ -5,6 +5,7 @@ namespace Cairn\UserBundle\Form;
 use Cairn\UserBundle\Form\AccountType;
 use FOS\UserBundle\Event\FormEvent;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -33,6 +34,7 @@ class TransactionType extends AbstractType
 
     public function __construct(TokenStorageInterface $tokenStorage, ValidatorInterface $validator)
     {
+        die('hello from src/Cairn/UserBundle/Form/TransactionType.php ?');
         $this->tokenStorage = $tokenStorage;
         $this->validator = $validator;
     }
@@ -49,8 +51,8 @@ class TransactionType extends AbstractType
         }
 
         $builder
-            ->add('amount',     NumberType::class, array('label'=>'Montant', 'scale'=>2))
-            ->add('toAccount',  AccountType::class, array('label'=>'Compte à créditer'))
+            ->add('amount',     NumberType::class, array('label'=>'Montant du virement', 'scale'=>2))
+            ->add('toAccount',  AccountType::class, array('label'=>'Compte à créditer','attr'=>array('placeholder'=>'email, ICC ou nom')))
             ->add('description',TextareaType::class, array('label' => 'motif', 'required' => false))
             ->add('save',       SubmitType::class, array('label' => 'Suivant'));
 
@@ -62,11 +64,13 @@ class TransactionType extends AbstractType
                 $debitorVO = $symfonyCyclosBidge->fromSymfonyToCyclosUser($user);
                 $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
 
-                $form->add('fromAccount', EntityType::class, array(
-                    'class' => AccountType::class,
+                $form->add('fromAccount', ChoiceType::class, array(
                     'placeholder' => '--- from ---',
                     'choices' => $selfAccounts,
-                    'choice_label' => 'name',
+                    'choice_label' =>
+                        function($category, $key, $value) {
+                            return strtoupper($category['name']);
+                        },
                     'multiple' => false,
                     'required' => true,
                     'label' => 'Compte à débiter'

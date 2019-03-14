@@ -51,7 +51,7 @@ class MessageNotificator
 
     protected $smsProviderUrl;
 
-    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating, $technicalServices,$noreply,$env,$smsApiToken,$smsProviderUrl)
+    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env,string $smsApiToken, string $smsProviderUrl)
     {
         $this->userRepo = $userRepo;
         $this->smsRepo = $smsRepo;

@@ -21,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Routing\Router;
 use Symfony\Component\DependencyInjection\Container;
 
 use Cyclos;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Commands
 {
@@ -38,7 +39,7 @@ class Commands
 
     protected $container;
 
-    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating, $cardAssociationDelay, $emailValidationDelay, Router $router, Container $container)
+    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating,string $cardAssociationDelay,string $emailValidationDelay, Router $router, ContainerInterface $container)
     {
         $this->em = $em;
         $this->messageNotificator = $messageNotificator;
@@ -110,7 +111,6 @@ class Commands
 
             try{
                 $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($username);
-
                 $isInAdminGroup = $this->container->get('cairn_user_cyclos_user_info')->isInGroup($group ,$userVO->id);
 
                 if(!$isInAdminGroup){
@@ -132,7 +132,7 @@ class Commands
             $new_admin->setName($userData->name);
             $new_admin->setEmail($userData->email);
             $new_admin->setCyclosID($id);
-
+            $new_admin->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($id)->number);
 
             $new_admin->setPlainPassword($password);
             $new_admin->setEnabled(true);
@@ -265,7 +265,8 @@ class Commands
 
             echo 'INFO: Creation de l\'utilisateur "' . $cyclosUserData->name . '" groupe("'. $cyclosUserData->group->name .'")'. "\n";
 
-            $doctrineUser->setCyclosID($cyclosUserData->id);                                      
+            $doctrineUser->setCyclosID($cyclosUserData->id);
+            $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
             $doctrineUser->setEmail($cyclosUserData->email);

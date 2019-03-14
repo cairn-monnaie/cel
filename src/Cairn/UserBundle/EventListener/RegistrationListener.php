@@ -184,13 +184,6 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
-        //2. CREATE USERNAME
-        if (!$user->getUsername()) {
-            $username = $this->generateUsername($user);
-            $user->setUsername($username);
-        }
-
-        //3. CYCLOS
         //set cyclos ID here to pass the constraint cyclos_id not null
         $cyclosID = rand(1, 1000000000);
         $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
@@ -199,6 +192,7 @@ class RegistrationListener
             $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
         }
         $user->setCyclosID($cyclosID);
+        $user->setMainICC(null);
 
 //        if($this->container->get('cairn_user.api')->isApiCall()){
 //            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
@@ -209,35 +203,5 @@ class RegistrationListener
 //        }
     }
 
-    private function generateUsername(User $user)
-    {
-        if (!$user->getName()) {
-            return null;
-        }
-
-        $username = User::makeUsername($user->getName(),$user->getFirstname());
-        $em = $this->container->get('doctrine.orm.entity_manager');
-        $qb = $em->createQueryBuilder();
-        $usernames = $qb->select('u')->from('CairnUserBundle:User', 'u')
-            ->where($qb->expr()->like('u.username', $qb->expr()->literal($username . '%')))
-            ->orderBy('u.username', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        if (count($usernames)) {
-            if (count($usernames)==1 && $usernames[0]->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO')){
-                //if only one exist and is the part version of the pro we want create
-                $username = $username.'_pro';
-            }else{
-                $count = 1;
-                $first = $usernames[0]->getUsername();
-                if(preg_match_all('/\d+/', $first, $numbers)) {
-                    $count = end($numbers[0]) + 1;
-                }
-                $username = $username . + $count;
-            }
-        }
-        return $username;
-    }
 
 } 

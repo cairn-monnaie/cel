@@ -1,6 +1,7 @@
 $crevette: rgb(240, 114, 84);
 $yellow: rgb(255, 226, 83);
 $maincolor: rgb(240, 114, 84);
+$red: #e74c3c;
 
 html {
   height: 100%;
@@ -9,6 +10,16 @@ body {
   min-height: 100%;
   height: 100%;
 }
+.w-100{
+  width: 100%;
+}
+.card-code,.card-position{
+  display: inline-block;
+  background: #eaeaea;
+  padding: 2px 10px;
+  font-family: sans-serif;
+  border: 1px solid #bbbbbb;
+}
 .nav-wrapper > ul{
   height: 100%;
 }
@@ -16,6 +27,9 @@ body {
   height: 100%;
   padding: 5px;
   box-sizing: border-box;
+  a{
+    height: 100%;
+  }
 }
 #logo-container img,#logo_user img{
   height: 100%;
@@ -24,11 +38,16 @@ body {
   background-color: $crevette;
    .login_form{
     margin-top: 50px;
-    background: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.95);
     padding: 20px 0px;
   }
   nav{
     display: none;
+  }
+}
+form{
+  .error{
+    color: $red;
   }
 }
 .teal.success{
@@ -52,9 +71,27 @@ h1 {
 h2 {
   font-size: 2.50rem;
 }
+h3 {
+  font-size: 2.0rem;
+}
 a:hover > img{
   opacity: 0.5;
 }
 nav{
   background-color: $crevette;
+}
+.dropify-wrapper + label{
+  display: none;
+}
+
+.card.transaction{
+  padding-top: 50px;
+  .card-content > img{
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    margin-left: -50px;
+  }
 }

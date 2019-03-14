@@ -52,7 +52,7 @@ class Security
 
     protected $smsNbPaymentsBlock;
 
-    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret,$smsMaxAmountWithoutSecurity,$smsAmountBlock,$smsNbPaymentsBlock)
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret,string $smsMaxAmountWithoutSecurity,string $smsAmountBlock,string $smsNbPaymentsBlock)
     {
         $this->userRepo = $userRepo;
         $this->operationRepo = $operationRepo;

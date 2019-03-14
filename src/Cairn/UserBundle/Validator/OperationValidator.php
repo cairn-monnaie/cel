@@ -29,7 +29,7 @@ class OperationValidator extends ConstraintValidator
     private function validateActiveAccount($account,$path)
     {
 
-        $ICC = $account['number'];
+        $ICC = $account->number;
         if(!$ICC){                                    
             $this->context->buildViolation('Le compte n\'a pas été sélectionné')
                 ->atPath($path)                                        
@@ -55,9 +55,9 @@ class OperationValidator extends ConstraintValidator
     }
 
 
-    private function validatePassiveAccount($account,$path){
-        $email = $account['email'];
-        $ICC = $account['number']; 
+    private function validatePassiveAccount($beneficiary,$path){
+        $email = $beneficiary->getUser()->getEmail();
+        $ICC = $beneficiary->getICC();
 
         if(! ($ICC || $email)){ 
             $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
@@ -159,7 +159,7 @@ class OperationValidator extends ConstraintValidator
                 //then, that the balance is sufficient to make the payment
                 $this->validateActiveAccount($operation->getFromAccount(),'fromAccount');
                 if(count($this->context->getViolations()) == 0){
-                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['number']);
+                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()->number);
                     $this->validateBalance($operation->getType(), $account,$operation->getAmount());
                 }
                 $this->validatePassiveAccount($operation->getToAccount(),'toAccount');

@@ -46,6 +46,10 @@ class Address
     private $zipCity;
 
 
+    public function __toString()
+    {
+        return $this->getStreet1().' '.$this->getStreet2().' '.$this->getZipCity()->getName();
+    }
 
     /**
      * Get id
