@@ -5,7 +5,6 @@ services:
     restart: always
 
   engine:
-    restart: always
-
-  front:
+    volumes:
+      - ".:/var/www/Symfony"
     restart: always
