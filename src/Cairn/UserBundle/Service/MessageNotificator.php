@@ -70,7 +70,7 @@ class MessageNotificator
         $apiToken = '&api_token='.$this->smsApiToken;
         $full = '&full=0';
         $filter = '&filters[name]='.$campaignName;
-        $url = $this->smsProvitemplating.'/campaign/list/?'.$apiToken.$filter.$full;
+        $url = $this->smsProviderUrl.'/campaign/list/?'.$apiToken.$filter.$full;
 		$ch = \curl_init($url);
         
         // Set the CURL options
@@ -102,58 +102,58 @@ class MessageNotificator
 
     public function sendSMS($phoneNumber, $content)
     {
-        $action = ($this->env == 'prod') ? 'send' : 'test';
-        $action = '&action='.$action;
-
-        //get campaign ID
-
-        $cmpID = $this->getCampaignID('sms_payment');
-
-        if(! $cmpID){
-            $subject = 'Service SMS indisponible';
-            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
-            $from = $this->getNoReplyEmail();
-            $to = $this->getMaintenanceEmail();
-
-            $this->notifyByEmail($subject, $from, $to, $body);
-            return;
-        }
-
-        $campaignID = '&campaign_id='.$cpmID;
-        $messageID = '&message_id='.$msgID;
-
-        $mobile = '&mobile='.$phoneNumber;
-        $apiToken = 'api_token='.$this->smsApiToken;
-        $type='&type=text';
-
-        $url = $this->smsProvitemplating.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
-		$ch = \curl_init($url);
-        
-        // Set the CURL options
-        $options = array(
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/json'),
-        );
-
-        \curl_setopt_array ($ch, $options);
-
-		// Execute the request
-		$json = \curl_exec($ch);
-		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$result = \json_decode($json);
-
-        //TODO : define what a good result is. For now, we say code = 200
-        if($code != 200){
-            $subject = 'Service SMS indisponible';
-            $body = 'Erreur lors de l envoi SMS.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
-            $from = $this->getNoReplyEmail();
-            $to = $this->getMaintenanceEmail();
-
-            $this->notifyByEmail($subject, $from, $to, $body);
-            return;
-        }
-//        $email = 'whoknows@test.com';
-//        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
+//        $action = ($this->env == 'prod') ? 'send' : 'test';
+//        $action = '&action='.$action;
+//
+//        //get campaign ID
+//
+//        $cmpID = $this->getCampaignID('sms_payment');
+//
+//        if(! $cmpID){
+//            $subject = 'Service SMS indisponible';
+//            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
+//            $from = $this->getNoReplyEmail();
+//            $to = $this->getMaintenanceEmail();
+//
+//            $this->notifyByEmail($subject, $from, $to, $body);
+//            return;
+//        }
+//
+//        $campaignID = '&campaign_id='.$cpmID;
+//        $messageID = '&message_id='.$msgID;
+//
+//        $mobile = '&mobile='.$phoneNumber;
+//        $apiToken = 'api_token='.$this->smsApiToken;
+//        $type='&type=text';
+//
+//        $url = $this->smsProviderUrl.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
+//		$ch = \curl_init($url);
+//        
+//        // Set the CURL options
+//        $options = array(
+//                CURLOPT_RETURNTRANSFER => true,
+//                CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/json'),
+//        );
+//
+//        \curl_setopt_array ($ch, $options);
+//
+//		// Execute the request
+//		$json = \curl_exec($ch);
+//		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//		$result = \json_decode($json);
+//
+//        //TODO : define what a good result is. For now, we say code = 200
+//        if($code != 200){
+//            $subject = 'Service SMS indisponible';
+//            $body = 'Erreur lors de l envoi SMS.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
+//            $from = $this->getNoReplyEmail();
+//            $to = $this->getMaintenanceEmail();
+//
+//            $this->notifyByEmail($subject, $from, $to, $body);
+//            return;
+//        }
+        $email = 'whoknows@test.com';
+        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
         $sms = new Sms($phoneNumber,$content,Sms::STATE_SENT);
 
         return $sms;
