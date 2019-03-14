@@ -95,6 +95,10 @@ h3 {
   font-size: 2rem;
 }
 
+h4 {
+  font-size: 1.8rem;
+}
+
 a:hover > img {
   opacity: 0.5;
 }

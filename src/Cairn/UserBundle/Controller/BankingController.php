@@ -182,12 +182,12 @@ class BankingController extends Controller
                     'label' => 'depuis',
                     'widget' => 'single_text',
                     'data' => $begin,
-                    'required'=>false))
+                    'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                     ->add('end',       DateType::class, array(
                         'label' => 'jusqu\'à',
                         'widget' => 'single_text',
                         'data'=> $end,
-                        'required'=>false))
+                        'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                         ->add('minAmount', NumberType::class,array(
                             'label'=>'Montant minimum',
                             'required'=>false))
@@ -197,7 +197,7 @@ class BankingController extends Controller
                                 ->add('keywords',  TextType::class,array(
                                     'label'=>'Mots-clés',
                                     'required'=>false))
-                                    ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
+                                    ->add('save',      SubmitType::class, array('label' => 'Filtrer'))
                                     ->getForm();
 
         if($request->isMethod('POST')){ //form filled and submitted

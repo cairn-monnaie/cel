@@ -1,7 +1,6 @@
 {# src/Cairn/UserBundle/Resources/views/Banking/accounts_table.html.twig #}
 
     <table>
-    <caption>  Les comptes  </caption>
     <thead>
         <tr>
             <th> Nom du compte </th>
@@ -39,7 +38,9 @@
                 </td>
             </tr>
         {% else %}
-            Pas de compte ouvert
+            <tr>
+                <td colspan="5" class="center-align">Pas de compte ouvert</td>
+            </tr>
         {% endfor %}
     </tbody>
 
