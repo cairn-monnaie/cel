@@ -36,8 +36,8 @@ RUN cd /tmp \
 RUN cd /var/www/Symfony \
     && composer install \
     && php bin/console cache:clear --env=dev \
-    && echo "chmod -R www-data:www-data /var/www/Symfony" \
-    && chown -R www-data:www-data /var/www/Symfony
+    && echo "chmod -R www-data:www-data /var/www/Symfony" #\
+#    && chown -R www-data:www-data /var/www/Symfony
 
 WORKDIR /var/www/Symfony
 
