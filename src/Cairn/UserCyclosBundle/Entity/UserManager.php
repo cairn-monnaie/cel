@@ -38,7 +38,7 @@ class UserManager
     }
     public function changeStatusUser($params)
     {
-        return $this->userStatusService->changeStatus($params);
+        $this->userStatusService->changeStatus($params);
     }
 
 }
