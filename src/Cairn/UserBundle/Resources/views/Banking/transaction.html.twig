@@ -16,7 +16,7 @@
                     {% if app.user.image.url is defined %}
                         <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
                     {% else %}
-                        <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}" alt="Logo utilisateur" class="circle responsive-img">
                     {% endif %}
                     <span class="card-title">{{ app.user.name }}</span>
                     {{ form_row(form.fromAccount) }}
@@ -40,6 +40,7 @@
         <div class="col l5 s12">
             <div class="card blue-grey darken-1 transaction">
                 <div class="card-content white-text">
+                    <img id="to_image" src="" alt="" class="circle responsive-img hide">
                     <span class="card-title">Destinataire</span>
                     {{ form_widget(form.toAccount) }}
                     {{ form_row(form.reason) }}
@@ -55,3 +56,30 @@
 
 {% endblock %}
 
+{% block javascripts %}
+<script>
+    function getBeneficiaryImage(id) {
+        $('#to_image').hide('slow',function () {
+            $('#to_image').removeClass('hide');
+        });
+        jQuery.ajax({
+            type: 'POST',
+            data: {'id':id},
+            url: "{{ path('cairn_beneficiary_image_ajax') }}",
+            success: function (response) {
+                var beneficiary = response;
+                if (beneficiary.icon){
+                    $('#to_image').attr('src',beneficiary.icon).attr('alt',beneficiary.alt).show('slow');
+                }else{
+                    $('#to_image').attr('src','').attr('alt','');
+                }
+            }
+        });
+    };
+    $('#cairn_userbundle_simpleoperation_toAccount').change(function () {
+        getBeneficiaryImage($(this).val());
+    });
+
+    getBeneficiaryImage($('#cairn_userbundle_simpleoperation_toAccount').val());
+</script>
+{% endblock %}

@@ -127,7 +127,7 @@ class UserValidator extends ConstraintValidator
             }
         }
 
-        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',$user->getEmail())){
+        if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',strtolower($user->getEmail()))){
             $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.")
                 ->atPath('email')
                 ->addViolation();
