@@ -25,6 +25,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class OperationType extends AbstractType
 {
+
     private $tokenStorage;
     /**
      * @var ValidatorInterface
@@ -48,6 +49,7 @@ class OperationType extends AbstractType
         $this->bridgeToSymfonyService = $bridgeToSymfony;
     }
 
+
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
 
@@ -68,6 +70,7 @@ class OperationType extends AbstractType
 
         $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) use ($user) {
             $form = $event->getForm();
+            $operation = $event->getData();
             if (is_object($user)) {
                 $debitorVO = $this->bridgeToSymfonyService->fromSymfonyToCyclosUser($user);
                 $selfAccounts = $this->accountInfoService->getAccountsSummary($debitorVO->id);
@@ -90,17 +93,20 @@ class OperationType extends AbstractType
 
                 $toAccounts = $user->getBeneficiaries();
 
-                $form->add('toAccount', ChoiceType::class, array(
-                    'placeholder' => (count($toAccounts) > 1) ? '--- virement à ---' : false,
-                    'choices' => $toAccounts,
-                    'choice_label' => 'autocomplete_label',
-                    'choice_value' => 'id',
-                    'multiple' => false,
-                    'required' => true,
-                    'label' => 'Beneficiaire à créditer'
-                ));
-
-                //$builder->add('toAccount',  AccountType::class, array('label'=>'Compte à créditer'));
+                if ($operation->getToAccountNumber()=='beneficiary'){
+                    $form->add('toAccount', ChoiceType::class, array(
+                        'placeholder' => (count($toAccounts) > 1) ? '--- virement à ---' : false,
+                        'choices' => $toAccounts,
+                        'choice_label' => 'autocomplete_label',
+                        'choice_value' => 'id',
+                        'multiple' => false,
+                        'required' => true,
+                        'label' => 'Beneficiaire à créditer'
+                    ));
+                }else{
+                    $form->add('toAccount',  AccountType::class, array('label'=>'Compte à créditer'));
+                }
+                $operation->setToAccountNumber(null);
             }
         });
     }

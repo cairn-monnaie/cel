@@ -425,6 +425,7 @@ class BankingController extends Controller
 
         if($frequency == 'unique'){
             $operation = new Operation();
+            $operation->setToAccountNumber($to); //todo: hack, make it cleaner
             $form = $this->createForm(SimpleOperationType::class, $operation);
         }
         //        else{

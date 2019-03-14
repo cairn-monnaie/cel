@@ -33,7 +33,7 @@
         {% set attr = attr|merge({class: (attr.class|default('') ~ 'account_autocomplete')|trim}) %}
         {{ form_label(form) }}
         {{ form_errors(form) }}
-        <input type="text" autocomplete="off" class="{{ attr.class }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
+        <input type="text" autocomplete="off" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
     {% endspaceless %}
     <script>
         defer(function(){
