@@ -345,43 +345,6 @@ class UserController extends Controller
      */
     public function listUsersAction(Request $request, $_format)
     {
-        $currentUserID = $this->getUser()->getID();
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-
-        $pros = new \stdClass();
-        $pros->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',true);
-        $pros->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',false);
-        $pros->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PRO');
-        $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
-
-        $persons = new \stdClass();
-        $persons->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',true);
-        $persons->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',false);
-        $persons->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PERSON');
-        $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
-
-        $admins = new \stdClass();
-        $admins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',true);
-        $admins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',false);
-        $admins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_ADMIN');
-
-        $superAdmins = new \stdClass();
-        $superAdmins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',true);
-        $superAdmins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',false);
-        $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
-
-        $allUsers = array(
-            'pros'=>$pros, 
-            'persons'=>$persons,
-            'admins'=>$admins,
-            'superAdmins'=>$superAdmins,
-        );
-
-        if($_format == 'json'){
-            return $this->json($allUsers);
-        }
-        return $this->render('CairnUserBundle:User:list_users.html.twig',$allUsers);
     }
 
 
@@ -806,11 +769,10 @@ class UserController extends Controller
      */
     public function confirmRemoveUserAction(Request $request, User $user, $_format)
     {
-        $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN'); 
+        $currentUser = $this->getUser();
 
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
-        $currentUser = $this->getUser();
 
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
@@ -839,8 +801,8 @@ class UserController extends Controller
             $form->handleRequest($request);    
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    if($isAdmin){
-                        $redirection = 'cairn_user_users_home';
+                    if($currentUser->isAdmin()){
+                        $redirection = 'cairn_user_users_dashboard';
                         $isRemoved = $this->removeUser($user, $currentUser);
 
                         if($isRemoved){
@@ -849,7 +811,7 @@ class UserController extends Controller
                             $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
                             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
                         }
-                    }else{//is ROLE_PRO or ROLE_PERSON
+                    }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
                         $user->setRemovalRequest(true);
                         $this->get('cairn_user.access_platform')->disable(array($user));
 
@@ -1010,11 +972,11 @@ class UserController extends Controller
                 }else{
                     $session->getFlashBag()->add('success','Tous les comptes ont pu être clôturés avec succès'); 
                 }
-                return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
+                return $this->redirectToRoute('cairn_user_users_dashboard');
 
             }else{
                 $session->getFlashBag()->add('info','Demande de clôture annulée'); 
-                return $this->redirectToRoute('cairn_user_users_home', array('_format'=>$_format));
+                return $this->redirectToRoute('cairn_user_users_dashboard');
             }
         }
         return $this->render('CairnUserBundle:Pro:confirm_remove_pending.html.twig',

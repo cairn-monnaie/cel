@@ -5,7 +5,7 @@
         {% if is_granted("ROLE_ADMIN") %}
             <ul id="admin_dropdown" class="dropdown-content">
                 <li>
-                    <a class="menu-item" href="{{path('cairn_user_users_home')}}"><i class="material-icons">people</i>Membres</a>
+                    <a class="menu-item" href="{{path('cairn_user_users_dashboard')}}"><i class="material-icons">people</i>Membres</a>
                 </li>
             {% if is_granted('ROLE_SUPER_ADMIN') %}
                 <li class="divider"></li>
@@ -48,7 +48,7 @@
         </li>
         {% if is_granted("ROLE_ADMIN") %}
             <li>
-                <a class="menu-item" href="{{path('cairn_user_users_home')}}"><i class="material-icons">people</i>Membres</a>
+                <a class="menu-item" href="{{path('cairn_user_users_dashboard')}}"><i class="material-icons">people</i>Membres</a>
             </li>
             {% if is_granted('ROLE_SUPER_ADMIN') %}
                 <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}">Virements </a></li>

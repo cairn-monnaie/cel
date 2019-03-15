@@ -141,21 +141,22 @@ cairn_user_beneficiaries_remove:
 #    requirements:
 #        id: \d+
 
-cairn_user_users_home:
-    path:     users.{_format}
-    defaults: { _controller: CairnUserBundle:User:listUsers, _format: html }
+cairn_user_users_list:
+    path:     users/list
+    defaults: { _controller: CairnUserBundle:User:listAdherents, _format: html }
     requirements:
-        _format: html|json
-
-cairn_user_users_search:
-    path:     user/search/
-    defaults: { _controller: CairnUserBundle:User:searchUser }
+        _format: html
 
 cairn_user_users_block:
     path:     user/block/{id}
     defaults: { _controller: CairnUserBundle:User:blockUser, _format: html }
     requirements:
         id: \d+
+
+cairn_user_users_search:
+    path:     user/search/
+    defaults: { _controller: CairnUserBundle:Admin:searchUser }
+
 
 cairn_user_users_activate:
     path:     admin/users/activate/{id}.{_format}
@@ -164,12 +165,18 @@ cairn_user_users_activate:
         id: \d+
         _format: html|json
 
+cairn_user_users_dashboard:
+    path:     admin/users/dashboard
+    defaults: { _controller: CairnUserBundle:Admin:dashboard, _format: html }
+
+
 cairn_user_users_remove:
     path:     user/remove/{id}.{_format}
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser, _format: html }
     requirements:
         id: \d+
         _format: html|json
+
 
 cairn_user_users_remove_pending:
     path:     user/remove-pending

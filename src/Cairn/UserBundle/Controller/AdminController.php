@@ -59,6 +59,56 @@ class AdminController extends Controller
     }   
 
 
+    public function dashboardAction(Request $request)
+    {
+        $currentUser = $this->getUser();
+        $currentUserID = $currentUser->getID();
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $pros = new \stdClass();
+        $pros->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',true);
+        $pros->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',false);
+        $pros->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PRO');
+        $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PRO');
+        $pros->toRemove = $ub->getQuery()->getResult();
+
+        $persons = new \stdClass();
+        $persons->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',true);
+        $persons->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',false);
+        $persons->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PERSON');
+        $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PERSON');
+        $persons->toRemove = $ub->getQuery()->getResult();
+
+        $admins = new \stdClass();
+        $admins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',true);
+        $admins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',false);
+        $admins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_ADMIN');
+
+        $superAdmins = array();
+
+        if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+            $superAdmins = new \stdClass();
+            $superAdmins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',false);
+            $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
+        }
+
+        $allUsers = array(
+            'pros'=>$pros, 
+            'persons'=>$persons,
+            'admins'=>$admins,
+            'superAdmins'=>$superAdmins,
+        );
+
+        return $this->render('CairnUserBundle:Admin:dashboard.html.twig',array('allUsers'=>$allUsers));
+
+    }
 
     /**
      * Set the enabled attribute of user with provided ID to true

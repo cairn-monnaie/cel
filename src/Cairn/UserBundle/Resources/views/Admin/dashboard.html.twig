@@ -1,0 +1,176 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/dashboard.html.twig #}         
+
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+
+    {% set pros = allUsers.pros %}
+    {% set persons = allUsers.persons %}
+    {% set admins = allUsers.admins %}
+    {% set superAdmins = allUsers.superAdmins %}
+
+<div class="row">
+    <br>
+    <a href="{{path('cairn_user_registration') }}" class="btn green" ><i class="material-icons left">add</i>Créer un espace membre </a>
+    <a href="{{path('cairn_user_users_search') }}" class="btn blue"><i class="material-icons left">search</i>Rechercher un compte</a>
+
+    <div>
+
+        <h2> les membres en attente de carte </h2>
+        <h3> Particuliers </h3>
+            <ul class="collection">
+                {% for person in persons.nocard %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': person.id})}}"> <span class="title">{{person.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun particulier en attente de carte !
+                {% endfor %}
+            </ul>
+
+        <h3> Professionnels </h3>
+            <ul class="collection">
+                {% for pro in pros.nocard %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': pro.id})}}"> <span class="title">{{pro.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun professionnel en attente de carte !
+                {% endfor %}
+            </ul>
+
+        <h2> les membres en attente d'ouverture de compte</h2>
+        <h3> Particuliers </h3>
+            <ul class="collection">
+                {% for person in persons.pending %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': person.id})}}"> <span class="title">{{person.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun particulier en attente d'ouverture de compte !
+                {% endfor %}
+            </ul>
+
+        <h3> Professionnels </h3>
+            <ul class="collection">
+                {% for pro in pros.pending %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': pro.id})}}"> <span class="title">{{pro.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun professionnel en attente d'ouverture de compte !
+                {% endfor %}
+            </ul>
+
+        <h2> les membres en opposition de compte</h2>
+        <h3> Particuliers </h3>
+            <ul class="collection">
+                {% for person in persons.blocked %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': person.id})}}"> <span class="title">{{person.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun particulier en opposition de compte !
+                {% endfor %}
+            </ul>
+
+        <h3> Professionnels </h3>
+            <ul class="collection">
+                {% for pro in pros.blocked %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': pro.id})}}"> <span class="title">{{pro.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun professionnel en opposition de compte !
+                {% endfor %}
+            </ul>
+
+        <h2> les adhérents en attente de clôture de compte</h2>
+        <h3> Particuliers </h3>
+            <ul class="collection">
+                {% for person in persons.toRemove %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': person.id})}}"> <span class="title">{{person.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun particulier en attente de clôture de compte!
+                {% endfor %}
+            </ul>
+
+        <h3> Professionnels </h3>
+            <ul class="collection">
+                {% for pro in pros.toRemove %}
+                    <li class="collection-item">
+                        <a href="{{path('cairn_user_profile_view', {'id': pro.id})}}"> <span class="title">{{pro.name}}</span></a>
+                    </li>
+                {% else %}  
+                    Aucun professionnel en attente de clôture de compte !
+                {% endfor %}
+            </ul>
+
+{#        <h2> les professionnels validés</h2>
+
+        <h2> les professionnels bloqués</h2>
+        <ul class="collection">
+            {% for user in validPros.blockedPros %}
+                <li class="collection-item">
+                    <a href="{{path('cairn_user_profile_view', {'id': user.id})}}">
+                        {% if app.user.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+                        {% else %}
+                            <img src="{{asset('anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                        {% endif %}
+                        <span class="title">{{user.name}}</span></a>
+                </li>
+            {% else %}
+                pas  de professionel bloqué !
+            {% endfor %}
+        </ul>
+
+        <h2> les membres en attente de validation</h2>
+            <h3> Les professionnels </h3>
+            <ul>
+                {% for user in pendingUsers.pros %}
+                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
+                {% else %}  
+                    pas <em>encore</em> de professionel en attente !
+                {% endfor %}
+            </ul>
+            <h3> Les groupes locaux </h3>
+            <ul>
+                {% for user in pendingUsers.admins %}
+                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
+                {% else %}  
+                    pas <em>encore</em> de groupe local en attente !
+                {% endfor %}
+            </ul>
+
+         <h2> Les groupes locaux valides </h2>
+         <ul>
+            {% for user in listAdmins %}
+               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+            {% else %}  
+                Pas <em>encore</em> de groupe local inscrit !
+            {% endfor %}
+        </ul>
+   
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
+            <h2> Les administrateurs </h2>
+            <ul>
+               {% for user in listSuperAdmins %}
+                  <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+               {% else %}  
+                   Pas <em>encore</em> d'administrateur inscrit !
+               {% endfor %}
+            </ul>
+        {% endif %}
+#}
+    </div>
+</div>
+{% endblock %}              
+

@@ -55,10 +55,17 @@ class UserRepository extends EntityRepository
         return $this;
     }
 
+    /**
+     * if isEnabled = false, we make a difference between opposed user and the case where user wants to be removed
+     */
     public function whereEnabled(QueryBuilder $qb, $isEnabled)
     {
         $qb->andWhere('u.enabled = :enabled')                                           
             ->setParameter('enabled',$isEnabled);
+        
+        if(! $isEnabled){
+            $qb->andWhere('u.removalRequest = false');                                           
+        }
         return $this;
     }
 
@@ -74,6 +81,14 @@ class UserRepository extends EntityRepository
         $qb->andWhere('u.confirmationToken is NULL')     
             ->andWhere('u.enabled = false')                                    
             ->andWhere('u.lastLogin is NULL'); 
+        return $this;
+    }
+
+    public function whereToRemove(QueryBuilder $qb, $toRemove)
+    {
+        $qb->andWhere('u.removalRequest = :toRemove')
+            ->setParameter('toRemove', $toRemove);                                           
+
         return $this;
     }
 
@@ -97,8 +112,7 @@ class UserRepository extends EntityRepository
             ->andWhere('u.lastLogin is not NULL')
             ->orderBy('u.name','ASC');
         if($isEnabled != NULL){
-            $ub->andWhere('u.enabled = :isEnabled')
-              ->setParameter('isEnabled',$isEnabled);            
+            $this->whereEnabled($ub, $isEnabled);
         }
 
         return $ub->getQuery()->getResult();
