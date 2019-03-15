@@ -18,8 +18,10 @@ parameters:
     mailer_transport: smtp
     mailer_host: 127.0.0.1
     mailer_user: cairn@cairn-monnaie.com
-    mailer_port: 1080
+    mailer_port: 587
     mailer_password: abcdefg
+    mailer_encryption: tls
+
 
     # A secret key that's used to generate certain security-related tokens
     secret: ThisTokenIsNotSoSecretChangeIt
