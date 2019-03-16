@@ -67,7 +67,7 @@ class BaseControllerTest extends WebTestCase
 
     public function inputCardKey($crawler, $key)
     {
-        $form = $crawler->selectButton('Valider')->form();
+        $form = $crawler->selectButton('card_save')->form();
         $form['card[field]']->setValue($key);
         return $this->client->submit($form);
     }
