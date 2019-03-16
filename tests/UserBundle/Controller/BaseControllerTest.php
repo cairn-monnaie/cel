@@ -47,6 +47,7 @@ class BaseControllerTest extends WebTestCase
          
         $this->container = $kernel->getContainer();
         $this->em = $this->container->get('doctrine.orm.entity_manager');                          
+
     }
 
     public function login($username,$password)
@@ -75,8 +76,11 @@ class BaseControllerTest extends WebTestCase
     {
         $this->assertTrue($user->isEnabled());
 
-        //connect as an admin to get user status on Cyclos side
-        $crawler = $this->login($this->testAdmin, '@@bbccdd');
+        //connect to Cyclos as an admin to get user status on Cyclos side
+        $credentials = array('username'=> $this->testAdmin,'password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
+                                                                                 'login',$credentials);
+
         $status = $this->container->get('cairn_user_cyclos_user_info')->getUserStatus($user->getCyclosID() );
         $this->assertEquals($status,'ACTIVE');
 
@@ -90,15 +94,14 @@ class BaseControllerTest extends WebTestCase
         }
     }
 
-    /**
-     * WARNING : do this test really in the end of the test
-     */
     public function assertUserIsDisabled(User $user, $statusChanged)
     {
         $this->assertFalse($user->isEnabled());
 
-        //connect as an admin to get user status on Cyclos side
-        $crawler = $this->login($this->testAdmin, '@@bbccdd');
+        //connect to Cyclos as an admin to get user status on Cyclos side
+        $credentials = array('username'=> $this->testAdmin,'password'=>'@@bbccdd');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
+                                                                                 'login',$credentials);
         $status = $this->container->get('cairn_user_cyclos_user_info')->getUserStatus($user->getCyclosID() );
         $this->assertEquals($status,'DISABLED');
 
