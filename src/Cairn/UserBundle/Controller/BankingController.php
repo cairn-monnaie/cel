@@ -450,7 +450,7 @@ class BankingController extends Controller
 
                 if($to == 'beneficiary'){
                     //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
-                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->getICC()));
+                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->number));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
                         return new RedirectResponse($request->getRequestUri());
@@ -460,8 +460,7 @@ class BankingController extends Controller
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-
-                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount->getUser()->getEmail());
+                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount->number);
 
                 $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
                 $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toUserVO,NULL);
@@ -470,8 +469,8 @@ class BankingController extends Controller
                 $transferTypes = $paymentData->paymentTypes;
                 $accurateTransferTypes = array();
                 foreach($transferTypes as $transferType){
-                    if($transferType->from->id == $fromAccount->type->id){
-                        $accurateTransferTypes[] = $transferType;
+                    if( strpos($transferType->internalName, 'virement_inter_adherent') !== false){
+                        $onlineTransferType = $transferType;
                     }
                 }
 
@@ -508,20 +507,9 @@ class BankingController extends Controller
                 //
                 //                }elseif($frequency == 'unique'){
 
-//                if($toAccount['number']){
 
-                    foreach($accurateTransferTypes as $transferType){
-                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$transferType,$dataTime);
-
-                        if($res->toAccount->number == $toAccount->getICC()){
-                            $session->set('paymentReview',$res);
-                        }
-                    }
-//                }else{
-//                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$accurateTransferTypes[0],$dataTime);
-//                    $session->set('paymentReview',$res);
-//
-//                }
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$onlineTransferType,$dataTime);
+                $session->set('paymentReview',$res);
 
                 $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
@@ -541,9 +529,9 @@ class BankingController extends Controller
             }
         }
 
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
-        }
+//        if($_format == 'json'){
+//            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
+//        }
         return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
             'form'=>$form->createView()));
 

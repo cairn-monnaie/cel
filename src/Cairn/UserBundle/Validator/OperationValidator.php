@@ -55,42 +55,26 @@ class OperationValidator extends ConstraintValidator
     }
 
 
-    private function validatePassiveAccount($beneficiary,$path){
-        $email = $beneficiary->getUser()->getEmail();
-        $ICC = $beneficiary->getICC();
+    private function validatePassiveAccount($account,$path){
+        $ICC = $account->number;
 
-        if(! ($ICC || $email)){ 
-            $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
+        if(! $ICC ){ 
+            $this->context->buildViolation('Numéro de compte non renseigné')
                 ->atPath($path)                                          
                 ->addViolation();                                              
-        }else{ //email and ICC provided
+        }else{
 
             $user = NULL;
             if($ICC){
                 $userVO = $this->userInfo->getUserVOByKeyword($ICC);
 
                 if(!$userVO){
-                    $this->context->buildViolation('ICC introuvable')
+                    $this->context->buildViolation('Compte introuvable par numéro de compte')
                         ->atPath($path)                                          
                         ->addViolation();                                              
-                }else{
-//                    if($fromICC == $toICC){
-//                        $this->context->buildViolation('Les comptes débiteur et créditeur sont identiques')
-//                            ->atPath($path)                                          
-//                            ->addViolation();                                              
-//                    }
-
-                    $user = $this->userRepo->findOneBy(array('username'=>$userVO->username));
+                    return;
                 }
-            }
-            if($email){
-                $user = $this->userRepo->findOneBy(array('email'=>$email));
-
-                if(!$user){//invalid email
-                    $this->context->buildViolation('Aucun membre avec email '.$email)
-                        ->atPath($path)                                          
-                        ->addViolation();                                              
-                }
+                $user = $this->userRepo->findOneBy(array('username'=>$userVO->username));
             }
 
             if($user && $user->getRemovalRequest()){
@@ -98,19 +82,7 @@ class OperationValidator extends ConstraintValidator
                     ->atPath($path)                                          
                     ->addViolation();                                              
             }
-            if($ICC && $email){
-                if($userVO && $user){
-                    if(! ($user->getUsername() == $userVO->username)){
-                        $this->context->buildViolation('email et ICC ne correspondent pas')
-                            ->atPath($path)                                          
-                            ->addViolation();                                              
-                    }
-
-
-                }
-            }
         }
-
     }
 
     private function validateBalance($operationType, $account,$amount)

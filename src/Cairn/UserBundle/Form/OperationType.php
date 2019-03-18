@@ -79,7 +79,7 @@ class OperationType extends AbstractType
                     'placeholder' => (count($selfAccounts) > 1) ? '--- virement depuis ---' : false,
                     'choices' => $selfAccounts,
                     'choice_label' =>
-                        function($account, $key, $value) {
+                        function($account, $key, $index) {
                             return $account->type->name.' ['.$account->status->balance.' '.$account->currency->name.']';
                         },
                     'choice_value' =>
@@ -91,17 +91,39 @@ class OperationType extends AbstractType
                     'label' => 'Compte à débiter'
                 ));
 
-                $toAccounts = $user->getBeneficiaries();
 
+                //No matter the type of creditor, the final object must contain two attributes : email && number
                 if ($operation->getToAccountNumber()=='beneficiary'){
+                    $beneficiaries = $user->getBeneficiaries();
+
+                    foreach($beneficiaries as $beneficiary){                           
+                        $account = new \stdClass();
+                        $account->owner = $beneficiary->getUser();
+                        $account->email = $beneficiary->getUser()->getEmail();
+                        $account->number = $beneficiary->getICC();
+                        $toAccounts[] = $account;// array('email'=>$beneficiary->getUser()->getEmail(),'number'=>$beneficiary->getICC());
+                    }
                     $form->add('toAccount', ChoiceType::class, array(
                         'placeholder' => (count($toAccounts) > 1) ? '--- virement à ---' : false,
                         'choices' => $toAccounts,
-                        'choice_label' => 'autocomplete_label',
-                        'choice_value' => 'id',
+                        'choice_label' =>
+                            function($account, $key, $index) {
+                                return $account->owner->getAutocompleteLabel()."\n".$account->number;
+                        },
+                        'choice_value' => 'number',
                         'multiple' => false,
                         'required' => true,
                         'label' => 'Beneficiaire à créditer'
+                    ));
+                }elseif($operation->getToAccountNumber()=='self'){
+                    $form->add('toAccount', ChoiceType::class, array(
+                        'placeholder' => (count($selfAccounts) > 1) ? '--- virement vers mon compte ---' : false,
+                        'choices' => $selfAccounts,
+                        'choice_label' => 'type.name',
+                        'choice_value' => 'number',
+                        'multiple' => false,
+                        'required' => true,
+                        'label' => 'Mon compte à créditer'
                     ));
                 }else{
                     $form->add('toAccount',  AccountType::class, array('label'=>'Compte à créditer'));

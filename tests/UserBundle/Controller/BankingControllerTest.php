@@ -27,7 +27,7 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideTransactionData
      */
-    public function testTransactionProcess($debitor,$to,$expectForm,$ownsAccount,$isValid,$email,$ICC,$amount,$day,$month,$year,$frequency)
+    public function testTransactionProcess($debitor,$to,$expectForm,$ownsAccount,$isValid,$toAccount,$amount,$date,$frequency)
     {
         $crawler = $this->login($debitor, '@@bbccdd');
 
@@ -58,14 +58,11 @@ class BankingControllerTest extends BaseControllerTest
             if($frequency == 'unique'){
                 $form = $crawler->selectButton('cairn_userbundle_simpleoperation_save')->form();
                 $form['cairn_userbundle_simpleoperation[amount]']->setValue($amount);
-                $form['cairn_userbundle_simpleoperation[fromAccount][number]']->setValue($debitorICC);
-                $form['cairn_userbundle_simpleoperation[toAccount][email]']->setValue($email);
-                $form['cairn_userbundle_simpleoperation[toAccount][number]']->setValue($ICC);
+                $form['cairn_userbundle_simpleoperation[fromAccount]']->setValue($debitorICC);
+                $form['cairn_userbundle_simpleoperation[toAccount]']->setValue($toAccount);
                 $form['cairn_userbundle_simpleoperation[reason]']->setValue('Test virement simple');
                 $form['cairn_userbundle_simpleoperation[description]']->setValue('Test virement simple');
-                $form['cairn_userbundle_simpleoperation[executionDate][day]']->select($day);
-                $form['cairn_userbundle_simpleoperation[executionDate][month]']->select($month);
-                $form['cairn_userbundle_simpleoperation[executionDate][year]']->select($year);
+                $form['cairn_userbundle_simpleoperation[executionDate]']->setValue($date);
             }            
 
             $crawler =  $this->client->submit($form);
@@ -88,14 +85,10 @@ class BankingControllerTest extends BaseControllerTest
     public function provideTransactionData()
     {
         $today = new \Datetime();
-        $day = intval($today->format('d'));
-        $month = intval($today->format('m'));
-        $year = $today->format('Y');
+        $today_format = $today->format('d-m-Y');
 
         $future = date_modify(new \Datetime(),'+1 months');
-        $futureDay = intval($future->format('d'));
-        $futureMonth = intval($future->format('m'));
-        $futureYear = $future->format('Y');
+        $future_format = $future->format('d-m-Y');
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
@@ -110,116 +103,111 @@ class BankingControllerTest extends BaseControllerTest
 
         //valid data
         $baseData = array('login'=>'labonnepioche','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
-            'isValid'=>true,'email'=>$creditorEmail,'ICC'=>$creditorICC,'amount'=>'10', 'day'=>$day,'month'=>$month,'year'=>$year,
-            'frequency'=>'unique');
+            'isValid'=>true,'toAccount'=>$creditorEmail,'amount'=>'10', 'date'=>$today_format, 'frequency'=>'unique');
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
-            'no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
-            'not beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary','creditor'=>'maltobar',
-                                                           'isValid'=>false)),
-            'valid immediate'=>$baseData,
-            'valid with email only'=>array_replace($baseData,array('ICC'=>'')),
-            'valid with ICC only'=>array_replace($baseData,array('email'=>'')),
-            'valid scheduled'=>array_replace($baseData,array('day'=>$futureDay,'month'=>$futureMonth,'year'=>$futureYear)), 
+            'has no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
+            'has beneficiary, data matches no beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary',
+                                                            'toAccount'=>$creditorICC, 'isValid'=>false)),
+            'valid immediate with email'=>$baseData,
+            'valid with ICC'=>array_replace($baseData,array('toAccount'=>$creditorICC)),
+            'valid email, future date'=>array_replace($baseData,array('date'=>$future_format)), 
+            'valid account number, future date'=>array_replace($baseData,array('toAccount'=>$creditorICC,'date'=>$future_format)), 
 //           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }
 
-    /**
-     *
-     *@dataProvider provideTransactionDataForValidation
-     */
-    public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,$periodicity, $isValid)
-    {
-        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
-                                                                                 'login',$credentials);
-
-        $validator = $this->container->get('validator');
-
-        if($frequency == 'unique'){
-            $transaction = new Operation();
-            $transaction->setExecutionDate($firstDate); 
-        }//else{
-         //   $transaction = new RecurringTransaction();
-         //   $transaction->setFirstOccurrenceDate($firstDate); 
-         //   $transaction->setLastOccurrenceDate($lastDate); 
-         //   $transaction->setPeriodicity($periodicity);
-        //}
-        $transaction->setAmount($amount); 
-        $transaction->setReason('test Virement');
-        $transaction->setDescription($description); 
-        $transaction->setFromAccount($fromAccount); 
-        $transaction->setToAccount($toAccount); 
-
-        $errors = $validator->validate($transaction);
-
-        if($isValid){
-            $this->assertEquals(0,count($errors));
-        }else{
-            $this->assertEquals(1,count($errors));
-        }
-    }
-
-    public function provideTransactionDataForValidation()
-    {
-        $debitor = 'labonnepioche';
-
-        $credentials = array('username'=>$debitor,'password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
-                                                                                 'login',$credentials);
-
-        $creditor = 'maltobar';
-        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
-        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
-
-        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
-        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
-        $debitorICC = $debitorAccount->number;
-
-        $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
-            'fromAccount'=> array('number'=>$debitorICC ,'email'=>$debitorUser->getEmail()),
-            'toAccount'=> array('number'=>$creditorICC ,'email'=>$creditorUser->getEmail()),
-            'firstDate'=> new \Datetime(),'lastDate'=>date_modify(new \Datetime(),'+1 months') ,'periodicity'=>'1', 'isValid'=>true );
-
-        return array(
-            'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
-            'undersize amount'=>array_replace($baseData,array('amount'=>'0.0099','isValid'=>false)),
-            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('number'=>$debitorICC + 1),
-                                                                                              'isValid'=>false)),
-            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>$creditorICC + 1),
-                                                                                             'isValid'=>false)),
-            'wrong creditor email'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>'',
-                                                                            'email'=>'test@test.com'),'isValid'=>false)),
-            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>'','email'=>''),
-                                                                        'isValid'=>false)),
-            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>''))),
-            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('number'=>''),'isValid'=>false)),
-            'identical accounts'=>array_replace($baseData,array(
-                'toAccount'=>array('number'=>$debitorAccount->number,'email'=>$debitorUser->getEmail()),
-                'isValid'=>false)),
-            'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
-            'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
-            'date before today' =>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-//            'first date b4 today' =>array_replace($baseData,array('frequency'=>'recurring',
-//            'firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-//            'last date b4 first' =>array_replace($baseData,array('frequency'=>'recurring',
-//            'lastDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
-//            'too short interval' =>array_replace($baseData,array('frequency'=>'recurring',
-//            'lastDate'=>date_modify(new \Datetime(),'+10 days'),'isValid'=>false)),
-//            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
-//            'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
-
-            'valid simple email + ICC'=> $baseData,
-            'valid simple ICC only'=> array_replace_recursive($baseData, array('toAccount'=>array('email'=>''))),
-            'valid simple ICC with spaces'=> array_replace_recursive($baseData, array(
-                                    'toAccount'=>array('ICC'=>substr_replace($creditorICC,' ',2,0) ))),
-            'valid simple email only'=> array_replace_recursive($baseData, array('toAccount'=>array('ICC'=>''))),
-            'valid scheduled'=> array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+1 months'),'isValid'=>true)),
-//            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
-        );
-    }
+//    /**
+//     *
+//     *@dataProvider provideTransactionDataForValidation
+//     */
+//    public function testTransactionValidator($frequency,$amount, $description, $fromAccount, $toAccount,$firstDate,$lastDate,$periodicity, $isValid)
+//    {
+//        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
+//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
+//                                                                                 'login',$credentials);
+//
+//        $validator = $this->container->get('validator');
+//
+//        if($frequency == 'unique'){
+//            $transaction = new Operation();
+//            $transaction->setExecutionDate($firstDate); 
+//        }//else{
+//         //   $transaction = new RecurringTransaction();
+//         //   $transaction->setFirstOccurrenceDate($firstDate); 
+//         //   $transaction->setLastOccurrenceDate($lastDate); 
+//         //   $transaction->setPeriodicity($periodicity);
+//        //}
+//        $transaction->setAmount($amount); 
+//        $transaction->setReason('test Virement');
+//        $transaction->setDescription($description); 
+//        $transaction->setFromAccount($fromAccount); 
+//        $transaction->setToAccount($toAccount); 
+//
+//        $errors = $validator->validate($transaction);
+//
+//        if($isValid){
+//            $this->assertEquals(0,count($errors));
+//        }else{
+//            $this->assertEquals(1,count($errors));
+//        }
+//    }
+//
+//    public function provideTransactionDataForValidation()
+//    {
+//        $debitor = 'labonnepioche';
+//
+//        $credentials = array('username'=>$debitor,'password'=>'@@bbccdd');
+//        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
+//                                                                                 'login',$credentials);
+//
+//        $creditor = 'maltobar';
+//        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$creditor));
+//        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditor)->accountNumber;
+//
+//        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$debitor));
+//        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
+//        $debitorICC = $debitorAccount->number;
+//
+//        $baseData = array('frequency'=>'unique','amount'=>'10','description'=>'Test Validator',
+//            'fromAccount'=> array('number'=>$debitorICC),
+//            'toAccount'=> array('number'=>$creditorICC),
+//            'firstDate'=> new \Datetime(),'lastDate'=>date_modify(new \Datetime(),'+1 months') ,'periodicity'=>'1', 'isValid'=>true );
+//
+//        return array(
+//            'negative amount'=>array_replace($baseData,array('amount'=>'-1','isValid'=>false)),
+//            'undersize amount'=>array_replace($baseData,array('amount'=>'0.0099','isValid'=>false)),
+//            'wrong debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>json_decode(json_encode($debitorAccount))),
+//                                                                                              'isValid'=>false)),
+//            'wrong creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>$creditorICC + 1),
+//                                                                                             'isValid'=>false)),
+//            'no creditor data'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>''),
+//                                                                        'isValid'=>false)),
+//            'no creditor ICC'=>array_replace_recursive($baseData,array('toAccount'=>array('number'=>''))),
+//            'no debitor ICC'=>array_replace_recursive($baseData,array('fromAccount'=>array('number'=>''),'isValid'=>false)),
+//            'identical accounts'=>array_replace($baseData,array(
+//                'toAccount'=>array('number'=>$debitorAccount->number),
+//                'isValid'=>false)),
+//            'insufficient balance' =>array_replace($baseData,array('amount'=>'1000000','isValid'=>false)),
+//            'inconsistent date'=>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+4 years'),'isValid'=>false)),
+//            'date before today' =>array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+////            'first date b4 today' =>array_replace($baseData,array('frequency'=>'recurring',
+////            'firstDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+////            'last date b4 first' =>array_replace($baseData,array('frequency'=>'recurring',
+////            'lastDate'=>date_modify(new \Datetime(),'-1 days'),'isValid'=>false)),
+////            'too short interval' =>array_replace($baseData,array('frequency'=>'recurring',
+////            'lastDate'=>date_modify(new \Datetime(),'+10 days'),'isValid'=>false)),
+////            'too short interval 2' =>array_replace($baseData,array('frequency'=>'recurring','periodicity'=>'2',
+////            'lastDate'=>date_modify(new \Datetime(),'+35 days'),'isValid'=>false)),
+//
+//            'valid simple ICC'=> $baseData,
+//            'valid simple ICC with spaces'=> array_replace_recursive($baseData, array(
+//                                    'toAccount'=>array('ICC'=>substr_replace($creditorICC,' ',2,0) ))),
+//            'valid scheduled'=> array_replace($baseData,array('firstDate'=>date_modify(new \Datetime(),'+1 months'),'isValid'=>true)),
+////            'valid recurring'=> array_replace($baseData,array('frequency'=>'recurring'))
+//        );
+//    }
 
     /**
      *

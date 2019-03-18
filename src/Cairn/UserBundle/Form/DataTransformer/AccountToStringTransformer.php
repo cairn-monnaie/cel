@@ -52,7 +52,7 @@ class AccountToStringTransformer implements DataTransformerInterface
      * Transforms a string (name) to an object (AccountInfo).
      *
      * @param  string $autocomplete
-     * @return AccountInfo|null
+     * @return stdClass representing org.cyclos.model.users.users.UserWithFieldsVO 
      * @throws TransformationFailedException if object (user) is not found.
      */
     public function reverseTransform($autocomplete)
@@ -63,8 +63,6 @@ class AccountToStringTransformer implements DataTransformerInterface
 
         $userRepo = $this->entityManager
             ->getRepository(User::class);
-        $beneficiaryRepo = $this->entityManager
-            ->getRepository(Beneficiary::class);
 
         $re = '/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/';
         preg_match($re, $autocomplete, $matches, PREG_OFFSET_CAPTURE, 0);
@@ -75,7 +73,7 @@ class AccountToStringTransformer implements DataTransformerInterface
             $user = $userRepo->findOneBy(array('email'=>$matches[1][0]));
         }
         if($user){
-            $toUserVO = $this->cyclosBridgeSymfony->fromSymfonyToCyclosUser($user);
+            $toUserVO = $this->cyclosUserInfo->getUserVOByKeyword($matches[1][0]);
         }else{
             $re = '/([\-]*[0-9]+)/';
             preg_match($re, $autocomplete, $matches, PREG_OFFSET_CAPTURE, 0);
@@ -91,14 +89,16 @@ class AccountToStringTransformer implements DataTransformerInterface
             ));
         }
 
-        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));
-        if (!$user){
-            throw new TransformationFailedException(sprintf(
-                'No symfony user found for cyclos id "%s" ',
-                $toUserVO->id
-            ));
-        }
+//        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));
+//        if (!$user){
+//            throw new TransformationFailedException(sprintf(
+//                'No symfony user found for cyclos id "%s" ',
+//                $toUserVO->id
+//            ));
+//        }
 
-        return $user;
+        //TODO: little hack for normalize the data to return for the OperationValidator
+        $toUserVO->number = $toUserVO->accountNumber;
+        return $toUserVO;
     }
 }

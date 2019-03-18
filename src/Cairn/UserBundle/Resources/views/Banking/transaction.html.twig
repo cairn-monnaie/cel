@@ -58,13 +58,13 @@
 
 {% block javascripts %}
 <script>
-    function getBeneficiaryImage(id) {
+    function getBeneficiaryImage(accountNumber) {
         $('#to_image').hide('slow',function () {
             $('#to_image').removeClass('hide');
         });
         jQuery.ajax({
             type: 'POST',
-            data: {'id':id},
+            data: {'number':accountNumber},
             url: "{{ path('cairn_beneficiary_image_ajax') }}",
             success: function (response) {
                 var beneficiary = response;
@@ -81,5 +81,9 @@
     });
 
     getBeneficiaryImage($('#cairn_userbundle_simpleoperation_toAccount').val());
+
+    $('.datepicker_cairn').datepicker({
+        format: 'yyyy-mm-dd'
+    });
 </script>
 {% endblock %}

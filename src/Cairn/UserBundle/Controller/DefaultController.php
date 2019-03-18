@@ -104,9 +104,24 @@ class DefaultController extends Controller
     }
 
     public function accountsAction(Request $request){
+
+        $currentUser = $this->getUser();
+        $currentUserID = $currentUser->getID();
+
         if ($request->isXmlHttpRequest()){
             $em = $this->getDoctrine()->getManager();
-            $users = $em->getRepository(User::class)->findAll();
+            $userRepo = $em->getRepository(User::class);
+
+            $ub = $userRepo->createQueryBuilder('u');
+
+            if($currentUser->isAdherent()){
+                $userRepo->whereEnabled($ub,true)->whereAdherent($ub);
+            }else{
+                $userRepo->whereReferent($ub, $currentUserID)->whereConfirmed($ub);
+            }
+
+            $users = $ub->getQuery()->getResult();
+
             $returnArray = array();
             foreach ($users as $user){
                 $image = $user->getImage();
@@ -120,7 +135,7 @@ class DefaultController extends Controller
     public function beneficiaryImageAction(Request $request){
         if ($request->isXmlHttpRequest()){
             $em = $this->getDoctrine()->getManager();
-            $beneficiary = $em->getRepository(Beneficiary::class)->find($request->get('id'));
+            $beneficiary = $em->getRepository(Beneficiary::class)->findBy( array('ICC'=>$request->get('number') ));
             $returnArray = array() ;
             if ($beneficiary && $image = $beneficiary->getUser()->getImage()){
                 $returnArray = array(
