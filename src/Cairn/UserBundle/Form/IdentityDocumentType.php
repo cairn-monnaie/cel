@@ -50,9 +50,9 @@ class IdentityDocumentType extends AbstractType
     }
 
 
-    public function getParent()
-    {
-        return FileType::class;
-    }
+//    public function getParent()
+//    {
+//        return FileType::class;
+//    }
 
 }

@@ -55,7 +55,7 @@ class RegistrationType extends AbstractType
                 if($user->isAdherent()){
                     $form->add('identityDocument', IdentityDocumentType::class,
                         array(
-                            'compound'=> true,
+//                            'compound'=> true,
                             'label'=>'Votre pièce d\'identité',
                             'attr' => array('class'=>'identity-document')
                         ));
