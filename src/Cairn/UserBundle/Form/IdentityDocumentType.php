@@ -19,7 +19,7 @@ class IdentityDocumentType extends AbstractType
             ->add('file', FileType::class,array('label'=>'image','required'=>true,
                 'constraints'=>array(
                     new Assert\File(array(
-                        'maxSize'=>'500k',
+                        'maxSize'=>'5M',
                         'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}'
                     )),
                     new Assert\Image(array(
