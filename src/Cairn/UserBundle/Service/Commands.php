@@ -625,11 +625,15 @@ class Commands
 
         //user has requested a removal and has null account balance on Cyclos-side
         $user = $userRepo->findOneByUsername('Biocoop'); 
+        $user->setLastLogin(new \Datetime());
+        $user->setEnabled(false);
         $user->setRemovalRequest(true);
 
         //user has requested a removal and has non-null account balance on Cyclos-side
         $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
         echo 'INFO: '.$user->getName(). ' has requested to be removed'."\n";
+        $user->setLastLogin(new \Datetime());
+        $user->setEnabled(false);
         $user->setRemovalRequest(true);
         echo 'INFO: OK !'."\n";
 

@@ -161,8 +161,8 @@ class AdminControllerTest extends BaseControllerTest
 
         return array(
            'valid, already log in'           => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true,1),
-//           'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true,0),
-//           'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false,0)
+           'already activated' => array('referent'=>$adminUsername,'target'=>'labonnepioche','isReferent'=>true,0),
+           'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false,0)
         );
     }
 

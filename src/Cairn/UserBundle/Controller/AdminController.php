@@ -73,7 +73,7 @@ class AdminController extends Controller
         $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
 
         $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PRO');
+        $userRepo->whereReferent($ub, $currentUserID)->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PRO');
         $pros->toRemove = $ub->getQuery()->getResult();
 
         $persons = new \stdClass();
@@ -83,7 +83,7 @@ class AdminController extends Controller
         $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
 
         $ub = $userRepo->createQueryBuilder('u');
-        $userRepo->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PERSON');
+        $userRepo->whereReferent($ub, $currentUserID)->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PERSON');
         $persons->toRemove = $ub->getQuery()->getResult();
 
         $admins = new \stdClass();
