@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\Address;
 
 use Cyclos;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class DefaultControllerTest extends BaseControllerTest
@@ -247,7 +248,7 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             array('login'=>true,'username'=>'labonnepioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
             array('login'=>true,'username'=>'comblant_michel','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
+//            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
             array('login'=>true,'username'=>$adminUsername,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>true,'username'=>$adminUsername,'type'=>'person', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
@@ -285,6 +286,8 @@ class DefaultControllerTest extends BaseControllerTest
             $this->assertNotContains('fos_user_registration_form[image]',$this->client->getResponse()->getContent());
         }
 
+        $form['fos_user_registration_form[identityDocument][file]']->upload('path/to/photo.png');
+
         $crawler =  $this->client->submit($form);
 
         $crawler = $this->client->followRedirect();
@@ -315,11 +318,11 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
 
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse email")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
         }
 
         $this->em->refresh($newUser);
-        $this->assertUserIsEnabled($newUser, true);
+        $this->assertFalse($newUser->isEnabled());
 
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));
@@ -334,8 +337,8 @@ class DefaultControllerTest extends BaseControllerTest
     {
         return array(
             'pro grenoble'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
-            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
-            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
+//            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
+//            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
         );
     }
 

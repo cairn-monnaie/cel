@@ -57,8 +57,8 @@ class RegistrationType extends AbstractType
                         array(
                             'compound'=> true,
                             'label'=>'Votre pièce d\'identité',
-                            'attr' => array('class'=>'identity-document'),
-                            'required'=>false));
+                            'attr' => array('class'=>'identity-document')
+                        ));
                 }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
