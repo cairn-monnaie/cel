@@ -91,6 +91,12 @@ cairn_user_profile_view:
     requirements:
         id: \d+
 
+cairn_user_iddocument_download:
+    path:     user/iddocument/download/{id}
+    defaults: { _controller: CairnUserBundle:User:downloadIdentityDocument, _format: html }
+    requirements:
+        id: \d+
+
 #cairn_user_api_beneficiaries_options:
 #    path: api/beneficiaries
 #    methods: OPTIONS

@@ -696,6 +696,16 @@ class UserController extends Controller
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
 
+    public function downloadIdentityDocumentAction(Request $request, User $user)
+    {
+        $currentUser = $this->getUser();
+
+        if(! ( ($user === $currentUser) || $user->hasReferent($currentUser) ) ){
+            throw new AccessDeniedException('Ce document n\'existe pas');
+        }
+
+        return $this->file($user->getIdentityDocument()->getWebPath());
+    }
 
     /**
      * Set the enabled attribute of user with provided ID to false

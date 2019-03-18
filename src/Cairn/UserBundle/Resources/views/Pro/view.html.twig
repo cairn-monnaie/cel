@@ -40,6 +40,9 @@
                             &nbsp;{{ user.address.zipCity.zipCode}}
                             &nbsp;{{ user.address.zipCity.city}}
                         </div>
+                        <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
+                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.id})}}"> Pièce d'identité</a>
+                        </div>
                     </div>
                     <blockquote>
                         {{ user.description}}
