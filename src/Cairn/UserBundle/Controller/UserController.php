@@ -704,7 +704,8 @@ class UserController extends Controller
             throw new AccessDeniedException('Ce document n\'existe pas');
         }
 
-        return $this->file($user->getIdentityDocument()->getWebPath());
+        $id_doc = $user->getIdentityDocument();
+        return $this->file($id_doc->getWebPath(), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
     }
 
     /**
@@ -790,8 +791,22 @@ class UserController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
-        //check that account balances are all 0 (for PRO only)
-        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
+        //check that account balances are all 0 (for adherents -PRO/PERSON only)
+        try{ 
+            $ownerVO = $this->get('cairn_user_cyclos_user_info')->getUserVO($user->getCyclosID());
+        }catch(\Exception $e){                                     
+            if( $e->errorCode == 'ENTITY_NOT_FOUND'){ //user has registered but never activated
+
+                $em->remove($user);
+                $em->flush();
+
+                $session->getFlashBag()->add('success','L\'ouverture de compte de '.$user->getName().' a été refusée');
+                return $this->redirectToRoute('cairn_user_users_dashboard');
+            }else{
+                throw $e;
+            }
+        }
+
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id,NULL);
 
         if($user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_PERSON')){
