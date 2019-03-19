@@ -113,7 +113,7 @@ class RegistrationListener
             }
         }
 
-        $subject = 'Validation de l\'administrateur';                      
+        $subject = 'Adresse mail [e]-Cairn confirmée';                      
         $from = $messageNotificator->getNoReplyEmail();                    
         $to = $user->getEmail();                                                      
         $body = $this->container->get('templating')->render('CairnUserBundle:Emails:pending_validation.html.twig',

@@ -784,6 +784,7 @@ class UserController extends Controller
 
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
@@ -797,10 +798,18 @@ class UserController extends Controller
         }catch(\Exception $e){                                     
             if( $e->errorCode == 'ENTITY_NOT_FOUND'){ //user has registered but never activated
 
+                $emailTo = $user->getEmail();
                 $em->remove($user);
                 $em->flush();
 
-                $session->getFlashBag()->add('success','L\'ouverture de compte de '.$user->getName().' a été refusée');
+                $subject = 'Ouverture de compte [e]-Cairn refusée';
+                $from = $messageNotificator->getNoReplyEmail();
+                $to = $emailTo;
+                $body = $this->renderView('CairnUserBundle:Emails:opening_refused.html.twig');
+    
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+                $session->getFlashBag()->add('success','L\'ouverture de compte de '.$user->getName().' a été refusée. Compte clôturé');
                 return $this->redirectToRoute('cairn_user_users_dashboard');
             }else{
                 throw $e;
