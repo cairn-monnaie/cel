@@ -65,12 +65,151 @@ class MessageNotificator
         $this->smsProviderUrl = $smsProviderUrl;
     }
 
-    public function getCampaignID($campaignName)
+
+    protected function listOfIds($minID,$maxID)
+    {
+        $res = '';
+        for($i = $minID; $i <= $maxID; $i++){
+            $res .= $i.',';
+        }
+
+        return $res;
+    }
+
+    protected function getCampaignID($campaignName)
     {
         $apiToken = '&api_token='.$this->smsApiToken;
         $full = '&full=0';
-        $filter = '&filters[name]='.$campaignName;
-        $url = $this->smsProviderUrl.'/campaign/list/?'.$apiToken.$filter.$full;
+        $filter = '';//&filters%5Bname%5D=Validation';//Validation';
+        $url = $this->smsProviderUrl.'/campaign/list/'.$this->listOfIds(10,20).'?'.$apiToken.$filter.$full;
+		$ch = \curl_init($url);
+        
+        // Set the CURL options
+        $options = array(
+                CURLOPT_RETURNTRANSFER => true,
+        );
+
+        \curl_setopt_array ($ch, $options);
+
+		// Execute the request
+		$json = \curl_exec($ch);
+		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$results = \json_decode($json);
+
+        unset($results->result_code);
+        unset($results->result_message);
+        unset($results->result_output);
+        unset($results->result_success);
+
+//        var_dump($code);
+//        var_dump($results);
+
+        $default_res = array('campaignID'=>NULL, 'messageID'=>NULL);
+
+        foreach($results as $result){
+            if( strpos($result->name, $campaignName) !== false){
+                return array('campaignID'=>$result->id, 'messageID'=>$result->messages[0]->id);
+
+            }
+        }
+        return $default_res;
+    }
+
+    protected function generateGetFields($parameters)
+    {
+        $res = '';
+
+        foreach($parameters as $key => $value){
+            if(is_array($value)){
+                $value = implode($value);
+            }
+           $res .= "&".$key."=".$value; 
+        }
+
+        return $res;
+    }
+
+    /**
+     * 
+     *
+     * All contacts in our list of possible contacts have global fields than must be edited while editing the contact himself.
+     * In the third-party application registering contacts, these global fields have the format %FIELD%. Therefore, when used in URL 
+     * parameters, they have a specific format
+     */
+    protected function generateContactFields($parameters)
+    {
+        $res = '';
+
+        foreach($parameters as $key => $value){
+           $res .= "&field%5B%25".$key."%25%2C0%5D=".intval($value); 
+        }
+
+        return $res;
+    }
+
+    public function sendSMS($phoneNumber, $campaignName, $parameters, $email = NULL)
+    {
+        if(! $email){
+            $users = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
+    
+            if($users){
+                $email = $users[0]->getEmail();
+            }else{
+                $email = $this->getMaintenanceEmail();
+            }
+        }
+
+        $action = ($this->env == 'prod') ? 'send' : 'test';
+        $action = '&action='.$action;
+
+        $apiToken = 'api_token='.$this->smsApiToken;
+
+        //get campaign ID
+        $ids =  $this->getCampaignID($campaignName);
+
+        $campaignID = '&campaign_id='.$ids['campaignID'];
+//        var_dump($campaignID);
+        $messageID = '&message_id='.$ids['messageID'];
+//        var_dump($messageID);
+
+        if(! $campaignID){
+            $subject = 'Service SMS indisponible';
+            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
+            $from = $this->getNoReplyEmail();
+            $to = $this->getMaintenanceEmail();
+
+            $this->notifyByEmail($subject, $from, $to, $body);
+            return;
+        }
+
+
+        //edit contact who will receive SMS to set parameters
+        $url = $this->smsProviderUrl.'/contact/edit/10?'.$apiToken;
+		$ch = \curl_init($url);
+        
+        $postfields_base = "p%5B{{list_id}}%5D=3&mobile=".$phoneNumber."&continue_if_in_list=1&update_if_exist=1";
+        $options = array(
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_HTTPHEADER => array('Content-type: application/x-www-form-urlencoded'),
+                CURLOPT_POST => 1,
+                CURLOPT_POSTFIELDS => $postfields_base.$this->generateContactFields($parameters),
+        );
+
+        \curl_setopt_array ($ch, $options);
+
+		$json = \curl_exec($ch);
+		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$result = \json_decode($json);
+
+        var_dump($postfields_base.$this->generateContactFields($parameters));
+        var_dump($code);
+        var_dump($result);
+
+        $mobile = '&mobile='.$phoneNumber;
+        $type='&type=text';
+
+        $url = $this->smsProviderUrl.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
 		$ch = \curl_init($url);
         
         // Set the CURL options
@@ -79,70 +218,16 @@ class MessageNotificator
                 CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/json'),
         );
 
+        \curl_setopt_array ($ch, $options);
+
 		// Execute the request
 		$json = \curl_exec($ch);
 		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$result = \json_decode($json);
 
+        var_dump($code);
+        var_dump($json);
         //TODO : define what a good result is. For now, we say code = 200
-        if($code != 200){
-            $subject = 'Erreur Service SMS ';
-            $body = 'Echec de la tentative de récupération des informations liées à la campagne SMS';
-            $from = $this->getNoReplyEmail();
-            $to = $this->getMaintenanceEmail();
-
-            $this->notifyByEmail($subject, $from, $to, $body);
-        }else{
-			return (property_exists($result, "id")) ? $result->id : NULL;
-        }
-
-
-        return NULL;
-    }
-
-    public function sendSMS($phoneNumber, $content)
-    {
-//        $action = ($this->env == 'prod') ? 'send' : 'test';
-//        $action = '&action='.$action;
-//
-//        //get campaign ID
-//
-//        $cmpID = $this->getCampaignID('sms_payment');
-//
-//        if(! $cmpID){
-//            $subject = 'Service SMS indisponible';
-//            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
-//            $from = $this->getNoReplyEmail();
-//            $to = $this->getMaintenanceEmail();
-//
-//            $this->notifyByEmail($subject, $from, $to, $body);
-//            return;
-//        }
-//
-//        $campaignID = '&campaign_id='.$cpmID;
-//        $messageID = '&message_id='.$msgID;
-//
-//        $mobile = '&mobile='.$phoneNumber;
-//        $apiToken = 'api_token='.$this->smsApiToken;
-//        $type='&type=text';
-//
-//        $url = $this->smsProviderUrl.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
-//		$ch = \curl_init($url);
-//        
-//        // Set the CURL options
-//        $options = array(
-//                CURLOPT_RETURNTRANSFER => true,
-//                CURLOPT_HTTPHEADER => array('Content-type: application/json', 'Accept: application/json'),
-//        );
-//
-//        \curl_setopt_array ($ch, $options);
-//
-//		// Execute the request
-//		$json = \curl_exec($ch);
-//		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//		$result = \json_decode($json);
-//
-//        //TODO : define what a good result is. For now, we say code = 200
 //        if($code != 200){
 //            $subject = 'Service SMS indisponible';
 //            $body = 'Erreur lors de l envoi SMS.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
@@ -152,8 +237,8 @@ class MessageNotificator
 //            $this->notifyByEmail($subject, $from, $to, $body);
 //            return;
 //        }
-        $email = 'whoknows@test.com';
-        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
+//        $email = 'whoknows@test.com';
+//        $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
         $sms = new Sms($phoneNumber,$content,Sms::STATE_SENT);
 
         return $sms;
