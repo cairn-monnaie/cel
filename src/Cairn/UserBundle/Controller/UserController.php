@@ -228,7 +228,8 @@ class UserController extends Controller
                 }
 
                 // send SMS with validation code to current user's new phone number
-                $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber,'Code de validation : '. $code);
+                $parameters = array('PHONE_CODE'=>$code);
+                $this->get('cairn_user.message_notificator')->sendSMS($newPhoneNumber,'Code de validation de votre téléphone '.$code,$parameters);
                 $em->flush();
 
                 $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
