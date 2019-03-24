@@ -90,7 +90,7 @@ class OperationValidator extends ConstraintValidator
         if(!$account->unlimited){
             if($account->status->availableBalance < $amount){
                 if($operationType == Operation::TYPE_SMS_PAYMENT){
-                    $message = 'SOLDE INSUFFISANT : '.$account->status->availableBalance;
+                    $message = 'Solde insuffisant : Votre solde actuel est de '.$account->status->availableBalance;
                 }else{
                     $message = 'Montant trop élevé : modifiez-le ou rechargez votre compte.';
                 }
@@ -157,11 +157,11 @@ class OperationValidator extends ConstraintValidator
             }
 
             if($debitorUser === $creditorUser){
-                $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
+                $this->context->addViolation('Comptes débiteur et créditeur identiques');
             }
 
             if(! $creditorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées par '.$creditorUser->getSmsData()->getIdentifier());
+                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées pour '.$creditorUser->getSmsData()->getIdentifier());
             }
             if(count($this->context->getViolations()) == 0){
                 $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());

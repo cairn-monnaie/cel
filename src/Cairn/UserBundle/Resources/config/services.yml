@@ -59,7 +59,6 @@ services:
             - "@templating"
             - "%cairn_email_technical_services%"
             - "%cairn_email_noreply%"
-            - "%cairn_email_activation_delay%"
             - "%kernel.environment%"
             - "%sms_api_token%"
             - "%sms_provider_url%"
