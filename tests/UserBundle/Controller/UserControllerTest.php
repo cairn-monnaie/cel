@@ -499,11 +499,12 @@ class UserControllerTest extends BaseControllerTest
 
         if($targetUser->isAdherent()){
 
-            $this->assertSame(1,$crawler->filter('a[href*="user/block"]')->count());
-            $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
-            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/id-document/download/'.$targetUser->getID().'"]')->count());
 
-            if($currentUser === $targetUser){//adherent watching his own profile
+            if($currentUser === $targetUser){//adherent watching his own profile --> is enabled if so
+                $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/change-password"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/edit"]')->count());
 
@@ -518,23 +519,23 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertsame(0,$crawler->filter('a[href*="card/download"]')->count());
 
                 if($hasCard){
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }else{//admin, as referent, watching adherent's profile
 
                 if($targetUser->isEnabled()){
-                    $this->assertSame(1,$crawler->filter('a[href*="user/block"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="admin/users/activate"]')->count());
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="user/block"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate/'.$targetUser->getID().'"]')->count());
                 }
 
                 $this->assertSame(0,$crawler->filter('a[href*="profile/change-password"]')->count());
@@ -543,9 +544,9 @@ class UserControllerTest extends BaseControllerTest
                 if($targetUser->hasRole('ROLE_PRO')){
                     if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                         $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign/'.$targetUser->getID().'"]')->count());
                     }else{//is GL --> cannot assign referent
-                        $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
+                        $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
                         $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
                     }
                 }else{//person's profile : no referent data
@@ -555,19 +556,39 @@ class UserControllerTest extends BaseControllerTest
 
                 if($hasCard){
                     $this->assertSame(0,$crawler->filter('a[href*="card/download"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
-                    $this->assertSame(1,$crawler->filter('a[href*="card/download"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/download/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }
         }
 
+    }
+
+    /**
+     *
+     *@dataProvider provideReferentsAndTargets
+     */
+    public function testDownloadIdDocument($referent,$target,$isLegit)
+    {
+        $crawler = $this->login($referent, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        $crawler = $this->client->request('GET','user/id-document/download/'.$targetUser->getID());
+
+
+        if(! $isLegit){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            return;
+        }
     }
 
     public function provideReferentsAndTargets()
