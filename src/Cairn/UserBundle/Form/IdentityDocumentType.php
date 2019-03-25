@@ -16,16 +16,15 @@ class IdentityDocumentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('file', FileType::class,array('label'=>'image','required'=>true,
+            ->add('file', FileType::class,array('label'=>'identityDocument','required'=>false,
                 'constraints'=>array(
                     new Assert\File(array(
                         'maxSize'=>'5M',
-                        'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}'
-                    )),
-                    new Assert\Image(array(
+                        'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}',
                         'mimeTypesMessage'=>'Les formats valides sont pdf, jpeg, jpg, et png',
                         'mimeTypes'=>array('image/jpeg','image/jpg','image/png','application/pdf')
-                    ))
+
+                    )),
                 ),
             ));
 
