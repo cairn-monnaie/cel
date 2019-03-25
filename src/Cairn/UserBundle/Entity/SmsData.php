@@ -42,9 +42,18 @@ class SmsData
     /**
      * @var bool
      *
+     * Can ask for LOGIN, BALANCE and receive payments
+     *
      * @ORM\Column(name="smsEnabled", type="boolean")
      */
     private $smsEnabled;
+
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="payment_enabled", type="boolean")
+     */
+    private $paymentEnabled;
 
     /**
      * @var string
@@ -77,6 +86,13 @@ class SmsData
     {
         $this->setUser($user);
         $this->setSmsEnabled(true);
+
+        if($user->hasRole('ROLE_PRO')){
+            $this->setPaymentEnabled(false);
+        }else{
+            $this->setPaymentEnabled(true);
+        }
+
         $this->setDailyNumberPaymentsThreshold(4);
         $this->setDailyAmountThreshold(30);
     }
@@ -150,6 +166,14 @@ class SmsData
     {
         $this->smsEnabled = $smsEnabled;
 
+        if(! $smsEnabled){
+            $this->setPaymentEnabled(false);
+        }else{
+            if($this->getUser()->hasRole('ROLE_PERSON')){
+                $this->setPaymentEnabled(true);
+            }
+        }
+
         return $this;
     }
 
@@ -161,6 +185,31 @@ class SmsData
     public function isSmsEnabled()
     {
         return $this->smsEnabled;
+    }
+
+
+    /**
+     * Set paymentEnabled.
+     *
+     * @param bool $paymentEnabled
+     *
+     * @return PaymentData
+     */
+    public function setPaymentEnabled($paymentEnabled)
+    {
+        $this->paymentEnabled = $paymentEnabled;
+
+        return $this;
+    }
+
+    /**
+     * Get paymentEnabled.
+     *
+     * @return bool
+     */
+    public function isPaymentEnabled()
+    {
+        return $this->paymentEnabled;
     }
 
     /**

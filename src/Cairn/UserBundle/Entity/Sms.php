@@ -62,10 +62,13 @@ class Sms
     const STATE_EXPIRED = 1;
     const STATE_PROCESSED = 2;
     const STATE_CANCELED = 3;
-    const STATE_SPAM = 4;
+    const STATE_ERROR = 4;
+    const STATE_UNAUTHORIZED = 5;
+    const STATE_INVALID = 6;
+    const STATE_SUSPICIOUS = 7;
 
     //state of sent SMS
-    const STATE_SENT = 5;
+    const STATE_SENT = 8;
 
 
     public function __construct($phoneNumber,$content,$state,$cardPosition = NULL)

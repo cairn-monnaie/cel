@@ -150,7 +150,7 @@ class Commands
             //ajouter la carte
             $this->em->persist($new_admin);
 
-            //set admin has referent of all users including himself
+            //set admin as referent of all users including himself
             $allUsers = $userRepo->findAll();
 
             $new_admin->addReferent($new_admin);
@@ -660,51 +660,61 @@ class Commands
         echo 'INFO: OK !'."\n";
 
         //setup phone number and sms information for pros and persons
+
+        //all users in this array will have an access client on Cyclos side
         $usersWithSmsInfo = array();
 
         $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
         $smsData = new SmsData($pro1);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0612345678');
         $smsData->setIdentifier('NICOPROD');
+        $smsData->setPaymentEnabled(true);
         $pro1->setSmsData($smsData);
 
 
         $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
         $smsData = new SmsData($person1);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0612345678');
-//        $smsData->setIdentifier('NICOPERSO');
         $person1->setSmsData($smsData);
 
         echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
-        echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled all sms operations : '."\n";
         echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
-        echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled all sms operations : '."\n";
         $usersWithSmsInfo[] = $person1;
         $usersWithSmsInfo[] = $pro1;
 
         $pro2 = $userRepo->findOneByUsername('maltobar'); 
         $smsData = new SmsData($pro2);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0611223344');
         $smsData->setIdentifier('MALTOBAR');
+        $smsData->setPaymentEnabled(true);
         $pro2->setSmsData($smsData);
 
         $person2 = $userRepo->findOneByUsername('benoit_perso'); 
         $smsData = new SmsData($person2);
         $smsData->setPhoneNumber('0644332211');
-
-//        $smsData->setIdentifier('BENOITPERSO');
+        $smsData->setSmsEnabled(false);
         $person2->setSmsData($smsData);
 
         echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
-        echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled all sms operations : '."\n";
         echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
-        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations : '."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled all sms operations'."\n";
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $person2;
         $usersWithSmsInfo[] = $pro2;
+
+        $pro = $userRepo->findOneByUsername('epicerie_sol'); 
+        echo 'INFO: '. $pro->getName(). 'has DISabled sms payments but can receive payments at 0655667788 '."\n";
+
+        $smsData = new SmsData($pro);
+        $smsData->setPhoneNumber('0655667788');
+        $smsData->setIdentifier('AMANSOL');
+        $pro->setSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $pro;
 
         $user = $userRepo->findOneByUsername('crabe_arnold'); 
         echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";

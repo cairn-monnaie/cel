@@ -163,7 +163,7 @@ class DefaultControllerTest extends BaseControllerTest
 
         return array(
             'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,NULL),
-            'balance : not active'=>array('0744444444','SOLDE',false,'1111',true,array('opposition de compte')),
+            'balance : user opposed'=>array('0744444444','SOLDE',false,'1111',true,array('opposition de compte')),
             'balance : valid code + sms for pro & person'=>array('0612345678','SOLDE',true,'1111',true,
                                                                   array($askCodeMsg,'Votre solde compte')),
 
@@ -182,8 +182,16 @@ class DefaultControllerTest extends BaseControllerTest
             'payment : balance error'=>array('0612345678','PAYER1000000MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
             'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
-            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('opposition aux SMS depuis')),
+
+            'payment : valid,creditor has payments disabled but reception enabled'=>array('0612345678','PAYER10AMANSOL',false,'1111',true,
+                                                                                                array($validDebMsg,$validCredMsg),2),
+
+            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,
+                                                                                array('opposition aux SMS depuis')),
+
             'payment : debitor is disabled'=>array('0744444444','PAYER100MALTOBAR',false,'1111',true,array('opposition de compte')),
+
+            'payment : debitor has payments disabled'=>array('0655667788','PAYER100MALT',false,'1111',true,array('opposition aux SMS')),
 
             'payment : creditor=debitor'=>array('0611223344','PAYER100MALTOBAR',false,'1111',true,
                                                         array('identiques')),
