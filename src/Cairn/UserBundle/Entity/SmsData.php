@@ -46,12 +46,6 @@ class SmsData
      */
     private $smsEnabled;
 
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="smsClient", type="string", length=255, unique=true)
-     */
-    private $smsClient;
 
     /**
      * @var int
@@ -68,7 +62,7 @@ class SmsData
     private $dailyNumberPaymentsThreshold;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
      *@ORM\JoinColumn(nullable=false)
      */
     private $user;
@@ -163,29 +157,6 @@ class SmsData
         return $this->smsEnabled;
     }
 
-    /**
-     * Set smsClient.
-     *
-     * @param string $smsClient
-     *
-     * @return SmsData
-     */
-    public function setSmsClient($smsClient)
-    {
-        $this->smsClient = $smsClient;
-
-        return $this;
-    }
-
-    /**
-     * Get smsClient.
-     *
-     * @return string
-     */
-    public function getSmsClient()
-    {
-        return $this->smsClient;
-    }
 
     /**
      * Set dailyAmountThreshold.

@@ -161,12 +161,14 @@ class UserController extends Controller
         }
 
 
-        $smsData = ($res = $user->getSmsData()) ? $res : new SmsData($user);
-        $previousPhoneNumber = $smsData->getPhoneNumber();
+        $smsData = $user->getSmsData();
+
+        $previousPhoneNumbers = $user->getPhoneNumbers();
+
 
         //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
-        if( $user->hasRole('ROLE_PRO') && $isAdmin && !$user->getSmsData() ){
-            $session->getFlashBag()->add('info','Ce professionnel n\'a pas saisi ses coordonnées SMS');
+        if( $user->hasRole('ROLE_PRO') && $isAdmin && ! (count($user->getSmsData()) == 0) ){
+            $session->getFlashBag()->add('info','Ce professionnel n\'a saisi de coordonnées SMS');
             return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
         }
 
@@ -177,7 +179,7 @@ class UserController extends Controller
 
         //************************ end of cases where edit sms is disallowed *************************//
 
-        $formSmsData = $this->createForm(SmsDataType::class, $smsData);
+        $formSmsData = $this->createForm(SmsDataType::class, $user);
         $formCode = $this->createFormBuilder()
             ->add('code', PasswordType::class,array('label'=>'Code de validation'))
             ->add('save', SubmitType::class,array('label'=>'Valider'))

@@ -97,9 +97,16 @@ class User extends BaseUser
     private $card;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
      */
     private $smsData;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="smsClient", type="string", length=255, unique=true)
+     */
+    private $smsClient;
 
     /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
@@ -138,6 +145,7 @@ class User extends BaseUser
         $this->creationDate = new \Datetime();
         $this->beneficiaries = new ArrayCollection();
         $this->referents = new ArrayCollection();
+        $this->smsData = new ArrayCollection();
         $this->setPasswordTries(0);
         $this->setCardKeyTries(0);
         $this->setCardAssociationTries(0);
@@ -152,10 +160,15 @@ class User extends BaseUser
         return $this->getAddress()->getZipCity()->getCity();
     }
 
-    public function getPhoneNumber()
+    public function getPhoneNumbers()
     {
-        if($this->getSmsData()){
-            return $this->getSmsData()->getPhoneNumber();
+        if(count($this->getSmsData()) > 0){
+            $phoneNumbers = array();
+            $smsData = $this->getSmsData();
+            foreach($smsData as $oneSmsData){
+                $phoneNumbers[] = $oneSmsData->getPhoneNumber();
+            }
+            return $phoneNumbers;
         }
         return NULL;
     }
@@ -595,27 +608,78 @@ class User extends BaseUser
     }
 
     /**
-     * Set smsData
+     * Add smsData
      *
      * @param \Cairn\UserBundle\Entity\SmsData $smsData
      *
      * @return User
      */
-    public function setSmsData(\Cairn\UserBundle\Entity\SmsData $smsData = null)
+    public function addSmsData(\Cairn\UserBundle\Entity\SmsData $smsData)
     {
-        $this->smsData = $smsData;
+        $this->smsData[] = $smsData;
 
         return $this;
     }
 
     /**
+     * Remove smsData
+     *
+     * @param \Cairn\UserBundle\Entity\SmsData $smsData
+     */
+    public function removeSmsData(\Cairn\UserBundle\Entity\SmsData $smsData)
+    {
+        $this->smsData->removeElement($smsData);
+    }
+
+    /**
      * Get smsData
      *
-     * @return \Cairn\UserBundle\Entity\SmsData
+     * @return \Doctrine\Common\Collections\Collection
      */
     public function getSmsData()
     {
         return $this->smsData;
+    }
+
+    /**
+     * check if smsData exists
+     *
+     * @param \Cairn\UserBundle\Entity\SmsData $smsData
+     */
+    public function hasSmsData(\Cairn\UserBundle\Entity\SmsData $testSmsData)
+    {
+        $smsData = $this->getSmsData();
+
+        foreach($smsData as $smsData){
+            if($smsData == $testSmsData){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Set smsClient.
+     *
+     * @param string $smsClient
+     *
+     * @return SmsData
+     */
+    public function setSmsClient($smsClient)
+    {
+        $this->smsClient = $smsClient;
+
+        return $this;
+    }
+
+    /**
+     * Get smsClient.
+     *
+     * @return string
+     */
+    public function getSmsClient()
+    {
+        return $this->smsClient;
     }
 
     /**
