@@ -49,7 +49,7 @@ class User extends BaseUser
 
     /**
      * @orm\column(name="main_icc", type="bigint", unique=true, nullable=true)
-     * @Assert\Length(min=9, minMessage="Contient au moins {{ limit }} chiffres")
+     * @Assert\Length(min=7, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $mainICC;
 
