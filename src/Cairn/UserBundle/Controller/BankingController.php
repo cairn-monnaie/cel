@@ -449,7 +449,6 @@ class BankingController extends Controller
                 $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
-                    //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
                     $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->number));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
