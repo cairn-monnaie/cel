@@ -7,6 +7,30 @@ body {
   height: 100%;
 }
 
+.w-100 {
+  width: 100%;
+}
+
+.rotateimg90 {
+  -webkit-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+input[type=date]::-webkit-input-placeholder {
+  visibility: hidden !important;
+}
+
+.card-code, .card-position {
+  display: inline-block;
+  background: #eaeaea;
+  padding: 2px 10px;
+  font-family: sans-serif;
+  border: 1px solid #bbbbbb;
+}
+
 .nav-wrapper > ul {
   height: 100%;
 }
@@ -15,6 +39,9 @@ body {
   height: 100%;
   padding: 5px;
   box-sizing: border-box;
+}
+#logo-container a, #logo_user a {
+  height: 100%;
 }
 
 #logo-container img, #logo_user img {
@@ -26,11 +53,15 @@ body {
 }
 .login_splash .login_form {
   margin-top: 50px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.95);
   padding: 20px 0px;
 }
 .login_splash nav {
   display: none;
+}
+
+form .error {
+  color: #e74c3c;
 }
 
 .teal.success {
@@ -60,12 +91,36 @@ h2 {
   font-size: 2.5rem;
 }
 
+h3 {
+  font-size: 2rem;
+}
+
+h4 {
+  font-size: 1.8rem;
+}
+
 a:hover > img {
   opacity: 0.5;
 }
 
 nav {
   background-color: #f07254;
+}
+
+.dropify-wrapper + label {
+  display: none;
+}
+
+.card.transaction {
+  padding-top: 50px;
+}
+.card.transaction .card-content > img {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  margin-left: -50px;
 }
 
 /*# sourceMappingURL=ecairn.css.map */

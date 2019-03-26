@@ -22,6 +22,14 @@ class UserInfo
     private $userService;
 
     /**
+     * Deals with all user status management.
+     *
+     * This attribute is an instance of a Cyclos Service class proposed in the Cyclos WebServices PHP API.
+     *@var Cyclos\UserStatusService $userStatusService                                            
+     */
+    private $userStatusService;
+
+    /**
      * Deals with all group management.
      *
      * This attribute is an instance of a Cyclos Service class proposed in the Cyclos WebServices PHP API.
@@ -34,6 +42,7 @@ class UserInfo
     public function __construct($leadingCompanyName)
     {
         $this->userService = new Cyclos\UserService();
+        $this->userStatusService = new Cyclos\UserStatusService();
         $this->groupService = new Cyclos\GroupService();
         $this->leadingCompanyName = $leadingCompanyName;
     }
@@ -78,7 +87,9 @@ class UserInfo
     }
 
     /**
-     *WARNING : use this function very carefully ! the option "keywords" means that if you have several users with data such that one is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for. That's why, for now, we use it only at installation because there is only one user in the system. For a given mask for account numbers, this function is safe. Afterwards, if one changes the mask, all account numbers should be generated before using this function
+     * WARNING : use this function very carefully ! the option "keywords" means that if you have several users with data such that one 
+     * is a substring of the other one, Cyclos will return several users, and not necessarily the one you are looking for.
+     * Therefore, use this function if and only if you are 100% sure that the keyword identifies your user : account number, email
      */
     public function getUserVOByKeyword($keyword)
     {
@@ -116,7 +127,15 @@ class UserInfo
         return $this->userService->search($query)->pageItems;
     }
 
+    public function searchUsers($query)
+    {
+        return $this->userService->search($query)->pageItems; 
+    }
 
+    public function getUserStatus($userID)
+    {
+        return $this->userStatusService->getData($userID)->status;
+    }
 
     /**
      *Returns true if $userName belongs to group $groupName, false otherwise
@@ -131,19 +150,16 @@ class UserInfo
     }
 
     /*
-     * Returns the list of users in group $name
+     * Returns the list of users in group $groupVO
      *
      * @param stdClass|int $groupVO either the whole groupVO object or its ID
-     * @return list of users in group $name
+     * @return list of users in group $goupVO
      */
     public function getListInGroup($groupVO, $statuses=NULL)
     {
         $query = new \stdClass();
         $query->groups = $groupVO;
-        $query->userStatus = array('ACTIVE');
-        if($statuses){
-            $query->userStatus = array_merge($query->userStatus,$statuses);
-        }
+        $query->userStatus = $statuses;
 
         return $this->userService->search($query)->pageItems; 
     }

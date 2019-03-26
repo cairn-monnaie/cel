@@ -19,26 +19,26 @@
         {% endif %}
 
     <h1>Récapitulatif du paiement en cours </h1>
-    
-    <li>
-        {% if operationReview.fromAccount.owner.display is defined %}
-            {{ operationReview.fromAccount.owner.display }}
-        {% else %}
-            Association Le Cairn
-        {% endif %}
-        {{ operationReview.fromAccount.type.name }}
-        {{ fromID }}
 
-    </li>
-    <li>
-        {% if operationReview.toAccount.owner.display is defined %}
+    Paiement de <strong> {{ operationReview.totalAmount.amount }} </strong>
+
+    de <strong>{% if operationReview.fromAccount.owner.display is defined %}
+    {{ operationReview.fromAccount.owner.display }}
+{% else %}
+    Association Le Cairn
+{% endif %}
+    {{ operationReview.fromAccount.type.name }}
+    {{ fromID }}</strong>
+
+    à
+
+    <strong> {% if operationReview.toAccount.owner.display is defined %}
             {{ operationReview.toAccount.owner.display }}
         {% else %}
             Association Le Cairn
         {% endif %}
-        {{ toID }}
-    </li>
-    <li>{{ operationReview.totalAmount.amount }}</li>
+        {{ toID }}</strong>
+
     
     <div class="well">
       {{ form(form) }}

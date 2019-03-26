@@ -18,8 +18,10 @@ parameters:
     mailer_transport: smtp
     mailer_host: 127.0.0.1
     mailer_user: cairn@cairn-monnaie.com
-    mailer_port: 1080
+    mailer_port: 587
     mailer_password: abcdefg
+    mailer_encryption: tls
+
 
     # A secret key that's used to generate certain security-related tokens
     secret: ThisTokenIsNotSoSecretChangeIt
@@ -41,11 +43,12 @@ parameters:
     cairn_default_reconversion_description : Reconversion cairns-euros
 
     cairn_default_register_url : ~
-
+    cairn_default_cgu_url : ~
     cyclos_group_pros : 'Adhérents prestataires'
     cyclos_group_persons: 'Adhérents utilisateurs'
     cyclos_group_network_admins : Network administrators
     cyclos_group_global_admins : Global administrators
+    cyclos_anonymous_user : anonyme
 
     cyclos_root_prod_url : 'http://cyclos-app:1234/'
     cyclos_root_test_url:  'http://cyclos-app:4321/'
@@ -55,7 +58,10 @@ parameters:
     cyclos_currency_cairn : cairn
     leading_company : 'Association Le Cairn'
     max_printable_cards : 20
+
     sms_max_amount_without_security: 10
     sms_amount_block: 1000
     sms_nb_payments_block: 15
+    sms_api_token : ThisTokenIsNotSoSecretChangeIt
+    sms_provider_url : 'https://sms-provider.com'
 

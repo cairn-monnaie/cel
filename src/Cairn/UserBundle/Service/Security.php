@@ -52,7 +52,7 @@ class Security
 
     protected $smsNbPaymentsBlock;
 
-    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo, $secret,$smsMaxAmountWithoutSecurity,$smsAmountBlock,$smsNbPaymentsBlock)
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret,string $smsMaxAmountWithoutSecurity,string $smsAmountBlock,string $smsNbPaymentsBlock)
     {
         $this->userRepo = $userRepo;
         $this->operationRepo = $operationRepo;
@@ -90,7 +90,7 @@ class Security
         $isSensibleRoute = in_array($route,$sensibleRoutes);                   
 
         if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_associate'){
-            if(! ($this->userRepo->findOneBy(array('id'=>$parameters['id'])) === $currentUser)){
+            if(! ($parameters['id'] == $currentUser->getID()) ){
                 $isSensibleUrl = true;
             }
         }elseif(strpos($route,'cairn_user_cyclos') !== false){

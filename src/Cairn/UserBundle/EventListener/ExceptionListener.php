@@ -107,7 +107,7 @@ class ExceptionListener
                     $event->setResponse(new RedirectResponse($welcomeUrl));
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){
-                    $session->getFlashBag()->add('error','Votre session a expiré. Veuillez vous reconnecter.');
+                    $session->getFlashBag()->add('info','Votre session a expiré. Veuillez vous reconnecter.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){

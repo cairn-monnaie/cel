@@ -9,6 +9,7 @@ use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Form\AddressType;
 use Cairn\UserBundle\Form\ImageType;
 use Cairn\UserBundle\Form\IdentityDocumentType;
+use Doctrine\ORM\EntityManager;
 use Symfony\Component\Form\AbstractType;
 
 use Symfony\Component\Form\Extension\Core\Type\FileType;
@@ -29,10 +30,12 @@ use Symfony\Component\Security\Core\Security;
 class RegistrationType extends AbstractType
 {
     private $authorizationChecker;
+    private $em;
 
-    public function __construct(AuthorizationChecker $authorizationChecker)
+    public function __construct(AuthorizationChecker $authorizationChecker, EntityManager $em)
     {
         $this->authorizationChecker = $authorizationChecker;
+        $this->em = $em;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -52,9 +55,10 @@ class RegistrationType extends AbstractType
                 if($user->isAdherent()){
                     $form->add('identityDocument', IdentityDocumentType::class,
                         array(
+//                            'compound'=> true,
                             'label'=>'Votre pièce d\'identité',
-                            'attr' => array('class'=>'identity-document'),
-                            'required'=>false));
+                            'attr' => array('class'=>'identity-document')
+                        ));
                 }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
@@ -90,6 +94,16 @@ class RegistrationType extends AbstractType
                 }
             }
         );
+        $builder->addEventListener(
+            FormEvents::SUBMIT,
+            function (FormEvent $event) {
+                $user = $event->getData();
+                if(null === $user){
+                    return;
+                }
+                $user->setUsername($this->generateUsername($user));
+            }
+        );
         $builder->add('address', AddressType::class);
     }
 
@@ -108,5 +122,35 @@ class RegistrationType extends AbstractType
     public function getName()
     {
         return $this->getBlockPrefix();
+    }
+
+    private function generateUsername(User $user)
+    {
+        if (!$user->getName()) {
+            return null;
+        }
+
+        $username = User::makeUsername($user->getName(),$user->getFirstname());
+        $qb = $this->em->createQueryBuilder();
+        $usernames = $qb->select('u')->from('CairnUserBundle:User', 'u')
+            ->where($qb->expr()->like('u.username', $qb->expr()->literal($username . '%')))
+            ->orderBy('u.username', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        if (count($usernames)) {
+            if (count($usernames)==1 && $usernames[0]->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO')){
+                //if only one exist and is the part version of the pro we want create
+                $username = $username.'_pro';
+            }else{
+                $count = 1;
+                $first = $usernames[0]->getUsername();
+                if(preg_match_all('/\d+/', $first, $numbers)) {
+                    $count = end($numbers[0]) + 1;
+                }
+                $username = $username . + $count;
+            }
+        }
+        return $username;
     }
 }

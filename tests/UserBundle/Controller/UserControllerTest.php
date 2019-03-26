@@ -37,6 +37,7 @@ class UserControllerTest extends BaseControllerTest
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
+
         $crawler = $this->inputCardKey($crawler,'1111');
         $crawler = $this->client->followRedirect();
 
@@ -131,15 +132,16 @@ class UserControllerTest extends BaseControllerTest
 
 
                         if($currentUser->getPhoneNumberActivationTries() >= 3){
-                            $this->assertFalse($currentUser->isEnabled());
                             $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
                             $crawler = $this->client->followRedirect();
                             $crawler = $this->client->followRedirect();
 
+                            $this->assertUserIsDisabled($currentUser,true);
+
                             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
                         }else{
-                            $this->assertTrue($currentUser->isEnabled());
+                            $this->assertUserIsEnabled($currentUser, false);
 //                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
 //                            $crawler = $this->client->followRedirect();
 
@@ -251,22 +253,22 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-          'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                  'isValidCode'=>false,'hasPreviousPhoneNumber'=>false, 'code'=>'2222',
-                                                                  'expectedMessages'=>'compte a été bloqué')),
+        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'isValidCode'=>false,'hasPreviousPhoneNumber'=>true, 'code'=>'2222',
+                                                                'expectedMessages'=>'compte a été bloqué')),
 
             'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                                                                               'hasPreviousPhoneNumber'=>false,
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-            'never had phone number : valid code'=>array_replace($baseData, array('login'=>'jardins_epices','target'=>'jardins_epices',
-                                                                                  'hasPreviousPhoneNumber'=>false,
-                                                                                  'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                                              )),
+          'never had phone number : valid code'=>array_replace($baseData, array('login'=>'jardins_epices','target'=>'jardins_epices',
+                                                                                'hasPreviousPhoneNumber'=>false,
+                                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                                            )),
 
             'no phone number : referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'labonnepioche',
-                                                            'isExpectedForm'=>false,'expectedMessages'=>'jamais saisi ses coordonnées')),
+                                                            'isExpectedForm'=>false,'expectedMessages'=>'pas saisi ses coordonnées')),
 
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_prod','target'=>'nico_faus_prod',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
@@ -443,16 +445,13 @@ class UserControllerTest extends BaseControllerTest
                 ;
             }else{
                 if($isEmailSent){
+                    $this->assertUserIsDisabled($currentUser, true);
+
                     $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
                     $this->assertTrue($mailCollector->getMessageCount() == 1);
+                }else{
+                    $this->assertUserIsDisabled($currentUser, false);
                 }
-
-                $this->assertFalse($currentUser->isEnabled());
-                $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
-                $crawler = $this->client->followRedirect();
-                $crawler = $this->client->followRedirect();
-
-                $this->assertContains($expectedMessage, $this->client->getResponse()->getContent() );
             }
         }else{
             $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -482,6 +481,12 @@ class UserControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','user/profile/view/'.$targetUser->getID());
 
+
+        if(! $isLegit){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            return;
+        }
+
         $this->assertContains(htmlspecialchars($targetUser->getName(),ENT_QUOTES),$this->client->getResponse()->getContent());
         $this->assertContains($targetUser->getUsername(),$this->client->getResponse()->getContent());
         $this->assertContains($targetUser->getEmail(),$this->client->getResponse()->getContent());
@@ -490,21 +495,16 @@ class UserControllerTest extends BaseControllerTest
         $this->assertContains(htmlspecialchars($targetUser->getAddress()->getStreet1(),ENT_QUOTES),$this->client->getResponse()->getContent());
         $this->assertContains($targetUser->getAddress()->getZipCity()->getZipCode(),$this->client->getResponse()->getContent());
 
-        if(! $isLegit){
-            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-            return;
-        }
-
-
         $hasCard = $targetUser->getCard();
 
         if($targetUser->isAdherent()){
 
-            $this->assertSame(1,$crawler->filter('a[href*="user/block"]')->count());
-            $this->assertSame(1,$crawler->filter('a[href*="user/remove"]')->count());
-            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/id-document/download/'.$targetUser->getID().'"]')->count());
 
-            if($currentUser === $targetUser){//adherent watching his own profile
+            if($currentUser === $targetUser){//adherent watching his own profile --> is enabled if so
+                $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/change-password"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/edit"]')->count());
 
@@ -519,23 +519,23 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertsame(0,$crawler->filter('a[href*="card/download"]')->count());
 
                 if($hasCard){
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }else{//admin, as referent, watching adherent's profile
 
                 if($targetUser->isEnabled()){
-                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/block"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="admin/users/activate"]')->count());
                 }else{
-                    $this->assertSame(0,$crawler->filter('a[href*="admin/users/block"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="user/block"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate/'.$targetUser->getID().'"]')->count());
                 }
 
                 $this->assertSame(0,$crawler->filter('a[href*="profile/change-password"]')->count());
@@ -544,9 +544,9 @@ class UserControllerTest extends BaseControllerTest
                 if($targetUser->hasRole('ROLE_PRO')){
                     if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                         $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign"]')->count());
+                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign/'.$targetUser->getID().'"]')->count());
                     }else{//is GL --> cannot assign referent
-                        $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
+                        $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
                         $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
                     }
                 }else{//person's profile : no referent data
@@ -556,19 +556,39 @@ class UserControllerTest extends BaseControllerTest
 
                 if($hasCard){
                     $this->assertSame(0,$crawler->filter('a[href*="card/download"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
-                    $this->assertSame(1,$crawler->filter('a[href*="card/download"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/download/'.$targetUser->getID().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }
         }
 
+    }
+
+    /**
+     *
+     *@dataProvider provideReferentsAndTargets
+     */
+    public function testDownloadIdDocument($referent,$target,$isLegit)
+    {
+        $crawler = $this->login($referent, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
+        $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
+
+        $crawler = $this->client->request('GET','user/id-document/download/'.$targetUser->getID());
+
+
+        if(! $isLegit){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            return;
+        }
     }
 
     public function provideReferentsAndTargets()
@@ -579,7 +599,7 @@ class UserControllerTest extends BaseControllerTest
             'superadmin for enabled pro'=>array('referent'=>$adminUsername,'target'=>'DrDBrew','isLegit'=>true),
             'admin for enabled pro'=>array('referent'=>'gl_grenoble','target'=>'episol','isLegit'=>true),
             'admin not referent'=>array('referent'=>$adminUsername,'target'=>'vie_integrative','isLegit'=>false),
-            'superadmin for enabled person'=>array('referent'=>$adminUsername,'target'=>'crabe_arnold','isLegit'=>true),
+          'superadmin for enabled person'=>array('referent'=>$adminUsername,'target'=>'crabe_arnold','isLegit'=>true),
             'enabled pro for himself'=>array('referent'=>'DrDBrew','target'=>'DrDBrew','isLegit'=>true),
             'superadmin for disabled pro'=>array('referent'=>$adminUsername,'target'=>'la_mandragore','isLegit'=>true),
             'superadmin for pro without card'=>array('referent'=>$adminUsername,'target'=>'episol','isLegit'=>true),
@@ -603,7 +623,6 @@ class UserControllerTest extends BaseControllerTest
     {
         $crawler = $this->login($referent,'@@bbccdd');
 
-        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
@@ -649,19 +668,26 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertTrue($this->client->getResponse()->isRedirect());
                     $crawler = $this->client->followRedirect();
 
-                    $operations = $operationRepo->findBy(array('stakeholderName'=>$saveName));
-                    $this->assertTrue( count($operations) != 0);
+                    $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
 
+                    $operations = $operationRepo->findBy(array('creditorName'=>$saveName));
+                    $this->assertTrue( count($operations) != 0);
                     foreach($operations as $operation){
-                        $this->assertEquals($operation->getStakeholder(),NULL);
+                        $this->assertEquals($operation->getCreditor(),NULL);
+                    }
+
+                    $operations = $operationRepo->findBy(array('debitorName'=>$saveName));
+                    $this->assertTrue( count($operations) != 0);
+                    foreach($operations as $operation){
+                        $this->assertEquals($operation->getDebitor(),NULL);
                     }
 
                     $this->em->refresh($targetUser);
 
-                    $this->assertEquals($targetUser,NULL);
-                    $this->assertSame(1,$crawler->filter('html:contains("supprimé de la plateforme")')->count());
+                    $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-                    //check that operations involving removed user as stakeholder do still exist with stakeholder = NULL and stakeholderName with value
+                    $this->assertSame(1,$crawler->filter('html:contains("Espace membre supprimé")')->count());
+
                 }else{
                     $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
                     $crawler = $this->client->followRedirect();
@@ -670,8 +696,7 @@ class UserControllerTest extends BaseControllerTest
 
                     $this->assertNotEquals($targetUser,NULL);
                     $this->assertEquals($targetUser->getRemovalRequest(),true);
-                    $this->assertEquals($targetUser->isEnabled(),false);
-
+                    $this->assertUserIsDisabled($targetUser, true);
                 }
             }       
         }

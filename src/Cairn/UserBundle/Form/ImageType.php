@@ -23,8 +23,8 @@ class ImageType extends AbstractType
                         'maxSizeMessage'=>'Fichier trop volumineux ({{ size }} {{ suffix }}). La taille maximale est {{ limit }} {{ suffix }}'
                     )),
                     new Assert\Image(array(
-                        'mimeTypesMessage'=>'Les formats valides sont jpeg, jpg, png et gif',
-                        'mimeTypes'=>array('image/jpeg','image/jpg','image/png','image/gif')
+                        'mimeTypesMessage'=>'Les formats valides sont jpeg, jpg et png',
+                        'mimeTypes'=>array('image/jpeg','image/jpg','image/png')
                     ))
                 )
             ));

@@ -18,76 +18,82 @@
 <p>
 
 <div class="row">
-    <div id="situation" class="col s12 m6">
-        <div class="card-panel z-depth-1">
-            <h2>Ma situation
-                <a href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}">
-                    <i class="material-icons">more</i>
-                </a>
-            </h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Nom</th>
-                    <th>Id</th>
-                    <th>Solde</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for account in accounts %}
-                    <tr>
-                        <td><a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">{{account.type.name}}</a></td>
-                        <td>{{account.number}}</td>
-                        <td>{{account.status.balance}}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div id="operations" class="col s12 m6">
-        <div class="card-panel z-depth-1">
-            <h2>Mes dernières opérations</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Nature</th>
-                    <th>Montant</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for transaction in lastTransactions %}
-                    <tr>
-                        <td>{{transaction.executionDate|date('Y-m-d')}}</td>
-                        <td>{{transaction.reason}}</td>
-                        <td>{{transaction.amount}} cairns</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="col s12"></div>
-    <div id="network" class="col s12 m6">
-        <div class="card">
-            <div class="card-image">
-                <img src="{{asset('bundles/cairnuser/img/purple-network.png')}}">
-                <span class="card-title black-text">Ils ont rejoint le [e]cairn</span>
-            </div>
-            <div class="card-content">
-        <ul>
-        {% for user in lastUsers %}
-            <li class="users_show">
-                <div>
-                    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}">
-                        {{user.name}} </br>
-                        {#<img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}">#}
+    <div class="col s12 m6">
+        <div  id="situation">
+            <div class="card-panel z-depth-1">
+                <h2>Ma situation
+                    <a href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}">
+                        <i class="material-icons">more</i>
                     </a>
+                </h2>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Id</th>
+                        <th>Solde</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for account in accounts %}
+                        <tr>
+                            <td><a href="{{ path('cairn_user_banking_account_operations', {'accountID': account.id}) }}">{{account.type.name}}</a></td>
+                            <td>{{account.number}}</td>
+                            <td>{{account.status.balance}}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="network" >
+            <div class="card">
+                <div class="card-image">
+                    <img src="{{asset('bundles/cairnuser/img/purple-network.png')}}">
+                    <span class="card-title black-text">Ils ont rejoint le [e]cairn</span>
                 </div>
-            </li>
-        {% endfor %}
-        </ul>
+                <div class="card-content">
+                    <ul>
+                        {% for user in lastUsers %}
+                            <li class="users_show">
+                                <div>
+                                    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}">
+                                        {{user.name}} </br>
+                                        {#<img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}">#}
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
+    <div class="col s12 m6">
+        <div id="operations">
+            <div class="card-panel z-depth-1">
+                <h2>Mes dernières opérations</h2>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Nature</th>
+                        <th>Montant</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for transaction in lastTransactions %}
+                        <tr>
+                            <td>{{transaction.executionDate|date('Y-m-d')}}</td>
+                            <td>{{transaction.reason}}</td>
+                            <td>{{transaction.amount}} cairns</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

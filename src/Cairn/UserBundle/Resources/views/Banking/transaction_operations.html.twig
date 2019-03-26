@@ -5,11 +5,10 @@
 {% block body %}
     {{parent()}}
     <h1>Virements</h1>
-    <h2> Effectuer un virement </h2>
-    <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}" class="btn"><i class="material-icons left">arrow_right_alt</i>Virement ponctuel</a>
+    <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}" class="btn"><i class="material-icons left">add</i>Nouveau virement unique</a>
+    {#trending_flat#}
     {#<a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a>#}
-    <h2> Gérer ses virements </h2>
-    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Mes virements ponctuels</a>
+    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Tous mes virements</a>
     {# <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a>#}
     <br>
     <br>

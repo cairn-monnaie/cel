@@ -153,8 +153,9 @@ class CardControllerTest extends BaseControllerTest
             }
         }else{
 
-            //form here (same form than for card key )
-            $crawler = $this->inputCardKey($crawler,$code);
+            $form = $crawler->selectButton('form_add')->form();
+            $form['form[code]']->setValue($code);
+            $crawler = $this->client->submit($form);
 
             $this->em->refresh($currentUser);
             $this->em->refresh($targetUser);

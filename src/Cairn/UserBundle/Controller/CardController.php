@@ -499,12 +499,15 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
         }
 
-        $form = $this->createForm(CardType::class);
+        $form = $this->createFormBuilder()
+            ->add('code', TextType::class, array('label' => 'Code de la carte de sécurité'))
+            ->add('add', SubmitType::class, array('label' => 'Associer'))
+            ->getForm();
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
             if($form->isValid()){
-                $cardCode =  $form->get('field')->getData();
+                $cardCode =  $form->get('code')->getData();
                 $newCard = $cardRepo->findAvailableCardWithCode($this->get('cairn_user.security')->vigenereDecode($cardCode));
 
                 if(!$newCard){

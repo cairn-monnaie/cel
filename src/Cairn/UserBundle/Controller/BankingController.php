@@ -182,12 +182,12 @@ class BankingController extends Controller
                     'label' => 'depuis',
                     'widget' => 'single_text',
                     'data' => $begin,
-                    'required'=>false))
+                    'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                     ->add('end',       DateType::class, array(
                         'label' => 'jusqu\'à',
                         'widget' => 'single_text',
                         'data'=> $end,
-                        'required'=>false))
+                        'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                         ->add('minAmount', NumberType::class,array(
                             'label'=>'Montant minimum',
                             'required'=>false))
@@ -197,7 +197,7 @@ class BankingController extends Controller
                                 ->add('keywords',  TextType::class,array(
                                     'label'=>'Mots-clés',
                                     'required'=>false))
-                                    ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
+                                    ->add('save',      SubmitType::class, array('label' => 'Filtrer'))
                                     ->getForm();
 
         if($request->isMethod('POST')){ //form filled and submitted
@@ -425,6 +425,7 @@ class BankingController extends Controller
 
         if($frequency == 'unique'){
             $operation = new Operation();
+            $operation->setToAccountNumber($to); //todo: hack, make it cleaner
             $form = $this->createForm(SimpleOperationType::class, $operation);
         }
         //        else{
@@ -444,12 +445,12 @@ class BankingController extends Controller
                 $dataTime = $operation->getExecutionDate();
                 //                }
 
-                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()['number']);
+                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()->number);
                 $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
                     //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
-                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount['number']));
+                    $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->number));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
                         return new RedirectResponse($request->getRequestUri());
@@ -459,12 +460,7 @@ class BankingController extends Controller
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-
-                if($toAccount['number']){
-                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['number']);
-                }else{
-                    $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount['email']);
-                }
+                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount->number);
 
                 $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
                 $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toUserVO,NULL);
@@ -473,8 +469,8 @@ class BankingController extends Controller
                 $transferTypes = $paymentData->paymentTypes;
                 $accurateTransferTypes = array();
                 foreach($transferTypes as $transferType){
-                    if($transferType->from->id == $fromAccount->type->id){
-                        $accurateTransferTypes[] = $transferType;
+                    if( strpos($transferType->internalName, 'virement_inter_adherent') !== false){
+                        $onlineTransferType = $transferType;
                     }
                 }
 
@@ -511,20 +507,9 @@ class BankingController extends Controller
                 //
                 //                }elseif($frequency == 'unique'){
 
-                if($toAccount['number']){
 
-                    foreach($accurateTransferTypes as $transferType){
-                        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$transferType,$dataTime);
-
-                        if($res->toAccount->number == $toAccount['number']){
-                            $session->set('paymentReview',$res);
-                        }
-                    }
-                }else{
-                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$accurateTransferTypes[0],$dataTime);
-                    $session->set('paymentReview',$res);
-
-                }
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$onlineTransferType,$dataTime);
+                $session->set('paymentReview',$res);
 
                 $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
                 $operation->setFromAccountNumber($res->fromAccount->number);
@@ -539,16 +524,16 @@ class BankingController extends Controller
                 //                }
 
 
+            }else{
+                $session->getFlashBag()->add('error','L\'opération n\'a pas pu être effectuée');
             }
         }
 
-        if($_format == 'json'){
-            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
-        }
+//        if($_format == 'json'){
+//            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
+//        }
         return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
-            'form'=>$form->createView(),
-            'fromAccounts'=>$selfAccounts,
-            'toAccounts'=>$toAccounts));
+            'form'=>$form->createView()));
 
     }
 
@@ -651,7 +636,7 @@ class BankingController extends Controller
         $paymentReview = $session->get('paymentReview');
 
         $form = $this->createFormBuilder()
-            ->add('cancel',    SubmitType::class, array('label' => 'Annulation'))
+            ->add('cancel',    SubmitType::class, array('label' => 'Annuler','attr' => array('class'=>'red')))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
             ->getForm();
 

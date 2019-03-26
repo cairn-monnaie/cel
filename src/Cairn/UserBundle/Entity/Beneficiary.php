@@ -52,6 +52,11 @@ class Beneficiary
         $this->sources = new ArrayCollection();
     }
 
+    public function getAutocompleteLabel()
+    {
+        return $this->getUser()->getAutocompleteLabel();
+    }
+
     /**
      * Get id
      *

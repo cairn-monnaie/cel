@@ -1,11 +1,11 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/pending_validation.html.twig #}
 
-{% block subject %}Confirmation effectuée{% endblock %}
+{# {% block subject %}Confirmation effectuée{% endblock %} #}
 
 {% block body_text %}
     {% autoescape false %}
         Merci d'avoir confirmé la validité de votre adresse email.
-        Les différentes informations liées à votre activité sur la plateforme vous parviendront ici.
+        Les différentes informations liées à votre activité sur votre compte [e]-Cairn vous parviendront ici.
 
         Un email vous sera envoyé dès que l'équipe administrative aura validé votre inscription.
 
@@ -16,8 +16,7 @@
 {% block body_html %}
     Merci d'avoir confirmé la validité de votre adresse email.<br>
     <br>
-    Vous avez soumis une demande d'inscription sur la plateforme e-Cairn avec cette adresse mail.<br>
-    Les différentes informations liées à votre activité sur la plateforme vous parviendront ici.<br>
+    Les différentes informations liées à votre activité sur votre compte [e]-Cairn vous parviendront ici.<br>
     <br>
     Un email vous sera envoyé dès que l'équipe administrative aura validé votre inscription.<br>
     <br>

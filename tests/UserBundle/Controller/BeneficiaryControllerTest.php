@@ -24,7 +24,7 @@ class BeneficiaryControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideBeneficiariesToAdd
      */
-    public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid,$expectKey)
+    public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -51,15 +51,15 @@ class BeneficiaryControllerTest extends BaseControllerTest
         $crawler = $this->client->followRedirect();
 
         $form = $crawler->selectButton('form_add')->form();
-        $form['form[name]']->setValue($name);
-        $form['form[email]']->setValue($email);
-        $form['form[ICC]']->setValue($ICC);
+        $form['form[cairn_user]']->setValue($email);
         $crawler = $this->client->submit($form);
 
         if($isValid){
             $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$ICC));
             $this->assertTrue($this->client->getResponse()->isRedirect('/user/beneficiaries/list'));
             $crawler = $this->client->followRedirect();
+
+            $this->assertContains($ICC,$this->client->getResponse()->getContent());
 
             $this->em->refresh($debitorUser);
             $this->assertTrue($debitorUser->hasBeneficiary($beneficiary));
@@ -72,28 +72,28 @@ class BeneficiaryControllerTest extends BaseControllerTest
     {
         return array(
             'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.fr',
-                                       'changeICC'=>false,'isValid'=>false,'expectKey'=>'error'), 
+                                       'changeICC'=>false,'isValid'=>false), 
 
             'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.fr',
-                                     'changeICC'=>false,'isValid'=>false,'expectMessage'=>'error'),              
+                                     'changeICC'=>false,'isValid'=>false),              
 
             'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
-                                   'changeICC'=>true,'isValid'=>false,'expectMessage'=>'error'),              
+                                   'changeICC'=>true,'isValid'=>false),              
 
             'pro adds pro'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
-                                 'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+                                 'changeICC'=>false,'isValid'=>true),              
 
             'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr',
-                                   'changeICC'=>false,'isValid'=>false,'expectMessage'=>'info'),              
+                                   'changeICC'=>false,'isValid'=>false),              
 
             'pro adds person'=>array('current'=>'labonnepioche','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
-                                     'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+                                     'changeICC'=>false,'isValid'=>true),              
 
             'person adds person'=>array('current'=>'cretine_agnes','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
-                                        'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+                                        'changeICC'=>false,'isValid'=>true),              
 
-            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr',
-                                     'changeICC'=>false,'isValid'=>true,'expectMessage'=>'success'),              
+            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonnepioche@test.fr',
+                                     'changeICC'=>false,'isValid'=>true),              
 
         );
     }

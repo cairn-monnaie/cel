@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\Address;
 
 use Cyclos;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class DefaultControllerTest extends BaseControllerTest
@@ -40,6 +41,7 @@ class DefaultControllerTest extends BaseControllerTest
                 $this->assertTrue(is_numeric($res->amount) );
             }
         }else{
+            var_dump($res->error);
             $this->assertTrue(strpos($res->error,$expectMessage) !== false);
         }
     }
@@ -50,7 +52,7 @@ class DefaultControllerTest extends BaseControllerTest
             'invalid format : no action'=>array('12.5 SHOP', false, true, 'Envoyer PAYER, SOLDE'),
             'invalid format : no amount'=>array('PAYER SHOP',false,true,'Format du montant'),
             'invalid format : negative amount'=>array('PAYER -12.5 SHOP',false,true,'Format du montant'),
-            'invalid format : no identifier'=>array('PAYER 12.5',false,true,'IDENTIFIANT INCONNU'),
+            'invalid format : no identifier'=>array('PAYER 12.5',false,true,'identifiant SMS'),
             'invalid format : action SOLDE'=>array('SOLD',false,false,'Envoyer PAYER, SOLDE'),
             'invalid format : action SOLDE + texte'=>array('SOLDE OUT!',false,false,'Demande de solde invalide'),
             'invalid format : code with some letter'=>array('12e74',false,false,'Envoyer PAYER, SOLDE'),
@@ -64,8 +66,8 @@ class DefaultControllerTest extends BaseControllerTest
             'valid format : action PAYER 4'=>array('PAYEZ 12.5 SHOP',true,true,''),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
-            'invalid format : float amount with 0 decimals'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
-            'invalid format : float amount with 0 decimals'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
+            'invalid format : float amount with got'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
+            'invalid format : float amount with comma'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
             'valid format : float amount with . character'=>array('PAYER 12.5 SHOP',true,true,''),
             'valid format : float amount with , character'=>array('PAYER 12,5 SHOP',true,true,''),
             'valid format : amount with 1 decimal'=>array('PAYER 12.5 SHOP',true,true,''),
@@ -142,9 +144,6 @@ class DefaultControllerTest extends BaseControllerTest
 
                 }
             }
-            //committing modifications
-//            \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();
-//            \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::beginTransaction();
         }else{
             $mailCollector = $client->getProfile()->getCollector('swiftmailer');
             $this->assertSame(0, $mailCollector->getMessageCount());
@@ -158,38 +157,44 @@ class DefaultControllerTest extends BaseControllerTest
     public function provideDataForSmsOperation()
     {
         $askCodeMsg = 'code de sécurité';
-        $wrongCodeMsg = 'ÉCHEC CODE';
+        $wrongCodeMsg = 'Échec du code';
         $validDebMsg = 'été accepté';
         $validCredMsg = 'avez reçu';
 
         return array(
             'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,NULL),
-            'balance : not active'=>array('0744444444','SOLDE',false,'1111',true,array('actuellement bloqué')),
+            'balance : user opposed'=>array('0744444444','SOLDE',false,'1111',true,array('opposition de compte')),
             'balance : valid code + sms for pro & person'=>array('0612345678','SOLDE',true,'1111',true,
-                                                                    array($askCodeMsg,'Votre solde compte')),
+                                                                  array($askCodeMsg,'Votre solde compte')),
 
             'balance : invalid code + sms for pro & person'=>array('0612345678','SOLDE',true,'2222',false,
                                                                     array($askCodeMsg,$wrongCodeMsg)),
 
             'login : no pro'=>array('0612345678','LOGIN',false,'1111',true,NULL),
-            'login : pro + valid code '=>array('0611223344','LOGIN',true,'1111',true,array($askCodeMsg,'IDENTIFIANT SMS E-CAIRN')),
+            'login : pro + valid code '=>array('0611223344','LOGIN',true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
             'login : pro + wrong code '=>array('0611223344','LOGIN',true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
 
             'balance : invalid sms'=>array('0612345678','SOLD',false,'1111',true,array('SMS INVALIDE')),
             'balance : invalid sms'=>array('0612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
-            'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA',false,'1111',true,
-                                                                array('professionnel incorrect')),
-            'payment mistake : person to person with ID SMS'=>array('0612345678','PAYER10CRABEARNOLD',false,'1111',true,
-                                                                array('non professionnel')),
+            'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
+            'payment mistake : person to person with ID SMS'=>array('0612345678','PAYER10CRABEARNOLD',false,'1111',true,NULL),
 
             'payment : balance error'=>array('0612345678','PAYER1000000MALTOBAR',false,'1111',true,
-                                                                array('SOLDE INSUFFISANT')),
-            'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées par')),
-            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('actuellement bloquées')),
-            'payment : debitor is disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,array('actuellement bloqué')),
+                                                                array('Solde insuffisant')),
+            'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
+
+            'payment : valid,creditor has payments disabled but reception enabled'=>array('0612345678','PAYER10AMANSOL',false,'1111',true,
+                                                                                                array($validDebMsg,$validCredMsg),2),
+
+            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,
+                                                                                array('opposition aux SMS depuis')),
+
+            'payment : debitor is disabled'=>array('0744444444','PAYER100MALTOBAR',false,'1111',true,array('opposition de compte')),
+
+            'payment : debitor has payments disabled'=>array('0655667788','PAYER100MALT',false,'1111',true,array('opposition aux SMS')),
 
             'payment : creditor=debitor'=>array('0611223344','PAYER100MALTOBAR',false,'1111',true,
-                                                        array('DEBITEUR ET CREDITEUR IDENTIQUES')),
+                                                        array('identiques')),
 
             'payment : too low amount'=>array('0612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
             'payment : valid, no code'=>array('0612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
@@ -208,9 +213,9 @@ class DefaultControllerTest extends BaseControllerTest
           'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,
                                                         array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
-            'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,array('rien à valider')),
+            'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,NULL),
 
-            'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('PAIEMENT SMS BLOQUE','tentative de paiement','tentative de paiement'),3),
+            'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
 
         );
     }
@@ -250,7 +255,7 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             array('login'=>true,'username'=>'labonnepioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
             array('login'=>true,'username'=>'comblant_michel','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
+//            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
             array('login'=>true,'username'=>$adminUsername,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>true,'username'=>$adminUsername,'type'=>'person', 'expectValid'=>true, 'expectMessage'=>''),
             array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
@@ -288,6 +293,8 @@ class DefaultControllerTest extends BaseControllerTest
             $this->assertNotContains('fos_user_registration_form[image]',$this->client->getResponse()->getContent());
         }
 
+        $form['fos_user_registration_form[identityDocument][file]']->upload('path/to/photo.png');
+
         $crawler =  $this->client->submit($form);
 
         $crawler = $this->client->followRedirect();
@@ -318,11 +325,12 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
 
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse email")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
         }
 
         $this->em->refresh($newUser);
-        $this->assertTrue(!$newUser->isEnabled());
+        $this->assertFalse($newUser->isEnabled());
+
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));
         }elseif($type == 'person'){
@@ -336,8 +344,8 @@ class DefaultControllerTest extends BaseControllerTest
     {
         return array(
             'pro grenoble'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
-            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
-            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
+//            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
+//            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
         );
     }
 

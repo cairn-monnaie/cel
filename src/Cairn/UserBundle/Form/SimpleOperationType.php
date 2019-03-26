@@ -27,9 +27,9 @@ class SimpleOperationType extends AbstractType
 
                 $transactionTypes = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
                 if(in_array($operation->getType(),$transactionTypes)){ 
-                    $form->add('executionDate',     DateType::class          , array('label'=> 'Date d\'exécution'));
+                    $form->add('executionDate',     DateType::class          , array('label'=> 'Date d\'exécution','widget' => 'single_text','format' => 'dd-MM-yyyy',"attr"=>array('class'=>'datepicker_cairn')));
                 }
-                if(in_array($operation->getType(),Operation::getToOperationTypes())){ 
+                if(in_array($operation->getType(),Operation::getToOperationTypes())){
                     $form->remove('fromAccount');
                 }
                 if(in_array($operation->getType(),Operation::getDebitOperationTypes())){ 

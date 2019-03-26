@@ -5,20 +5,52 @@
 {% block body %}
     {{parent()}}
 
+    <h1>{{account.type.name}}</h1>
+    <h2>#{{account.number}}</h2>
+
     {{include("CairnUserBundle:Banking:account_download_options.html.twig",{'account':account})}}
 
-    <div class="well">
-        {{ form_start(form) }}
-        {{ form_rest(form) }}
-        {{form_end(form) }}
-    </div>
+
+    <ul class="collapsible">
+        <li>
+            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres</div>
+            <div class="collapsible-body">
+                {{ form_start(form) }}
+                <div class="row">
+                    <div class="col s12 m6 l4">
+                        {{ form_row(form.orderBy) }}
+                    </div>
+                    <div class="col s12 m6 l4">
+                        {{ form_row(form.types) }}
+                    </div>
+                    <div class="col s6 l2">
+                        {{ form_row(form.begin) }}
+                    </div>
+                    <div class="col s6 l2">
+                        {{ form_row(form.end) }}
+                    </div>
+                    <div class="col s6">
+                        {{ form_row(form.minAmount) }}
+                    </div>
+                    <div class="col s6">
+                        {{ form_row(form.maxAmount) }}
+                    </div>
+                    {{ form_rest(form) }}
+                </div>
+
+                {{form_end(form) }}
+            </div>
+        </li>
+    </ul>
+
+    <h3>
+        Solde aujourd'hui : <strong>{{account.status.balance}} cairns</strong>
+    </h3>
+    <h4>
+        Dont opérations à venir : <strong>{{futureAmount}} cairns</strong>
+    </h4>
 <div>
     <table>
-    <caption> <span> Solde au {{ "now"|date("d-m-Y") }} : </span> <span> {{account.status.balance}} cairns </span> </br>
-              <span> Dont opérations à venir : {{futureAmount}} cairns </span>
-
-     </caption>
-    
     <thead>
         <tr>
             <th> Date </th>

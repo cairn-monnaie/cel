@@ -31,9 +31,10 @@ class SmsDataType extends AbstractType
     {
 
         $builder
-            ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable'))
-            ->add('smsEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
+            ->add('phoneNumber', TextType::class, array('label'=>'Numéro de téléphone portable'))
+            ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser les opérations par SMS',
                                                               'required'=>false));
+
 //           ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',
 //                       'constraints'=> new Assert\Range(array('min'=> 0,'max'=>50,
 //                                                 'minMessage' => 'Un nombre négatif n\'a pas de sens !',
@@ -54,6 +55,10 @@ class SmsDataType extends AbstractType
                 }
 
                 if($smsData->getUser()->hasRole('ROLE_PRO')){
+                    $form->add('paymentEnabled',CheckboxType::class, array('label'=>'Autoriser la réalisation de paiements par SMS depuis ce numéro','required'=>false))
+                         ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser la réception de paiements par SMS',
+                                                              'required'=>false));
+
                     if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
                         $form->add('identifier', TextType::class, array('label' => 'ID SMS'))
                             ->remove('phoneNumber');

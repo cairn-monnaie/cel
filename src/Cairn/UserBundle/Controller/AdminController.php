@@ -59,6 +59,56 @@ class AdminController extends Controller
     }   
 
 
+    public function dashboardAction(Request $request)
+    {
+        $currentUser = $this->getUser();
+        $currentUserID = $currentUser->getID();
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $pros = new \stdClass();
+        $pros->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',true);
+        $pros->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PRO',false);
+        $pros->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PRO');
+        $pros->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PRO');
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereReferent($ub, $currentUserID)->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PRO');
+        $pros->toRemove = $ub->getQuery()->getResult();
+
+        $persons = new \stdClass();
+        $persons->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',true);
+        $persons->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_PERSON',false);
+        $persons->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_PERSON');
+        $persons->nocard = $userRepo->findUsersWithPendingCard($currentUserID,'ROLE_PERSON');
+
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereReferent($ub, $currentUserID)->whereToRemove($ub, true)->whereRole($ub, 'ROLE_PERSON');
+        $persons->toRemove = $ub->getQuery()->getResult();
+
+        $admins = new \stdClass();
+        $admins->enabled = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',true);
+        $admins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_ADMIN',false);
+        $admins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_ADMIN');
+
+        $superAdmins = array();
+
+        if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+            $superAdmins = new \stdClass();
+            $superAdmins->blocked = $userRepo->findUsersWithStatus($currentUserID,'ROLE_SUPER_ADMIN',false);
+            $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
+        }
+
+        $allUsers = array(
+            'pros'=>$pros, 
+            'persons'=>$persons,
+            'admins'=>$admins,
+            'superAdmins'=>$superAdmins,
+        );
+
+        return $this->render('CairnUserBundle:Admin:dashboard.html.twig',array('allUsers'=>$allUsers));
+
+    }
 
     /**
      * Set the enabled attribute of user with provided ID to true
@@ -114,7 +164,7 @@ class AdminController extends Controller
                             $password = new \stdClass();                                   
                             $password->assign = true;                                      
                             $password->type = 'login';
-                            $password->value = $temporaryPassword;                  
+                            $password->value = $temporaryPassword;
                             $password->confirmationValue = $password->value;
                             $userDTO->passwords = $password;                               
 
@@ -124,7 +174,7 @@ class AdminController extends Controller
                                 $groupName = $this->getParameter('cyclos_group_persons');  
                             }else{                                                                 
                                 $groupName = $this->getParameter('cyclos_group_network_admins');
-                            }   
+                            }
 
                             $groupVO = $this->get('cairn_user_cyclos_group_info')->getGroupVO($groupName);
 
@@ -133,6 +183,12 @@ class AdminController extends Controller
 
                             $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
                             $user->setCyclosID($newUserCyclosID);
+
+                            if($user->isAdherent()){
+                                $icc_account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($newUserCyclosID);
+                                $icc = $icc_account->number;
+                                $user->setMainICC($icc);
+                            }
 
 
                             //activate user and send email to user

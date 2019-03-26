@@ -47,23 +47,76 @@ class UserRepository extends EntityRepository
         return $this;
     }
 
+    public function whereRoles(QueryBuilder $qb, $roles)
+    {
+        $conditions = array();
+        foreach($roles as $role){
+            $conditions[] = "u.roles LIKE '%".$role."%'";
+        }
+
+        $orX = $qb->expr()->orX();
+        $orX->addMultiple($conditions);
+        $qb->andWhere($orX);
+
+        return $this;
+    }
+
+    public function whereAdherent(QueryBuilder $qb)
+    {
+        $roles = array('ROLE_PRO','ROLE_PERSON');
+        return $this->whereRoles($qb, $roles);
+    }
+
     public function whereReferent(QueryBuilder $qb, $userID)
     {
         $qb->join('u.referents','r')
             ->andWhere('r.id = :id')                                           
             ->setParameter('id',$userID);
         return $this;
+    }
 
+    /**
+     * if isEnabled = false, we make a difference between opposed user and the case where user wants to be removed
+     */
+    public function whereEnabled(QueryBuilder $qb, $isEnabled)
+    {
+        $qb->andWhere('u.enabled = :enabled')                                           
+            ->setParameter('enabled',$isEnabled);
+        
+        if(! $isEnabled){
+            $this->whereToRemove($qb,false); 
+        }
+        return $this;
+    }
+
+    public function whereConfirmed(QueryBuilder $qb)
+    {
+        $qb->andWhere('u.confirmationToken is NULL')     
+            ->andWhere('u.lastLogin is not NULL'); 
+        return $this;
+    }
+
+    public function wherePending(QueryBuilder $qb)
+    {
+        $qb->andWhere('u.confirmationToken is NULL')     
+            ->andWhere('u.enabled = false')                                    
+            ->andWhere('u.lastLogin is NULL'); 
+        return $this;
+    }
+
+    public function whereToRemove(QueryBuilder $qb, $toRemove)
+    {
+        $qb->andWhere('u.removalRequest = :toRemove')
+            ->setParameter('toRemove', $toRemove);                                           
+
+        return $this;
     }
 
     public function findPendingUsers($referentID, $role)
     {
         $ub = $this->createQueryBuilder('u');                  
-        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
-        $ub->andWhere('u.confirmationToken is NULL')     
-            ->andWhere('u.enabled = false')                                    
-            ->andWhere('u.lastLogin is NULL')                                  
-            ->orderBy('u.name','ASC');
+        $this->whereRoles($ub, array($role) )->whereReferent($ub, $referentID)->wherePending($ub);
+        $ub->orderBy('u.name','ASC');
 
         return $ub->getQuery()->getResult();
     }
@@ -71,13 +124,10 @@ class UserRepository extends EntityRepository
     public function findUsersWithStatus($referentID, $role, $isEnabled = NULL)
     {
         $ub = $this->createQueryBuilder('u');                  
-        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
-        $ub->andWhere('u.confirmationToken is null')     
-            ->andWhere('u.lastLogin is not NULL')
-            ->orderBy('u.name','ASC');
-        if($isEnabled != NULL){
-            $ub->andWhere('u.enabled = :isEnabled')
-              ->setParameter('isEnabled',$isEnabled);            
+        $this->whereRoles($ub, array($role) )->whereReferent($ub, $referentID)->whereConfirmed($ub);
+        $ub->orderBy('u.name','ASC');
+        if($isEnabled !== NULL){
+            $this->whereEnabled($ub, $isEnabled);
         }
 
         return $ub->getQuery()->getResult();
@@ -86,11 +136,9 @@ class UserRepository extends EntityRepository
     public function findUsersWithPendingCard($referentID, $role)
     {
         $ub = $this->createQueryBuilder('u');                  
-        $this->whereRole($ub,$role)->whereReferent($ub, $referentID);
+        $this->whereRoles($ub, array($role) )->whereReferent($ub, $referentID)->whereEnabled($ub,true);
         $ub->leftJoin('u.card','c')                                           
             ->andWhere('c.id is NULL') //card is the owning-side in the association user/card
-            ->andWhere('u.confirmationToken is null')
-            ->andWhere('u.enabled = true')
             ->orderBy('u.name','ASC');                                    
         
         return $ub->getQuery()->getResult();
@@ -106,6 +154,6 @@ class UserRepository extends EntityRepository
             ->addSelect('s');
 
         return $ub->getQuery()->getResult();
-
     }
+
 }

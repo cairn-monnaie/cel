@@ -21,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Routing\Router;
 use Symfony\Component\DependencyInjection\Container;
 
 use Cyclos;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Commands
 {
@@ -38,7 +39,7 @@ class Commands
 
     protected $container;
 
-    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating, $cardAssociationDelay, $emailValidationDelay, Router $router, Container $container)
+    public function __construct(EntityManager $em, MessageNotificator $messageNotificator, TwigEngine $templating,string $cardAssociationDelay,string $emailValidationDelay, Router $router, ContainerInterface $container)
     {
         $this->em = $em;
         $this->messageNotificator = $messageNotificator;
@@ -110,7 +111,6 @@ class Commands
 
             try{
                 $userVO = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($username);
-
                 $isInAdminGroup = $this->container->get('cairn_user_cyclos_user_info')->isInGroup($group ,$userVO->id);
 
                 if(!$isInAdminGroup){
@@ -132,7 +132,7 @@ class Commands
             $new_admin->setName($userData->name);
             $new_admin->setEmail($userData->email);
             $new_admin->setCyclosID($id);
-
+//            $new_admin->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($id)->number);
 
             $new_admin->setPlainPassword($password);
             $new_admin->setEnabled(true);
@@ -150,7 +150,7 @@ class Commands
             //ajouter la carte
             $this->em->persist($new_admin);
 
-            //set admin has referent of all users including himself
+            //set admin as referent of all users including himself
             $allUsers = $userRepo->findAll();
 
             $new_admin->addReferent($new_admin);
@@ -265,7 +265,11 @@ class Commands
 
             echo 'INFO: Creation de l\'utilisateur "' . $cyclosUserData->name . '" groupe("'. $cyclosUserData->group->name .'")'. "\n";
 
-            $doctrineUser->setCyclosID($cyclosUserData->id);                                      
+            $doctrineUser->setCyclosID($cyclosUserData->id);
+
+            if($doctrineUser->isAdherent()){
+                $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
+            }
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
             $doctrineUser->setEmail($cyclosUserData->email);
@@ -301,8 +305,18 @@ class Commands
             $doctrineUser->setCard($card);
             $doctrineUser->addReferent($admin);
 
+            //set cyclos status to ACTIVE by default for adherents whereas, at creation, they are DISABLED
+            //anonymous user will be the user accessing cyclos therefore, we need afterwards to reset admin credentials
+            if($doctrineUser->isAdherent()){
+                $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
+            }
+
             $this->em->persist($doctrineUser);
 
+            //in the end of the process, admin user will be up, as before, to request cyclos
+            $credentials = array('username'=>'admin_network','password'=>'@@bbccdd');
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+    
             echo 'INFO: OK !'. "\n";
         }
 
@@ -322,7 +336,7 @@ class Commands
 
         $smsData = $user->getSmsData();
 
-        if($smsData){
+        if(count($smsData) > 0){
 
             $securityService = $this->container->get('cairn_user.security');      
             $securityService->createAccessClient($user,'client_sms');  
@@ -331,17 +345,12 @@ class Commands
             $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
 
             $smsClient = $securityService->vigenereEncode($smsClient);
-            $smsData->setSmsClient($smsClient);
+            $user->setSmsClient($smsClient);
 
-//            if(! $smsData->isSmsEnabled()){
-//                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'ACTIVE');
-//                $securityService->changeAccessClientStatus($accessClientVO,'BLOCKED');
-//            }
-
-            $em->persist($smsData);
+            $em->persist($user);
         }
 
-        $sms = new Sms($smsData->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
+        $sms = new Sms($smsData[0]->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
 
         $sms->setSentAt(date_modify( new \Datetime(), '-15 minutes'));
         $em->persist($sms);
@@ -412,6 +421,9 @@ class Commands
 
     public function generateDatabaseFromCyclos($login, $password)
     {
+        $securityService = $this->container->get('cairn_user.security');
+        $accessPlatformService = $this->container->get('cairn_user.access_platform');
+
         //same username than the one provided at installation
         $adminUsername = $login;
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
@@ -436,9 +448,9 @@ class Commands
             $personsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($personsGroupName ,'MEMBER_GROUP');
             $adminsGroup = $this->container->get('cairn_user_cyclos_group_info')->getGroupVO($adminsGroupName ,'ADMIN_GROUP');
 
-            $cyclosPros = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($prosGroup->id,array('DISABLED'));
-            $cyclosPersons = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($personsGroup->id,array('DISABLED'));
-            $cyclosAdmins =  $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminsGroup->id,array('DISABLED'));
+            $cyclosPros = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($prosGroup->id,array('ACTIVE','DISABLED'));
+            $cyclosPersons = $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($personsGroup->id,array('ACTIVE','DISABLED'));
+            $cyclosAdmins =  $this->container->get('cairn_user_cyclos_user_info')->getListInGroup($adminsGroup->id,array('ACTIVE','DISABLED'));
 
 
             $cyclosMembers = array_merge($cyclosPros, $cyclosPersons,$cyclosAdmins);
@@ -471,7 +483,7 @@ class Commands
         echo 'INFO: -------' . $nbPrintedCards . ' cards to create. Max number of printable cards : '.$maxCards . "--------- \n";
 
         for($i=0; $i < $nbPrintedCards; $i++){
-            $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+            $uniqueCode = $securityService->findAvailableCode();
             $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
@@ -542,12 +554,12 @@ class Commands
 
         //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
         $admin->setFirstLogin(false);
-        $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
+        $uniqueCode = $securityService->findAvailableCode();
         $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
         //encode user's card
-        $this->container->get('cairn_user.security')->encodeCard($card);
+        $securityService->encodeCard($card);
         $admin->setCard($card);
 
         echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";
@@ -611,18 +623,24 @@ class Commands
 
         //user has requested a removal and has null account balance on Cyclos-side
         $user = $userRepo->findOneByUsername('Biocoop'); 
+        $user->setLastLogin(new \Datetime());
+        $user->setEnabled(false);
         $user->setRemovalRequest(true);
 
         //user has requested a removal and has non-null account balance on Cyclos-side
         $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
         echo 'INFO: '.$user->getName(). ' has requested to be removed'."\n";
+        $user->setLastLogin(new \Datetime());
+        $user->setEnabled(false);
         $user->setRemovalRequest(true);
         echo 'INFO: OK !'."\n";
 
         //user is blocked but has already been able to log in
         $user = $userRepo->findOneByUsername('tout_1_fromage'); 
         echo 'INFO: '.$user->getName(). ' is blocked but has already logged in'."\n";
+
         $user->setEnabled(false);
+
         $user->setLastLogin(new \Datetime());
         echo 'INFO: OK !'."\n";
 
@@ -640,51 +658,61 @@ class Commands
         echo 'INFO: OK !'."\n";
 
         //setup phone number and sms information for pros and persons
+
+        //all users in this array will have an access client on Cyclos side
         $usersWithSmsInfo = array();
 
         $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
         $smsData = new SmsData($pro1);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0612345678');
         $smsData->setIdentifier('NICOPROD');
-        $pro1->setSmsData($smsData);
+        $smsData->setPaymentEnabled(true);
+        $pro1->addSmsData($smsData);
 
 
         $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
         $smsData = new SmsData($person1);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0612345678');
-//        $smsData->setIdentifier('NICOPERSO');
-        $person1->setSmsData($smsData);
+        $person1->addSmsData($smsData);
 
-        echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
-        echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumbers()[0]."\n";
+        echo 'INFO: ' .$pro1->getName(). ' with role PRO has ENabled all sms operations : '."\n";
         echo 'INFO: ' .$person1->getName(). ' with role PERSON, has same phone number, personally and for '. $pro1->getName()."\n";
-        echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled sms operations : '."\n";
+        echo 'INFO: ' .$person1->getName(). ' with role PERSON has ENabled all sms operations : '."\n";
         $usersWithSmsInfo[] = $person1;
         $usersWithSmsInfo[] = $pro1;
 
         $pro2 = $userRepo->findOneByUsername('maltobar'); 
         $smsData = new SmsData($pro2);
-//        $smsData->setSmsEnabled(true);
         $smsData->setPhoneNumber('0611223344');
         $smsData->setIdentifier('MALTOBAR');
-        $pro2->setSmsData($smsData);
+        $smsData->setPaymentEnabled(true);
+        $pro2->addSmsData($smsData);
 
         $person2 = $userRepo->findOneByUsername('benoit_perso'); 
         $smsData = new SmsData($person2);
         $smsData->setPhoneNumber('0644332211');
+        $smsData->setSmsEnabled(false);
+        $person2->addSmsData($smsData);
 
-//        $smsData->setIdentifier('BENOITPERSO');
-        $person2->setSmsData($smsData);
-
-        echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumber()."\n";
-        echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled sms operations : '."\n";
-        echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumber()."\n";
-        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations : '."\n";
+        echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumbers()[0]."\n";
+        echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled all sms operations : '."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumbers()[0]."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled all sms operations'."\n";
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $person2;
         $usersWithSmsInfo[] = $pro2;
+
+        $pro = $userRepo->findOneByUsername('epicerie_sol'); 
+        echo 'INFO: '. $pro->getName(). 'has DISabled sms payments but can receive payments at 0655667788 '."\n";
+
+        $smsData = new SmsData($pro);
+        $smsData->setPhoneNumber('0655667788');
+        $smsData->setIdentifier('AMANSOL');
+        $pro->addSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $pro;
 
         $user = $userRepo->findOneByUsername('crabe_arnold'); 
         echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
@@ -692,7 +720,7 @@ class Commands
         $smsData->setPhoneNumber('0711111111');
         $smsData->setIdentifier('CRABEARNOLD');
         $user->setNbPhoneNumberRequests(3);
-        $user->setSmsData($smsData);
+        $user->addSmsData($smsData);
 
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
@@ -704,7 +732,7 @@ class Commands
         $smsData->setIdentifier('HIRUNDO');
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(2);
-        $user->setSmsData($smsData);
+        $user->addSmsData($smsData);
 
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
@@ -717,7 +745,7 @@ class Commands
         $smsData->setIdentifier('DRDBREW');
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
-        $user->setSmsData($smsData);
+        $user->addSmsData($smsData);
 
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
@@ -725,15 +753,15 @@ class Commands
         $user = $userRepo->findOneByUsername('la_mandragore'); 
         echo 'INFO: '. $user->getName(). ' has phone number and is blocked'."\n";
         $user->setEnabled(false);
-        $smsData = new SmsData($user);
 
+        $smsData = new SmsData($user);
         $smsData->setPhoneNumber('0744444444');
         $smsData->setIdentifier('MANDRAGORE');
         $smsData->setSmsEnabled(false);
 
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
-        $user->setSmsData($smsData);
+        $user->addSmsData($smsData);
 
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
@@ -743,16 +771,30 @@ class Commands
         $smsData = new SmsData($user);
 
         $smsData->setPhoneNumber('0788888888');
-        $smsData->setSmsClient('dlncnlcdlkkncsjdj');
+        $user->setSmsClient('dlncnlcdlkkncsjdj');
 
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
-        $user->setSmsData($smsData);
+        $user->addSmsData($smsData);
 
         echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
         foreach($usersWithSmsInfo as $user){
             $this->setUpAccessClient($user, $this->em);
         }
+
+
+        //Forced to set user status after creation of users, access clients... Otherwise, user can't access Cyclos and do any operation
+        echo 'INFO: ------ Set up Cyclos user status ------- ' . "\n";
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+        $user = $userRepo->findOneByUsername('la_mandragore'); 
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+        $user = $userRepo->findOneByUsername('tout_1_fromage'); 
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
         $this->em->flush();
         echo 'INFO: OK !'."\n";
 

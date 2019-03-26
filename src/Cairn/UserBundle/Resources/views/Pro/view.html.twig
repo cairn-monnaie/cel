@@ -40,6 +40,9 @@
                             &nbsp;{{ user.address.zipCity.zipCode}}
                             &nbsp;{{ user.address.zipCity.city}}
                         </div>
+                        <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
+                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.id})}}"> Pièce d'identité</a>
+                        </div>
                     </div>
                     <blockquote>
                         {{ user.description}}
@@ -47,11 +50,47 @@
                     {% if user.id == app.user.id %}
                         <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
                         <a href="{{path('fos_user_change_password')}}" class="btn waves-effect waves-light">Modifier mon mot de passe</a>
-                        <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Supprimer mon compte</a>
-                    {% else %}
-                        <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
                     {% endif %}
                 </div>
+
+            <li class="">
+                <div class="collapsible-header"><i class="material-icons">phone_android</i>
+                    {% if user.id == app.user.id %}
+                        Mes accès SMS
+                    {% else %}
+                        Accès SMS
+                    {% endif %}
+                </div>
+                <div class="collapsible-body" style="display: none;">
+                    <div class="row">
+                        {% set smsData = user.smsData %}
+                        
+                        {% if smsData is not null %}
+
+                            <div class="col s12 truncate"><i class="material-icons tiny">phone</i>&nbsp;{{ smsData.phoneNumber }}</div>
+    
+                            {% if user.hasRole('ROLE_PRO') %}
+                                <div class="col s12 truncate"><i class="material-icons tiny">arrow_forward</i>&nbsp;{{smsData.identifier}}</div>
+                                <div class="col s12 truncate"><i class="material-icons tiny">thumbs_up_down</i>
+                                  &nbsp; Réception de paiements par SMS : {{ user.smsData.smsEnabled ? 'Oui' : 'Non' }} </br>
+{#                                  &nbsp; Réalisation de paiements par SMS : {{ user.smsData.paymentEnabled ? 'Oui' : 'Non' }} </br> #}
+                                </div>
+
+                            {% endif %}
+                        {% else %}
+
+                            Aucune donnée SMS enregistrée !
+
+                        {% endif %}
+                    </div>
+                    {% if user.id == app.user.id %}
+                        <a href="{{path('cairn_user_users_smsdata_edit',{'id' : user.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer mes accès SMS</a>
+                    {% else %}
+                        <a href="{{path('cairn_user_users_smsdata_edit',{'id' : user.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>Editer les accès SMS</a>
+
+                    {% endif %}
+                </div>
+
             </li>
             {% set card = user.card %}
             {% if user.hasReferent(app.user) or user == app.user %}
@@ -62,35 +101,56 @@
                 </div>
             </li>
             {% endif %}
-            {% if user.hasReferent(app.user) %}
-                <li>
-                    <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
-                    <div class="collapsible-body">
-                        {% if user.enabled == true %}
-                            <a class="btn red" href="{{path('cairn_user_users_block',{'id': user.id})}}"><i class="material-icons left">lock</i>Bloquer l'accès à la plateforme</a>
-                        {% else %}
-                            <a class="btn green" href="{{path('cairn_user_users_activate',{'id': user.id})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
-                        {% endif %}
-                    </div>
-                </li>
-            {% endif %}
-            {% if is_granted('ROLE_ADMIN') and user.hasRole('ROLE_PRO') %}
             <li>
-                <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Le groupe local référent de {{user.name}}</div>
+                <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
                 <div class="collapsible-body">
-                    {% set adminReferent = user.getLocalGroupReferent() %}
-
-                    {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
-                        {% if adminReferent is null %}
-                            <em> Aucun groupe local référent ! </em>
-                            <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
-                        {% else %}
-                            <em> {{adminReferent.name}} </em>
-                            <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
-                        {% endif %}
+                    {% if user.enabled == true %}
+                        <a class="btn red" href="{{path('cairn_user_users_block',{'id': user.id})}}"><i class="material-icons left">lock</i> Faire opposition au compte</a>
+                    {% else %}
+                        <a class="btn green" href="{{path('cairn_user_users_activate',{'id': user.id})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
                     {% endif %}
+
+                    <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Clôturer le compte</a>
+
                 </div>
             </li>
+{#            {% if user.hasReferent(app.user) %}
+            {% endif %}
+#}
+
+            {% if user.hasRole('ROLE_PRO') %}
+
+                {% set adminReferent = user.getLocalGroupReferent() %}
+
+                {% if user.id == app.user.id %}
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Mon groupe local référent</div>
+                        <div class="collapsible-body">
+                            {% if adminReferent is null %}
+                                <em> Aucun groupe local référent ! </em>
+                            {% else %}
+                                <em> {{adminReferent.name}} </em> </br>
+                                <em> {{adminReferent.email}} </em> </br>
+                            {% endif %}
+                        </div>
+                    </li>
+
+                {% elseif app.user.hasRole('ROLE_SUPER_ADMIN')  %}
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Le groupe local référent de {{user.name}}</div>
+                        <div class="collapsible-body">
+        
+                            {% if adminReferent is null %}
+                                <em> Aucun groupe local référent ! </em>
+                                <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
+                            {% else %}
+                                <em> {{adminReferent.name}} </em> </br>
+                                <em> {{adminReferent.email}} </em> </br>
+                                <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endif %}
             {% endif %}
         </ul>
     </div>

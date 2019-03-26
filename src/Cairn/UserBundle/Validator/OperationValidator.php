@@ -29,7 +29,7 @@ class OperationValidator extends ConstraintValidator
     private function validateActiveAccount($account,$path)
     {
 
-        $ICC = $account['number'];
+        $ICC = $account->number;
         if(!$ICC){                                    
             $this->context->buildViolation('Le compte n\'a pas été sélectionné')
                 ->atPath($path)                                        
@@ -56,41 +56,25 @@ class OperationValidator extends ConstraintValidator
 
 
     private function validatePassiveAccount($account,$path){
-        $email = $account['email'];
-        $ICC = $account['number']; 
+        $ICC = $account->number;
 
-        if(! ($ICC || $email)){ 
-            $this->context->buildViolation('Sélectionnez au moins l\'email ou l\'ICC.')
+        if(! $ICC ){ 
+            $this->context->buildViolation('Numéro de compte non renseigné')
                 ->atPath($path)                                          
                 ->addViolation();                                              
-        }else{ //email and ICC provided
+        }else{
 
             $user = NULL;
             if($ICC){
                 $userVO = $this->userInfo->getUserVOByKeyword($ICC);
 
                 if(!$userVO){
-                    $this->context->buildViolation('ICC introuvable')
+                    $this->context->buildViolation('Compte introuvable par numéro de compte')
                         ->atPath($path)                                          
                         ->addViolation();                                              
-                }else{
-//                    if($fromICC == $toICC){
-//                        $this->context->buildViolation('Les comptes débiteur et créditeur sont identiques')
-//                            ->atPath($path)                                          
-//                            ->addViolation();                                              
-//                    }
-
-                    $user = $this->userRepo->findOneBy(array('username'=>$userVO->username));
+                    return;
                 }
-            }
-            if($email){
-                $user = $this->userRepo->findOneBy(array('email'=>$email));
-
-                if(!$user){//invalid email
-                    $this->context->buildViolation('Aucun membre avec email '.$email)
-                        ->atPath($path)                                          
-                        ->addViolation();                                              
-                }
+                $user = $this->userRepo->findOneBy(array('username'=>$userVO->username));
             }
 
             if($user && $user->getRemovalRequest()){
@@ -98,19 +82,7 @@ class OperationValidator extends ConstraintValidator
                     ->atPath($path)                                          
                     ->addViolation();                                              
             }
-            if($ICC && $email){
-                if($userVO && $user){
-                    if(! ($user->getUsername() == $userVO->username)){
-                        $this->context->buildViolation('email et ICC ne correspondent pas')
-                            ->atPath($path)                                          
-                            ->addViolation();                                              
-                    }
-
-
-                }
-            }
         }
-
     }
 
     private function validateBalance($operationType, $account,$amount)
@@ -118,7 +90,7 @@ class OperationValidator extends ConstraintValidator
         if(!$account->unlimited){
             if($account->status->availableBalance < $amount){
                 if($operationType == Operation::TYPE_SMS_PAYMENT){
-                    $message = 'SOLDE INSUFFISANT : '.$account->status->availableBalance;
+                    $message = 'Solde insuffisant : Votre solde actuel est de '.$account->status->availableBalance;
                 }else{
                     $message = 'Montant trop élevé : modifiez-le ou rechargez votre compte.';
                 }
@@ -159,7 +131,7 @@ class OperationValidator extends ConstraintValidator
                 //then, that the balance is sufficient to make the payment
                 $this->validateActiveAccount($operation->getFromAccount(),'fromAccount');
                 if(count($this->context->getViolations()) == 0){
-                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()['number']);
+                    $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()->number);
                     $this->validateBalance($operation->getType(), $account,$operation->getAmount());
                 }
                 $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
@@ -185,11 +157,11 @@ class OperationValidator extends ConstraintValidator
             }
 
             if($debitorUser === $creditorUser){
-                $this->context->addViolation('COMPTES DEBITEUR ET CREDITEUR IDENTIQUES');
+                $this->context->addViolation('Comptes débiteur et créditeur identiques');
             }
 
             if(! $creditorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées par '.$creditorUser->getSmsData()->getIdentifier());
+                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées pour '.$creditorUser->getSmsData()->getIdentifier());
             }
             if(count($this->context->getViolations()) == 0){
                 $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());

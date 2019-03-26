@@ -5,11 +5,12 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width" />
         <title>{% block title %}[e]Cairn{% endblock %}</title>
-        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/css/materialize.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/css/materialize.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/materialize/iconfont/material-icons.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/dropify/css/dropify.min.css') }}">
         <link rel="stylesheet" href="{{ asset('bundles/cairnuser/css/ecairn.css') }}">
         <script src="{{ asset('bundles/cairnuser/js/vanilla_top.js') }}"></script>
+        <link rel="icon" type="image/png" href="{{asset('bundles/cairnuser/img/favicon.png') }}">
         {% block stylesheets %}
         {% endblock %}
     </head>
@@ -36,45 +37,45 @@
                             </a>
                         </li>
                         <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small right">exit_to_app</i>
-                            </a></li>
+                            </a>
                         </li>
                     {% else %}
                         <li><a href="{{ path('fos_user_security_login') }}">Connexion</a></li>
                     {% endif %}
                 </ul>
                 {% block top_nav %}{% endblock%}
-                <ul id="nav-mobile" class="sidenav">
-                    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-                        <li><div class="user-view center-align">
-                                <div class="background">
-                                    <img class="responsive-img" src="{{asset('bundles/cairnuser/img/Stone_stack_together.jpg')}}" alt="" style="position: absolute;bottom: -46px;left: 0;" />
-                                </div>
-                                <a href="#user">
-                                {% if app.user.image.url is defined %}
-                                    <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle">
-                                {% else %}
-                                    <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle">
-                                {% endif %}
-                                </a>
-                                <a href="#name"><span class="white-text name">{{ app.user.username }}</span></a>
-                            </div>
-                        </li>
-                        <li><a href="{{ path('cairn_user_welcome') }}"><i class="material-icons small">home</i>
-                                Accueil
-                            </a></li>
-                        {% block nav_mobile %}{% endblock%}
-                        <li><a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"><i class="material-icons">settings</i>
-                                Mon profil</a></li>
-                        <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small">exit_to_app</i>
-                                {{ 'layout.logout'|trans({}, 'FOSUserBundle') }}
-                            </a></li>
-                    {% else %}
-                        <li><a href="{{ path('fos_user_security_login') }}"><span class="glyphicon glyphicon-log-in"></span> {{ 'layout.login'|trans({}, 'FOSUserBundle') }}</a></li>
-                    {% endif %}
-                </ul>
-                <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
             </div>
         </nav>
+        <ul id="slide-out" class="sidenav">
+            {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+                <li><div class="user-view center-align">
+                        <div class="background">
+                            <img class="responsive-img" src="{{asset('bundles/cairnuser/img/Stone_stack_together.jpg')}}" alt="" style="position: absolute;bottom: -46px;left: 0;" />
+                        </div>
+                        <a href="#user">
+                            {% if app.user.image.url is defined %}
+                                <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle">
+                            {% else %}
+                                <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle">
+                            {% endif %}
+                        </a>
+                        <a href="#name"><span class="white-text name">{{ app.user.username }}</span></a>
+                    </div>
+                </li>
+                <li><a href="{{ path('cairn_user_welcome') }}"><i class="material-icons small">home</i>
+                        Accueil
+                    </a></li>
+                {% block nav_mobile %}{% endblock%}
+                <li><a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"><i class="material-icons">settings</i>
+                        Mon profil</a></li>
+                <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small">exit_to_app</i>
+                        {{ 'layout.logout'|trans({}, 'FOSUserBundle') }}
+                    </a></li>
+            {% else %}
+                <li><a href="{{ path('fos_user_security_login') }}"><span class="glyphicon glyphicon-log-in"></span> {{ 'layout.login'|trans({}, 'FOSUserBundle') }}</a></li>
+            {% endif %}
+        </ul>
         {% if app.request.hasPreviousSession %}
             {% for type, messages in app.session.flashBag.all %}
                 {% for message in messages %}

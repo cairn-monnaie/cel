@@ -2,6 +2,7 @@
 
 namespace Cairn\UserBundle\Form;
 
+use Cairn\UserBundle\Form\DataTransformer\AccountToStringTransformer;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\AbstractType;
@@ -16,18 +17,38 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 class AccountType extends AbstractType
 {
 
+    private $transformer;
+
+    public function __construct(AccountToStringTransformer $transformer)
+    {
+        $this->transformer = $transformer;
+    }
+
+    public function getBlockPrefix()
+    {
+        return 'account';
+    }
+
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults([
+            'invalid_message' => 'The selected zipcity does not exist',
+        ]);
+    }
+
+    public function getParent()
+    {
+        return TextType::class;
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        $builder->addModelTransformer($this->transformer);
         $builder
-            ->add('email',   EmailType::class, array('label'=>'Email du bénéficiaire',
-                                                    'required'=>false))    
-            ->add('number',       TextType::class, array('label'=>'Identifiant Compte Cairn',
-                                                     'required'=>false))
             ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
                 $account = $event->getData();
-                $form = $event->getForm();
 
-                $account['number'] = preg_replace('/\s+/', '', $account['number']);
+                $account = trim($account);
                 $event->setData($account);
             });
     }

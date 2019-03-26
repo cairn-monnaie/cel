@@ -13,17 +13,3 @@ services:
         # this means you cannot fetch services directly from the container via $container->get()
         # if you need to do this, you can override this setting on individual services
         public: false
-
-    Cairn\UserBundle\Controller\:
-        resource: '../../src/Cairn/UserBundle/Controller'
-        public: true
-        tags: ['controller.service_arguments']
-
-#    Cairn\UserBundle\Form\RegistrationType:
-#        arguments: ['@security.authorization_checker']
-#        tags:
-#            - { name: form.type, alias: app_user_registration}
-
-    Cairn\UserBundle\:
-        resource: '../../src/Cairn/UserBundle/*'
-        exclude: '../../src/Cairn/UserBundle/{Entity,Repository,Tests}'

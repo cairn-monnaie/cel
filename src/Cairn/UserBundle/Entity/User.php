@@ -19,6 +19,7 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
+ * @UniqueEntity(fields = {"smsClient"},message="Ce client SMS est déjà utilisé") 
  */
 class User extends BaseUser
 {
@@ -41,10 +42,17 @@ class User extends BaseUser
     private $firstname;
 
     /**
-     * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
-    private $cyclosID; 
+    private $cyclosID;
+
+
+    /**
+     * @ORM\Column(name="main_icc", type="bigint", unique=true, nullable=true)
+     * @Assert\Length(min=7, minMessage="Contient au moins {{ limit }} chiffres")
+     */
+    private $mainICC;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Address", cascade={"persist","remove"})
@@ -104,7 +112,7 @@ class User extends BaseUser
     /**
      * @var string
      *
-     * @ORM\Column(name="smsClient", type="string", length=255, unique=true)
+     * @ORM\Column(name="smsClient", type="string", length=255, nullable=true, unique=true)
      */
     private $smsClient;
 
@@ -153,6 +161,19 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
+    }
+
+    public function __toString()
+    {
+        if ($this->getFirstname()){
+            return $this->getFirstname().' '.$this->getName();
+        }else{
+            return $this->getName();
+        }
+    }
+
+    public function getAutocompleteLabel(){
+        return $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ('.  $this->getEmail() .')';
     }
 
     public function getCity()
@@ -233,6 +254,31 @@ class User extends BaseUser
     public function getCyclosID()
     {
         return $this->cyclosID;
+    }
+
+
+    /**
+     * Set mainICC
+     *
+     * @param integer $main_icc
+     *
+     * @return User
+     */
+    public function setMainICC($main_icc)
+    {
+        $this->mainICC = $main_icc;
+
+        return $this;
+    }
+
+    /**
+     * Get mainICC
+     *
+     * @return integer
+     */
+    public function getMainICC()
+    {
+        return $this->mainICC;
     }
 
     public function fromEntityToDTO()

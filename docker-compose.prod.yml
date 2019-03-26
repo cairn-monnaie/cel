@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+  db:
+    restart: always
+
+  engine:
+    volumes:
+      - ".:/var/www/Symfony"
+    restart: always
