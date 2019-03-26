@@ -11,17 +11,20 @@ use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Sms;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
+
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 use Cyclos;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Commands
 {
@@ -255,7 +258,7 @@ class Commands
 
     }
 
-    public function createUser($cyclosUser, $admin)
+    public function createUser($cyclosUser, $admin, $rank)
     {
         $existingUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('cyclosID'=>$cyclosUser->id));
 
@@ -292,6 +295,24 @@ class Commands
 
             $doctrineUser->setAddress($address);                                  
             $doctrineUser->setDescription('Test user blablablabla');             
+
+            //create fake id doc
+            $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+            $originalName = 'john-doe-id.png';
+            $absolutePath = $absoluteWebDir.$originalName;
+
+            $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+
+            $idDocument = new File();
+            $idDocument->setUrl($file->guessExtension());
+            $idDocument->setAlt($file->getClientOriginalName());
+
+            if(! copy($absolutePath, $absoluteWebDir.$idDocument->getUploadDir().'/'.$rank.'.'.$idDocument->getUrl())){
+                echo "Failed to copy";
+            }
+
+            $doctrineUser->setIdentityDocument($idDocument);
+
 
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
             $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
@@ -470,8 +491,10 @@ class Commands
         //basic user creation : create entity using data from Cyclos + add a card for all users
         echo 'INFO: ------- Creation of users based on Cyclos data' ."--------- \n";
 
+        $rank = 0;
         foreach($cyclosMembers as $cyclosUser){
-            $this->createUser($cyclosUser,$admin);
+            $rank++;
+            $this->createUser($cyclosUser,$admin,$rank);
         }
 
         $this->em->flush();

@@ -706,7 +706,9 @@ class UserController extends Controller
         }
 
         $id_doc = $user->getIdentityDocument();
-        return $this->file($id_doc->getWebPath(), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
+
+        $env = $this->getParameter('kernel.environment');
+        return $this->file($id_doc->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
     }
 
     /**

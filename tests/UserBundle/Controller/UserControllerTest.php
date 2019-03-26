@@ -584,10 +584,10 @@ class UserControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','user/id-document/download/'.$targetUser->getID());
 
-
         if(! $isLegit){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-            return;
+        }else{
+            $this->assertTrue($this->client->getResponse()->headers->contains('Content-Type','image/png'));
         }
     }
 
@@ -598,7 +598,7 @@ class UserControllerTest extends BaseControllerTest
         return array(
             'superadmin for enabled pro'=>array('referent'=>$adminUsername,'target'=>'DrDBrew','isLegit'=>true),
             'admin for enabled pro'=>array('referent'=>'gl_grenoble','target'=>'episol','isLegit'=>true),
-            'admin not referent'=>array('referent'=>$adminUsername,'target'=>'vie_integrative','isLegit'=>false),
+          'admin not referent'=>array('referent'=>$adminUsername,'target'=>'vie_integrative','isLegit'=>false),
           'superadmin for enabled person'=>array('referent'=>$adminUsername,'target'=>'crabe_arnold','isLegit'=>true),
             'enabled pro for himself'=>array('referent'=>'DrDBrew','target'=>'DrDBrew','isLegit'=>true),
             'superadmin for disabled pro'=>array('referent'=>$adminUsername,'target'=>'la_mandragore','isLegit'=>true),

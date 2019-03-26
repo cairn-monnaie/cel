@@ -41,7 +41,6 @@ class DefaultControllerTest extends BaseControllerTest
                 $this->assertTrue(is_numeric($res->amount) );
             }
         }else{
-            var_dump($res->error);
             $this->assertTrue(strpos($res->error,$expectMessage) !== false);
         }
     }
@@ -293,7 +292,10 @@ class DefaultControllerTest extends BaseControllerTest
             $this->assertNotContains('fos_user_registration_form[image]',$this->client->getResponse()->getContent());
         }
 
-        $form['fos_user_registration_form[identityDocument][file]']->upload('path/to/photo.png');
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'john-doe-id.png';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
+        $form['fos_user_registration_form[identityDocument][file]']->upload($absolutePath);
 
         $crawler =  $this->client->submit($form);
 
@@ -318,7 +320,7 @@ class DefaultControllerTest extends BaseControllerTest
             $this->assertSame(1, $mailCollector->getMessageCount());
             $message = $mailCollector->getMessages()[0];
             $this->assertInstanceOf('Swift_Message', $message);
-            $this->assertContains('Validation de l\'administrateur', $message->getSubject());
+            $this->assertContains('Adresse mail [e]-Cairn', $message->getSubject());
             $this->assertContains('confirmé la validité', $message->getBody());
             $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
             $this->assertSame($newUser->getEmail(), key($message->getTo()));
@@ -344,8 +346,8 @@ class DefaultControllerTest extends BaseControllerTest
     {
         return array(
             'pro grenoble'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
-//            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
-//            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
+            'pro no GL'=>array('pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
+            'person'=>array('person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
         );
     }
 
