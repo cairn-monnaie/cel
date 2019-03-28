@@ -126,7 +126,7 @@ class DefaultControllerTest extends BaseControllerTest
                 if($isValidCode){
                     $mailCollector = $client->getProfile()->getCollector('swiftmailer');
 
-                    $this->assertTrue( $nbEmails == $mailCollector->getMessageCount());
+                    $this->assertEquals( $nbEmails, $mailCollector->getMessageCount());
 
                     $body = '';
                     //we gather all the emails content in one
@@ -178,7 +178,7 @@ class DefaultControllerTest extends BaseControllerTest
             'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
             'payment mistake : person to person with ID SMS'=>array('0612345678','PAYER10CRABEARNOLD',false,'1111',true,NULL),
 
-            'payment : balance error'=>array('0612345678','PAYER1000000MALTOBAR',false,'1111',true,
+            'payment : balance error'=>array('0722222222','PAYER100MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
             'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
 
@@ -198,7 +198,7 @@ class DefaultControllerTest extends BaseControllerTest
             'payment : too low amount'=>array('0612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
             'payment : valid, no code'=>array('0612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : pro to pro,valid, no code'=>array('0611223344','PAYER15NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid + code'=>array('0612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
+        'payment : valid + code'=>array('0612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
             'payment : person to pro,valid, no code'=>array('0612345678','PAYER12.522maltobar',false,'1111',true,
                                                                     array($validDebMsg,$validCredMsg),2),
           'payment : valid,no code'=>array('0612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),

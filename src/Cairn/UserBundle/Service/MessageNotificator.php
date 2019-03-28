@@ -163,8 +163,10 @@ class MessageNotificator
         return $res;
     }
 
-    public function sendSMS($phoneNumber, $content)
+    public function sendSMS($phoneNumber, $content, Sms $smsToAnswer = NULL)
     {
+
+        if($smsToAnswer && $this->isSpam($smsToAnswer)){ return NULL;}
 
         $action = ($this->env == 'prod') ? 'send' : 'test';
         $action = '&action='.$action;
@@ -299,41 +301,65 @@ class MessageNotificator
         $this->mailer->send($message);
     }
 
+    protected function getNumberOfTodaySms($phoneNumber,$state,$content = NULL)
+    {
+        $sb = $this->smsRepo->createQueryBuilder('s'); 
+        $this->smsRepo
+            ->whereCurrentDay($sb)
+            ->wherePhoneNumbers($sb,$phoneNumber)
+            ->whereState($sb, $state);
+        if($content){
+            $this->smsRepo->whereContentContains($sb,$content);
+        }
+
+        $nbSms = $sb->select('count(s.id)')->getQuery()->getSingleScalarResult();
+
+        return $nbSms;
+    }
+
     public function isSpam(Sms $sms)
     {
-//        $sb = $this->smsRepo->createQueryBuilder('s');                        
-//        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_SPAM);
-//        if(count($sms) >= 1){ return true; }
+        //number of account balance requests a day
+        if( strpos($sms->getContent(),'SOLDE') !== false){
+            $nbSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'SOLDE');
+            if($nbSms >= 1){return true;}
+        }
 
-        //number of canceled operations a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_CANCELED);
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of SMS identifier requests a day
+        if( strpos($sms->getContent(),'LOGIN') !== false){
+            $nbIdentifierSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'LOGIN');
+            if($nbIdentifierSms >= 1){return true;}
+        }
 
-        //number of expired operations a day
-        $sb = $this->smsRepo->createQueryBuilder('s'); 
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_EXPIRED);
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of invalid SMS requests a day
+        if($sms->getState() == Sms::STATE_INVALID){
+            $nbInvalidSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_INVALID);
+            if($nbInvalidSms >= 4){return true;}
+        }
 
-        //number of SMS errors in a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_SENT)->whereContentContains($sb,'SMS INVALIDE');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of unauthorized SMS requests a day
+        if($sms->getState() == Sms::STATE_UNAUTHORIZED){
+            $nbUnauthorizedSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_UNAUTHORIZED);
+            if($nbUnauthorizedSms >= 2){return true;}
+        }
 
-        //if user asks more than 2 times his balance in a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_PROCESSED)->whereContentContains($sb,'SOLDE');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 2){ $sms->setState(Sms::STATE_SPAM);return true; }
+        //number of error SMS requests a day
+        if($sms->getState() == Sms::STATE_ERROR){
+            $nbErrorSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_ERROR);
+            if($nbErrorSms >= 2){return true;}
+        }
 
-        //if pro asks more than 1 time his LOGIN a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_PROCESSED)->whereContentContains($sb,'LOGIN');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 1){ $sms->setState(Sms::STATE_SPAM); return true; }
+//        //number of expired SMS requests a day
+//        if($sms->getState() == Sms::STATE_EXPIRED){
+//            $nbExpiredSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_EXPIRED);
+//            if($nbErrorSms >= 4){return true;}
+//        }
+
+        //number of canceled SMS requests a day
+        if($sms->getState() == Sms::STATE_CANCELED){
+            $nbCanceledSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_CANCELED);
+            if($nbCanceledSms >= 4){return true;}
+        }
 
         return false;
     }

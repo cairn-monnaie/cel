@@ -755,6 +755,7 @@ class Commands
         $smsData = new SmsData($user);
         $smsData->setPhoneNumber('0722222222');
         $smsData->setIdentifier('HIRUNDO');
+        $smsData->setPaymentEnabled(true);
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(2);
         $user->setSmsData($smsData);
