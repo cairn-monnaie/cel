@@ -17,14 +17,20 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
 
+use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Repository\SmsDataRepository;
+
 class SmsDataType extends AbstractType
 {
 
     private $authorizationChecker;
 
-    public function __construct(AuthorizationChecker $authorizationChecker)
+    private $smsDataRepo;
+
+    public function __construct(AuthorizationChecker $authorizationChecker, SmsDataRepository $smsDataRepo)
     {
         $this->authorizationChecker = $authorizationChecker;
+        $this->smsDataRepo = $smsDataRepo;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -33,6 +39,7 @@ class SmsDataType extends AbstractType
         $builder
             ->add('phoneNumber', TextType::class, array('label'=>'Numéro de téléphone portable'))
             ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser les opérations par SMS',
+                                                              'value'=>true,
                                                               'required'=>false));
 
 //           ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',
@@ -54,12 +61,28 @@ class SmsDataType extends AbstractType
                     return;
                 }
 
-                if($smsData->getUser()->hasRole('ROLE_PRO')){
+                if($smsData->getUser()->hasRole('ROLE_PRO') ){
+
+                    if(! $smsData->getIdentifier()){
+                        $identifier = SmsData::makeIdentifier($smsData->getUser()->getName());
+
+                        $sb = $this->smsDataRepo->createQueryBuilder('s');
+                        $smsDataIdentifiers = $sb->where($sb->expr()->like('s.identifier', $sb->expr()->literal($identifier . '%')))
+                            ->getQuery()->getResult();
+
+                        if( count($smsDataIdentifiers)){
+                            $extra = strtoupper(chr(rand(65,90)) . chr(rand(65,90)) . chr(rand(65,90)));
+                            $identifier = SmsData::makeIdentifier($smsData->getUser()->getName(),$extra);
+                        } 
+                        $smsData->setIdentifier($identifier);
+                    }
+
                     $form->add('paymentEnabled',CheckboxType::class, array('label'=>'Autoriser la réalisation de paiements par SMS depuis ce numéro','required'=>false))
                          ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser la réception de paiements par SMS',
-                                                              'required'=>false));
+                                                              'required'=>false))
+                         ->add('identifier', TextType::class, array('label' => 'ID SMS','disabled'=>true));
 
-                    if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
+                    if($this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
                         $form->add('identifier', TextType::class, array('label' => 'ID SMS'))
                             ->remove('phoneNumber');
                     }
