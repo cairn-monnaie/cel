@@ -147,6 +147,7 @@ class SmsController extends Controller
     public function smsAction($debitorPhoneNumber,$content)
     {
         $em = $this->getDoctrine()->getManager();
+        $smsRepo = $em->getRepository('CairnUserBundle:Sms');
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $securityService = $this->get('cairn_user.security');
 
@@ -166,6 +167,11 @@ class SmsController extends Controller
         }else{
             return;
         }      
+
+        //then, we check that today's user activity is not considered as spam
+        $nbSpamSms = $smsRepo->getNumberOfSmsToday($debitorPhoneNumber, Sms::STATE_SPAM);
+        if($nbSpamSms > 0){ return;}
+
 
         //2.1)Then, we ensure that user is active, and then sms actions are enabled for this user
         if(! $debitorUser->isEnabled()){

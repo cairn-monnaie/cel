@@ -20,7 +20,6 @@ class SmsRepository extends \Doctrine\ORM\EntityRepository
         return $this;
     }
 
-
     public function whereState(QueryBuilder $sb, $state)
     {
         $sb->andWhere('s.state = :state')                                           
@@ -55,6 +54,19 @@ class SmsRepository extends \Doctrine\ORM\EntityRepository
             ->setParameter('end', new \Datetime()) //now
             ;
         return $this;
+    }
+
+    public function getNumberOfSmsToday($phoneNumber,$state,$content = NULL)
+    {
+        $sb = $this->createQueryBuilder('s');
+        $this->whereCurrentDay($sb)
+            ->wherePhoneNumbers($sb,$phoneNumber)
+            ->whereState($sb, $state);
+        if($content){
+            $this->whereContentContains($sb,$content);
+        }
+
+        return $sb->select('count(s.id)')->getQuery()->getSingleScalarResult();
     }
 
 }

@@ -264,12 +264,12 @@ class SmsControllerTest extends BaseControllerTest
     {
         return array(
           'error : invalid access client'=>array('0788888888','PAYER12maltobar',1,2,'ERREUR TECHNIQUE',false),
-//          'cancel previous operation'=>array('0612345678','PAYER 45 MALTOBAR',4,1,'code de sécurité',false),
-//          'unauthorized user'=>array('0644332211','PAYER 45 MALTOBAR',1,1,'SMS NON AUTORI',false),
-//          'invalid SMS format'=>array('0612345678','SOLDEADO',4,1,'SMS INVALIDE',false),
-//          'invalid SMS identifier'=>array('0612345678','PAYER 10 JOHNDOE',4,1,'aucun professionnel',false),
-//          'request SMS identifier'=>array('0611223344','LOGIN',1,1,'code de sécurité',true),
-//          'request account balance'=>array('0611223344','SOLDE',1,1,'code de sécurité',true),
+          'cancel previous operation'=>array('0612345678','PAYER 45 MALTOBAR',4,1,'code de sécurité',false),
+          'unauthorized user'=>array('0644332211','PAYER 45 MALTOBAR',1,1,'SMS NON AUTORI',false),
+          'invalid SMS format'=>array('0612345678','SOLDEADO',4,1,'SMS INVALIDE',false),
+          'invalid SMS identifier'=>array('0612345678','PAYER 10 JOHNDOE',4,1,'aucun professionnel',false),
+          'request SMS identifier'=>array('0611223344','LOGIN',1,1,'code de sécurité',true),
+          'request account balance'=>array('0611223344','SOLDE',1,1,'code de sécurité',true),
         );
     }
 }
