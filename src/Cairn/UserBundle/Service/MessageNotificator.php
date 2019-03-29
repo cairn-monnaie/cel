@@ -166,7 +166,18 @@ class MessageNotificator
     public function sendSMS($phoneNumber, $content, Sms $smsToAnswer = NULL)
     {
 
-        if($smsToAnswer && $this->isSpam($smsToAnswer)){ return NULL;}
+        //if user has not been warned about spam activity yet, we send him a text to do so. Otherwise, nothing sent
+        if($smsToAnswer && $this->isSpam($smsToAnswer)){
+            $smsToAnswer->setState(Sms::STATE_SPAM); 
+
+            $nbSpamSms = $this->getNumberOfTodaySms($phoneNumber, Sms::STATE_SPAM);
+
+            if($nbSpamSms >=1 ){
+                return NULL;
+            }else{
+                $content = 'Votre activité du jour a été identifiée comme du SPAM. Les opérations SMS vous sont interdites pour aujourd\'hui. Merci de votre compréhension';
+            }
+        }
 
         $action = ($this->env == 'prod') ? 'send' : 'test';
         $action = '&action='.$action;
@@ -319,6 +330,10 @@ class MessageNotificator
 
     public function isSpam(Sms $sms)
     {
+        //number of spam sms today
+        $nbSpamSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_SPAM);
+        if($nbSpamSms >= 1){return true;}
+
         //number of account balance requests a day
         if( strpos($sms->getContent(),'SOLDE') !== false){
             $nbSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'SOLDE');
@@ -340,25 +355,25 @@ class MessageNotificator
         //number of unauthorized SMS requests a day
         if($sms->getState() == Sms::STATE_UNAUTHORIZED){
             $nbUnauthorizedSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_UNAUTHORIZED);
-            if($nbUnauthorizedSms >= 2){return true;}
+            if($nbUnauthorizedSms >= 1){return true;}
         }
 
         //number of error SMS requests a day
         if($sms->getState() == Sms::STATE_ERROR){
             $nbErrorSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_ERROR);
-            if($nbErrorSms >= 2){return true;}
+            if($nbErrorSms >= 1){return true;}
         }
 
-//        //number of expired SMS requests a day
-//        if($sms->getState() == Sms::STATE_EXPIRED){
-//            $nbExpiredSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_EXPIRED);
-//            if($nbErrorSms >= 4){return true;}
-//        }
+        //number of expired SMS requests a day
+        if($sms->getState() == Sms::STATE_EXPIRED){
+            $nbExpiredSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_EXPIRED);
+            if($nbExpiredSms >= 4){return true;}
+        }
 
         //number of canceled SMS requests a day
         if($sms->getState() == Sms::STATE_CANCELED){
             $nbCanceledSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_CANCELED);
-            if($nbCanceledSms >= 4){return true;}
+            if($nbCanceledSms >= 3){return true;}
         }
 
         return false;

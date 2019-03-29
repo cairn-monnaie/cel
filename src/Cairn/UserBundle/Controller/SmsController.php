@@ -47,12 +47,14 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        $this->smsAction($request->query->get('phone'),$request->query->get('content'));
-//        $this->smsAction('0611223344','LOGIN');
+        if($this->getParameter('kernel.environment') == 'test'){
+            $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+        }else{
+        $this->smsAction('0788888888','LOGIN');
 //        $this->smsAction('0611223344','2222');
 //        $this->smsAction('0611223344','1111');
 //
-//        $this->smsAction('0612345678','PAYER 1500 MALTOBAR');
+//        $this->smsAction('0612345678','PAYER 45 MALTOBAR');
 //
 //        $this->smsAction('0612345678','SOLDE');
 //        $this->smsAction('0612345678','2222');
@@ -60,7 +62,7 @@ class SmsController extends Controller
 //        $this->smsAction('0655667788','SOLDE');
 //        $this->smsAction('0655667788','2222');
 //        $this->smsAction('0655667788','1111');
-
+        }
         return new Response('ok');
 
     }
@@ -135,6 +137,13 @@ class SmsController extends Controller
 
     }
 
+    private function persistSMS(Sms $sms = NULL)
+    {
+        if($sms){
+            $this->getDoctrine()->getManager()->persist($sms);
+        }
+    }
+
     public function smsAction($debitorPhoneNumber,$content)
     {
         $em = $this->getDoctrine()->getManager();
@@ -165,7 +174,7 @@ class SmsController extends Controller
              $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: opposition de compte',$smsUnauthorized);
 
              $em->persist($smsUnauthorized);
-             $em->persist($sms);
+             $this->persistSMS($sms);
              $em->flush();
              return;
         }
@@ -177,7 +186,7 @@ class SmsController extends Controller
              $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: opposition aux SMS depuis ce numéro',$smsUnauthorized);
 
              $em->persist($smsUnauthorized);
-             $em->persist($sms);
+             $this->persistSMS($sms);
              $em->flush();
 
              return;
@@ -195,7 +204,7 @@ class SmsController extends Controller
                 $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.',$smsError);
 
                 $em->persist($smsError);
-                $em->persist($sms);
+                $this->persistSMS($sms);
                 $em->flush();
 
                 $subject = 'Accès client Cyclos';
@@ -218,16 +227,18 @@ class SmsController extends Controller
                 $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.',$smsError);
 
                 $em->persist($smsError);
-                $em->persist($sms);
+                $this->persistSMS($sms);
                 $em->flush();
 
-                $subject = 'Accès client Cyclos';
-                $from = $this->getParameter('cairn_email_noreply');
-                $to = $this->getParameter('cairn_email_technical_services');
-                $body = 'Accès client invalide pour '.$debitorUser->getUsername();
+                //if not spam, sms entity is returned
+                if( $sms){
+                    $subject = 'Accès client Cyclos';
+                    $from = $this->getParameter('cairn_email_noreply');
+                    $to = $this->getParameter('cairn_email_technical_services');
+                    $body = 'Accès client invalide pour '.$debitorUser->getUsername();
 
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
+                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                }
                 return;
 
             }else{
@@ -236,10 +247,14 @@ class SmsController extends Controller
                 $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.',$smsError);
 
                 $em->persist($smsError);
-                $em->persist($sms);
+                $this->persistSMS($sms);
                 $em->flush();
 
-                throw $e;
+                if($sms){
+                    throw $e;
+                }else{
+                    return;
+                }
             }
         }
 
@@ -253,7 +268,7 @@ class SmsController extends Controller
             $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,$reason,$smsFormat);
 
             $em->persist($smsFormat);
-            $em->persist($smsError);
+            $this->persistSMS($smsError);
             $em->flush();
             return;
         }
@@ -279,12 +294,12 @@ class SmsController extends Controller
             }elseif($smsPending->getSentAt()->diff(new \Datetime())->i > 5){
                 $smsPending->setState(Sms::STATE_EXPIRED);
 
-                $smsUseless = new Sms($debitorPhoneNumber, $parsedSms->cardKey,Sms::STATE_EXPIRED, $smsPending->getCardPosition());
+                $smsUseless = new Sms($debitorPhoneNumber, $parsedSms->cardKey,Sms::STATE_PROCESSED, $smsPending->getCardPosition());
 
-                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Délai de validation expiré',$smsUseless);
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Délai de validation expiré',$smsPending);
 
                 $em->persist($smsUseless);
-                $em->persist($smsSent);
+                $this->persistSMS($smsSent);
                 $em->flush();
 
                 return;
@@ -303,14 +318,14 @@ class SmsController extends Controller
 
             if( ($nbTries  > 0) && ($remainingTries > 0)){
                 $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Échec du code de sécurité : '.$remainingTries.' essai(s) restant(s)', $smsValidation);
-                $em->persist($smsSent);
+                $this->persistSMS($smsSent);
                 $em->flush();
                 return;
             }elseif($remainingTries == 0){
                 $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Échec du code de sécurité : Le compte a été bloqué. Veuillez contacter l\'Association', $smsValidation);
 
                 $smsPending->setState(Sms::STATE_CANCELED);
-                $em->persist($smsSent);
+                $this->persistSMS($smsSent);
                 $em->flush();
 
                 return;
@@ -321,7 +336,7 @@ class SmsController extends Controller
             if($parsedInitialSms->isSmsIdentifier){
                 if($debitorUser->hasRole('ROLE_PRO')){
                     $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$debitorUser->getSmsData()->getIdentifier(), $smsPending);
-                    $em->persist($smsSent);
+                    $this->persistSMS($smsSent);
                 }
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
@@ -330,7 +345,7 @@ class SmsController extends Controller
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
 
-                $em->persist($smsBalance);
+                $this->persistSMS($smsBalance);
             }
           
             //once pending request has been executed, the corresponding SMS can be set to PROCESSED
@@ -390,7 +405,7 @@ class SmsController extends Controller
             $debitorUser->getSmsData()->setSmsEnabled(false);
 
             $em->persist($smsPaymentRequest); 
-            $em->persist($smsBlocked);
+            $this->persistSMS($smsBlocked);
             $em->flush();
             return;
         }
@@ -402,7 +417,7 @@ class SmsController extends Controller
             $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS '.$parsedSms->creditorIdentifier.' ne correspond à aucun professionnel',$smsInvalid);
 
             $em->persist($smsInvalid);
-            $em->persist($smsError);
+            $this->persistSMS($smsError);
             return;
         }
 
@@ -431,7 +446,7 @@ class SmsController extends Controller
                 $smsErrors = $messageNotificator->sendSMS($debitorPhoneNumber, $content, $smsInvalid);
 
                 $em->persist($smsInvalid);
-                $em->persist($smsErrors);
+                $this->persistSMS($smsErrors);
                 $em->flush();
 
                 return;
@@ -476,7 +491,7 @@ class SmsController extends Controller
 
 
                     $em->persist($smsReceivedError);
-                    $em->persist($smsInvalid);
+                    $this->persistSMS($smsInvalid);
                     $em->flush();
 
                     return;
@@ -487,7 +502,7 @@ class SmsController extends Controller
             $smsSentError = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : Veuillez contacter l\'Association',$smsReceivedError);
 
             $em->persist($smsReceivedError);
-            $em->persist($smsSentError);
+            $this->persistSMS($smsSentError);
             $em->flush();
 
             throw $e;
@@ -529,8 +544,8 @@ class SmsController extends Controller
    
 
         $em->persist($operation);
-        $em->persist($smsSuccessDebitor);
-        $em->persist($smsSuccessCreditor);
+        $this->persistSMS($smsSuccessDebitor);
+        $this->persistSMS($smsSuccessCreditor);
 //        $em->flush();
 
     }
@@ -538,6 +553,7 @@ class SmsController extends Controller
 
     public function setUpSmsValidation($em, $user, $content)
     {
+        $messageNotificator = $this->get('cairn_user.message_notificator'); 
         $phoneNumber = $user->getPhoneNumber();
         $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$phoneNumber,
                                                                           'state'=>Sms::STATE_WAITING_KEY));
@@ -556,10 +572,14 @@ class SmsController extends Controller
         }
 
         $smsReceived = new Sms($phoneNumber,$content,Sms::STATE_WAITING_KEY,$str_index);
-        $smsSent = $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,'Veuillez rentrer votre code de sécurité en position '.$str_pos.' utilisable jusqu\'à ' . date('H:i',strtotime($smsReceived->getSentAt()->format('H:i')." +5 mins")), $smsReceived);
-
         $em->persist($smsReceived);
-        $em->persist($smsSent);
+
+        //if there is a canceled sms, we must check that either the new received SMS is not a spam, but the canceled SMS as well
+        $smsPotentialSpam = ($sms) ? $sms : $smsReceived;
+
+        $smsSent = $messageNotificator->sendSMS($phoneNumber,'Veuillez saisir votre code de sécurité en position '.$str_pos.' utilisable jusqu\'à ' . date('H:i',strtotime($smsReceived->getSentAt()->format('H:i')." +5 mins")), $smsPotentialSpam);
+
+        $this->persistSMS($smsSent);
     }
 
 }
