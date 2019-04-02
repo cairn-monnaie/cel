@@ -56,12 +56,19 @@ class UserControllerTest extends BaseControllerTest
 
         }else{
             $formSmsData = $crawler->selectButton('cairn_userbundle_smsdata_save')->form();
+
             if($currentUser->isAdmin()){
-                $formSmsData['cairn_userbundle_smsdata[identifier]']->setValue($smsData['identifier']);
+                $identifierField = $formSmsData['cairn_userbundle_smsdata[identifier]'];
                 $this->assertNotContains('cairn_userbundle_smsdata[phoneNumber]',$this->client->getResponse()->getContent());
+
+                if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                    $this->assertFalse($identifierField->isDisabled());
+                    $identifierField->setValue($smsData['identifier']);
+                }else{
+                    $this->assertTrue($identifierField->isDisabled());
+                }
             }else{
                 $formSmsData['cairn_userbundle_smsdata[phoneNumber]']->setValue($smsData['phoneNumber']);
-                $this->assertNotContains('cairn_userbundle_smsdata[identifier]',$this->client->getResponse()->getContent());
             }
 
             if(!$isSmsEnabled){
@@ -211,25 +218,25 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>$validCodeMsg
                                                           )),
 
-           'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                              'isPhoneNumberEdit'=>false,'smsData'=>array('phoneNumber'=>'0611223344'),
-                                                              'isValidData'=>true,'isSmsEnabled'=>false,
-                                                              'expectedMessages'=>$validCodeMsg
-                                                          )),
+         'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                            'isPhoneNumberEdit'=>false,'smsData'=>array('phoneNumber'=>'0611223344'),
+                                                            'isValidData'=>true,'isSmsEnabled'=>false,
+                                                            'expectedMessages'=>$validCodeMsg
+                                                        )),
 
-          'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
-                                                                  'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
+        'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+                                                                'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
+                                                                'expectedMessages'=>$validCodeMsg)),
+
+          'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
+                                                                  'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
                                                                   'expectedMessages'=>$validCodeMsg)),
 
-            'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
-                                                                    'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
-                                                                    'expectedMessages'=>$validCodeMsg)),
-
-           'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                              'isPhoneNumberEdit'=>true,
-                                                              'isValidData'=>true,'isSmsEnabled'=>false,
-                                                              'expectedMessages'=>$validCodeMsg
-                                                          )),
+         'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                            'isPhoneNumberEdit'=>true,
+                                                            'isValidData'=>true,'isSmsEnabled'=>false,
+                                                            'expectedMessages'=>$validCodeMsg
+                                                        )),
 
             'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                             'smsData'=>array('phoneNumber'=>'0612345678'), 'isValidData'=>false,

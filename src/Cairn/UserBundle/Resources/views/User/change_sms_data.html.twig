@@ -14,7 +14,9 @@
 
 
        {{ form_start(formSmsData) }}
-       {{ form_row(formSmsData.phoneNumber) }}                                      
+         {% if formSmsData.phoneNumber is defined %}
+           {{ form_row(formSmsData.phoneNumber) }}                                         
+        {% endif %}
        {{ form_row(formSmsData.smsEnabled) }}                                         
          {% if formSmsData.paymentEnabled is defined %}
            {{ form_row(formSmsData.paymentEnabled) }}                                         
