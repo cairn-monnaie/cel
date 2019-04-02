@@ -1,0 +1,9 @@
+# app/Resources/translations/messages.fr.yml
+#
+
+Hello: Bonjour
+withdrawal: retrait sur compte
+deposit: dépôt de compte
+conversion: conversion
+sms payment: paiement SMS
+transaction: virement

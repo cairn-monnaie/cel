@@ -140,7 +140,7 @@ class Operation
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
     const TYPE_CONVERSION = 3;
-    const TYPE_RECONVERSION = 4;
+#    const TYPE_RECONVERSION = 4;
     const TYPE_DEPOSIT = 5;
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
@@ -184,12 +184,12 @@ class Operation
     }
     public static function getFromOperationTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL);//,self::TYPE_RECONVERSION);
     }
 
     public static function getDebitOperationTypes()
     {
-        return array(self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
+        return array(self::TYPE_WITHDRAWAL);//,self::TYPE_RECONVERSION);
     }
 
     public static function getToOperationTypes()
@@ -199,7 +199,7 @@ class Operation
 
     public static function getExecutedTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
     }
 
     public static function getScheduledTypes()
