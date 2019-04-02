@@ -5,19 +5,19 @@
 {% block body %}
     {{parent()}}
     <div>
-        <h1> Détail du virement </h1>
+        <h1> Détail de l'opération </h1>
         {% if transfer.id is defined %}
             <a href="{{path('cairn_user_banking_transfer_notice_download',{'id':transfer.id})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
         {% endif %}
 
 
-        <h2> Compte à débiter </h2>
+        <h2> Compte débité </h2>
             <ul>
                 <li> Nom : {{transfer.debitorName}}</li>
                 <li> ICC : {{transfer.fromAccountNumber}}</li>
             </ul>
 
-        <h2> Compte à créditer </h2>
+        <h2> Compte crédité </h2>
             <ul>
                  <li>Nom : {{transfer.creditorName}}</li>
                  <li> ICC : {{transfer.toAccountNumber}}</li>

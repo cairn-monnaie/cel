@@ -54,7 +54,7 @@ class ProfileType extends AbstractType
                     return;
                 }
                 if($user->hasRole('ROLE_PRO')){
-                    $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure','disabled'=>true));
                     //$form->add('image', ImageType::class,array('label'=>'Logo'));
                     $form->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'));
                     if ($user->getImage())
@@ -63,23 +63,17 @@ class ProfileType extends AbstractType
                         $form->add('image', ImageType::class,array('label'=>'Votre logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
-                    $form->add('name', TextType::class,array('label'=>'Votre nom'));
-                    $form->add('firstname', TextType::class,array('label'=>'Votre prénom'));
+                    $form->add('name', TextType::class,array('label'=>'Votre nom et prénom','disabled'=>true));
                     $form->add('description',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
-                    if ($user->getImage())
-                        $form->add('image', ImageType::class,array('label'=>'Remplacer votre photo'));
-                    else
-                        $form->add('image', ImageType::class,array('label'=>'Votre photo'));
                 }else{
-                    $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure admin','disabled'=>true));
                     $form->add('description',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
 
                 }
             }
         );
-        //$builder->add('enregistre' , SubmitType::class);
     }
 
     /**

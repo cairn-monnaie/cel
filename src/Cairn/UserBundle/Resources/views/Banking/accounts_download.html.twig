@@ -1,14 +1,27 @@
-{# src/Cairn/UserBundle/Resources/views/Banking/conversion.html.twig #}
+{# src/Cairn/UserBundle/Resources/views/Banking/accounts_download.html.twig #}
 
 {% extends "CairnUserBundle::layout.html.twig" %}
 
 {% block body %}
     {{parent()}}
 
-    <div class="well">
-      {{ form_start(form) }}
-      {{ form_rest(form) }}
-      {{ form_end(form) }}
-
+    {{ form_start(form) }}
+    <div class="row">
+        <div class="col s12 m6 l4">
+            {{ form_row(form.format) }}
+        </div>
+        <div class="col s12 m6 l4">
+            {{ form_row(form.accounts) }}
+        </div>
+        <div class="col s6 l2">
+            {{ form_row(form.begin) }}
+        </div>
+        <div class="col s6 l2">
+            {{ form_row(form.end) }}
+        </div>
+        {{ form_rest(form) }}
     </div>
+
+    {{form_end(form) }}
+
 {% endblock %}

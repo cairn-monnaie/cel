@@ -1191,13 +1191,15 @@ class BankingController extends Controller
             ->add('format',ChoiceType::class,array(
                 'label'=>'Format du fichier',
                 'choices'=>array('CSV'=>'csv','PDF'=>'pdf'),
-                'expanded'=>true))
+                'multiple'=>false,
+            ))
                 ->add('accounts',ChoiceType::class,array(
                     'label'=>'Comptes',
                     'choices'=>$accounts,
                     'choice_label'=>'type.name',
                     'multiple'=>true,
-                    'expanded'=>true))
+//                    'expanded'=>true
+                ))
                     ->add('begin', DateType::class,array(
                         'label'=>'depuis',
                         'data'=> date_modify(new \Datetime(),'-1 months'),
@@ -1244,7 +1246,7 @@ class BankingController extends Controller
 
                             // Add the header of the CSV file
                             fputcsv($handle, array('Situation de votre compte ' . $account->type->name .' '. $userService->getOwnerName($account->owner) . ' (Cairn) au '. $period['end']),';');
-                            fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
+                            fputcsv($handle,array('Numéro de compte Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
                             fputcsv($handle, array('Date', 'Motif','Partie prenante', 'Débit', 'Crédit','Solde'),';');
@@ -1259,9 +1261,12 @@ class BankingController extends Controller
                                     $credit = NULL;
 
                                 }
+
+                                $date = new \Datetime($transaction->date);
+
                                 fputcsv(
                                     $handle, // The file pointer
-                                    array($transaction->date, 
+                                    array($date->format('d-m-Y'), 
                                     $transaction->description, 
                                     $userService->getOwnerName($transaction->relatedAccount->owner),
                                     $debit, 
@@ -1271,7 +1276,7 @@ class BankingController extends Controller
                       );
 
                             }
-                            fputcsv($handle,array('Solde au : ' . $period['end'] . $history->status->balanceAtEnd),';');
+                            fputcsv($handle,array('Solde au ' . $period['end'] . ' : '.$history->status->balanceAtEnd),';');
                             fputcsv($handle,array());
                         }
                         fclose($handle);

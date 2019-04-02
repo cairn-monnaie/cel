@@ -10,6 +10,8 @@
     {{parent()}} 
     {% if app.user.hasRole('ROLE_PRO') %}
          <h1>Espace Professionnel {{ app.user.name }}</h1>
+    {% elseif app.user.hasRole('ROLE_PERSON') %}
+         <h1>Espace Particulier {{ app.user.name }}</h1>
     {% elseif app.user.hasRole('ROLE_ADMIN') %}
          <h1>Espace Groupe Local {{ app.user.name }}</h1>
     {% else %}
@@ -52,20 +54,23 @@
                     <img src="{{asset('bundles/cairnuser/img/purple-network.png')}}">
                     <span class="card-title black-text">Ils ont rejoint le [e]cairn</span>
                 </div>
-                <div class="card-content">
-                    <ul>
-                        {% for user in lastUsers %}
-                            <li class="users_show">
-                                <div>
-                                    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}">
-                                        {{user.name}} </br>
-                                        {#<img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}">#}
-                                    </a>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+                <ul class="collapsible">
+                    {% for user in lastUsers %}
+                        <li class="users_show">
+                            <div class="collapsible-header">
+                                <span> {{user.name}} </span>
+                                {% if user.image is not null %}
+                                    <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
+                                {% endif %}
+                            </div>
+                            <div class="collapsible-body" style="display: none;">
+                                <blockquote>
+                                    {{ user.description}}
+                                </blockquote>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
     </div>
@@ -86,7 +91,11 @@
                         <tr>
                             <td>{{transaction.executionDate|date('Y-m-d')}}</td>
                             <td>{{transaction.reason}}</td>
-                            <td>{{transaction.amount}} cairns</td>
+                            {% if transaction.debitorName == app.user.name %}
+                                <td> -{{transaction.amount}} cairns</td>
+                            {% else %}
+                                <td> +{{transaction.amount}} cairns</td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                     </tbody>
