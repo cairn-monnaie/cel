@@ -22,7 +22,7 @@
                     {% block top_nav_menu %}{% endblock%}
                     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
                         <li id="logo_user" class="right hide-on-med-and-down">
-                            <a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}">
+                            <a href="{{path('cairn_user_profile_view',{'username' : app.user.username})}}">
                             {% if app.user.image.url is defined %}
                                 <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
                             {% else %}
@@ -31,7 +31,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}">
+                            <a href="{{path('cairn_user_profile_view',{'username' : app.user.username})}}">
                                 <i class="material-icons small left">settings</i>
                                 <small>{{ app.user.username }}</small>
                             </a>
@@ -67,7 +67,7 @@
                         Accueil
                     </a></li>
                 {% block nav_mobile %}{% endblock%}
-                <li><a href="{{path('cairn_user_profile_view',{'id' : app.user.id})}}"><i class="material-icons">settings</i>
+                <li><a href="{{path('cairn_user_profile_view',{'username' : app.user.username})}}"><i class="material-icons">settings</i>
                         Mon profil</a></li>
                 <li><a href="{{ path('fos_user_security_logout') }}"><i class="material-icons small">exit_to_app</i>
                         {{ 'layout.logout'|trans({}, 'FOSUserBundle') }}

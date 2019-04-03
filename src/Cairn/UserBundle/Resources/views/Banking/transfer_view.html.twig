@@ -7,7 +7,7 @@
     <div>
         <h1> Détail de l'opération </h1>
         {% if transfer.id is defined %}
-            <a href="{{path('cairn_user_banking_transfer_notice_download',{'id':transfer.id})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
+            <a href="{{path('cairn_user_banking_transfer_notice_download',{'paymentID':transfer.paymentID})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
         {% endif %}
 
 

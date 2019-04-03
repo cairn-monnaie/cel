@@ -33,7 +33,7 @@ class UserControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $url = '/user/sms-data/edit/'.$targetUser->getID();
+        $url = '/user/sms-data/edit/'.$targetUser->getUsername();
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
@@ -50,7 +50,7 @@ class UserControllerTest extends BaseControllerTest
         if(! ($currentUser === $targetUser || $isReferent)){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }elseif(! $isExpectedForm){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
             $crawler = $this->client->followRedirect();
             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
@@ -108,7 +108,7 @@ class UserControllerTest extends BaseControllerTest
 
                         $this->assertEquals($targetUser->getPhoneNumber(),$smsData['phoneNumber']);
                         $this->assertTrue($targetUser->getSmsData() != NULL);
-                        $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                        $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                         $crawler = $this->client->followRedirect();
                         $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
@@ -165,7 +165,7 @@ class UserControllerTest extends BaseControllerTest
                 }
             }else{ //phone number did not change
                 if($isValidData){
-                    $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                     $crawler = $this->client->followRedirect();
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
@@ -314,7 +314,7 @@ class UserControllerTest extends BaseControllerTest
         $crawler = $this->changePassword($currentPwd, $newPwd, $confirmPwd);
 
         if($isValid){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
             $crawler = $this->client->followRedirect();
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
 
@@ -326,7 +326,7 @@ class UserControllerTest extends BaseControllerTest
             //Cyclos BDD.
             //Workaround : call the password change again to have, in the end of the test, the same password than at the beginning
             $crawler = $this->changePassword($newPwd, $currentPwd, $currentPwd);
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
             $crawler = $this->client->followRedirect();
 
             //then test login with initial password
@@ -486,7 +486,7 @@ class UserControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','user/profile/view/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','user/profile/view/'.$targetUser->getUsername());
 
 
         if(! $isLegit){
@@ -506,12 +506,12 @@ class UserControllerTest extends BaseControllerTest
 
         if($targetUser->isAdherent()){
 
-            $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getID().'"]')->count());
-            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getUsername().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/sms-data/edit/'.$targetUser->getUsername().'"]')->count());
             $this->assertSame(1,$crawler->filter('a[href*="user/id-document/download/'.$targetUser->getID().'"]')->count());
 
             if($currentUser === $targetUser){//adherent watching his own profile --> is enabled if so
-                $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
+                $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getUsername().'"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/change-password"]')->count());
                 $this->assertSame(1,$crawler->filter('a[href*="profile/edit"]')->count());
 
@@ -526,23 +526,23 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertsame(0,$crawler->filter('a[href*="card/download"]')->count());
 
                 if($hasCard){
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }else{//admin, as referent, watching adherent's profile
 
                 if($targetUser->isEnabled()){
-                    $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="admin/users/activate"]')->count());
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="user/block"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="admin/users/activate/'.$targetUser->getUsername().'"]')->count());
                 }
 
                 $this->assertSame(0,$crawler->filter('a[href*="profile/change-password"]')->count());
@@ -551,7 +551,7 @@ class UserControllerTest extends BaseControllerTest
                 if($targetUser->hasRole('ROLE_PRO')){
                     if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                         $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
-                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign/'.$targetUser->getID().'"]')->count());
+                        $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign/'.$targetUser->getUsername().'"]')->count());
                     }else{//is GL --> cannot assign referent
                         $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
                         $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
@@ -563,13 +563,13 @@ class UserControllerTest extends BaseControllerTest
 
                 if($hasCard){
                     $this->assertSame(0,$crawler->filter('a[href*="card/download"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/revoke/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/associate"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }else{
-                    $this->assertSame(1,$crawler->filter('a[href*="card/download/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/download/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getID().'"]')->count());
+                    $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getUsername().'"]')->count());
                     $this->assertSame(0,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
@@ -634,7 +634,7 @@ class UserControllerTest extends BaseControllerTest
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
-        $url = '/user/remove/'.$targetUser->getID();
+        $url = '/user/remove/'.$targetUser->getUsername();
         $crawler = $this->client->request('GET',$url);
         $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
 
@@ -647,7 +647,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }else{
             if(!$nullAccount){
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("solde non nul")')->count());
             }else{

@@ -34,7 +34,7 @@ class AdminControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/user/block/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/user/block/'.$targetUser->getUsername());
 
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler, '1111');
@@ -107,7 +107,7 @@ class AdminControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/admin/users/activate/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/admin/users/activate/'.$targetUser->getUsername());
 
         $crawler = $this->client->followRedirect();
         $crawler = $this->inputCardKey($crawler, '1111');
@@ -180,7 +180,7 @@ class AdminControllerTest extends BaseControllerTest
         $referentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/user/referents/assign/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/user/referents/assign/'.$targetUser->getUsername());
 
         if(!$isPro){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());

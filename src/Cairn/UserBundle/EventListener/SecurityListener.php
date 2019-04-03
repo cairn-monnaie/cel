@@ -75,7 +75,7 @@ class SecurityListener
         $user = $form->getData();
 
         $router = $this->container->get('router');          
-        $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
+        $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
         $currentPassword = $form->get('current_password')->getData(); 
         $newPassword = $user->getPlainPassword();
@@ -235,7 +235,7 @@ class SecurityListener
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if(($currentUser->hasRole('ROLE_SUPER_ADMIN') && $route == 'cairn_user_card_download')){
                 //for himself ? for someone else ?
-                $toUser = $userRepo->findOneBy(array('id'=>$parameters['id']));
+                $toUser = $userRepo->findOneBy(array('username'=>$parameters['username']));
                 if($toUser === $currentUser){
                     $isExceptionCase = true;
                 }

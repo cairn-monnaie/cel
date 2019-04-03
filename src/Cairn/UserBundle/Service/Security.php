@@ -90,7 +90,7 @@ class Security
         $isSensibleRoute = in_array($route,$sensibleRoutes);                   
 
         if($route == 'cairn_user_card_revoke' || $route == 'cairn_user_card_associate'){
-            if(! ($parameters['id'] == $currentUser->getID()) ){
+            if(! ($parameters['username'] == $currentUser->getUsername() )){//|| $parameters['username'] == $currentUser->getUsername()) ){
                 $isSensibleUrl = true;
             }
         }elseif(strpos($route,'cairn_user_cyclos') !== false){

@@ -109,7 +109,7 @@ class BeneficiaryControllerTest extends BaseControllerTest
 
         $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
 
-        $crawler = $this->client->request('GET','/user/beneficiaries/remove/'.$beneficiary->getID());
+        $crawler = $this->client->request('GET','/user/beneficiaries/remove/'.$beneficiary->getICC());
 
         if($isValid){
             $form = $crawler->selectButton('confirmation_save')->form();

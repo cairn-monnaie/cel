@@ -157,7 +157,7 @@ class UserController extends Controller
 
         if(! $user->getCard()){
             $session->getFlashBag()->add('error','Pas de carte de sécurité associée !');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
         }
 
 
@@ -167,12 +167,12 @@ class UserController extends Controller
         //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
         if( $user->hasRole('ROLE_PRO') && $isAdmin && !$user->getSmsData() ){
             $session->getFlashBag()->add('info','Ce professionnel n\'a pas saisi ses coordonnées SMS');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
         }
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
             $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
         }
 
         //************************ end of cases where edit sms is disallowed *************************//
@@ -193,7 +193,7 @@ class UserController extends Controller
 
                 if($currentUser->getNbPhoneNumberRequests() >= 3){
                     $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id' => $currentUser->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
                 }
 
                 //give a new code to be validated
@@ -251,7 +251,7 @@ class UserController extends Controller
 
                 $em->flush();
                 $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
-                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
             }
 
          }
@@ -317,7 +317,7 @@ class UserController extends Controller
                 $session->remove('activationCode');
                 $session->remove('hasPreviousPhoneNumber');
                 $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
-                return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
 
             //invalid code
             }else{
@@ -733,7 +733,7 @@ class UserController extends Controller
             throw new AccessDeniedException('Pas les droits nécessaires');
         }elseif(!$user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -749,7 +749,7 @@ class UserController extends Controller
                 $em->flush();
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
 
         }
 
@@ -827,7 +827,7 @@ class UserController extends Controller
             foreach($accounts as $account){
                 if($account->status->balance != 0){
                     $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La clôture du compte ne peut aboutir.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id' => $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username'=> $user->getUsername()));
                 }
             }
         }
@@ -848,7 +848,7 @@ class UserController extends Controller
                             $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                         }else{
                             $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
-                            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username'=> $user->getUsername()));
                         }
                     }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
                         $user->setRemovalRequest(true);
@@ -864,7 +864,7 @@ class UserController extends Controller
                 }
                 else{
                     $session->getFlashBag()->add('info','La demande de clôture a été annulée.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username'=> $user->getUsername()));
                 }
             }
         }

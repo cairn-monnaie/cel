@@ -79,7 +79,7 @@ class CardController extends Controller
 
         if(!$card){
             $session->getFlashBag()->add('info','Vous n\'avez pas de carte de sécurité Cairn associée à votre espace membre. Votre opération ne peut être poursuivie. ');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
         }
 
         $positions = $card->generateCardPositions();
@@ -150,18 +150,18 @@ class CardController extends Controller
 
         if($session->get('orderCard')){
             $session->getFlashBag()->add('info','La demande a déjà été effectuée.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
         }
 
         if(!$currentUser->isAdherent()){
             $session->getFlashBag()->add('info','Action réservée aux adhérents.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
 
         }
 
         if($currentUser->getCard()){
             $session->getFlashBag()->add('info','Vous avez déjà une carte de sécurité associée ');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
         }
 
         $subject = 'Envoi postal de carte de sécurité Cairn';
@@ -177,7 +177,7 @@ class CardController extends Controller
         $session->getFlashBag()->add('success','La demande a bien été enregistrée. L\'Association en a été informée. ');
 
         $session->set('orderCard',true);
-        return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$currentUser->getID()));
+        return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
 
     }
 
@@ -329,7 +329,7 @@ class CardController extends Controller
         $card = $user->getCard();
         if(!$card){
             $session->getFlashBag()->add('info','La carte de sécurité Cairn a déjà été révoquée.Vous pouvez aller en chercher une nouvelle, ou la commander par voie postale.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username'=>$user->getUsername()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -369,7 +369,7 @@ class CardController extends Controller
                     $session->getFlashBag()->add('info','Vous avez annulé la révocation de la carte de sécurité');
                 }
 
-                return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username'=>$user->getUsername()));
 
             }
         }
@@ -400,7 +400,7 @@ class CardController extends Controller
 
         if($nbPrintableCards == 0){
             $session->getFlashBag()->add('info','La limite de cartes générables a été atteinte : '.$this->getParameter('max_printable_cards'));
-            return $this->redirectToRoute('cairn_user_welcome',array('id'=>$currentUser->getID()));
+            return $this->redirectToRoute('cairn_user_welcome');
         }
 
         $form = $this->createFormBuilder()
@@ -491,12 +491,12 @@ class CardController extends Controller
         $card = $user->getCard();
         if($card){
             $session->getFlashBag()->add('info','Une carte a déjà été associée.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username'=>$user->getUsername()));
         }
 
         if($user->getRemovalRequest() || !$user->isEnabled() ){
             $session->getFlashBag()->add('info',$user->getName().' est soit bloqué, soit en instance de suppression. L\'association de carte est donc impossible');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username'=>$user->getUsername()));
         }
 
         $form = $this->createFormBuilder()
@@ -540,7 +540,7 @@ class CardController extends Controller
 //                    }
 
                     $session->getFlashBag()->add('success','La carte de sécurité a été associée avec succès.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
                 }
 
             }
@@ -578,14 +578,14 @@ class CardController extends Controller
 
         if($card){
             $session->getFlashBag()->add('info',$user->getName().' a déjà une carte de sécurité associée.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=>$user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username'=>$user->getUsername()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
 
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('cancel')->isClicked()){
-                return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format,'id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format,'username'=>$user->getUsername()));
             }
 
             $salt = $this->get('cairn_user.security')->generateCardSalt();

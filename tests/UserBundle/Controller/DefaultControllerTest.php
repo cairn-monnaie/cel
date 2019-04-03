@@ -8,8 +8,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Address;
 
-
-
 class DefaultControllerTest extends BaseControllerTest
 {
 

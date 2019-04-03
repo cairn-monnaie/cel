@@ -84,9 +84,9 @@
                         {% endif %}
                     </div>
                     {% if user.id == app.user.id %}
-                        <a href="{{path('cairn_user_users_smsdata_edit',{'id' : user.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer mes accès SMS</a>
+                        <a href="{{path('cairn_user_users_smsdata_edit',{'username' : user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer mes accès SMS</a>
                     {% else %}
-                        <a href="{{path('cairn_user_users_smsdata_edit',{'id' : user.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>Editer les accès SMS</a>
+                        <a href="{{path('cairn_user_users_smsdata_edit',{'username' : user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>Editer les accès SMS</a>
 
                     {% endif %}
                 </div>
@@ -97,7 +97,7 @@
             <li>
                 <div class="collapsible-header"><i class="material-icons">lock</i>Carte de sécurité</div>
                 <div class="collapsible-body">
-                    {{ render(controller("CairnUserBundle:Card:cardOperations",{'user':user})) }}
+                    {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':user.username})) }}
                 </div>
             </li>
             {% endif %}
@@ -105,12 +105,12 @@
                 <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
                 <div class="collapsible-body">
                     {% if user.enabled == true %}
-                        <a class="btn red" href="{{path('cairn_user_users_block',{'id': user.id})}}"><i class="material-icons left">lock</i> Faire opposition au compte</a>
+                        <a class="btn red" href="{{path('cairn_user_users_block',{'username': user.username})}}"><i class="material-icons left">lock</i> Faire opposition au compte</a>
                     {% else %}
-                        <a class="btn green" href="{{path('cairn_user_users_activate',{'id': user.id})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
+                        <a class="btn green" href="{{path('cairn_user_users_activate',{'username': user.username})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
                     {% endif %}
 
-                    <a href="{{path('cairn_user_users_remove',{'id' : user.id})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Clôturer le compte</a>
+                    <a href="{{path('cairn_user_users_remove',{'username' : user.username})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Clôturer le compte</a>
 
                 </div>
             </li>
@@ -142,11 +142,11 @@
         
                             {% if adminReferent is null %}
                                 <em> Aucun groupe local référent ! </em>
-                                <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Ajouter un groupe local référent</a>
+                                <a href="{{path('cairn_user_referents_assign',{'username': user.username})}}">Ajouter un groupe local référent</a>
                             {% else %}
                                 <em> {{adminReferent.name}} </em> </br>
                                 <em> {{adminReferent.email}} </em> </br>
-                                <a href="{{path('cairn_user_referents_assign',{'id': user.id})}}">Modifier le groupe local référent</a>
+                                <a href="{{path('cairn_user_referents_assign',{'username': user.username})}}">Modifier le groupe local référent</a>
                             {% endif %}
                         </div>
                     </li>

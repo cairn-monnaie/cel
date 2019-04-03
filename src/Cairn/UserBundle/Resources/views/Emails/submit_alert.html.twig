@@ -12,7 +12,7 @@ Nouvelle inscription en attente de validation.
              {{user.address.zipCity.zipCode}} </li>
              {{user.address.zipCity.city}} </li>
 
-    <a href="{{ url('cairn_user_profile_view', {'id':user.id}) }}" class="btn btn-default">
+    <a href="{{ url('cairn_user_profile_view', {'username':user.username}) }}" class="btn btn-default">
 
       <i class="glyphicon glyphicon-chevron-left"></i>
       Cliquez sur ce lien pour voir le profil du nouvel inscrit.

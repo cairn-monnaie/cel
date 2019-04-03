@@ -861,8 +861,9 @@ class BankingController extends Controller
      *@param string $type Type of transaction the transfer belongs to
      *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
      */
-    public function viewTransferAction(Request $request, $type,Operation $operation, $_format)
+    public function viewTransferAction(Request $request, Operation $operation,$_format)
     {
+        $type = 'simple';
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 

@@ -130,7 +130,7 @@ class AdminController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }elseif($user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà accessible.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }elseif($user->getConfirmationToken()){
             throw new AccessDeniedException('Email non confirmé, cet utilisateur ne peut être validé');
         }
@@ -218,7 +218,7 @@ class AdminController extends Controller
 
             $em->flush();
             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username' => $user->getUsername()));
         }
 
         $responseArray = array('user' => $user,'form'=> $form->createView());
@@ -311,9 +311,9 @@ class AdminController extends Controller
                 }
 
                 $em->flush();
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }else{
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }
         }
         return $this->render('CairnUserBundle:User:add_referent.html.twig',array('form'=>$form->createView(),'user'=>$user));

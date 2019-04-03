@@ -24,7 +24,7 @@
 {% block top_nav_menu %}
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
         <li>
-            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"><i class="material-icons left">account_balance</i>Situation</a>
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'username':app.user.username})}}"><i class="material-icons left">account_balance</i>Situation</a>
         </li>
         <li>
             <a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"><i class="material-icons left">format_list_bulleted</i>Virements</a>
@@ -41,7 +41,7 @@
 {% block nav_mobile %}
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
         <li>
-            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'id':app.user.id})}}"><i class="material-icons left">account_balance</i>Situation</a>
+            <a class="menu-item" href="{{path('cairn_user_banking_accounts_overview',{'username':app.user.username})}}"><i class="material-icons left">account_balance</i>Situation</a>
         </li>
         <li>
             <a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"><i class="material-icons">format_list_bulleted</i>Virements</a>

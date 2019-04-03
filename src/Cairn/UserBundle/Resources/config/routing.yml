@@ -80,16 +80,16 @@ cairn_user_card_security_layer:
     defaults: { _controller: CairnUserBundle:Card:inputCardKey }
 
 cairn_user_referents_assign:
-    path:     user/referents/assign/{id}
+    path:     user/referents/assign/{username}
     defaults: { _controller: CairnUserBundle:Admin:assignReferent }
-    requirements:
-        id: \d+
+#    requirements:
+#        id: \d+
 
 cairn_user_profile_view:
-    path:     user/profile/view/{id}
+    path:     user/profile/view/{username}
     defaults: { _controller: CairnUserBundle:User:viewProfile, _format: html }
-    requirements:
-        id: \d+
+#    requirements:
+#        id: \d+
 
 cairn_user_iddocument_download:
     path:     user/id-document/download/{id}
@@ -136,10 +136,10 @@ cairn_user_beneficiaries_add:
 #        _format: html|json
 
 cairn_user_beneficiaries_remove:
-    path:     user/beneficiaries/remove/{id}.{_format}
+    path:     user/beneficiaries/remove/{ICC}.{_format}
     defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: html }
     requirements:
-        id: \d+
+        ICC: \d+
 
 #cairn_user_api_beneficiaries_delete:
 #    path:     api/beneficiaries/delete/{id}
@@ -154,10 +154,10 @@ cairn_user_users_list:
         _format: html
 
 cairn_user_users_block:
-    path:     user/block/{id}
+    path:     user/block/{username}
     defaults: { _controller: CairnUserBundle:User:blockUser, _format: html }
-    requirements:
-        id: \d+
+#    requirements:
+#        id: \d+
 
 cairn_user_users_search:
     path:     user/search/
@@ -165,10 +165,10 @@ cairn_user_users_search:
 
 
 cairn_user_users_activate:
-    path:     admin/users/activate/{id}.{_format}
+    path:     admin/users/activate/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Admin:activateUser, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 cairn_user_users_dashboard:
@@ -177,10 +177,10 @@ cairn_user_users_dashboard:
 
 
 cairn_user_users_remove:
-    path:     user/remove/{id}.{_format}
+    path:     user/remove/{username}.{_format}
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 
@@ -189,14 +189,14 @@ cairn_user_users_remove_pending:
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
 
 cairn_user_users_smsdata_edit:
-    path:     user/sms-data/edit/{id}
+    path:     user/sms-data/edit/{username}
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
 cairn_user_card_home:
-    path:     card/home/{id}.{_format}
+    path:     card/home/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:cardOperations, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 cairn_user_card_order:
@@ -205,24 +205,24 @@ cairn_user_card_order:
 
 
 cairn_user_card_revoke:
-    path:     card/revoke/{id}.{_format}
+    path:     card/revoke/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:revokeCard, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 cairn_user_card_download:
-    path:     card/download/{id}.{_format}
+    path:     card/download/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:downloadAndAssociateCard, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 cairn_user_card_associate:
-    path:     card/associate/{id}.{_format}
+    path:     card/associate/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:associateCard, _format: html }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 cairn_user_card_destruct:
@@ -254,10 +254,10 @@ cairn_user_banking_rib_download:
         _format: html|json
 
 cairn_user_banking_transfer_notice_download:
-    path:     banking/download/notice/{id}/
+    path:     banking/download/notice/{paymentID}/
     defaults: { _controller: CairnUserBundle:Banking:downloadTransferNotice }
     requirements:
-        id: "[-]?[0-9]{1,}"
+        paymentID: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview_download:
     path:     banking/download/accounts/
@@ -343,10 +343,11 @@ cairn_user_banking_account_operations:
 #        _format: html|json
 
 cairn_user_banking_transfer_view:
-    path:     banking/transfer/view/{type}-{id}.{_format}
+    path:     banking/transfer/view/{paymentID}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewTransfer, _format: html }
     requirements:
-        type: scheduled.past|simple #|recurring
+        #        type: scheduled.past|simple #|recurring
+        paymentID: "[-]?[0-9]{1,}"
         _format: html|json
 
 #cairn_user_banking_transaction_occurrence_execute:
@@ -356,10 +357,10 @@ cairn_user_banking_transfer_view:
 #        id: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview:
-    path:     banking/accounts/overview/{id}.{_format}
+    path:     banking/accounts/overview/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:accountsOverview, _format: html  }
     requirements:
-        id: \d+
+        #        id: \d+
         _format: html|json
 
 
