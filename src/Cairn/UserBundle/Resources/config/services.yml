@@ -50,6 +50,12 @@ services:
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
 
+    cairn_user.helloasso:
+        class: Cairn\UserBundle\Service\Helloasso
+        arguments:
+            - "%helloasso_api_login%"
+            - "%helloasso_api_password%"
+
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:

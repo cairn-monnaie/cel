@@ -139,8 +139,8 @@ class Operation
     const TYPE_TRANSACTION_EXECUTED = 0;
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
-    const TYPE_CONVERSION = 3;
-#    const TYPE_RECONVERSION = 4;
+    const TYPE_CONVERSION_BDC = 3;
+    const TYPE_CONVERSION_HELLOASSO = 4;
     const TYPE_DEPOSIT = 5;
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
@@ -161,10 +161,10 @@ class Operation
             return 'scheduled transaction';
             break;
         case "3":
-            return 'conversion';
+            return 'conversion en bureau de change';
             break;
         case "4":
-            return 'reconversion';
+            return 'conversion par virement';
             break;
         case "5":
             return 'deposit';
@@ -194,12 +194,12 @@ class Operation
 
     public static function getToOperationTypes()
     {
-        return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+        return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
     }
 
     public static function getExecutedTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
     }
 
     public static function getScheduledTypes()

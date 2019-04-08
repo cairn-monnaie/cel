@@ -146,17 +146,6 @@ class AccountInfo
         $accounts =  $this->accountService->getAccountsSummary($userID, $dateTime);
         $nbAccounts = count($accounts);              
 
-        if($nbAccounts != 0){
-            if($accounts[0]->type->nature == 'SYSTEM'){
-                for($index = 0; $index < $nbAccounts; $index++){                   
-                    $accounts[$index]->number = $accounts[$index]->id;
-                    if($accounts[$index]->unlimited){            
-                        unset($accounts[$index]);                              
-                    }                                                              
-                }   
-            }
-        }
-
         return array_values($accounts);
     }
 

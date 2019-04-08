@@ -183,9 +183,12 @@ class AdminController extends Controller
 
                             $newUserCyclosID = $this->userManager->addUser($userDTO,$groupVO,$webServicesChannelVO);
                             $user->setCyclosID($newUserCyclosID);
-                            $icc_account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($newUserCyclosID);
-                            $icc = $icc_account->number;
-                            $user->setMainICC($icc);
+
+                            if($user->isAdherent()){
+                                $icc_account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($newUserCyclosID);
+                                $icc = $icc_account->number;
+                                $user->setMainICC($icc);
+                            }
 
 
                             //activate user and send email to user

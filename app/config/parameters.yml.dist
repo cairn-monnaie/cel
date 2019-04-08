@@ -65,3 +65,6 @@ parameters:
     sms_api_token : ThisTokenIsNotSoSecretChangeIt
     sms_provider_url : 'https://sms-provider.com'
 
+    helloasso_api_login : login
+    helloasso_api_password : password
+

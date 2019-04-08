@@ -246,6 +246,10 @@ cairn_user_card_generate_set:
         id: \d+
         _format: html|json
 
+cairn_user_helloasso_notification:
+    path:     helloasso/notification
+    defaults: { _controller: CairnUserBundle:Security:helloassoNotification}
+
 cairn_user_banking_rib_download:
     path:     banking/download/rib/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:downloadRIB, _format: html }

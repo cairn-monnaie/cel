@@ -269,7 +269,6 @@ class Commands
             echo 'INFO: Creation de l\'utilisateur "' . $cyclosUserData->name . '" groupe("'. $cyclosUserData->group->name .'")'. "\n";
 
             $doctrineUser->setCyclosID($cyclosUserData->id);
-            $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
             $doctrineUser->setEmail($cyclosUserData->email);
@@ -326,7 +325,9 @@ class Commands
             //set cyclos status to ACTIVE by default for adherents whereas, at creation, they are DISABLED
             //anonymous user will be the user accessing cyclos therefore, we need afterwards to reset admin credentials
             if($doctrineUser->isAdherent()){
+                $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
+
             }
 
             $this->em->persist($doctrineUser);

@@ -41,14 +41,14 @@ class User extends BaseUser
     private $firstname;
 
     /**
-     * @orm\column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID;
 
 
     /**
-     * @orm\column(name="main_icc", type="bigint", unique=true, nullable=true)
+     * @ORM\Column(name="main_icc", type="bigint", unique=true, nullable=true)
      * @Assert\Length(min=7, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $mainICC;
