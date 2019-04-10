@@ -76,6 +76,12 @@ class MessageNotificator
         return $res;
     }
 
+    /**
+     * Returns array containing campaign ID and message ID from $campaignName
+     *
+     *@param string $campaignName
+     *@return array
+     */
     protected function getMessageData($campaignName)
     {
         $apiToken = '&api_token='.$this->smsApiToken;
@@ -96,6 +102,7 @@ class MessageNotificator
 		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$results = \json_decode($json);
 
+        //cleans response of unnecessary data
         unset($results->result_code);
         unset($results->result_message);
         unset($results->result_output);
@@ -121,36 +128,38 @@ class MessageNotificator
         return $default_res;
     }
 
-    protected function getMessageContent($parameters, $templateMessage)
-    {
-        $message = $templateMessage;
-        foreach($parameters as $key=>$value){
-            $message = str_replace('%'.$key.'%',$value, $message);
-        }
+//    protected function getMessageContent($parameters, $templateMessage)
+//    {
+//        $message = $templateMessage;
+//        foreach($parameters as $key=>$value){
+//            $message = str_replace('%'.$key.'%',$value, $message);
+//        }
+//
+//        return $message;
+//    }
 
-        return $message;
-    }
-
-    protected function generateGetFields($parameters)
-    {
-        $res = '';
-
-        foreach($parameters as $key => $value){
-            if(is_array($value)){
-                $value = implode($value);
-            }
-           $res .= "&".$key."=".$value; 
-        }
-
-        return $res;
-    }
+//    protected function generateGetFields($parameters)
+//    {
+//        $res = '';
+//
+//        foreach($parameters as $key => $value){
+//            if(is_array($value)){
+//                $value = implode($value);
+//            }
+//           $res .= "&".$key."=".$value; 
+//        }
+//
+//        return $res;
+//    }
 
     /**
      * 
-     *
      * All contacts in our list of possible contacts have global fields than must be edited while editing the contact himself.
      * In the third-party application registering contacts, these global fields have the format %FIELD%. Therefore, when used in URL 
      * parameters, they have a specific format
+     *
+     * @param array Parameters for specific request fields
+     * @return array Correct format for our SMS provider 
      */
     protected function generateContactFields($parameters)
     {
@@ -163,6 +172,14 @@ class MessageNotificator
         return $res;
     }
 
+    /**
+     * If sent SMS is not considered as spam, we reply back with $param content
+     *
+     * @param string $phoneNumber phone number to reply back to 
+     * @param string $content content of the sms to send to the phone number $phoneNumber
+     * @param Sms $smsToAnswer SMS which requires a response
+     * @return Sms entity representing the app reply to the user with phone number $phoneNumber
+     */
     public function sendSMS($phoneNumber, $content, Sms $smsToAnswer = NULL)
     {
 
@@ -312,6 +329,14 @@ class MessageNotificator
         $this->mailer->send($message);
     }
 
+    /**
+     * Returns the number of sms received on current day from phone number $phoneNumber with state $state and content $content
+     *
+     *@param string $phoneNumber SMS sender
+     *@param const int $state State of the SMS in our app (expired, canceled, processed, ...)
+     *@param string $content  SMS content
+     *@return int 
+     */
     protected function getNumberOfTodaySms($phoneNumber,$state,$content = NULL)
     {
         $sb = $this->smsRepo->createQueryBuilder('s'); 
@@ -328,6 +353,12 @@ class MessageNotificator
         return $nbSms;
     }
 
+    /**
+     * Returns true if $sms is considered as SPAM, false otherwise
+     *
+     *@param Sms $sms Entity to consider as spam or not
+     *@return boolean 
+     */
     public function isSpam(Sms $sms)
     {
         //number of spam sms today

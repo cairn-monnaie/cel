@@ -39,6 +39,13 @@ class SecurityListener
         $this->container = $container;
     }
 
+    /**
+     * On password resetting, we check if user is enabled or not
+     *
+     * A disabled user cannot ask for password resetting. 
+     * Plus, if the user is enabled but has never logged in, it means that he lost the password sent by email. This is considered as a 
+     * sensible case and the user is disabled 
+     */
     public function onResetPassword(GetResponseNullableUserEvent $event)
     {
         $userManager = new UserManager();
@@ -68,6 +75,10 @@ class SecurityListener
         }
     }
 
+    /**
+     * Changes user password on Cyclos side after it has been changed in our app
+     *
+     */
     public function onChangePassword(FormEvent $event)
     {
         $passwordManager = new PasswordManager();
@@ -113,6 +124,10 @@ class SecurityListener
     }
 
 
+    /**
+     * On login event, we keep the cyclos session token (encoded) in session to connect to cyclos later on
+     *
+     */
     public function onLogin(InteractiveLoginEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
@@ -141,6 +156,9 @@ class SecurityListener
     }
 
 
+    /**
+     *On each controller action, we reconnect to Cyclos using the cyclos session token saved
+     */
     public function onKernelController(FilterControllerEvent $event)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
@@ -173,6 +191,10 @@ class SecurityListener
         }
     }
 
+    /**
+     * If user never logged in, he is automatically redirected to change password page
+     *
+     */
     public function onFirstLogin(FilterResponseEvent $event)
     {
         $security = $this->container->get('cairn_user.security');          
@@ -188,6 +210,10 @@ class SecurityListener
         }
     }
 
+    /**
+     *A disabled user is redirected to logout page
+     *
+     */
     public function onDisabledUser(GetResponseEvent $event)
     {
         $security = $this->container->get('cairn_user.security');          

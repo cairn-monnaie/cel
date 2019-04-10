@@ -18,6 +18,9 @@ use Cairn\UserBundle\Entity\HelloassoConversion;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 
+/**
+ * This class contains actions related to other applications as webhooks 
+ */
 class SecurityController extends Controller
 {
     /**
@@ -75,6 +78,10 @@ class SecurityController extends Controller
         }
     }
 
+    /**
+     * Creates symfony equivalent for changes, deposits and withdrawals made in BDC app
+     *
+     */
     public function synchronizeOperationAction(Request $request, $type)
     {
         $em = $this->getDoctrine()->getManager();
@@ -158,6 +165,21 @@ class SecurityController extends Controller
         }
     }
 
+    /**
+     * Helloasso webhook used to notify our app at each payment received by the association in order to credit adherent (electronic change)
+     *
+     * Once a Helloassopayment is received, our app is notified through this webhook with relevant data (amount / payer info)
+     * Then, we credit the identified adherent account with the same amount to achieve the electronic change.
+     * If the received payment amount is greater than the currently available money safe balance, a deposit is created with the difference
+     * Plus, the association is warned by email that the money safe is empty, and the adherent is notified about the asynchronous deposit
+     * by email
+     *
+     * Example : 
+     *  1) the adherent executes a helloasso payment of 1000 units but the money safe balance is 400 units.
+     *  2) the adherent is credited of 400 units (cyclos-side)
+     *  3) a deposit of 600 units is persisted in db to remind that there is still 600 units to credit
+     *  4) email sent to association and to adherent
+     */
     public function helloassoNotificationAction(Request $request)
     {
         $session = $request->getSession();
@@ -173,17 +195,22 @@ class SecurityController extends Controller
 
              //look for helloassopayment with same id in helloasso data
 //             $api_payment = $this->get('cairn_user_helloasso')->get('payments/'.$data['id']);
-             $api_payment = $this->get('cairn_user.helloasso')->get('payments');
+             $api_payment = $this->get('cairn_user.helloasso')->get('campaigns/000000095826');
+//             $api_payment = $this->get('cairn_user.helloasso')->get('campaigns');
 
+             var_dump($api_payment);
+             return new Response('ok');
+
+             $now = new \Datetime();
              $api_payment = new \stdClass();
-             $api_payment->id = '1';
-             $api_payment->date = '2019-04-08T12:34:45';
-             $api_payment->payer_email = 'nico_faus_prod@test.fr';
-             $api_payment->payer_first_name = 'Nicolas';
-             $api_payment->payer_last_name = 'Faus';
-             $api_payment->amount = '200';
+             $api_payment->id = '26';
+             $api_payment->date = $now->format('d-m-Y H:i');
+             $api_payment->payer_email = 'gjanssens@test.fr';
+             $api_payment->payer_first_name = 'Gaëtan';
+             $api_payment->payer_last_name = 'Janssens';
+             $api_payment->amount = '600';
              $api_payment->actions = new \stdClass();
-             $api_payment->actions->accountNumber = '12460951';
+             $api_payment->actions->accountNumber = '560104466';
 
 //             if(property_exists($api_payment,'resources')){
 //                $response = new Response('Mauvaise requête');
@@ -195,7 +222,7 @@ class SecurityController extends Controller
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
              if($existingPayment){
-                $response = new Response('Helloasso paayment already handled');
+                $response = new Response('Helloasso payment already handled');
                 $response->headers->set('Content-Type', 'application/json');
                 $response->setStatusCode(Response::HTTP_FORBIDDEN);
                 return $response;

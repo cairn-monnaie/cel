@@ -58,7 +58,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * This class contains all actions related to user experience
+ * This class is a CRUD related to user's beneficiaries
  *
  * @Security("is_granted('ROLE_ADHERENT')")
  */
@@ -421,7 +421,6 @@ class BeneficiaryController extends Controller
      * Removes a given beneficiary
      *
      * Once $beneficiary is removed, we ensure that this beneficiary is associated to at least one user. Otherwise, it is removed
-     * @TODO : try the option OrphanRemoval in annotations to let Doctrine do it 
      * @param Beneficiary $beneficiary Beneficiary to remove
      * @Method("GET")
      */

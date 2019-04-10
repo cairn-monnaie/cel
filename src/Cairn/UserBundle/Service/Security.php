@@ -67,6 +67,11 @@ class Security
 
     }
 
+    /**
+     * Returns current Symfony user using token storage
+     *
+     * @return User current user
+     */
     public function getCurrentUser()
     {
         $token = $this->tokenStorage->getToken();
@@ -79,6 +84,23 @@ class Security
         return NULL;
     }
 
+    /**
+     * Returns true if current request is considered as sensible, false otherwise
+     *
+     * For most of the urls matcheable by our application, their corresponding route is enough to identify the request as sensible or not.
+     * But for a few of them, the values of request parameters must be investigated. If the url is sensible, the security card is asked
+     * to the user to go further.
+     *
+     * Exemple : Revoking a security card can be done either by an admin for an user or by an adherent for himself. Revoking a card is 
+     * necessary if the user lost it. Therefore, an adherent who wants to declare a revocation of his card must be able to do it without
+     * any validation of his identity by security card (because he lost it...)
+     * For this case, the request parameter "username" allows to know who is doing the revocation request, and who will have his card
+     * revoked.
+     *
+     *@param string $route route name of the current request
+     *@param array $parameters request parameters
+     *@return boolean
+     */
     public function isSensibleOperation($route, $parameters)
     {
         $currentUser = $this->getCurrentUser();
@@ -285,7 +307,13 @@ class Security
     }
 
     /**
-     * Used for SMS payments
+     * Returns true if the SMS payment is suspicious, false otherwise
+     *
+     * A payment is considered as suspicious if the payment amount is greater than a custom limit, or if the number of payments executed 
+     * the same day by the same person reaches a custom limit
+     *
+     * @param Operation $operation  Payment by SMS
+     * @return boolean
      */
     public function paymentIsSuspicious(Operation $operation)
     {
@@ -305,6 +333,5 @@ class Security
         if(count($operations) >= $this->smsNbPaymentsBlock){ return true; }
 
         return false;
-
     }
 }

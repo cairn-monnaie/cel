@@ -54,6 +54,12 @@ class Commands
         $this->container = $container;
     }
 
+    /**
+     * Removes all operations with no paymentID
+     *
+     * If an operation has no paymentID, it means that it has not been confirmed by the user
+     *
+     */
     public function removeAbortedOperations()
     {
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
@@ -67,21 +73,21 @@ class Commands
             $this->em->remove($transaction);
         }
 
-        $sb = $smsRepo->createQueryBuilder('s');                 
-        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
-        $expiredSms = $sb->getQuery()->getResult();
-
-        foreach($expiredSms as $sms){
-            $this->em->remove($sms);
-        }
-
-        $sb = $smsRepo->createQueryBuilder('s');                 
-        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
-        $expiredSms = $sb->getQuery()->getResult();
-
-        foreach($expiredSms as $sms){
-            $this->em->remove($sms);
-        }
+//        $sb = $smsRepo->createQueryBuilder('s');                 
+//        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
+//        $expiredSms = $sb->getQuery()->getResult();
+//
+//        foreach($expiredSms as $sms){
+//            $this->em->remove($sms);
+//        }
+//
+//        $sb = $smsRepo->createQueryBuilder('s');                 
+//        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
+//        $expiredSms = $sb->getQuery()->getResult();
+//
+//        foreach($expiredSms as $sms){
+//            $this->em->remove($sms);
+//        }
 
         $this->em->flush();
     }
@@ -90,6 +96,8 @@ class Commands
     /**
      *Returns true and creates admin if he does not exist yet, returns false otherwise
      *
+     *@param string username : cyclos username of the admin
+     *@param string password : cyclos password of the admin
      *@return boolean 
      */ 
     public function createInstallAdmin($username, $password)
@@ -258,6 +266,13 @@ class Commands
 
     }
 
+    /**
+     * Creates an user on Symfony side 
+     *
+     *@param int $rank  
+     *@param stdClass $cyclosUser object representing user on cyclos-side
+     *@param User $admin
+     */
     public function createUser($cyclosUser, $admin, $rank)
     {
         $existingUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('cyclosID'=>$cyclosUser->id));
@@ -387,6 +402,8 @@ class Commands
     }
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
+     *@param const int $type Operation type
+     *@param stdClass $entryVO stdClass transaction
      */
     public function createOperation($entryVO, $type)
     {
@@ -443,6 +460,12 @@ class Commands
 
     }
 
+    /**
+     * Generates consistent Symfony database from Cyclos data 
+     *
+     * @param string $login : username of admin user 
+     * @param string $password : password of admin user
+     */
     public function generateDatabaseFromCyclos($login, $password)
     {
         $securityService = $this->container->get('cairn_user.security');

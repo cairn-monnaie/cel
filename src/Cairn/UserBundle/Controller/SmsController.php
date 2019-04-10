@@ -26,7 +26,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 
 /**
- * This class contains actions related to sms payments 
+ * This class contains actions related to sms operations 
  */
 class SmsController extends Controller
 {
@@ -67,6 +67,16 @@ class SmsController extends Controller
 
     }
 
+    /**
+     * Analyzes received sms, parses it and hydrates the object to return with relevant information
+     *
+     * The received SMS content is parsed through different regex enumerating allowed sms formats. If none of these formats is matched by 
+     * the content, the function tries to have a deeper analysis of the error.
+     * The returned object $res contains attributes which permit to know which operation is requested (payment/account balance/validation)
+     * and an error attribute if necessary
+     *
+     * @return stdClass $res
+     */
     public function parseSms($content)
     {
         //1) content treatment : escape special chars and remove all whitespaces from content
@@ -137,6 +147,10 @@ class SmsController extends Controller
 
     }
 
+    /**
+     * Simple function to persist sms if it exists in order to have the "if" clause only once
+     *
+     */
     private function persistSMS(Sms $sms = NULL)
     {
         if($sms){
@@ -144,6 +158,13 @@ class SmsController extends Controller
         }
     }
 
+    /**
+     * Analyzes the received SMS data (phone number / content) then handles it 
+     *
+     * The phone number must match an existing and enabled adherent. Then, the SMS is parsed in order to understand the request and handle
+     * it. The user is connected to Cyclos through its sms access client to process operaation on Cyclos-side (payment / account balance)
+     *
+     */
     public function smsAction($debitorPhoneNumber,$content)
     {
         $em = $this->getDoctrine()->getManager();
@@ -369,8 +390,15 @@ class SmsController extends Controller
 
 
     /**
+     * Analyzes the payment data then executes the payment requested by SMS
      *
-     * If toAnalyze is false, it means that the request has already been analyzed and don't need any check : just process it
+     * We check that the payment is not suspicious (too many payments the same day, or too high amount), then we validate the operation
+     * with our custom operation validator
+     *
+     * @param User $debitorUser adherent to be debited
+     * @param stdClass $parsedSms object returned after sms is parsed. It contains an amount and a sms identifier
+     * @param boolean $toAnalyze if false, the request payment has already been analyzed and validated : just process it
+     * @see \Cairn\UserBundle\Validator\OperationValidator
      */
     public function executePayment($debitorUser, $parsedSms, $toAnalyze)
     {
@@ -557,6 +585,17 @@ class SmsController extends Controller
     }
 
 
+    /**
+     * The state of the received SMS is set to "WAITING_kEY" and a validation SMS is sent back with security card cell position
+     *
+     * An SMS is sent back to the user with a security card cell position to input in the next SMS (code with 4 figures ). 
+     * If a previous SMS was already waiting for a validation code, it is set as canceled and, for the new SMS, we ask for the exact same 
+     * code than the previous one. 
+     *
+     * @param EntityManager $em
+     * @param User $user : adherent who sent the sms
+     * @param string $content : sms content
+     */
     public function setUpSmsValidation($em, $user, $content)
     {
         $messageNotificator = $this->get('cairn_user.message_notificator'); 

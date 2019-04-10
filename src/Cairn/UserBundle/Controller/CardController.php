@@ -141,6 +141,10 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:card_operation.html.twig',array('user'=>$user));
     }
 
+    /**
+     * An user with no card can notify the association to receive a security card
+     * 
+     */
     public function orderCardAction(Request $request)
     {
         $session = $request->getSession();
@@ -473,8 +477,8 @@ class CardController extends Controller
     /**
      * Associate new user's card
      *
-     * To ensure security, the user is asked to input a code provided on his card. In case of failure, user's attribute 
-     * 'cardAssociationTries' is incremented.
+     * The user inputs the code aavailable on his card. To ensure security, the user is asked to input a code provided on his card. 
+     * In case of failure, user's attribute 'cardAssociationTries' is incremented.
      * 3 failures leads to disable the user.
      */
     public function associateCardAction(Request $request, User $user, $_format)
@@ -558,7 +562,7 @@ class CardController extends Controller
      * Card generation can be done by an admin for user under its responsibility. An exception case is installed SUPER_ADMIN who can 
      * generate a card for himself. The association between user and card is done automatically.
      *
-     * The card is encoded in database using user's salt attribute to add a security layer in database.
+     * The card is encoded in database to add a security layer in database.
      *
      *@Security("is_granted('ROLE_ADMIN')")
      *@Method("GET")

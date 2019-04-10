@@ -26,6 +26,13 @@ class OperationValidator extends ConstraintValidator
         $this->accountInfo = $accountInfo;
     }
 
+    /**
+     * Validates the data from the account doing the current action
+     *
+     * @param stdClass $account Object containing cyclos account data like account number and email
+     * @param string $path Form field to display error at
+     *
+     */
     private function validateActiveAccount($account,$path)
     {
 
@@ -55,6 +62,13 @@ class OperationValidator extends ConstraintValidator
     }
 
 
+    /**
+     * Validates the data from the account subject to current action, but not executing it
+     *
+     * @param stdClass $account Object containing cyclos account data like account number and email
+     * @param string $path Form field to display error at
+     *
+     */
     private function validatePassiveAccount($account,$path){
         $ICC = $account->number;
 
@@ -85,6 +99,13 @@ class OperationValidator extends ConstraintValidator
         }
     }
 
+    /**
+     * Validates that account $account has available balance to perform operation of amount $amount
+     *
+     * @param const int $operationType Type of the current operation
+     * @param stdClass $account Debitor account
+     * @param float $amount Payment amount
+     */
     private function validateBalance($operationType, $account,$amount)
     {
         if(!$account->unlimited){

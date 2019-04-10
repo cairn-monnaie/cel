@@ -18,6 +18,14 @@ class Helloasso
 
     }
 
+
+    /**
+     * Make a request to helloasso API
+     *
+     *@param array $params request parameters
+     *@param string $resource uri matching a resource
+     *@return stdClass $results result of the helloasso api request 
+     */
     public function get($resource, $params = NULL)
     {
         $url = "https://api.helloasso.com/v3/".$resource.".json";
@@ -48,4 +56,5 @@ class Helloasso
         return $results;
 
     }
+
 }

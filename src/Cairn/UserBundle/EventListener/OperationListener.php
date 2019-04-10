@@ -32,9 +32,10 @@ class OperationListener
     /**
      * Deals with asynchronous operations made in Cyclos in order to update our database
      *
-     * If a transaction has been scheduled in the future and has finally been executed, the operation type must be edit from
+     * If a transaction has been scheduled in the future and has finally been executed, the operation type must be edited from
      * SCHEDULED to EXECUTED. If the future transaction has failed, type becomes FAILED
      *
+     *@param Operation $operation 
      */
     public function postLoad(Operation $operation, LifecycleEventArgs $args)
     {

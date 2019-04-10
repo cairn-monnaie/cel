@@ -21,7 +21,7 @@ use Cairn\UserCyclosBundle\Service\BankingInfo;
 class BridgeToSymfony
 {
     /**
-     * Service dealing with notifications(mailing/notifications)
+     * Service dealing with notifications(mailing/notifications/sms)
      *@var MessageNotificator $messageNotificator
      */
     protected $messageNotificator;
@@ -62,6 +62,13 @@ class BridgeToSymfony
 
     }
 
+    /**
+     * Retrieves Cyclos user from Symfony
+     *
+     *@param User $user Symfony user to retrieve cyclos equivalent
+     *@throws Cyclos/ServiceException if no cyclos user matches
+     *@return stdClass $cyclosUser
+     */
     public function fromSymfonyToCyclosUser(User $user)
     {
         try{
@@ -82,6 +89,12 @@ class BridgeToSymfony
         }
     }
 
+    /**
+     * Retrieves Symfony user from Cyclos
+     *
+     *@param int $id Cyclos ID of an user
+     *@return User $symfonyUser User equivalent entity
+     */
     public function fromCyclosToSymfonyUser($id)
     {
         $symfonyUser = $this->userRepo->findOneBy(array('cyclosID'=>$id));
@@ -100,8 +113,11 @@ class BridgeToSymfony
     }
 
     /**
+     * Retrieves Cyclos user from Symfony
      *
-     *@return org.cyclos.model.banking.transactions.TransactionVO
+     *@param Operation $operation Symfony operation to retrieve cyclos equivalent transaction
+     *@throws Cyclos/ServiceException if no cyclos transfer matches
+     *@return stdClass $cyclosOperation corresponding to org.cyclos.model.banking.transactions.TransactionVO
      */
     public function fromSymfonyToCyclosOperation(Operation $operation)
     {
@@ -123,6 +139,12 @@ class BridgeToSymfony
        
     }
 
+    /**
+     * Retrieves Symfony operation (transfer of units from account to account) from Cyclos
+     *
+     *@param int $id Cyclos ID of a transaction
+     *@return Operation $symfonyOperation Operation equivalent entity
+     */
     public function fromCyclosToSymfonyOperation($id)
     {
         $symfonyOperation = $this->operationRepo->findOneBy(array('paymentID'=>$id));
