@@ -173,8 +173,15 @@ cairn_user_users_activate:
 
 cairn_user_users_dashboard:
     path:     admin/users/dashboard
-    defaults: { _controller: CairnUserBundle:Admin:dashboard, _format: html }
+    defaults: { _controller: CairnUserBundle:Admin:userDashboard, _format: html }
 
+cairn_user_electronic_mlc_dashboard:
+    path:     admin/electronic-mlc/dashboard
+    defaults: { _controller: CairnUserBundle:Admin:moneySafeDashboard, _format: html }
+
+cairn_user_electronic_mlc_edit:
+    path:     admin/electronic-mlc/edit
+    defaults: { _controller: CairnUserBundle:Admin:moneySafeEdit, _format: html }
 
 cairn_user_users_remove:
     path:     user/remove/{username}.{_format}

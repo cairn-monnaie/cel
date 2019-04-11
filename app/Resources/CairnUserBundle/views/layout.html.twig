@@ -9,7 +9,7 @@
                 </li>
             {% if is_granted('ROLE_SUPER_ADMIN') %}
                 <li class="divider"></li>
-                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}">Virements </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_electronic_mlc_dashboard')}}">Coffre [e]-cairns </a></li>
 {#                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}">Dépôt </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}">Retrait </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}">Conversion </a></li> 
@@ -51,7 +51,7 @@
                 <a class="menu-item" href="{{path('cairn_user_users_dashboard')}}"><i class="material-icons">people</i>Membres</a>
             </li>
             {% if is_granted('ROLE_SUPER_ADMIN') %}
-                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}">Virements </a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_electronic_mlc_dashboard')}}">Coffre [e]-cairns </a></li>
 {#                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'deposit'})}}">Dépôt </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'withdrawal'})}}">Retrait </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'conversion'})}}">Conversion </a></li>

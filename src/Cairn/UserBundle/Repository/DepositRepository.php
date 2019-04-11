@@ -2,6 +2,9 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Cairn\UserBundle\Entity\Deposit;
+use Doctrine\ORM\QueryBuilder;                                                 
+
 /**
  * DepositRepository
  *
@@ -10,4 +13,52 @@ namespace Cairn\UserBundle\Repository;
  */
 class DepositRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function whereStatus(QueryBuilder $db, $status)
+    {
+        $db->andWhere('d.status = :status')
+            ->setParameter('status',$status);
+        return $this;
+    }
+
+    public function whereCreditor(QueryBuilder $db, $userID)
+    {
+        $db->join('d.creditor','c')
+            ->andWhere('c.id = :id')                                           
+            ->setParameter('id',$userID);
+        return $this;
+    }
+
+    public function whereOlderThan(QueryBuilder $db, $date)
+    {
+        $db->andWhere('d.requestedAt < :beforeDate')
+            ->setParameter('beforeDate',$date);
+        return $this;
+    }
+
+    public function whereMoreRecentThan(QueryBuilder $db, $date)
+    {
+        $db->andWhere('d.requestedAt > :afterDate')
+            ->setParameter('afterDate',$date);
+        return $this;
+    }
+
+    public function whereCurrentDay(QueryBuilder $db)
+    {
+        $db->andWhere('d.requestedAt BETWEEN :start AND :end')
+            ->setParameter('start', new \Datetime(date('Y-m-d'))) // 00:00:00
+            ->setParameter('end', new \Datetime()) //now
+            ;
+        return $this;
+    }
+
+    public function getAmountOfScheduledDeposits()
+    {
+        $db = $this->createQueryBuilder('d');
+        $this->whereStatus($db,Deposit::STATE_SCHEDULED);
+
+        return $sb->select('count(d.id)')->getQuery()->getSingleScalarResult();
+    }
+
+
 }

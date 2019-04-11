@@ -193,31 +193,27 @@ class SecurityController extends Controller
         if($request->isMethod('GET')){
              $data = json_decode($request->getContent(),true);
 
+             $data['id'] = '000040780773';
              //look for helloassopayment with same id in helloasso data
 //             $api_payment = $this->get('cairn_user_helloasso')->get('payments/'.$data['id']);
-             $api_payment = $this->get('cairn_user.helloasso')->get('campaigns/000000095826');
+             $campaign_payments = $this->get('cairn_user.helloasso')->get('organizations/000000440311/campaigns/000001033322/payments');
 //             $api_payment = $this->get('cairn_user.helloasso')->get('campaigns');
 
-             var_dump($api_payment);
-             return new Response('ok');
+             $api_payment = NULL;
+             foreach($campaign_payments->resources as $payment){
+                 if($payment->id == $data['id']){
+                    $api_payment = $payment;
+                 }
+             }
 
-             $now = new \Datetime();
-             $api_payment = new \stdClass();
-             $api_payment->id = '26';
-             $api_payment->date = $now->format('d-m-Y H:i');
+             if(! $api_payment){
+                 $response = new Response('No payment found');
+                 $response->headers->set('Content-Type', 'application/json');
+                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                 return $response;
+             }
+
              $api_payment->payer_email = 'gjanssens@test.fr';
-             $api_payment->payer_first_name = 'Gaëtan';
-             $api_payment->payer_last_name = 'Janssens';
-             $api_payment->amount = '600';
-             $api_payment->actions = new \stdClass();
-             $api_payment->actions->accountNumber = '560104466';
-
-//             if(property_exists($api_payment,'resources')){
-//                $response = new Response('Mauvaise requête');
-//                $response->headers->set('Content-Type', 'application/json');
-//                $response->setStatusCode(Response::HTTP_FORBIDDEN);
-//                return $response;
-//             }
 
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
@@ -235,7 +231,6 @@ class SecurityController extends Controller
              $helloasso->setDate(new \Datetime($api_payment->date));
              $helloasso->setAmount($api_payment->amount);
              $helloasso->setEmail($api_payment->payer_email);
-             $helloasso->setAccountNumber($api_payment->actions->accountNumber);
              $helloasso->setCreditorName($api_payment->payer_last_name.' '.$api_payment->payer_first_name);
 
              $em->persist($helloasso);
@@ -244,25 +239,19 @@ class SecurityController extends Controller
 
              $creditorUser = $userRepo->findOneByEmail($helloasso->getEmail());
              if(! $creditorUser){
-                 $creditorUser = $userRepo->findOneByMainICC($helloasso->getAccountNumber());
+                 $subject = 'Crédit de compte [e]-Cairn et virement Helloasso';
+                 $from = $messageNotificator->getNoReplyEmail();
+                 $to = $helloasso->getEmail();
+                 $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$helloasso,'reason'=>'unfindable'));
 
-                 if(! $creditorUser){
+                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                     $subject = 'Crédit de compte [e]-Cairn et virement Helloasso';
-                     $from = $messageNotificator->getNoReplyEmail();
-                     $to = $helloasso->getEmail();
-                     $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$helloasso,'reason'=>'unfindable'));
+                 $response = new Response('creditor user not found');
+                 $response->headers->set('Content-Type', 'application/json');
+                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
 
-                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-                     $response = new Response('creditor user not found');
-                     $response->headers->set('Content-Type', 'application/json');
-                     $response->setStatusCode(Response::HTTP_NOT_FOUND);
-
-                     $em->flush();
-                     return $response;
-                 }
-
+                 $em->flush();
+                 return $response;
              }
 
              //cyclos part
@@ -295,7 +284,13 @@ class SecurityController extends Controller
                  $reason = 'Change numérique via virement Helloasso'; 
 
                  $availableAmount = $debitAccount->status->balance;
+
+                 if($availableAmount >= 0){
                  $diff = $availableAmount - $helloasso->getAmount();
+                 }else{
+                    $diff = -$helloasso->getAmount();
+                 }
+
                  if($diff <= 0 ){
                      $amountToCredit = $helloasso->getAmount() + $diff;
 
