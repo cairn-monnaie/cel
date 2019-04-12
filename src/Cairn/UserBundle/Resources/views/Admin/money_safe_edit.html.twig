@@ -1,0 +1,19 @@
+  {# src/Cairn/UserBundle/Resources/views/Admin/money_safe_edit.html.twig #}         
+
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+
+    <h2> [e]-cairns disponibles : {{availableAmount}} </h2>
+
+    <div>                                                                          
+        {{ form_start(form) }}
+        {{form_end(form) }}
+    </div>                                                                         
+
+{% endblock %}

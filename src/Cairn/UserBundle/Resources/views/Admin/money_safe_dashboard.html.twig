@@ -1,0 +1,43 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/money_safe_dashboard.html.twig #}         
+
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+{% block body %}
+    {{parent()}} 
+
+    <h2> [e]-cairns disponibles : {{availableAmount}} </h2>
+
+    <h3> Somme des crédits à réaliser : {{amountOfDeposits}} </h3>
+
+     <a href="{{path('cairn_user_electronic_mlc_edit')}}" class="btn waves-effect waves-light">Déclarer le nombre de [e]-cairns disponibles</a>
+
+    <table>
+    <thead>
+        <tr>
+            <th> Date </th>
+            <th> Créditeur </th> 
+            <th> Email </th> 
+            <th> Montant </th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+
+    {% for deposit in deposits %}
+        <tr>
+            <td>{{ deposit.requestedAt|date('Y-m-d')}}</td>
+            <td>{{ deposit.creditor.name}}</td>
+            <td>{{ deposit.creditor.email}}</td>
+            <td>{{ deposit.amount}}</td>
+        </tr>
+    {% else %}
+        Aucun dépôt à réaliser !
+    {% endfor %}
+
+{% endblock %}              
+
