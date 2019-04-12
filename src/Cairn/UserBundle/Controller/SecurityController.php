@@ -212,6 +212,7 @@ class SecurityController extends Controller
                  return $response;
              }
 
+
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
              if($existingPayment){
@@ -314,7 +315,7 @@ class SecurityController extends Controller
                      }
 
                      if($amountToCredit > 0){
-                         $res = $this->bankingManager->makeSinglePreview($paymentData,$amountToCredit,$reason,$creditTransferType,$helloasso->getDate());
+                         $res = $this->bankingManager->makeSinglePreview($paymentData,$amountToCredit,$reason,$creditTransferType,new \Dateitme());
                      }else{
 
                          $em->flush();
@@ -326,7 +327,7 @@ class SecurityController extends Controller
                          return $response;
                      }
                  }else{
-                     $res = $this->bankingManager->makeSinglePreview($paymentData,$helloasso->getAmount(),$reason,$creditTransferType,$helloasso->getDate());
+                     $res = $this->bankingManager->makeSinglePreview($paymentData,$helloasso->getAmount(),$reason,$creditTransferType,new \Datetime());
                  }
 
                  //preview allows to make sure payment would be executed according to provided data
