@@ -190,7 +190,7 @@ class SecurityController extends Controller
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
-        if($request->isMethod('GET')){
+        if($request->isMethod('POST')){
              $data = json_decode($request->getContent(),true);
 
              //look for helloassopayment with same id in helloasso data
@@ -212,6 +212,7 @@ class SecurityController extends Controller
                  return $response;
              }
 
+             $api_payment->payer_email = 'gjanssens@test.fr';
 
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
