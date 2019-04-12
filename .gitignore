@@ -27,5 +27,5 @@
 bootstrap.php.cache
 /app/config/parameters.yml
 .env
-/docs
+/docs/phpdoc-cache-*
 /docker/logs/*
