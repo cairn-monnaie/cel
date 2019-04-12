@@ -7,7 +7,8 @@
  * Install [api repo](https://github.com/cairn-monnaie/api/tree/cairn)
 
 # Install
-
+## Test image
+![Test doc](/docs/images/uml.png)
 ## Download Sources
 
    `git clone https://github.com/cairn-monnaie/CairnB2B.git`
