@@ -193,7 +193,6 @@ class SecurityController extends Controller
         if($request->isMethod('GET')){
              $data = json_decode($request->getContent(),true);
 
-             $data['id'] = '000040780773';
              //look for helloassopayment with same id in helloasso data
 //             $api_payment = $this->get('cairn_user_helloasso')->get('payments/'.$data['id']);
              $campaign_payments = $this->get('cairn_user.helloasso')->get('organizations/000000440311/campaigns/000001033322/payments');
@@ -212,8 +211,6 @@ class SecurityController extends Controller
                  $response->setStatusCode(Response::HTTP_NOT_FOUND);
                  return $response;
              }
-
-             $api_payment->payer_email = 'gjanssens@test.fr';
 
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
