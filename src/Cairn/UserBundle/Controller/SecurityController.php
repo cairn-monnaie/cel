@@ -191,16 +191,17 @@ class SecurityController extends Controller
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if($request->isMethod('POST')){
-             $data = json_decode($request->getContent(),true);
+             $data = $request->getContent();
+
+             preg_match('#^id=(\d+)#',$data,$match_id);
 
              //look for helloassopayment with same id in helloasso data
 //             $api_payment = $this->get('cairn_user_helloasso')->get('payments/'.$data['id']);
-             $campaign_payments = $this->get('cairn_user.helloasso')->get('organizations/000000440311/campaigns/000001033322/payments');
-//             $api_payment = $this->get('cairn_user.helloasso')->get('campaigns');
+             $campaign_payments = $this->get('cairn_user.helloasso')->get('campaigns/000001033322/payments');
 
              $api_payment = NULL;
              foreach($campaign_payments->resources as $payment){
-                 if($payment->id == $data['id']){
+                 if($payment->id == $match_id[1]){
                     $api_payment = $payment;
                  }
              }
@@ -211,8 +212,6 @@ class SecurityController extends Controller
                  $response->setStatusCode(Response::HTTP_NOT_FOUND);
                  return $response;
              }
-
-             $api_payment->payer_email = 'gjanssens@test.fr';
 
              //look for helloassopayment with same id in db
              $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
