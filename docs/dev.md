@@ -6,12 +6,12 @@
 ## Model of object-oriented database 
 ![UML](/docs/images/uml.png)
 
+In either developement or testing environment, all data are controlled for convenience.  
+  * all user passwords are '@@bbccdd' 
+  * all card keys are '1111'  
+  * all validation codes are '1111'  
+
 ## Development
- * **Data**  
-     In developement (and testing) environment, all data are controlled for convenience.  
-       * all user passwords are @@bbccdd  
-       * all card keys are 1111  
-       * all validation codes are 1111  
  * **Generate data**
      ```
      sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=dev admin_network @@bbccdd
@@ -56,16 +56,17 @@
 ## Functional Testing
 
 ### Requirements
-    If not done yet, repeat the [api repo install](https://github.com/cairn-monnaie/api/tree/cairn) **from part "Générer la configuration finale de Cyclos et un jeu de données" replacing "dev" by "test" **
+If not done yet, repeat the [api repo install](https://github.com/cairn-monnaie/api/tree/cairn) **from part "Générer la configuration finale de Cyclos et un jeu de données" replacing "dev" by "test"**  
 
- All the information provided in the _Development_ subsection is also relevant here. Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
+ All the information provided in the _Development_ subsection is also relevant here.  
+ Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
  The source code regarding tests is available in the _tests_ directory
 
  * **Logs**  
-    A log file is available in `./docker/logs/test.log` file
+    A log file is available : `docker/logs/test.log`
 
  * **Generating test data**  
-    This will (re)create a scratch MySQL test database
+    This will (re)create a MySQL test database from scratch
     `sudo docker-compose exec engine ./build-setup.sh test`    
 
     `sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`

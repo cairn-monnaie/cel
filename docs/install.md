@@ -7,7 +7,7 @@
 
 ## Download Sources
 
-   `git clone https://github.com/cairn-monnaie/CairnB2B.git`
+   `git clone https://github.com/cairn-monnaie/cel.git`
 
 ## Docker setup
 
@@ -23,21 +23,24 @@
     Copy the template file containing symfony app global variables and open it with your favorite editor.  
       `cp app/config/parameters.yml.dist app/config/parameters.yml`
 
-    Some of these parameters rely directly on this `docker-compose.yml` file and the [api repo](https://github.com/cairn-monnaie/api/tree/cairn) docker_compose.yml   
+    Some of these parameters rely directly on this `docker-compose.yml` file and the [api repo](https://github.com/cairn-monnaie/api/tree/cairn) `docker_compose.yml` :  
       `database_host: db (name of the docker service containing MySQL database)`  
       `database_port: 3306 (port listener in the db container)`  
       `database_name: db-name`  
       `database_user: username (provided in .env)`  
       `database_password: pwd (provided in .env)`  
+      `mailer_host: engine (name of the docker service executing php code)`  
       `cyclos_root_prod_url: 'http://cyclos-app:8080/' (name and port of the cyclos-app docker service)`  
       `cyclos_group_pros: xxx (name of the group of professionals in your cyclos application)`  
       `cyclos_group_network_admins: 'Network administrators'`  
       `cyclos_group_global_admins: 'Global administrators'`  
       `cyclos_currency_cairn: '<currency>' (name of services.api.environment.CURRENCY_SLUG  in docker-compose of api repo)`
+      `router.request_context.host: 'cyclos-app:8080'`
+      `router.request_context.scheme: https`
+      `router.request_context.base_url: null`
 
-    Customize parameters according to your use among the following list
+    Some of these parameters are always customizable according to your use :
       `mailer_transport: smtp`  
-      `mailer_host: engine (name of the docker service executing php code)`  
       `mailer_user: xxx (e.g admin@localhost.fr)`  
       `mailer_port: xxx`  
       `mailer_password: xxx`  
@@ -53,6 +56,9 @@
       `cairn_default_reconversion_description: xxx (e.g 'Reconversion cairns-euros')`  
       `cairn_default_transaction_description: xxx (e.g 'Virement Cairn')`  
       `cairn_email_activation_delay: xxx (e.g 10)`  
+      `leading_company: 'Association ...'`
+      `cairn_default_register_url : xxx (e.g 'https://domain.com/register')`
+      `cairn_default_cgu_url : xxx (e.g 'https://domain.com/register')`
 
  * **Setup the application**
 
