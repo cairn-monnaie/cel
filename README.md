@@ -18,13 +18,14 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
   * **Virement compte à compte**  
     Depuis son compte [e]-Cairn, un adhérent peut réaliser un virement en identifiant le bénéficiaire par son numéro de compte ou son adresse email. Ces virements peuvent être à exécution immédiate ou différée.
 
-  * **La carte de sécurité** 
-    Il s'agit là d'un élément central dans l'utilisation de l'application. Chaque compte [e]-Cairn doit être associé à une carte de sécurité contenant des clés à 4 chiffres au format matrice papier. Lors d’actions considérées comme sensibles (changement de mot de passe, édition du profil, ajout d'un bénéficiaire, ...) , une clé de cette carte est demandée préalablement via sa position (exemple : B2). Elle sert de surcouche d'authentification avant de rediriger l'utilisateur vers l'opération initialement demandée. 
+  * **La carte de sécurité**   
+    Il s'agit là d'un élément central dans l'utilisation de l'application. Chaque compte [e]-Cairn doit être associé à une carte de sécurité contenant des clés à 4 chiffres au format matrice papier. Lors d’actions considérées comme sensibles (changement de mot de passe, édition du profil, ajout d'un bénéficiaire, ...) , une clé de cette carte est demandée préalablement via sa position (exemple : B2). Elle sert de surcouche d'authentification avant de rediriger l'utilisateur vers l'opération initialement demandée.   
+    Une carte, c'est une entité `Cairn/src/UserBundle/Entity/Card`  
     Par défaut, les cartes sont de dimensions 5x5, mais ces dimensions peuvent être modifiées via les paramètres globaux dans `app/config/parameters.yml`:
       * nombre de lignes : `cairn_card_rows : 5`
       * nombre de colonnes : `cairn_card_cols : 5`
 
-    * **Les opérations sensibles nécessitant une authentification par carte**
+    **Les opérations sensibles nécessitant une authentification par carte**  
       Pour déclarer une opération comme sensible, il y a 3 façons de faire :  
         * Si l'URL suffit à déclarer l'opération comme sensible (ex : changement du mot de passe), il faut ajouter la route permettant d'accéder à ladite opération dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_ROUTES`  
         * Si l'URL ne suffit pas, mais que la "sensibilité" dépend de certains paramètres de la requête (ex : virement vers un nouveau bénéficiaire, paramètre `to = new`), il faut ajouter la route permettant d'accéder à ladite opération ainsi que les paramètres déterminants dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_URLS`  
@@ -57,10 +58,17 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
       Ce document, téléchargeable au format PDF, contient les données identifiant les comptes débiteur et créditeur, ainsi que le montant du virement, la date d’exécution et un identifiant unique associé au transfert. Le statut du virement peut être "Exécuté", "A exécuter" ou "Echoué".
 
   * **Gestion de ses bénéficiaires**  
-    Vous pouvez enregistrer des bénéficiaires (via email ou numéro de compte) afin de ne plus avoir à saisir leurs informations manuellement à chaque virement. De plus, une fois un bénéficiaire enregistré, la case "validation de votre identité par carte de sécurité" n'est plus nécessaire.
+    Vous pouvez enregistrer des bénéficiaires (via email ou numéro de compte) afin de ne plus avoir à saisir leurs informations manuellement à chaque virement. De plus, une fois un bénéficiaire enregistré, la case "validation de votre identité par carte de sécurité" n'est plus nécessaire.  
+    Un bénéficiaire, c'est une entité de classe `Cairn/src/UserBundle/Entity/Beneficiary`  
 
   * **Crédit automatique du compte via virement Helloasso**  
-    Depuis son compte [e]-Cairn, un adhérent peut réaliser un virement à l'Association sous forme de don sur Helloasso. Une notification de paiement est alors envoyée à cette application via un webhook dédié. Les informations qui y sont envoyées permettent de créditer de façon automatique le compte [e]-Cairn de l'adhérent dans la limite des [e]-cairns disponibles.
+    Depuis son compte [e]-Cairn, un adhérent peut réaliser un virement à l'Association sous forme de don sur Helloasso. Une notification de paiement est alors envoyée à cette application via un webhook dédié. Les informations qui y sont envoyées permettent de créditer de façon automatique le compte [e]-Cairn de l'adhérent dans la limite des [e]-cairns disponibles.  
+    Si le montant du virement effectué via Helloasso est supérieur au solde du coffre [e]-Cairn  
+      * seuls les [e]-cairns disponibles sont crédités sur le compte [e]-Cairn de l’adhérent
+      * Un acompte est créé afin de créditer la partie restante ultérieurement (entité `Cairn/src/UserBundle/Entity/Deposit`)
+      * L’adhérent est notifié par email de la création d’un acompte
+      * Un email est envoyé à la gestion afin de la prévenir que le coffre [e]-Cairn est vide
+
 
   * **Paiement d'un prestataire par SMS (B2B / C2B)**  
     Tout détenteur de compte peut renseigner un numéro de téléphone et y autoriser/bloquer l'envoi de paiements par SMS depuis celui-ci.  
@@ -89,5 +97,45 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
         L'utilisateur peut demander la clôture de son compte [e]-Cairn. Celle-ci ne sera prise en compte que si tous ses comptes sont soldés. La fermeture effective doit être ensuite effectuée par un administrateur.
   
 ### Espace Groupe Local
+  Un groupe local est référent de tous les comptes [e]-Cairns de particuliers, ainsi que des prestataires assignés par un administrateur.  
+  Cela lui permet d'avoir accès aux mêmes fonctionnalités qu'un administrateur pour la "**Gestion des membres**", mais seulement pour les particuliers et prestataires dont il est référent.  
+  L'idée est que chaque groupe local ait sa propre autonomie sur la gestion des prestataires de son territoire.
 
 ### Espace Administrateur
+  Un administrateur de l'application est référent de tous les autres utilisateurs de l'application. Il a donc accès à un panel de fonctionnalités liées à l'administration globale de l'application, mais aussi liées à tous ses membres.  
+
+  * **Gestion des membres**  
+    Dans l'objectif de suivre l'évolution des espaces membres, un "tableau de bord" des espaces membres est disponible afin de voir quelles opérations doivent être exécutées pour chacun des membres.  
+    * _Commun à tous les membres_  
+      * Accès au profil des membres
+      * (Ré)Ouverture/Opposition de compte [e]-Cairn
+      * Révocation de la carte de sécurité d'un membre
+      * Génération d'une nouvelle carte de sécurité et association automatique
+      * Association d'une carte de sécurité disponible
+      * Edition de l'identifiant SMS d'un professionnel  
+    * _Spécifique aux prestataires_   
+      Un administrateur peut assigner/dissocier un Groupe Local à un prestataire. Le GL devient alors référent dudit prestataire, lui donnant les droits de gestion sur l'espace membre du prestataire.  
+
+  * **Gestion des cartes de sécurité disponibles (non associées)**
+    * _Générer et télécharger un ensemble de cartes_
+      Un administrateur peut générer, dans un fichier ZIP, un ensemble de cartes de sécurité dans la limite du nombre de cartes autorisées. En effet, l'application définit un nombre maximal de cartes non associées afin de contrôler leur diffusion. Ce nombre est défini dans les paramères globaux dans `app/config/parameters.yml`:   
+      * nombre de cartes  : `max_printable_cards : 30`
+
+    * _Rechercher les cartes disponibles_
+      Toujours dans l'objectif de suivre les cartes générées mais non associées, un "tableau de bord" des cartes non associées est disponible :  
+        * Vue du nombre de cartes téléchargeables
+        * Liste des cartes non associées avec leur code, leur date de génération et leur date d'expiration
+        * Recherche de cartes par code / date de génération / date d'expiration
+    * _Détruire une carte_
+      Celle-ci devient alors indisponible. Elle ne peut plus être associée à un compte [e]-Cairn.
+
+  * **Gestion des [e]-cairns disponibles**
+    Les [e]-cairns disponibles sont stockés dans le "coffre [e]-Cairn". L'objectif est que l'administration de l'application puisse contrôler la masse de [e]-cairns disponibles pour le change  correspondant au fonds de garantie numérique. Ainsi, un "tableau de bord" du coffre[e]-Cairn est disponible, depuis lequel un administrateur peut :  
+      * Voir le nombre de [e]-Cairns disponibles
+      * Déclarer un nouveau nombre de [e]-Cairns disponibles
+      * Voir les acomptes en attente de crédit
+    * _Déclaration du nombre de [e]-cairns disponibles_ 
+      L'administrateur peut déclarer une modification du solde du coffre [e]-cairns de l'application. Si des acomptes sont en attente de crédit, ceux-ci sont automatiquement exécutés suite à la modification du solde en mode FIFO si le solde le permet. 
+      
+      
+
