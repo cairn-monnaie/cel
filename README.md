@@ -15,8 +15,29 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
 ## Fonctionnalités du [e]-Cairn
 
 ### Espace membre
-  * **Virement compte à compte**
+  * **Virement compte à compte**  
     Depuis son compte [e]-Cairn, un adhérent peut réaliser un virement en identifiant le bénéficiaire par son numéro de compte ou son adresse email. Ces virements peuvent être à exécution immédiate ou différée.
+
+  * **La carte de sécurité** 
+    Il s'agit là d'un élément central dans l'utilisation de l'application. Chaque compte [e]-Cairn doit être associé à une carte de sécurité contenant des clés à 4 chiffres au format matrice papier. Lors d’actions considérées comme sensibles (changement de mot de passe, édition du profil, ajout d'un bénéficiaire, ...) , une clé de cette carte est demandée préalablement via sa position (exemple : B2). Elle sert de surcouche d'authentification avant de rediriger l'utilisateur vers l'opération initialement demandée. 
+    Par défaut, les cartes sont de dimensions 5x5, mais ces dimensions peuvent être modifiées via les paramètres globaux dans `app/config/parameters.yml`:
+      * nombre de lignes : `cairn_card_rows : 5`
+      * nombre de colonnes : `cairn_card_cols : 5`
+
+    * **Les opérations sensibles nécessitant une authentification par carte**
+      Pour déclarer une opération comme sensible, il y a 3 façons de faire :  
+        * Si l'URL suffit à déclarer l'opération comme sensible (ex : changement du mot de passe), il faut ajouter la route permettant d'accéder à ladite opération dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_ROUTES`  
+        * Si l'URL ne suffit pas, mais que la "sensibilité" dépend de certains paramètres de la requête (ex : virement vers un nouveau bénéficiaire, paramètre `to = new`), il faut ajouter la route permettant d'accéder à ladite opération ainsi que les paramètres déterminants dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_URLS`  
+        * Si elle dépend d'une logique plus complexe nécessitant du code, il faut intégrer cette logique dans la fonction du service dédié : `Cairn/src/UserBundle/Service/Security::isSensibleOperation` 
+
+    * _Associer son compte à une carte de sécurité_  
+      En plus des clés à 4 chiffres, chaque carte de sécurité contient un code unique qui l'identifie. Pour associer son compte (nécessairement sans carte déjà associée) à une carte de sécurité, l'utilisateur saisit ce code dans le formulaire dédié.
+
+    * _Révoquer sa carte de sécurité_  
+      En cas de perte, de vol, ou de soupçon d'usurpation, l'utilisateur peut révoquer sa carte de sécurité. Cela a pour effet de dissocier la carte du compte utilisateur, puis de détruire la carte. Toutes les opérations dites "sensibles" sur la plateforme web et les opérations SMS sont alors bloquées.
+
+    * _Demande de nouvelle carte de sécurité_  
+      Un utilisateur sans carte peut demander un envoi postal d'une nouvelle carte de sécurité. Un email est alors automatiquement envoyé à l'adresse gestion afin de la notifier de cette nouvelle demande. L'email contient l'adresse renseignée par l'utilisateur. 
 
   * **Consultation du compte**
     * _Aperçu du compte_  
@@ -32,20 +53,20 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
     * _Relevé de compte_  
       Le relevé de compte peut être téléchargé dans deux formats différents (PDF / CSV), et peut être filtré par dates de début et de fin.
       
-    * _Avis d'opération_
+    * _Avis d'opération_  
       Ce document, téléchargeable au format PDF, contient les données identifiant les comptes débiteur et créditeur, ainsi que le montant du virement, la date d’exécution et un identifiant unique associé au transfert. Le statut du virement peut être "Exécuté", "A exécuter" ou "Echoué".
 
-  * **Gestion de ses bénéficiaires**
+  * **Gestion de ses bénéficiaires**  
     Vous pouvez enregistrer des bénéficiaires (via email ou numéro de compte) afin de ne plus avoir à saisir leurs informations manuellement à chaque virement. De plus, une fois un bénéficiaire enregistré, la case "validation de votre identité par carte de sécurité" n'est plus nécessaire.
 
-  * **Crédit automatique du compte via virement Helloasso**
+  * **Crédit automatique du compte via virement Helloasso**  
     Depuis son compte [e]-Cairn, un adhérent peut réaliser un virement à l'Association sous forme de don sur Helloasso. Une notification de paiement est alors envoyée à cette application via un webhook dédié. Les informations qui y sont envoyées permettent de créditer de façon automatique le compte [e]-Cairn de l'adhérent dans la limite des [e]-cairns disponibles.
 
-  * **Paiement d'un prestataire par SMS (B2B / C2B)**
+  * **Paiement d'un prestataire par SMS (B2B / C2B)**  
     Tout détenteur de compte peut renseigner un numéro de téléphone et y autoriser/bloquer l'envoi de paiements par SMS depuis celui-ci.  
     Si le détenteur est un prestataire, un identifiant SMS lui est alors automatiquement attribué et permettra aux adhérents particuliers d'identifier le compte à créditer lors d'un paiement : 
     ``` 
-    PAYER 15 <IDPRO>
+    PAYER <montant> <IDPRO>
     ```
   * **Gestion de l'espace membre**
     * _Les données personnelles_
@@ -62,10 +83,11 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
         * Un identifiant SMS associé  au numéro de téléphone (pour les prestataires uniquement)  
     * _Le mot de passe_  
         Evidemment, l'utilisateur peut changer son mot de passe, et est obligé de le faire à la 1ère connexion, car un mot de passe temporaire est fourni à l'ouverture de compte.
-    * _Opposition de compte_
+    * _Opposition de compte_  
         L'utilisateur peut bloquer son propre espace membre. Le compte est dès lors inaccessible, et les éventuelles opérations SMS sont automatiquement bloquées. 
-    * _Clôture de compte_
+    * _Clôture de compte_  
         L'utilisateur peut demander la clôture de son compte [e]-Cairn. Celle-ci ne sera prise en compte que si tous ses comptes sont soldés. La fermeture effective doit être ensuite effectuée par un administrateur.
+  
 ### Espace Groupe Local
 
 ### Espace Administrateur
