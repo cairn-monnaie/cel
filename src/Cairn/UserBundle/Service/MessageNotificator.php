@@ -223,7 +223,7 @@ class MessageNotificator
         $url = $this->smsProviderUrl.'/contact/edit/10?'.$apiToken;
 		$ch = \curl_init($url);
         
-        $postfields_base = "p%5B{{list_id}}%5D=3&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
+        $postfields_base = "p%5B{{list_id}}%5D=3&mobile=00169734539&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
 
 
         $options = array(
@@ -258,13 +258,13 @@ class MessageNotificator
 
         \curl_setopt_array ($ch, $options);
 
-		// Execute the request
-//    	$json = \curl_exec($ch);
-//		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//		$result = \json_decode($json);
+//        // Execute the request
+//        $json = \curl_exec($ch);
+//        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//        $result = \json_decode($json);
 //
 //        $err = curl_error($ch);
-//
+
 //        curl_close($ch);
 //        var_dump($err);
 //        var_dump($json);
