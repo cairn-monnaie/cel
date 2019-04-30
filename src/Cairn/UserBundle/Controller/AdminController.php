@@ -373,7 +373,7 @@ class AdminController extends Controller
 
                             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
                             $em->flush();
-                            return $this->redirectToRoute('cairn_user_card_associate',array('id'=>$user->getID()));
+                            return $this->redirectToRoute('cairn_user_card_associate',array('username'=>$user->getUsername()));
                         }
                     }
                 }else{

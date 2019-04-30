@@ -50,11 +50,11 @@ class SmsController extends Controller
         if($this->getParameter('kernel.environment') == 'test'){
             $this->smsAction($request->query->get('phone'),$request->query->get('content'));
         }else{
-        $this->smsAction('0788888888','LOGIN');
+//        $this->smsAction('0788888888','LOGIN');
 //        $this->smsAction('0611223344','2222');
 //        $this->smsAction('0611223344','1111');
 //
-//        $this->smsAction('0612345678','PAYER 45 MALTOBAR');
+          $this->smsAction('0612345678','PAYER 15 MALTOBAR ');
 //
 //        $this->smsAction('0612345678','SOLDE');
 //        $this->smsAction('0612345678','2222');
@@ -79,8 +79,8 @@ class SmsController extends Controller
      */
     public function parseSms($content)
     {
-        //1) content treatment : escape special chars and remove all whitespaces from content
-        $content = preg_replace('/\s+/', '',htmlspecialchars($content));
+        //1) content treatment : escape spaces & white chars at beginning and end
+        $content = trim($content);
 
         //2) replace all characters to uppercase chars
         $content = strtoupper($content);
@@ -88,7 +88,7 @@ class SmsController extends Controller
         //3)Regex analysis
         //TODO : make it more flexible
         //PAYER autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)(\d+([,\.]\d+)?)([A-Z]{1}\w+)$#',$content,$matches_payment);
+        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)\s*(\d+([,\.]\d+)?)\s*([0-9A-Z]{1}\w+)$#',$content,$matches_payment);
         preg_match('#^SOLDE$#',$content,$matches_balance);
         preg_match('#^\d{4}$#',$content, $matches_code);
         preg_match('#^LOGIN$#',$content, $matches_login);
@@ -287,6 +287,7 @@ class SmsController extends Controller
 
         //4) Parse SMS content
         $parsedSms = $this->parseSms($content);
+
         if( $parsedSms->error){
 
             $smsFormat = new Sms($debitorPhoneNumber, $content, Sms::STATE_INVALID, NULL);

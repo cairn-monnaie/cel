@@ -59,7 +59,7 @@ class SmsControllerTest extends BaseControllerTest
             'valid format : action PAYER 4'=>array('PAYEZ 12.5 SHOP',true,true,''),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
-            'invalid format : float amount with got'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
+            'invalid format : float amount with dot'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
             'invalid format : float amount with comma'=>array('PAYER 12, SHOP',false,true,'Format du montant'),
             'valid format : float amount with . character'=>array('PAYER 12.5 SHOP',true,true,''),
             'valid format : float amount with , character'=>array('PAYER 12,5 SHOP',true,true,''),
@@ -67,16 +67,18 @@ class SmsControllerTest extends BaseControllerTest
             'valid format : amount with 2 decimals'=>array('PAYER 12.52 SHOP',true,true,''),
             'valid format : integer amount'=>array('PAYER 12 SHOP',true,true,''),
             'valid format : integer amount with useless 0s before'=>array('PAYER 00012 SHOP',true,true,''),
-            'valid format : username starts with figures'=> array('PAYER 12.5 12SHOP',true,true,''),
+            'valid format : SMS identifier starts with figures'=> array('PAYER 12.5 12SHOP',true,true,''),
             'valid format : no whitespace'=> array('PAYER12.5SHOP',true,true,''),
-            'valid format : random spaces'=> array('       PAYER12. 5    SH OP',true,true,''),
+            'invalid format : random spaces'=> array('       PAYER12. 5    SH OP',false,true,'Format du montant'),
+            'valid format : spaces b4 text'=> array('   PAYER 12.5 SHOP',true,true,''),
+            'valid format : spaces after text'=> array('PAYER 12.5 SHOP   ',true,true,''),
+            'valid format : multiple spaces'=> array('PAYER   12.5   SHOP   ',true,true,''),
             'valid format : SOLDE uppercase'=> array('SOLDE',true,false,''),
             'valid format : SOLDE lowercase'=> array('solde',true,false,''),
             'valid format : SOLDE mix upper/lowercase'=> array('SoLDe',true,false,''),
             'valid format : LOGIN mix upper/lowercase'=> array('LogiN',true,false,''),
             'valid format : LOGIN lowercase'=> array('login',true,false,''),
             'valid format : LOGIN uppercase'=> array('LOGIN',true,false,''),
-
         );
     }
 
