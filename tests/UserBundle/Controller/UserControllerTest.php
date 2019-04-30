@@ -10,6 +10,7 @@ use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\SmsData;
 
 use Cyclos;
 
@@ -191,7 +192,7 @@ class UserControllerTest extends BaseControllerTest
         $admin = $this->testAdmin;
         $baseData = array('login'=>'','target'=>'',
             'isExpectedForm'=>true,
-            'smsData'=>array('phoneNumber'=>'0699999999','identifier'=>'IDSMS'),
+            'smsData'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
             'isValidData'=>true,
             'isPhoneNumberEdit'=>true,
             'code'=>'1111',
@@ -214,12 +215,12 @@ class UserControllerTest extends BaseControllerTest
 
            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,
-                                                              'smsData'=>array('phoneNumber'=>'0611223344'),'isValidData'=>true,
+                                                              'smsData'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
                                                               'expectedMessages'=>$validCodeMsg
                                                           )),
 
          'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                            'isPhoneNumberEdit'=>false,'smsData'=>array('phoneNumber'=>'0611223344'),
+                                                            'isPhoneNumberEdit'=>false,'smsData'=>array('phoneNumber'=>'+33611223344'),
                                                             'isValidData'=>true,'isSmsEnabled'=>false,
                                                             'expectedMessages'=>$validCodeMsg
                                                         )),
@@ -239,24 +240,24 @@ class UserControllerTest extends BaseControllerTest
                                                         )),
 
             'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                            'smsData'=>array('phoneNumber'=>'0612345678'), 'isValidData'=>false,
+                                            'smsData'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
                                             'expectedMessages'=>'déjà utilisé')),
 
             'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'0612345678'),
+                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'+33612345678'),
                                                         'expectedMessages'=>'déjà utilisé')),
 
             'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'0612345678'),
+                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'+33612345678'),
                                                         'expectedMessages'=>'déjà utilisé')),
 
             'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
-                                            'smsData'=>array('phoneNumber'=>'0644332211'),
+                                            'smsData'=>array('phoneNumber'=>'+33644332211'),
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
             'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                            'smsData'=>array('phoneNumber'=>'0611223344'),
+                                            'smsData'=>array('phoneNumber'=>'+33611223344'),
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
@@ -280,6 +281,47 @@ class UserControllerTest extends BaseControllerTest
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_prod','target'=>'nico_faus_prod',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
                                                             )),
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideSmsDataForValidation
+     */
+    public function testSmsDataValidator($phoneNumber, $isValid, $expectedMessage)
+    {
+        $username = 'comblant_michel';
+        $crawler = $this->login($username, '@@bbccdd');
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+
+        $validator = $this->container->get('validator');
+
+        $smsData = new SmsData($currentUser);
+        $smsData->setPhoneNumber($phoneNumber);
+
+        $errors = $validator->validate($smsData);
+
+        if($isValid){
+            $this->assertEquals(0,count($errors));
+        }else{
+            $this->assertEquals(1,count($errors));
+            $this->assertContains($expectedMessage, $errors[0]->getMessage());
+        }
+
+    }
+
+    public function provideSmsDataForValidation()
+    {
+        $syntaxError = 'Format du numéro';
+        return array(
+            'no +336 or +337 prefix : +338..'=>array('phoneNumber'=>'+33812345678','isValid'=>false,'expectedMessage'=>$syntaxError), 
+            'no +336 or +337 prefix : 06..'=>array('phoneNumber'=>'0612345678','isValid'=>false,'expectedMessage'=>$syntaxError), 
+            'right suffix but too many figures'=>array('phoneNumber'=>'+336123456789','isValid'=>false,'expectedMessage'=>$syntaxError),
+            'right suffix but too few figures'=>array('phoneNumber'=>'+3361234567','isValid'=>false,'expectedMessage'=>$syntaxError),
+//           'valid number chunked with -'=>array('phoneNumber'=>'+336-99-99-99-99','isValid'=>true,'expectedMessage'=>''),
+//           'valid number chunked with .'=>array('phoneNumber'=>'+336.99.99.99.99','isValid'=>true,'expectedMessage'=>''),
+//           'valid number chunked with spaces'=>array('phoneNumber'=>'+336 99 99 99 99','isValid'=>true,'expectedMessage'=>''),
+//           'valid number with no chunk'=>array('phoneNumber'=>'+33699999999','isValid'=>true,'expectedMessage'=>''),
         );
     }
 

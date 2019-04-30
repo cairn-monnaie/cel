@@ -713,7 +713,7 @@ class Commands
 
         $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
         $smsData = new SmsData($pro1);
-        $smsData->setPhoneNumber('0612345678');
+        $smsData->setPhoneNumber('+33612345678');
         $smsData->setIdentifier('NICOPROD');
         $smsData->setPaymentEnabled(true);
         $pro1->setSmsData($smsData);
@@ -721,7 +721,7 @@ class Commands
 
         $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
         $smsData = new SmsData($person1);
-        $smsData->setPhoneNumber('0612345678');
+        $smsData->setPhoneNumber('+33612345678');
         $person1->setSmsData($smsData);
 
         echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumber()."\n";
@@ -733,14 +733,14 @@ class Commands
 
         $pro2 = $userRepo->findOneByUsername('maltobar'); 
         $smsData = new SmsData($pro2);
-        $smsData->setPhoneNumber('0611223344');
+        $smsData->setPhoneNumber('+33611223344');
         $smsData->setIdentifier('MALTOBAR');
         $smsData->setPaymentEnabled(true);
         $pro2->setSmsData($smsData);
 
         $person2 = $userRepo->findOneByUsername('benoit_perso'); 
         $smsData = new SmsData($person2);
-        $smsData->setPhoneNumber('0644332211');
+        $smsData->setPhoneNumber('+33644332211');
         $smsData->setSmsEnabled(false);
         $person2->setSmsData($smsData);
 
@@ -756,7 +756,7 @@ class Commands
         echo 'INFO: '. $pro->getName(). 'has DISabled sms payments but can receive payments at 0655667788 '."\n";
 
         $smsData = new SmsData($pro);
-        $smsData->setPhoneNumber('0655667788');
+        $smsData->setPhoneNumber('+33655667788');
         $smsData->setIdentifier('AMANSOL');
         $pro->setSmsData($smsData);
 
@@ -766,7 +766,7 @@ class Commands
         $user = $userRepo->findOneByUsername('crabe_arnold'); 
         echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0711111111');
+        $smsData->setPhoneNumber('+33711111111');
         $smsData->setIdentifier('CRABEARNOLD');
         $user->setNbPhoneNumberRequests(3);
         $user->setSmsData($smsData);
@@ -777,7 +777,7 @@ class Commands
         $user = $userRepo->findOneByUsername('hirundo_archi'); 
         echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0722222222');
+        $smsData->setPhoneNumber('+33722222222');
         $smsData->setIdentifier('HIRUNDO');
         $smsData->setPaymentEnabled(true);
         $user->setNbPhoneNumberRequests(1);
@@ -791,7 +791,7 @@ class Commands
         echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number and has disabled sms ops'."\n";
         $smsData = new SmsData($user);
         $smsData->setSmsEnabled(false);
-        $smsData->setPhoneNumber('0733333333');
+        $smsData->setPhoneNumber('+33733333333');
         $smsData->setIdentifier('DRDBREW');
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
@@ -805,7 +805,7 @@ class Commands
         $user->setEnabled(false);
 
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0744444444');
+        $smsData->setPhoneNumber('+33744444444');
         $smsData->setIdentifier('MANDRAGORE');
         $smsData->setSmsEnabled(false);
 
@@ -820,7 +820,7 @@ class Commands
         echo 'INFO: '. $user->getName(). ' has an unexisting access client'."\n";
         $smsData = new SmsData($user);
 
-        $smsData->setPhoneNumber('0788888888');
+        $smsData->setPhoneNumber('+33788888888');
         $smsData->setSmsClient('dlncnlcdlkkncsjdj');
 
         $user->setNbPhoneNumberRequests(1);
