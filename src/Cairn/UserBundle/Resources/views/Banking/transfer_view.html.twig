@@ -30,5 +30,13 @@
         <em> Montant : {{transfer.amount}} </em></br>
         <em> Motif : {{transfer.reason}} </em></br>
         <em> Description : {{transfer.description}} </em></br>
+        {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+            Etat : <em> En cours </em>
+        {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+            Etat : <em> Echoué </em>
+        {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+            Etat : <em> Exécuté </em>
+        {% endif %}
+
     </div>    
 {% endblock %}

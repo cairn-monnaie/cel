@@ -146,6 +146,8 @@ class Operation
     const TYPE_SCHEDULED_FAILED = 7;
     const TYPE_SMS_PAYMENT = 8;
 
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
+
     public function isSmsPayment()
     {
         return ($this->getType() == self::TYPE_SMS_PAYMENT) ;
@@ -199,7 +201,7 @@ class Operation
 
     public static function getExecutedTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
+        return self::ARRAY_EXECUTED_TYPES;
     }
 
     public static function getScheduledTypes()
