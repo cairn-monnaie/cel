@@ -2,15 +2,15 @@
 
     {% set card = user.card %}
     {% if card  %}
-        <a class="btn red" href="{{path('cairn_user_card_revoke',{'id':user.id})}}"><i class="material-icons left">clear</i>Déclaration de perte</a>
+        <a class="btn red" href="{{path('cairn_user_card_revoke',{'username':user.username})}}"><i class="material-icons left">clear</i>Déclaration de perte</a>
  
     {% else %}
         {% if user == app.user  %}
             <a class="btn teal" href="{{path('cairn_user_card_order')}}">Commander une carte par voie postale</a>
-            <a class="btn green" href="{{path('cairn_user_card_associate',{'id':user.id})}}">Associer mon compte et ma carte de sécurité</a>
+            <a class="btn green" href="{{path('cairn_user_card_associate',{'username':user.username})}}">Associer mon compte et ma carte de sécurité</a>
         {% elseif user.hasReferent(app.user) %}
-            <a class="btn teal" href="{{path('cairn_user_card_download',{'id':user.id})}}">Télécharger une nouvelle carte automatiquement associée</a>
-            <a class="btn green" href="{{path('cairn_user_card_associate',{'id':user.id})}}">Associer le compte à une carte de sécurité existante</a>
+            <a class="btn teal" href="{{path('cairn_user_card_download',{'username':user.username})}}">Télécharger une nouvelle carte automatiquement associée</a>
+            <a class="btn green" href="{{path('cairn_user_card_associate',{'username':user.username})}}">Associer le compte à une carte de sécurité existante</a>
         {% endif %}
     {% endif %}
 

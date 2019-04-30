@@ -29,7 +29,7 @@
                  <td>{% if beneficiary.user.image %}<img class="circle responsive-img" src="/{{ beneficiary.user.image.webPath}}" alt="" style="width: 40px;">{% endif %}</td>
                  <td>{{ beneficiary.user}} </td>
                  <td>{{ beneficiary.ICC}}</td>
-                 <td><a href="{{path('cairn_user_beneficiaries_remove', {'id' : beneficiary.id})}}" class="red-text"><i class="material-icons left">close</i> Supprimer</a>
+                 <td><a href="{{path('cairn_user_beneficiaries_remove', {'ICC' : beneficiary.ICC})}}" class="red-text"><i class="material-icons left">close</i> Supprimer</a>
                 </td>
              </tr>
          {% else %}

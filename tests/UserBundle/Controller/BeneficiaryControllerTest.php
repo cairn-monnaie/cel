@@ -24,25 +24,13 @@ class BeneficiaryControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideBeneficiariesToAdd
      */
-    public function testAddBeneficiary($current,$name,$email,$changeICC,$isValid)
+    public function testAddBeneficiary($current,$value,$isValid)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
-        $creditorUser  = $this->em->getRepository('CairnUserBundle:User')
-            ->createQueryBuilder('u')
-            ->where('u.name=:name')->orWhere('u.email=:email')
-            ->setParameter('name',$name)
-            ->setParameter('email',$email)
-            ->getQuery()->getOneOrNullResult();
 
-        if(!$creditorUser){
-            $ICC = 123456789;
-        }else{
-            $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername());
-            $ICC = $test->accountNumber;
-            $ICC = ($changeICC) ? $ICC + 1 : $ICC;
-        }
+        $nbBeneficiariesBefore = count($debitorUser->getBeneficiaries());
 
         $crawler = $this->client->request('GET','/user/beneficiaries/add');
 
@@ -51,49 +39,47 @@ class BeneficiaryControllerTest extends BaseControllerTest
         $crawler = $this->client->followRedirect();
 
         $form = $crawler->selectButton('form_add')->form();
-        $form['form[cairn_user]']->setValue($email);
+        $form['form[cairn_user]']->setValue($value);
         $crawler = $this->client->submit($form);
 
         if($isValid){
-            $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$ICC));
             $this->assertTrue($this->client->getResponse()->isRedirect('/user/beneficiaries/list'));
             $crawler = $this->client->followRedirect();
 
-            $this->assertContains($ICC,$this->client->getResponse()->getContent());
-
             $this->em->refresh($debitorUser);
-            $this->assertTrue($debitorUser->hasBeneficiary($beneficiary));
+            $this->assertTrue( count($debitorUser->getBeneficiaries()) == $nbBeneficiariesBefore + 1);
         }else{
-            $this->assertTrue($this->client->getResponse()->isRedirect() || ($this->client->getResponse()->getStatusCode() == 401));
+            $this->assertTrue( count($debitorUser->getBeneficiaries()) == $nbBeneficiariesBefore);
+
+            $isRedirect = $this->client->getResponse()->isRedirect();
+            $this->assertTrue($isRedirect || strpos($this->client->getResponse()->getContent(), 'does not match') !== false);
         }
     }
 
     public function provideBeneficiariesToAdd()
     {
+        //test ICC data
+        $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword('alter_mag@test.fr');
+        $ICC = $test->accountNumber;
+
         return array(
-            'self beneficiary'=> array('current'=>'vie_integrative','name'=>'vie','email'=>'vie_integrative@test.fr',
-                                       'changeICC'=>false,'isValid'=>false), 
+            'self beneficiary'=> array('current'=>'vie_integrative','value'=>'vie_integrative@test.fr','isValid'=>false),
 
-            'user not found'=> array('current'=>'vie_integrative','name'=>'Malt','email'=>'malt@cairn-monnaie.fr',
-                                     'changeICC'=>false,'isValid'=>false),              
+          'user not found'=> array('current'=>'vie_integrative','value'=>'malt@cairn-monnaie.fr','isValid'=>false),
 
-            'ICC not found'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
-                                   'changeICC'=>true,'isValid'=>false),              
+          'ICC not found'=>array('current'=>'vie_integrative', 'value'=>'123456789','isValid'=>false),
 
-            'pro adds pro'=>array('current'=>'vie_integrative', 'name'=>'Alter Mag','email'=>'alter_mag@test.fr',
-                                 'changeICC'=>false,'isValid'=>true),              
+            'ICC found'=>array('current'=>'vie_integrative', 'value'=>$ICC,'isValid'=>false),
 
-            'already benef'=>array('current'=>'nico_faus_prod','name'=>'La Bonne Pioche','email'=>'labonneioche@test.fr',
-                                   'changeICC'=>false,'isValid'=>false),              
+            'pro adds pro'=>array('current'=>'vie_integrative','value'=>'alter_mag@test.fr','isValid'=>true),
 
-            'pro adds person'=>array('current'=>'labonnepioche','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
-                                     'changeICC'=>false,'isValid'=>true),              
+            'already benef'=>array('current'=>'nico_faus_prod','value'=>'labonnepioche@test.fr','isValid'=>false),
 
-            'person adds person'=>array('current'=>'cretine_agnes','name'=>'Malik Alberto','email'=>'alberto_malik@test.fr',
-                                        'changeICC'=>false,'isValid'=>true),              
+            'pro adds person'=>array('current'=>'labonnepioche','value'=>'alberto_malik@test.fr','isValid'=>true),
 
-            'person adds pro'=>array('current'=>'cretine_agnes','name'=>'La Bonne Pioche','email'=>'labonnepioche@test.fr',
-                                     'changeICC'=>false,'isValid'=>true),              
+            'person adds person'=>array('current'=>'cretine_agnes', 'value'=>'alberto_malik@test.fr','isValid'=>true),
+
+            'person adds pro'=>array('current'=>'cretine_agnes','value'=>'labonnepioche@test.fr','isValid'=>true),              
 
         );
     }
@@ -123,7 +109,7 @@ class BeneficiaryControllerTest extends BaseControllerTest
 
         $beneficiary = $this->em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('user'=>$creditorUser));
 
-        $crawler = $this->client->request('GET','/user/beneficiaries/remove/'.$beneficiary->getID());
+        $crawler = $this->client->request('GET','/user/beneficiaries/remove/'.$beneficiary->getICC());
 
         if($isValid){
             $form = $crawler->selectButton('confirmation_save')->form();

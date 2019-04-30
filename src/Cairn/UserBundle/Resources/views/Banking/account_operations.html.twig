@@ -68,8 +68,14 @@
             <td> <em> {{transaction.reason }} </em> </br>
                  {{transaction.description }}  
             </td> 
-            <td> {{transaction.amount }} </td>
-            <td> <a href="{{path('cairn_user_banking_transfer_view', {'type':'simple','id' : transaction.id})}}"> Voir le détail </a></td>
+            <td class="transaction-amount">
+                {% if transaction.debitorName == app.user.name %}
+                     -{{transaction.amount}} cairns
+                {% else %}
+                     +{{transaction.amount}} cairns
+                {% endif %}
+            </td>
+            <td> <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : transaction.paymentID})}}"> Voir le détail </a></td>
 
         </tr>
     {% endfor %}

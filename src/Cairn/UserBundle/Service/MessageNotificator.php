@@ -76,6 +76,12 @@ class MessageNotificator
         return $res;
     }
 
+    /**
+     * Returns array containing campaign ID and message ID from $campaignName
+     *
+     *@param string $campaignName
+     *@return array
+     */
     protected function getMessageData($campaignName)
     {
         $apiToken = '&api_token='.$this->smsApiToken;
@@ -96,6 +102,7 @@ class MessageNotificator
 		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$results = \json_decode($json);
 
+        //cleans response of unnecessary data
         unset($results->result_code);
         unset($results->result_message);
         unset($results->result_output);
@@ -121,36 +128,38 @@ class MessageNotificator
         return $default_res;
     }
 
-    protected function getMessageContent($parameters, $templateMessage)
-    {
-        $message = $templateMessage;
-        foreach($parameters as $key=>$value){
-            $message = str_replace('%'.$key.'%',$value, $message);
-        }
+//    protected function getMessageContent($parameters, $templateMessage)
+//    {
+//        $message = $templateMessage;
+//        foreach($parameters as $key=>$value){
+//            $message = str_replace('%'.$key.'%',$value, $message);
+//        }
+//
+//        return $message;
+//    }
 
-        return $message;
-    }
-
-    protected function generateGetFields($parameters)
-    {
-        $res = '';
-
-        foreach($parameters as $key => $value){
-            if(is_array($value)){
-                $value = implode($value);
-            }
-           $res .= "&".$key."=".$value; 
-        }
-
-        return $res;
-    }
+//    protected function generateGetFields($parameters)
+//    {
+//        $res = '';
+//
+//        foreach($parameters as $key => $value){
+//            if(is_array($value)){
+//                $value = implode($value);
+//            }
+//           $res .= "&".$key."=".$value; 
+//        }
+//
+//        return $res;
+//    }
 
     /**
      * 
-     *
      * All contacts in our list of possible contacts have global fields than must be edited while editing the contact himself.
      * In the third-party application registering contacts, these global fields have the format %FIELD%. Therefore, when used in URL 
      * parameters, they have a specific format
+     *
+     * @param array Parameters for specific request fields
+     * @return array Correct format for our SMS provider 
      */
     protected function generateContactFields($parameters)
     {
@@ -163,8 +172,29 @@ class MessageNotificator
         return $res;
     }
 
-    public function sendSMS($phoneNumber, $content)
+    /**
+     * If sent SMS is not considered as spam, we reply back with $param content
+     *
+     * @param string $phoneNumber phone number to reply back to 
+     * @param string $content content of the sms to send to the phone number $phoneNumber
+     * @param Sms $smsToAnswer SMS which requires a response
+     * @return Sms entity representing the app reply to the user with phone number $phoneNumber
+     */
+    public function sendSMS($phoneNumber, $content, Sms $smsToAnswer = NULL)
     {
+
+        //if user has not been warned about spam activity yet, we send him a text to do so. Otherwise, nothing sent
+        if($smsToAnswer && $this->isSpam($smsToAnswer)){
+            $smsToAnswer->setState(Sms::STATE_SPAM); 
+
+            $nbSpamSms = $this->getNumberOfTodaySms($phoneNumber, Sms::STATE_SPAM);
+
+            if($nbSpamSms >=1 ){
+                return NULL;
+            }else{
+                $content = 'Votre activité du jour a été identifiée comme du SPAM. Les opérations SMS vous sont interdites pour aujourd\'hui. Merci de votre compréhension';
+            }
+        }
 
         $action = ($this->env == 'prod') ? 'send' : 'test';
         $action = '&action='.$action;
@@ -193,7 +223,7 @@ class MessageNotificator
         $url = $this->smsProviderUrl.'/contact/edit/10?'.$apiToken;
 		$ch = \curl_init($url);
         
-        $postfields_base = "p%5B{{list_id}}%5D=3&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
+        $postfields_base = "p%5B{{list_id}}%5D=3&mobile=00169734539&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
 
 
         $options = array(
@@ -228,13 +258,13 @@ class MessageNotificator
 
         \curl_setopt_array ($ch, $options);
 
-		// Execute the request
-//    	$json = \curl_exec($ch);
-//		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//		$result = \json_decode($json);
+//        // Execute the request
+//        $json = \curl_exec($ch);
+//        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//        $result = \json_decode($json);
 //
 //        $err = curl_error($ch);
-//
+
 //        curl_close($ch);
 //        var_dump($err);
 //        var_dump($json);
@@ -299,41 +329,83 @@ class MessageNotificator
         $this->mailer->send($message);
     }
 
+    /**
+     * Returns the number of sms received on current day from phone number $phoneNumber with state $state and content $content
+     *
+     *@param string $phoneNumber SMS sender
+     *@param const int $state State of the SMS in our app (expired, canceled, processed, ...)
+     *@param string $content  SMS content
+     *@return int 
+     */
+    protected function getNumberOfTodaySms($phoneNumber,$state,$content = NULL)
+    {
+        $sb = $this->smsRepo->createQueryBuilder('s'); 
+        $this->smsRepo
+            ->whereCurrentDay($sb)
+            ->wherePhoneNumbers($sb,$phoneNumber)
+            ->whereState($sb, $state);
+        if($content){
+            $this->smsRepo->whereContentContains($sb,$content);
+        }
+
+        $nbSms = $sb->select('count(s.id)')->getQuery()->getSingleScalarResult();
+
+        return $nbSms;
+    }
+
+    /**
+     * Returns true if $sms is considered as SPAM, false otherwise
+     *
+     *@param Sms $sms Entity to consider as spam or not
+     *@return boolean 
+     */
     public function isSpam(Sms $sms)
     {
-//        $sb = $this->smsRepo->createQueryBuilder('s');                        
-//        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_SPAM);
-//        if(count($sms) >= 1){ return true; }
+        //number of spam sms today
+        $nbSpamSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_SPAM);
+        if($nbSpamSms >= 1){return true;}
 
-        //number of canceled operations a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_CANCELED);
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of account balance requests a day
+        if( strpos($sms->getContent(),'SOLDE') !== false){
+            $nbSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'SOLDE');
+            if($nbSms >= 1){return true;}
+        }
 
-        //number of expired operations a day
-        $sb = $this->smsRepo->createQueryBuilder('s'); 
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_EXPIRED);
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of SMS identifier requests a day
+        if( strpos($sms->getContent(),'LOGIN') !== false){
+            $nbIdentifierSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'LOGIN');
+            if($nbIdentifierSms >= 1){return true;}
+        }
 
-        //number of SMS errors in a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_SENT)->whereContentContains($sb,'SMS INVALIDE');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 4){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of invalid SMS requests a day
+        if($sms->getState() == Sms::STATE_INVALID){
+            $nbInvalidSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_INVALID);
+            if($nbInvalidSms >= 4){return true;}
+        }
 
-        //if user asks more than 2 times his balance in a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_PROCESSED)->whereContentContains($sb,'SOLDE');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 2){ $sms->setState(Sms::STATE_SPAM);return true; }
+        //number of unauthorized SMS requests a day
+        if($sms->getState() == Sms::STATE_UNAUTHORIZED){
+            $nbUnauthorizedSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_UNAUTHORIZED);
+            if($nbUnauthorizedSms >= 1){return true;}
+        }
 
-        //if pro asks more than 1 time his LOGIN a day
-        $sb = $this->smsRepo->createQueryBuilder('s');                               
-        $this->smsRepo->whereCurrentDay($sb)->wherePhoneNumbers($sb,$sms->getPhoneNumber())->whereState($sb,Sms::STATE_PROCESSED)->whereContentContains($sb,'LOGIN');
-        $sms = $sb->getQuery()->getResult();
-        if(count($sms) > 1){ $sms->setState(Sms::STATE_SPAM); return true; }
+        //number of error SMS requests a day
+        if($sms->getState() == Sms::STATE_ERROR){
+            $nbErrorSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_ERROR);
+            if($nbErrorSms >= 1){return true;}
+        }
+
+        //number of expired SMS requests a day
+        if($sms->getState() == Sms::STATE_EXPIRED){
+            $nbExpiredSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_EXPIRED);
+            if($nbExpiredSms >= 4){return true;}
+        }
+
+        //number of canceled SMS requests a day
+        if($sms->getState() == Sms::STATE_CANCELED){
+            $nbCanceledSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_CANCELED);
+            if($nbCanceledSms >= 3){return true;}
+        }
 
         return false;
     }

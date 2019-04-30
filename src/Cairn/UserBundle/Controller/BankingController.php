@@ -1,5 +1,5 @@
 <?php
-// src/Cairn/UserBundle/Controller/UserController.php
+// src/Cairn/UserBundle/Controller/BankingController.php
 
 namespace Cairn\UserBundle\Controller;
 
@@ -11,7 +11,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
-
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -78,10 +77,25 @@ class BankingController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
+        $username = $this->getParameter('cyclos_anonymous_user');                     
+        $credentials = array('username'=>$username,'password'=>$username); 
+        $network = $this->getParameter('cyclos_currency_cairn');                     
+
+        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
+        //get account balance of e-cairns
+        $anonymousVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+        $anonymousAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($anonymousVO->id,NULL);
+
+        foreach($anonymousAccounts as $account){
+            if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
+                $debitAccount = $account;
+            }
+        }
+
         if($_format == 'json'){
             return $this->json(array('user'=>$user,'accounts'=> $accounts));
         }
-        return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts));
+        return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts,'availableAmount'=>$debitAccount->status->balance));
     }
 
     /*
@@ -293,7 +307,7 @@ class BankingController extends Controller
     /**
      * Allows to define who will benefit from the transaction. 
      *
-     * According to who will be the beneficiary (new / self / registered beneficiary) the card security layer will be requested or not
+     * According to who will be the beneficiary (new / self / registered beneficiary) the card security layer will be required or not
      * @param string $frequency Possibles frequencies restricted in routing.yml : unique/recurring
      *
      */
@@ -358,15 +372,18 @@ class BankingController extends Controller
 
 
     /**
-     * Builds the transaction request on the cyclos side and created a payment review to be confirmed
+     * Builds the transaction request on the cyclos side and created a payment between users with a review to be confirmed
      *
      * If the 'to' attribute of the query request is set to 'new', this action will be preceded by the card security layer.
-     * To build the transaction request, Cyclos needs all parameters in the cyclosProcessTransfer function : 
+     * To build the transaction request, Cyclos needs : 
      *      _ a creditor account
      *      _ a debtor account
-     *      _ a direction : USER_TO_USER | USER_TO_SELF | SYSTEM_TO_USER ...
+     *      _ a direction : USER_TO_USER | USER_TO_SELF
      *      _ an amount (always positive)
      *      _a time data : depends if frequency is set to 'unique' or 'recurring'
+     *      _a transfer type
+     * Once the payment preview is built on Cyclos-side, a Symfony entity "Operation" is created and persisted with all necessary 
+     * attributes except "paymentID" as the payment has not been executed yet.
      *
      */
     public function transactionRequestAction(Request $request, $to, $frequency, $_format)
@@ -449,7 +466,6 @@ class BankingController extends Controller
                 $toAccount = $operation->getToAccount();
 
                 if($to == 'beneficiary'){
-                    //TODO : changer les lignes précédentes en une seule requête d'un Beneficiary avec ICC dont la source est currentUser
                     $beneficiary = $em->getRepository('CairnUserBundle:Beneficiary')->findOneBy(array('ICC'=>$toAccount->number));
                     if(!$beneficiary || !$currentUser->hasBeneficiary($beneficiary)){
                         $session->getFlashBag()->add('error','Le compte créditeur ne fait pas partie de vos bénéficiaires.' );
@@ -539,94 +555,10 @@ class BankingController extends Controller
 
 
     /**
-     *Build the transaction review to be confirmed by the user requesting it
+     * Confirm the requested operation on the Cyclos-side and hydrate Symfony equivalent entity with attribute paymentID
      *
-     *
-     *@param string    $type type of operation occurring : transaction|conversion|reconversion|deposit|withdrawal
-     *@param stdClass  $fromAccount debtor account representing an account Java type: org.cyclos.model.banking.accounts.AccountVO
-     *@param stdClass  $toAccount creditor account  representing an account Java type: org.cyclos.model.banking.accounts.AccountVO 
-     *@param string    $direction USER_TO_USER | USER_TO_SYSTEM | SYSTEM_TO_USER | USER_TO_SELF
-     *@param int       $amount
-     *@param string    $frequency unique | recurring
-     *@param stdClass  $dataTime depends on $frequency
-     *@param text      $description
-     *
-     *@return stcClass $review payment review 
-     *@throws Exception At least one of the two involved accounts is not active.
-     *@throws Exception The data provided does not allow to get an unique transferTypeVO 
-     *@throws Exception The TransferTypeVO is unique but inactive
-     */
-    public function processCyclosTransaction($type,$fromAccount,$toAccount,$direction,$amount,$frequency,$dataTime,$description)
-    {
-        $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
-        $messageNotificator = $this->get('cairn_user.message_notificator');
-        $review = new \stdClass();
-
-        $fromAccountType = $fromAccount->type;
-        $toAccountType = $toAccount->type;
-        $transferTypes = $this->get('cairn_user_cyclos_transfertype_info')->getListTransferTypes($fromAccountType,$toAccountType,$direction,'PAYMENT');
-
-        $toName = $this->get('cairn_user_cyclos_user_info')->getOwnerName($toAccount->owner);
-        $fromName = $this->get('cairn_user_cyclos_user_info')->getOwnerName($fromAccount->owner);
-
-        if((!$toAccount->active) || (!$fromAccount->active)){
-            $message = 'Contexte : ' . $type . ' de ' .$fromName . ' vers ' .$toName. ' L\'un des comptes est inactif. \n Détail : Compte de '.$fromName.' Numéro de compte : ' .$fromAccount->id. ' \n  Compte de '.$toName.' Numéro de compte : ' .$toAccount->id. '\n Solution potentielle : seuls les comptes actifs devraient être visibles dans le formulaire de paiement. Voir ' .$type. 'RequestAction';
-
-            throw new \Exception($message);
-        }
-
-        //check that transfer type is unique and active
-        if((count($transferTypes) >= 2) || (count($transferTypes) == 0)){//unique
-            $message = 'Contexte : ' .$type. ' de ' .$fromName . ' vers ' .$toName. '. \n Détail : Il existe ' . count($transferTypes) .' types de transfert actifs allant du compte ' .$fromAccountType->name .' vers le compte ' .$toAccountType->name . ' avec une direction ' .$direction.' \n Solution : Il doit y avoir un unique type de transfert actif pour chaque direction(Entre comptes/vers compte partenaire). Ajouter/Désactiver/Supprimer les autres.';
-            throw new \Exception($message);
-
-        }
-        else{ //active
-            if(!$transferTypes[0]->enabled){
-                $message = 'Contexte : ' .$type. ' de ' .$fromName . ' vers ' .$toName. '. \n Détail : Le type de transfert allant du compte ' .$fromAccountType->name .' vers le compte ' .$toAccountType->name . ' avec une direction ' .$direction.' est inactif. \n Solution : Activez le type de transfert en question pour permettre cette transaction d\'aboutir.';
-                throw new \Exception($message);
-            }
-        }
-
-        $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toAccount->owner,$transferTypes[0]);
-
-        if($frequency == 'recurring'){
-            try{
-                $environment = $this->getParameter('kernel.environment');
-                $res = $this->bankingManager->makeRecurringPreview($paymentData,$amount,$description,$transferTypes[0],$dataTime,$environment);
-                $review = $res->recurringPayment;
-            }catch(\Exception $e){
-                if($e instanceof Cyclos\ServiceException){
-                    throw $e;
-                }else{
-                    $review->error = $e->getMessage();
-                    return $review;
-                }
-            }
-        }
-        elseif($frequency == 'unique'){
-            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$description,$transferTypes[0],$dataTime);
-
-            if(property_exists($res,'installments')){//specific attribute to a scheduled payment
-                $review = $res->scheduledPayment;
-            }else{
-                $review = $res->payment;
-            }
-        }
-
-        return $review;
-    }
-
-
-
-
-    /**
-     * Confirm the requested operation on the Cyclos-side and make corresponding banking operation according to $type
-     *
-     *@todo :  If $type is set to 'conversion' or 'reconversion', a banking transfer must be done automatically from/to the
-     * Association account from/to the user's banking account. If $type is set to 'deposit' or 'withdrawal', this is not done, but a 
-     * clearingBankingAccount must be done regularly to clear the guarantee funds(numeric and banknotes)
-     * @param string $type type of operation occurring : transaction|conversion|reconversion|deposit|withdrawal 
+     * @param string $type type of operation occurring : transaction
+     * @param Operation $operation transaction to be confirmed
      */
     public function confirmOperationAction(Request $request, Operation $operation, $type, $_format)
     {
@@ -722,8 +654,9 @@ class BankingController extends Controller
 
 
     /**
-     * Filters the operations $type and $frequency
+     * Returns transactions, either executed or scheduled
      *
+     * @param string $type transaction
      */
     public function viewOperationsAction(Request $request, $type, $_format)
     {
@@ -844,26 +777,11 @@ class BankingController extends Controller
     /**
      * Get details of a specific transfer
      *
-     * One shoud not be confused about typologies : transfer|transaction are different entities in Cyclos
-     * The way to get a transfer depends if it is a ScheduledPayment or a Payment as the data available on Cyclos-side differ : 
-     * either the transfer number is available or the transfer ID
-     *These identifiers are accessible from TransactionEntryVO subclasses (paymentEntryVO, RecurringEntryVO,...) :
-     *  _scheduled payment with status SCHEDULED : installment.id works
-     *  _scheduled payment with status PROCESSED : id works
-     *  _simple payment : transactionNumber works, id does not
-     *  _recurring payment : occurrence.id works 
-     *In the view, if the transfer involves two different people, the account type of the receiver is not mentioned
-     *The attribute "date" has not the same meaning for all types :
-     *  _scheduled payment with status SCHEDULED : date is submission date
-     *  _scheduled payment with status PROCESSED : date is execution date
-     *  _simple payment :                          date is execution date
-     *  _recurring payment :                       date is execution date
-
-     *@param string $type Type of transaction the transfer belongs to
-     *@param id $id Identifier of the transfer : either it is the cyclos identifier or the cyclos transfer number
+     *@param Operation $operation  
      */
-    public function viewTransferAction(Request $request, $type,Operation $operation, $_format)
+    public function viewTransferAction(Request $request, Operation $operation,$_format)
     {
+        $type = 'simple';
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 
@@ -879,55 +797,8 @@ class BankingController extends Controller
         }   
 
         switch ($type){
-        case 'scheduled.past':
-            $data = $bankingService->getTransactionDataByID($id);
-            $transfer = $bankingService->getTransferByID($data->transaction->installments[0]->transferId);
-            $transfer->dueDate = $data->transaction->installments[0]->dueDate;
-            break;
-        case 'scheduled.futur':
-            //the transfer is not done yet, so there is no real object "transferVO" related to the provided id, but all information can 
-            //be gathered and put in an object. The fact that there is no id is the indicator(in the view) to know that it's not a real 
-            //transfer 
-            $data = $bankingService->getInstallmentData($id);
-            $transaction = $data->transaction;
-
-            $debitorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->fromOwner->id);
-            //            $creditorAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($transaction->toOwner->id);
-
-            foreach($debitorAccounts as $account){
-                if($account->type->id == $transaction->type->from->id){
-                    $fromAccount = $account;
-                }
-            }
-            //            foreach($creditorAccounts as $account){
-            //                if($account->type->id == $transaction->type->to->id){
-            //                    $toAccount = $account;
-            //                }
-            //            }
-
-            //            var_dump($transaction);
-            //            return new Response('ok');
-            $transfer = new \stdClass();
-            $transfer->from = $fromAccount; 
-            $transfer->to = new \stdClass();
-            $transfer->to->owner = $transaction->toOwner;
-            $transfer->description = $transaction->description;
-            $transfer->status = $transaction->installments[0]->status;
-            $transfer->date = $transaction->date;
-            $transfer->dueDate = $transaction->installments[0]->dueDate;
-            $transfer->currencyAmount = $transaction->dueAmount;
-
-            break;
-            #        case 'recurring':
-            #            $transfer = $bankingService->getTransferByID($id);
-            #
-            #            $transfer->dueDate = $transfer->date;
-            #            break;
         case 'simple':
             $transfer = $operation;
-            //            $transfer = $bankingService->getTransferByTransactionNumber($id);
-            //            $transfer->dueDate = $transfer->date;
-
             break;
         default:
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(
@@ -953,7 +824,7 @@ class BankingController extends Controller
     /**
      * Either blocks, unblocks or cancels a scheduled transaction
      *
-     * @param int $id ID of the scheduled transaction
+     * @param int $id cyclos ID of the scheduled transaction
      * @param string $status action to operate on the scheduled transaction : cancel|block|open
      */
     public function changeStatusScheduledTransactionAction(Request $request, $id, $status)
@@ -1012,9 +883,9 @@ class BankingController extends Controller
     }
 
     /**
-     * Cancels the recurring transaction with ID $id
+     * Cancels the recurring transaction with cyclos ID $id
      *
-     * @param int $id ID of the recurring transaction
+     * @param int $id cyclos ID of the recurring transaction
      */
     public function cancelRecurringTransactionAction(Request $request, $id)
     {
@@ -1054,10 +925,11 @@ class BankingController extends Controller
 
 
     /**
-     * Downloads a PDF document relating the operation notice with ID $id
+     * Downloads a PDF document relating an operation 
      *
-     * @param int $id transfer ID
+     * To be able to download operation notice, current user must be either debitor or creditor
      *
+     * @param Operation $operation 
      */
     public function downloadTransferNoticeAction(Request $request, Operation $operation)
     {
@@ -1192,13 +1064,15 @@ class BankingController extends Controller
             ->add('format',ChoiceType::class,array(
                 'label'=>'Format du fichier',
                 'choices'=>array('CSV'=>'csv','PDF'=>'pdf'),
-                'expanded'=>true))
+                'multiple'=>false,
+            ))
                 ->add('accounts',ChoiceType::class,array(
                     'label'=>'Comptes',
                     'choices'=>$accounts,
                     'choice_label'=>'type.name',
                     'multiple'=>true,
-                    'expanded'=>true))
+//                    'expanded'=>true
+                ))
                     ->add('begin', DateType::class,array(
                         'label'=>'depuis',
                         'data'=> date_modify(new \Datetime(),'-1 months'),
@@ -1245,7 +1119,7 @@ class BankingController extends Controller
 
                             // Add the header of the CSV file
                             fputcsv($handle, array('Situation de votre compte ' . $account->type->name .' '. $userService->getOwnerName($account->owner) . ' (Cairn) au '. $period['end']),';');
-                            fputcsv($handle,array('RIB Cairn : ' . $account->number),';');
+                            fputcsv($handle,array('Numéro de compte Cairn : ' . $account->number),';');
                             fputcsv($handle,array('Solde initial : ' . $history->status->balanceAtBegin),';');
 
                             fputcsv($handle, array('Date', 'Motif','Partie prenante', 'Débit', 'Crédit','Solde'),';');
@@ -1260,9 +1134,12 @@ class BankingController extends Controller
                                     $credit = NULL;
 
                                 }
+
+                                $date = new \Datetime($transaction->date);
+
                                 fputcsv(
                                     $handle, // The file pointer
-                                    array($transaction->date, 
+                                    array($date->format('d-m-Y'), 
                                     $transaction->description, 
                                     $userService->getOwnerName($transaction->relatedAccount->owner),
                                     $debit, 
@@ -1272,7 +1149,7 @@ class BankingController extends Controller
                       );
 
                             }
-                            fputcsv($handle,array('Solde au : ' . $period['end'] . $history->status->balanceAtEnd),';');
+                            fputcsv($handle,array('Solde au ' . $period['end'] . ' : '.$history->status->balanceAtEnd),';');
                             fputcsv($handle,array());
                         }
                         fclose($handle);

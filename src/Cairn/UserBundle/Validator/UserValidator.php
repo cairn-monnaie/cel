@@ -132,8 +132,6 @@ class UserValidator extends ConstraintValidator
                 ->atPath('email')
                 ->addViolation();
         }
-
- 
     }
 
 }

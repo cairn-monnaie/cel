@@ -11,17 +11,20 @@ use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Sms;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
+
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
 use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 use Cyclos;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class Commands
 {
@@ -51,6 +54,12 @@ class Commands
         $this->container = $container;
     }
 
+    /**
+     * Removes all operations with no paymentID
+     *
+     * If an operation has no paymentID, it means that it has not been confirmed by the user
+     *
+     */
     public function removeAbortedOperations()
     {
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
@@ -64,21 +73,21 @@ class Commands
             $this->em->remove($transaction);
         }
 
-        $sb = $smsRepo->createQueryBuilder('s');                 
-        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
-        $expiredSms = $sb->getQuery()->getResult();
-
-        foreach($expiredSms as $sms){
-            $this->em->remove($sms);
-        }
-
-        $sb = $smsRepo->createQueryBuilder('s');                 
-        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
-        $expiredSms = $sb->getQuery()->getResult();
-
-        foreach($expiredSms as $sms){
-            $this->em->remove($sms);
-        }
+//        $sb = $smsRepo->createQueryBuilder('s');                 
+//        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
+//        $expiredSms = $sb->getQuery()->getResult();
+//
+//        foreach($expiredSms as $sms){
+//            $this->em->remove($sms);
+//        }
+//
+//        $sb = $smsRepo->createQueryBuilder('s');                 
+//        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
+//        $expiredSms = $sb->getQuery()->getResult();
+//
+//        foreach($expiredSms as $sms){
+//            $this->em->remove($sms);
+//        }
 
         $this->em->flush();
     }
@@ -87,6 +96,8 @@ class Commands
     /**
      *Returns true and creates admin if he does not exist yet, returns false otherwise
      *
+     *@param string username : cyclos username of the admin
+     *@param string password : cyclos password of the admin
      *@return boolean 
      */ 
     public function createInstallAdmin($username, $password)
@@ -255,7 +266,14 @@ class Commands
 
     }
 
-    public function createUser($cyclosUser, $admin)
+    /**
+     * Creates an user on Symfony side 
+     *
+     *@param int $rank  
+     *@param stdClass $cyclosUser object representing user on cyclos-side
+     *@param User $admin
+     */
+    public function createUser($cyclosUser, $admin, $rank)
     {
         $existingUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('cyclosID'=>$cyclosUser->id));
 
@@ -296,6 +314,24 @@ class Commands
             $doctrineUser->setAddress($address);                                  
             $doctrineUser->setDescription('Test user blablablabla');             
 
+            //create fake id doc
+            $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+            $originalName = 'john-doe-id.png';
+            $absolutePath = $absoluteWebDir.$originalName;
+
+            $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+
+            $idDocument = new File();
+            $idDocument->setUrl($file->guessExtension());
+            $idDocument->setAlt($file->getClientOriginalName());
+
+            if(! copy($absolutePath, $absoluteWebDir.$idDocument->getUploadDir().'/'.$rank.'.'.$idDocument->getUrl())){
+                echo "Failed to copy";
+            }
+
+            $doctrineUser->setIdentityDocument($idDocument);
+
+
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
             $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
@@ -308,7 +344,9 @@ class Commands
             //set cyclos status to ACTIVE by default for adherents whereas, at creation, they are DISABLED
             //anonymous user will be the user accessing cyclos therefore, we need afterwards to reset admin credentials
             if($doctrineUser->isAdherent()){
+                $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
+
             }
 
             $this->em->persist($doctrineUser);
@@ -363,6 +401,8 @@ class Commands
     }
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
+     *@param const int $type Operation type
+     *@param stdClass $entryVO stdClass transaction
      */
     public function createOperation($entryVO, $type)
     {
@@ -419,6 +459,12 @@ class Commands
 
     }
 
+    /**
+     * Generates consistent Symfony database from Cyclos data 
+     *
+     * @param string $login : username of admin user 
+     * @param string $password : password of admin user
+     */
     public function generateDatabaseFromCyclos($login, $password)
     {
         $securityService = $this->container->get('cairn_user.security');
@@ -468,8 +514,10 @@ class Commands
         //basic user creation : create entity using data from Cyclos + add a card for all users
         echo 'INFO: ------- Creation of users based on Cyclos data' ."--------- \n";
 
+        $rank = 0;
         foreach($cyclosMembers as $cyclosUser){
-            $this->createUser($cyclosUser,$admin);
+            $rank++;
+            $this->createUser($cyclosUser,$admin,$rank);
         }
 
         $this->em->flush();
@@ -664,7 +712,7 @@ class Commands
 
         $pro1 = $userRepo->findOneByUsername('nico_faus_prod'); 
         $smsData = new SmsData($pro1);
-        $smsData->setPhoneNumber('0612345678');
+        $smsData->setPhoneNumber('+33612345678');
         $smsData->setIdentifier('NICOPROD');
         $smsData->setPaymentEnabled(true);
         $pro1->addSmsData($smsData);
@@ -672,7 +720,7 @@ class Commands
 
         $person1 = $userRepo->findOneByUsername('nico_faus_perso'); 
         $smsData = new SmsData($person1);
-        $smsData->setPhoneNumber('0612345678');
+        $smsData->setPhoneNumber('+33612345678');
         $person1->addSmsData($smsData);
 
         echo 'INFO: ' .$pro1->getName(). ' with role PRO, has phone number : '. $pro1->getPhoneNumbers()[0]."\n";
@@ -684,14 +732,14 @@ class Commands
 
         $pro2 = $userRepo->findOneByUsername('maltobar'); 
         $smsData = new SmsData($pro2);
-        $smsData->setPhoneNumber('0611223344');
+        $smsData->setPhoneNumber('+33611223344');
         $smsData->setIdentifier('MALTOBAR');
         $smsData->setPaymentEnabled(true);
         $pro2->addSmsData($smsData);
 
         $person2 = $userRepo->findOneByUsername('benoit_perso'); 
         $smsData = new SmsData($person2);
-        $smsData->setPhoneNumber('0644332211');
+        $smsData->setPhoneNumber('+33644332211');
         $smsData->setSmsEnabled(false);
         $person2->addSmsData($smsData);
 
@@ -707,7 +755,7 @@ class Commands
         echo 'INFO: '. $pro->getName(). 'has DISabled sms payments but can receive payments at 0655667788 '."\n";
 
         $smsData = new SmsData($pro);
-        $smsData->setPhoneNumber('0655667788');
+        $smsData->setPhoneNumber('+33655667788');
         $smsData->setIdentifier('AMANSOL');
         $pro->addSmsData($smsData);
 
@@ -717,7 +765,7 @@ class Commands
         $user = $userRepo->findOneByUsername('crabe_arnold'); 
         echo 'INFO: '. $user->getName(). ' has requested three times a new phone number without validation'."\n";
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0711111111');
+        $smsData->setPhoneNumber('+33711111111');
         $smsData->setIdentifier('CRABEARNOLD');
         $user->setNbPhoneNumberRequests(3);
         $user->addSmsData($smsData);
@@ -728,8 +776,9 @@ class Commands
         $user = $userRepo->findOneByUsername('hirundo_archi'); 
         echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0722222222');
+        $smsData->setPhoneNumber('+33722222222');
         $smsData->setIdentifier('HIRUNDO');
+        $smsData->setPaymentEnabled(true);
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(2);
         $user->addSmsData($smsData);
@@ -741,7 +790,7 @@ class Commands
         echo 'INFO: '. $user->getName(). ' has several remaining tries to validate his phone number and has disabled sms ops'."\n";
         $smsData = new SmsData($user);
         $smsData->setSmsEnabled(false);
-        $smsData->setPhoneNumber('0733333333');
+        $smsData->setPhoneNumber('+33733333333');
         $smsData->setIdentifier('DRDBREW');
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
@@ -755,7 +804,7 @@ class Commands
         $user->setEnabled(false);
 
         $smsData = new SmsData($user);
-        $smsData->setPhoneNumber('0744444444');
+        $smsData->setPhoneNumber('+33744444444');
         $smsData->setIdentifier('MANDRAGORE');
         $smsData->setSmsEnabled(false);
 
@@ -770,8 +819,8 @@ class Commands
         echo 'INFO: '. $user->getName(). ' has an unexisting access client'."\n";
         $smsData = new SmsData($user);
 
-        $smsData->setPhoneNumber('0788888888');
-        $user->setSmsClient('dlncnlcdlkkncsjdj');
+        $smsData->setPhoneNumber('+33788888888');
+        $smsData->setSmsClient('dlncnlcdlkkncsjdj');
 
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);

@@ -16,7 +16,7 @@
     </p>
 
     <form action="{{ path('cairn_user_users_sms_disable', {'id': user.id}) }}" method="post">
-    <a href="{{ path('cairn_user_profile_view', {'id': user.id}) }}" class="btn btn-default">
+    <a href="{{ path('cairn_user_profile_view', {'username': user.username}) }}" class="btn btn-default">
     <i class="glyphicon glyphicon-chevron-left"></i>
     Retour au profil
     </a>

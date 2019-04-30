@@ -40,7 +40,7 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 use Cyclos;
 
 /**
- * This class contains actions that need no role at all. Mostly, those can be done before login as anonymous user. 
+ * This class contains actions that need no role at all. Mostly, those can be done before login as anonymous user, or ajax requests 
  */
 class DefaultController extends Controller
 {
@@ -90,6 +90,10 @@ class DefaultController extends Controller
         }
     }
 
+    /**
+     * Returns all cities and their respective zipCodes
+     *
+     */
     public function zipCitiesAction(Request $request){
         if ($request->isXmlHttpRequest()){
             $em = $this->getDoctrine()->getManager();
@@ -103,6 +107,13 @@ class DefaultController extends Controller
         return new Response("Ajax only",400);
     }
 
+    /**
+     * Returns accessible user's names and icons if exist
+     *
+     * If the current user is adherent, he can only access other enabled adherents. If admin, he can access adherents under
+     * his responsibility
+     *
+     */
     public function accountsAction(Request $request){
 
         $currentUser = $this->getUser();

@@ -18,7 +18,7 @@ use Cairn\UserCyclosBundle\Service\NetworkInfo;
 class AccessPlatform
 {
     /**
-     * Service dealing with notifications(mailing/notifications)
+     * Service dealing with notifications(mailing/notifications/sms)
      *@var MessageNotificator $messageNotificator
      */
     protected $messageNotificator;
@@ -38,8 +38,14 @@ class AccessPlatform
      */
     protected $networkInfo;
 
+    /**
+     *@var string $anonymousUser : username of anonymous user on Cyclos-side
+     */
     protected $anonymousUser;
 
+    /**
+     *@var string $network : name of the cyclos network
+     */
     protected $network;
 
     public function __construct(UserRepository $userRepo, MessageNotificator $messageNotificator, Security $security, NetworkInfo $nI, $anonymous, $network)
@@ -147,8 +153,15 @@ class AccessPlatform
     }
 
     /**
-     *
-     *Changes user status on Cyclos side to be coherent
+     * Changes user status on Cyclos side to be consistent with FOSUserBundle
+     * 
+     * A non admin user cannot change his status on Cyclos-side. Therefore, if an adherent opposes his app member area, the operation
+     * cannot be extended to Cyclos. Therefore, we use an anonymous user whom only purpose is to do this for us. If user is admin, he can
+     * do it
+     * Therefore, in the end, if an adherent is blocked on Symfony-side, he is also blocked on Cyclos-side, so that he is not visible in 
+     * Cyclos anymore
+     * @param User $user user to change status to
+     * @param string $status BLOCKED | ACTIVE
      */
     public function changeUserStatus(User $user,$status)
     {

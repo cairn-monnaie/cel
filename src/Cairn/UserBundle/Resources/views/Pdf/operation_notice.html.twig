@@ -16,6 +16,7 @@
            <td> <strong> Avis d'opération de virement </strong> </td> 
            <td> Compte-rendu de votre virement, enregistré le {{transfer.submissionDate|date('Y-m-d')}}} </td>
            <td> Imprimé le {{ 'now'|date('d - m -Y') }} <td>
+           <td> Identifiant du paiement {{transfer.paymentID}} </td>
         </tbody>
     </table> 
 
@@ -33,7 +34,15 @@
         <tbody>
             <td> {{transfer.amount}} </td> 
             <td> {{transfer.executionDate|date('Y-m-d')}} </td>
-            <td> Executé </td>
+            <td>
+                {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                    Etat : <em> A exécuter </em>
+                {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                    Etat : <em> Echoué </em>
+                {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                    Etat : <em> Exécuté </em>
+            </td>
+            {% endif %}
         </tbody>
     </table> 
 

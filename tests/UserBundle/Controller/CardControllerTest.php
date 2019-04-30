@@ -39,7 +39,7 @@ class CardControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','/card/home/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/card/home/'.$targetUser->getUsername());
 
         if($currentUser !== $targetUser && !$isReferent){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -78,14 +78,14 @@ class CardControllerTest extends BaseControllerTest
         $crawler = $this->client->request('GET',$url );
 
         if(! $isAdherent){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
             $crawler = $this->client->followRedirect();
             $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             return;
         }
 
         if( $hasCard){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
             $crawler = $this->client->followRedirect();
             $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             return;
@@ -133,7 +133,7 @@ class CardControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $url = '/card/associate/'.$targetUser->getID();
+        $url = '/card/associate/'.$targetUser->getUsername();
         $crawler = $this->client->request('GET',$url );
 
         if($currentUser !== $targetUser){
@@ -148,7 +148,7 @@ class CardControllerTest extends BaseControllerTest
                 //access denied exception
                 $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
             }else{
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                 $crawler = $this->client->followRedirect();
             }
         }else{
@@ -216,7 +216,7 @@ class CardControllerTest extends BaseControllerTest
 
         $card = $currentUser->getCard();
         if(!$expectValid){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getID()));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
             $crawler = $this->client->followRedirect();
 
         }else{
@@ -252,7 +252,7 @@ class CardControllerTest extends BaseControllerTest
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
-        $crawler = $this->client->request('GET','/card/download/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','/card/download/'.$targetUser->getUsername());
 
         if(! ($targetUser->hasRole('ROLE_SUPER_ADMIN') && $targetUser === $currentUser)){
             $crawler = $this->client->followRedirect();
@@ -266,7 +266,7 @@ class CardControllerTest extends BaseControllerTest
             $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
             if(!$expectConfirm){
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
             }else{
@@ -315,7 +315,7 @@ class CardControllerTest extends BaseControllerTest
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
         //sensible operation
-        $url = '/card/revoke/'.$targetUser->getID();
+        $url = '/card/revoke/'.$targetUser->getUsername();
         $crawler = $this->client->request('GET',$url);
         if($currentUser !== $targetUser){
             $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
@@ -331,7 +331,7 @@ class CardControllerTest extends BaseControllerTest
         }else{
             $targetCard = $targetUser->getCard();
             if(!$expectForm){
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
 
@@ -341,7 +341,7 @@ class CardControllerTest extends BaseControllerTest
                 $form = $crawler->selectButton('confirmation_save')->form();
                 $form['confirmation[current_password]']->setValue('@@bbccdd');
                 $crawler =  $this->client->submit($form);
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getID()));
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
 
                 //assert no card
                 $this->em->refresh($targetUser);

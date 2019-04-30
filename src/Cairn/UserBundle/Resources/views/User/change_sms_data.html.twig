@@ -10,17 +10,32 @@
 {% block body %}
     {{parent()}} 
         <em> Attention </em> Un SMS vous sera envoyé en cas de changement de numéro. Assurez-vous d'être en mesure de le recevoir
-        <div class="body_wrapper">
-            {{ form_start(formSmsData) }}                                                       
-             {{ form_rest(formSmsData) }}                                                        
-            {{form_end(formSmsData) }}   
-        </div>
 
-        <div class="body_wrapper">
-            {{ form_start(formCode) }}                                                       
-             {{ form_rest(formCode) }}                                                        
-            {{form_end(formCode) }}   
-        </div>
+
+
+       {{ form_start(formSmsData) }}
+         {% if formSmsData.phoneNumber is defined %}
+           {{ form_row(formSmsData.phoneNumber) }}                                         
+        {% endif %}
+       {{ form_row(formSmsData.smsEnabled) }}                                         
+         {% if formSmsData.paymentEnabled is defined %}
+           {{ form_row(formSmsData.paymentEnabled) }}                                         
+        {% endif %}
+         {% if formSmsData.identifier is defined %}
+           {{ form_row(formSmsData.identifier) }}                                         
+        {% endif %}
+
+       {{ form_row(formSmsData.save) }}                                                  
+       {{ form_rest(formSmsData) }}
+       {{ form_end(formSmsData) }}
+
+        {% if app.session.get('activationCode') %}
+            <div class="body_wrapper">
+                {{ form_start(formCode) }}                                                       
+                 {{ form_rest(formCode) }}                                                        
+                {{form_end(formCode) }}   
+            </div>
+        {% endif %}
 
 {% endblock %}              
 

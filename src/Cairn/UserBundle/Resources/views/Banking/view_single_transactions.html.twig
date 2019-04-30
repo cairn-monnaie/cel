@@ -7,7 +7,7 @@
 
     {% if futureInstallments | length %}
     <table>
-    <caption> <span> Vos virements simples à venir </span> </caption>
+    <h2>Vos virements à venir</h2>
     <thead>
         <tr>
             <th> Date de demande </th>
@@ -24,15 +24,9 @@
     <tbody>
     {% for installment in futureInstallments %}
                 <tr>
-                    <td> {{installment.submissionDate|date('Y-m-d')}} </td>
-                    <td> {{installment.executionDate|date('Y-m-d')}} </td>
-                    <td>
-                        {#{% if installment.creditor is defined %}#}
-                            <a href="{{path('cairn_user_profile_view', {'id' : installment.creditor.id})}}"> {{installment.creditorName}} </a>
-                        {#{% else %}#}
-                            {#{{installment.creditorName}}#}
-                        {#{% endif %}#}
-                    </td>
+                    <td> {{installment.submissionDate|date('d-m-Y')}} </td>
+                    <td> {{installment.executionDate|date('d-m-Y')}} </td>
+                    <td> <span> {{installment.creditorName}} </span> </td>
                     <td> {{installment.reason }} </td>  
                     <td> {{installment.amount }} </td>
                     {% if installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
@@ -44,6 +38,8 @@
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'cancel' })}}"> Annuler </a>
                      | 
                          <a href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'execute' })}}"> Exécuter maintenant </a>
+                     |
+                         <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : installment.paymentID})}}"> Voir le détail </a>
                     </td>
                 </tr>
     {% else %}
@@ -72,17 +68,17 @@
     <tbody>
     {% for transaction in processedTransactions %}
                 <tr>
-                    <td> {{transaction.executionDate|date('Y-m-d')}} </td>
+                    <td> {{transaction.executionDate|date('d-m-Y')}} </td>
                     <td>
                         {#{% if transaction.creditor is defined %}#}
-                            {#<a href="{{path('cairn_user_profile_view', {'id' : transaction.creditor.id})}}"> {{transaction.creditorName}} </a>#}
+                            {#<a href="{{path('cairn_user_profile_view', {'username' : transaction.creditor.username})}}"> {{transaction.creditorName}} </a>#}
                         {#{% else %}#}
                             {{transaction.creditorName}}
                         {#{% endif %}#}
                     </td>
                     <td> {{transaction.reason }} </td>  
                     <td> {{transaction.amount }} </td>
-                    <td> <a href="{{path('cairn_user_banking_transfer_view', {'type':'simple','id' : transaction.id})}}"> Voir le détail </a></td>
+                    <td> <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : transaction.paymentID})}}"> Voir le détail </a></td>
                 </tr>
     {% else %}
         <tr>

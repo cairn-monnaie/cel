@@ -34,8 +34,22 @@ class SmsDataValidator extends ConstraintValidator
         $user = $smsData->getUser();
 
         $smsIdentifier = $smsData->getIdentifier();
+
         //TODO : validate with regex
-        $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($smsData->getPhoneNumber());
+        $phoneNumber = trim($smsData->getPhoneNumber());
+        $phoneNumber = preg_replace('/[^0-9+]/', '',$phoneNumber);
+
+        preg_match('#^\+33(6|7)\d{8}$#',$phoneNumber,$matches_number);
+
+        if(! $matches_number){
+            $this->context->buildViolation("Format du numéro de téléphone invalide")
+                ->atPath('phoneNumber')
+                ->addViolation();
+            return;
+        }
+        $smsData->setPhoneNumber($phoneNumber);
+
+        $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
 
         $isNewPhoneNumber = true;
 
@@ -99,11 +113,6 @@ class SmsDataValidator extends ConstraintValidator
 //                    ->atPath('identifier')
 //                    ->addViolation();
 //            }
-            if(preg_match('#^[^a-zA-Z]#',$smsIdentifier)){
-                $this->context->buildViolation('L\'identifiant SMS PRO doit commencer par une lettre')
-                    ->atPath('identifier')
-                    ->addViolation();
-            }
 //        }
 
 

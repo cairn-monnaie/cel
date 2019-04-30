@@ -50,6 +50,12 @@ services:
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
 
+    cairn_user.helloasso:
+        class: Cairn\UserBundle\Service\Helloasso
+        arguments:
+            - "%helloasso_api_login%"
+            - "%helloasso_api_password%"
+
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:
@@ -208,7 +214,7 @@ services:
         arguments: ["@doctrine.orm.entity_manager","@cairn_user.bridge_symfony","@cairn_user_cyclos_user_info","@cairn_user_cyclos_account_info"]
 
     Cairn\UserBundle\Form\SmsDataType:
-        arguments: ['@security.authorization_checker']
+        arguments: ['@security.authorization_checker','@cairn_user.repository_smsdata']
         tags: [form.type]
 
     Cairn\UserBundle\Form\ChangePasswordType:

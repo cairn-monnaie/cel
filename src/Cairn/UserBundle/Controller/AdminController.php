@@ -1,4 +1,5 @@
 <?php
+// src/Cairn/UserBundle/Controller/AdminController.php
 
 namespace Cairn\UserBundle\Controller;
 
@@ -6,8 +7,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 //manage Entities
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Deposit;
+use Cairn\UserBundle\Entity\Operation;
+
 use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserCyclosBundle\Entity\UserManager;
+use Cairn\UserCyclosBundle\Entity\BankingManager;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +27,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;                               
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;                   
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -40,8 +46,9 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 
 /**
- * This class contains actions related to user management by administrators
+ * This class contains actions related to user, cards or accounts management by administrators
  *
+ * Adminisatrators can have either a role ROLE_ADMIN (resp. ROLE_SUPER_ADMIN) depending on the level of restrictions and rights
  * @Security("has_role('ROLE_ADMIN')")
  */
 class AdminController extends Controller
@@ -50,16 +57,26 @@ class AdminController extends Controller
      * Deals with all user management actions to operate on Cyclos-side
      *@var UserManager $userManager
      */
-    private $userManager;                                                      
+    private $userManager;                                              
 
 
-    public function __construct()                                              
-    {                                                                          
-        $this->userManager = new UserManager();                                
+    public function __construct()
+    {                                
+        $this->userManager = new UserManager();
+        $this->bankingManager = new BankingManager();
+
     }   
 
 
-    public function dashboardAction(Request $request)
+    /**
+     * Administrator's dashboard to see users status on a single page
+     *
+     * Sets into groups users by several criteria :
+     * _ role (pro, person, admin, superadmin)
+     * _ status ( opposed, enabled, waiting for validation)
+     * _ waiting for security card
+     */
+    public function userDashboardAction(Request $request)
     {
         $currentUser = $this->getUser();
         $currentUserID = $currentUser->getID();
@@ -107,6 +124,151 @@ class AdminController extends Controller
         );
 
         return $this->render('CairnUserBundle:Admin:dashboard.html.twig',array('allUsers'=>$allUsers));
+    }
+
+    /**
+     * Administrator's dashboard to see data related to electronic money safe on a single page
+     *
+     * This action retrieves all waiting deposits, their cumulated amount of money and the currently available electronic money
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function moneySafeDashboardAction(Request $request)
+    {
+        $currentUser = $this->getUser();
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
+
+        //get all deposits with state scheduled + amount of these deposits ordered by date
+        $db = $depositRepo->createQueryBuilder('d');
+        $depositRepo->whereStatus($db,Deposit::STATE_SCHEDULED);
+        $db->orderBy('d.requestedAt','ASC');
+
+        $deposits = $db->getQuery()->getResult();
+        $amountOfDeposits = $db->select('sum(d.amount)')->getQuery()->getSingleScalarResult();
+
+
+        //get amount of available e-mlc
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($currentUser->getCyclosID(),NULL);
+
+        foreach($accounts as $account){
+            if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
+                $debitAccount = $account;
+            }
+        }
+        $availableAmount = $debitAccount->status->balance;
+
+        return $this->render('CairnUserBundle:Admin:money_safe_dashboard.html.twig',array('availableAmount'=>$availableAmount, 'deposits'=>$deposits, 'amountOfDeposits'=>$amountOfDeposits));
+
+    }
+
+    /**
+     * Declares a new money safe balance 
+     *
+     * This action allows to declare a new amount of available electronic money, and executes as many waiting deposits as possible
+     * according to this new balance, ordered by date of request. The status of these deposits change to "PROCESSED", and equivalent 
+     * operations are persisted
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function moneySafeEditAction(Request $request)
+    {
+        $session = $request->getSession();
+
+        $currentUser = $this->getUser();
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
+
+        //get amount of available e-mlc
+        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($currentUser->getCyclosID(),NULL);
+
+        foreach($accounts as $account){
+            if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
+                $debitAccount = $account;
+            }
+        }
+        $availableAmount = $debitAccount->status->balance;
+
+        $form = $this->createFormBuilder()
+            ->add('amount',    NumberType::class, array('label' => 'Nombre de [e]-cairns actuellement gagés'))
+            ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
+            ->getForm();
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);    
+            if($form->isValid()){
+                $dataForm = $form->getData();            
+                $newAvailableAmount = $dataForm['amount'];
+
+                $bankingService = $this->get('cairn_user_cyclos_banking_info');
+
+                $paymentData = $bankingService->getPaymentData('SYSTEM','SYSTEM',NULL);
+                foreach($paymentData->paymentTypes as $paymentType){
+                    if(preg_match('#creation_mlc_numeriques#', $paymentType->internalName)){
+                        $creditTransferType = $paymentType;
+                    }
+                }
+                $amountToCredit = $newAvailableAmount - $availableAmount;
+                $description = 'Declaration de '.$newAvailableAmount .' [e]-cairns disponibles par '.$currentUser->getName().' le '.date('d-m-Y');
+
+
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amountToCredit,$description,$creditTransferType,new \Datetime());
+                $paymentVO = $this->bankingManager->makePayment($res->payment);
+
+                //get all deposits with state scheduled + amount of these deposits ordered by date
+                $db = $depositRepo->createQueryBuilder('d');
+                $depositRepo->whereStatus($db,Deposit::STATE_SCHEDULED);
+                $db->orderBy('d.requestedAt','ASC');
+
+                $deposits = $db->getQuery()->getResult();
+
+                $reason = 'Acompte post virement Helloasso'; 
+
+                //while there is enough available electronic mlc, credit user
+                foreach($deposits as $deposit){
+                    if($deposit->getAmount() <= $newAvailableAmount){
+                        var_dump($deposit->getID());
+                        $paymentData = $bankingService->getPaymentData('SYSTEM',$deposit->getCreditor()->getCyclosID(),NULL);
+                        foreach($paymentData->paymentTypes as $paymentType){
+                            if(preg_match('#credit_du_compte#', $paymentType->internalName)){
+                                $creditTransferType = $paymentType;
+                            }
+                        }
+
+                        $now = new \Datetime();
+                        $res = $this->bankingManager->makeSinglePreview($paymentData,$deposit->getAmount(),$reason,$creditTransferType,$now);
+                        $paymentVO = $this->bankingManager->makePayment($res->payment);
+
+                        $deposit->setStatus(Deposit::STATE_PROCESSED);
+                        $deposit->setExecutedAt($now);
+
+                        $operation = new Operation();
+                        $operation->setType(Operation::TYPE_CONVERSION_HELLOASSO);
+                        $operation->setReason($reason);
+                        $operation->setPaymentID($paymentVO->id);
+                        $operation->setFromAccountNumber($res->fromAccount->number);
+                        $operation->setToAccountNumber($res->toAccount->number);
+                        $operation->setAmount($res->totalAmount->amount);
+                        $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($res->fromAccount->owner));
+                        $operation->setCreditor($deposit->getCreditor());
+
+                        $em->persist($operation);
+
+                        $newAvailableAmount -= $deposit->getAmount();
+                    }
+                }
+
+
+                $session->getFlashBag()->add('info','Des crédits de compte [e]-cairns ont peut-être été exécutés');
+                $em->flush();
+
+                return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
+
+
+            }
+        }
+
+        return $this->render('CairnUserBundle:Admin:money_safe_edit.html.twig',array('form' => $form->createView(),'availableAmount'=>$availableAmount));
 
     }
 
@@ -130,7 +292,7 @@ class AdminController extends Controller
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }elseif($user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà accessible.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }elseif($user->getConfirmationToken()){
             throw new AccessDeniedException('Email non confirmé, cet utilisateur ne peut être validé');
         }
@@ -211,7 +373,7 @@ class AdminController extends Controller
 
                             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
                             $em->flush();
-                            return $this->redirectToRoute('cairn_user_card_associate',array('id'=>$user->getID()));
+                            return $this->redirectToRoute('cairn_user_card_associate',array('username'=>$user->getUsername()));
                         }
                     }
                 }else{
@@ -221,7 +383,7 @@ class AdminController extends Controller
 
             $em->flush();
             $session->getFlashBag()->add('success','L\'utilisateur ' . $user->getName() . ' a été activé. Il peut accéder à la plateforme.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username' => $user->getUsername()));
         }
 
         $responseArray = array('user' => $user,'form'=> $form->createView());
@@ -234,7 +396,6 @@ class AdminController extends Controller
      * Assign a unique local group (ROLE_ADMIN) as a referent of @param
      *
      * @param  User $user  User entity the referent is assigned to
-     * @todo : ensure unicity of a ROLE_ADMIN among user's referents : add/replace
      * @Security("has_role('ROLE_SUPER_ADMIN')")
      */
     public function assignReferentAction(Request $request, User $user)
@@ -314,9 +475,9 @@ class AdminController extends Controller
                 }
 
                 $em->flush();
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }else{
-                return $this->redirectToRoute('cairn_user_profile_view',array('id'=>$user->getID()));
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }
         }
         return $this->render('CairnUserBundle:User:add_referent.html.twig',array('form'=>$form->createView(),'user'=>$user));

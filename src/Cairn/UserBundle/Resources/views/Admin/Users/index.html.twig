@@ -15,7 +15,7 @@
     <div>
         <ul>
             {% for user in listUsers %}
-               <li><a href="{{path('cairn_user_profile_view', {'id': user.id})}}">{{user.name}}</a></li>
+               <li><a href="{{path('cairn_user_profile_view', {'username': user.username})}}">{{user.name}}</a></li>
             {% else %}
                 Pas <em>encore</em> d'utilisateur !
             {% endfor %}

@@ -58,7 +58,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * This class contains all actions related to user experience
+ * This class is a CRUD related to user's beneficiaries
  *
  * @Security("is_granted('ROLE_ADHERENT')")
  */
@@ -269,7 +269,7 @@ class BeneficiaryController extends Controller
         $possibleBeneficiaries = array_merge($possiblePros, $possiblePersons);
 
         $form = $this->createFormBuilder()
-            ->add('cairn_user', AccountType::class, array('label' => 'Nom du bénéficiaire','attr'=>array('placeholder'=>'email ou nom')))
+            ->add('cairn_user', AccountType::class, array('label' => 'Nom du bénéficiaire','attr'=>array('placeholder'=>'email, nom ou numéro de compte')))
             ->add('add', SubmitType::class, array('label' => 'Ajouter'))
             ->getForm();
 
@@ -289,7 +289,7 @@ class BeneficiaryController extends Controller
                     return new RedirectResponse($request->getRequestUri());
                 }
 
-                if ($dataForm['cairn_user'] == $currentUser){
+                if ($dataForm['cairn_user']->id == $currentUser->getCyclosID()){
                     if( $this->get('cairn_user.api')->isApiCall()){
                         $response = new Response('Oups, vous ne pouvez pas vous ajouter vous-même...');
                         $response->setStatusCode(Response::HTTP_BAD_REQUEST);
@@ -300,13 +300,20 @@ class BeneficiaryController extends Controller
                     return new RedirectResponse($request->getRequestUri());
                 }
 
+                $creditorUser = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($dataForm['cairn_user']->id);
+
                 //check that beneficiary is not already in database, o.w create new one
-                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$dataForm['cairn_user'],'ICC'=>$dataForm['cairn_user']->getMainICC()));
+                $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$creditorUser,'ICC'=>$dataForm['cairn_user']->accountNumber));
+
+                if($existingBeneficiary && $currentUser->hasBeneficiary($existingBeneficiary)){
+                    $session->getFlashBag()->add('info',$creditorUser->getName().' est déjà votre un bénéficiaire enregistré ');
+                    return new RedirectResponse($request->getRequestUri());
+                }
 
                 if(! $existingBeneficiary){
                     $beneficiary = new Beneficiary();
-                    $beneficiary->setUser($dataForm['cairn_user']);
-                    $beneficiary->setICC($dataForm['cairn_user']->getMainICC());
+                    $beneficiary->setUser($creditorUser);
+                    $beneficiary->setICC($dataForm['cairn_user']->accountNumber);
                 }
                 else{ 
                     $beneficiary = $existingBeneficiary;
@@ -414,7 +421,6 @@ class BeneficiaryController extends Controller
      * Removes a given beneficiary
      *
      * Once $beneficiary is removed, we ensure that this beneficiary is associated to at least one user. Otherwise, it is removed
-     * @TODO : try the option OrphanRemoval in annotations to let Doctrine do it 
      * @param Beneficiary $beneficiary Beneficiary to remove
      * @Method("GET")
      */

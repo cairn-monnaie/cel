@@ -36,3 +36,12 @@ services:
       PMA_PASSWORD: '${DB_PASSWORD}'
     depends_on:
       - db
+
+  doc-generator:
+    image: phpdoc/phpdoc
+    volumes:
+      - ".:/var/www/Symfony"
+    networks:
+      - mlc_net
+    depends_on:
+      - engine

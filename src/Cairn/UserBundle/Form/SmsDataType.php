@@ -16,21 +16,27 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
 
+use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Repository\SmsDataRepository;
+
 class SmsDataType extends AbstractType
 {
 
     private $authorizationChecker;
 
-    public function __construct(AuthorizationChecker $authorizationChecker)
+    private $smsDataRepo;
+
+    public function __construct(AuthorizationChecker $authorizationChecker, SmsDataRepository $smsDataRepo)
     {
         $this->authorizationChecker = $authorizationChecker;
+        $this->smsDataRepo = $smsDataRepo;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
 
         $builder
-            ->add('phoneNumber', CollectionType::class, array(
+            ->add('smsData', CollectionType::class, array(
                 'entry_type' => OneSmsDataType::class,
                 'allow_add' => true,
                 'allow_delete' => true

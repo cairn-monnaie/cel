@@ -118,7 +118,7 @@ class File
         }else{
             //little trick to allow PreUpdate callback to be called if the user had no file before
             //if no attribute is modified, PreUpdate is not called, then PreUpload function is not called and
-            //finally the file is not updated
+            //finally the file is not uploaded
             $this->url = 'xxx';
         }
 
@@ -133,6 +133,7 @@ class File
         if (null === $this->file) {
             return;
         }
+
         $this->url = $this->file->guessExtension();
         $this->alt = $this->file->getClientOriginalName();
     }
@@ -158,6 +159,7 @@ class File
             $this->getUploadRootDir(), // Le répertoire de destination
             $this->id.'.'.$this->url   // Le nom du fichier à créer, ici « id.extension »
         );
+
     }
 
     /**
@@ -178,9 +180,12 @@ class File
         }
     }
 
-    public function getUploadDir()
+    public function getUploadDir($env = NULL)
     {
         //chemin relatif pour navigateur utilisateur 
+        if ($env == 'test'){
+            return 'web/uploads/img';
+        }
         return 'uploads/img';
     }
 
@@ -190,9 +195,9 @@ class File
         return __DIR__.'/../../../../web/'.$this->getUploadDir();
     }
 
-    public function getWebPath()
+    public function getWebPath($env = NULL)
     {
-        return $this->getUploadDir().'/'.$this->getId().'.'.$this->getUrl();
+        return $this->getUploadDir($env).'/'.$this->getId().'.'.$this->getUrl();
     }
 
 }
