@@ -36,7 +36,7 @@ class SmsDataValidator extends ConstraintValidator
         $smsIdentifier = $smsData->getIdentifier();
 
         //TODO : validate with regex
-        $phoneNumber = $smsData->getPhoneNumber();
+        $phoneNumber = trim($smsData->getPhoneNumber());
         $phoneNumber = preg_replace('/[^0-9+]/', '',$phoneNumber);
 
         preg_match('#^\+33(6|7)\d{8}$#',$phoneNumber,$matches_number);
@@ -47,6 +47,7 @@ class SmsDataValidator extends ConstraintValidator
                 ->addViolation();
             return;
         }
+        $smsData->setPhoneNumber($phoneNumber);
 
         $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
 
