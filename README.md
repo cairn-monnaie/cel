@@ -27,9 +27,9 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
 
     **Les opérations sensibles nécessitant une authentification par carte**  
       Pour déclarer une opération comme sensible, il y a 3 façons de faire :  
-        * Si l'URL suffit à déclarer l'opération comme sensible (ex : changement du mot de passe), il faut ajouter la route permettant d'accéder à ladite opération dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_ROUTES`  
-        * Si l'URL ne suffit pas, mais que la "sensibilité" dépend de certains paramètres de la requête (ex : virement vers un nouveau bénéficiaire, paramètre `to = new`), il faut ajouter la route permettant d'accéder à ladite opération ainsi que les paramètres déterminants dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_URLS`  
-        * Si elle dépend d'une logique plus complexe nécessitant du code, il faut intégrer cette logique dans la fonction du service dédié : `Cairn/src/UserBundle/Service/Security::isSensibleOperation` 
+      * Si l'URL suffit à déclarer l'opération comme sensible (ex : changement du mot de passe), il faut ajouter la route permettant d'accéder à ladite opération dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_ROUTES`  
+      * Si l'URL ne suffit pas, mais que la "sensibilité" dépend de certains paramètres de la requête (ex : virement vers un nouveau bénéficiaire, paramètre `to = new`), il faut ajouter la route permettant d'accéder à ladite opération ainsi que les paramètres déterminants dans `Cairn/src/UserBundle/Event/SecurityEvents::SENSIBLE_URLS`  
+      * Si elle dépend d'une logique plus complexe nécessitant du code, il faut intégrer cette logique dans la fonction du service dédié : `Cairn/src/UserBundle/Service/Security::isSensibleOperation` 
 
     * _Associer son compte à une carte de sécurité_  
       En plus des clés à 4 chiffres, chaque carte de sécurité contient un code unique qui l'identifie. Pour associer son compte (nécessairement sans carte déjà associée) à une carte de sécurité, l'utilisateur saisit ce code dans le formulaire dédié.
@@ -117,24 +117,22 @@ Ce code est à l'initiative du [Cairn, Monnaie Locale Complémentaire et Citoyen
       Un administrateur peut assigner/dissocier un Groupe Local à un prestataire. Le GL devient alors référent dudit prestataire, lui donnant les droits de gestion sur l'espace membre du prestataire.  
 
   * **Gestion des cartes de sécurité disponibles (non associées)**
-    * _Générer et télécharger un ensemble de cartes_
+    * _Générer et télécharger un ensemble de cartes_  
       Un administrateur peut générer, dans un fichier ZIP, un ensemble de cartes de sécurité dans la limite du nombre de cartes autorisées. En effet, l'application définit un nombre maximal de cartes non associées afin de contrôler leur diffusion. Ce nombre est défini dans les paramères globaux dans `app/config/parameters.yml`:   
       * nombre de cartes  : `max_printable_cards : 30`
 
-    * _Rechercher les cartes disponibles_
+    * _Rechercher les cartes disponibles_  
       Toujours dans l'objectif de suivre les cartes générées mais non associées, un "tableau de bord" des cartes non associées est disponible :  
         * Vue du nombre de cartes téléchargeables
         * Liste des cartes non associées avec leur code, leur date de génération et leur date d'expiration
         * Recherche de cartes par code / date de génération / date d'expiration
-    * _Détruire une carte_
+    * _Détruire une carte_  
       Celle-ci devient alors indisponible. Elle ne peut plus être associée à un compte [e]-Cairn.
 
-  * **Gestion des [e]-cairns disponibles**
+  * **Gestion des [e]-cairns disponibles**  
     Les [e]-cairns disponibles sont stockés dans le "coffre [e]-Cairn". L'objectif est que l'administration de l'application puisse contrôler la masse de [e]-cairns disponibles pour le change  correspondant au fonds de garantie numérique. Ainsi, un "tableau de bord" du coffre[e]-Cairn est disponible, depuis lequel un administrateur peut :  
       * Voir le nombre de [e]-Cairns disponibles
-      * Déclarer un nouveau nombre de [e]-Cairns disponibles
-      * Voir les acomptes en attente de crédit
-    * _Déclaration du nombre de [e]-cairns disponibles_ 
+      * Déclarer un nouveau nombre de [e]-Cairns disponibles et voir les acomptes en attente de crédit.   
       L'administrateur peut déclarer une modification du solde du coffre [e]-cairns de l'application. Si des acomptes sont en attente de crédit, ceux-ci sont automatiquement exécutés suite à la modification du solde en mode FIFO si le solde le permet. 
       
       
