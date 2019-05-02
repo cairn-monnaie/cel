@@ -2,7 +2,6 @@
 
 namespace Cairn\UserBundle\Form;
 
-use OneSmsDataType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\AbstractType;
@@ -14,32 +13,21 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
-
-use Cairn\UserBundle\Entity\SmsData;
-use Cairn\UserBundle\Repository\SmsDataRepository;
 
 class SmsDataType extends AbstractType
 {
-
-    private $authorizationChecker;
-
-    private $smsDataRepo;
-
-    public function __construct(AuthorizationChecker $authorizationChecker, SmsDataRepository $smsDataRepo)
-    {
-        $this->authorizationChecker = $authorizationChecker;
-        $this->smsDataRepo = $smsDataRepo;
-    }
-
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
 
         $builder
             ->add('smsData', CollectionType::class, array(
+//                'by_reference'=>false,
                 'entry_type' => OneSmsDataType::class,
                 'allow_add' => true,
-                'allow_delete' => true
+                'allow_delete' => true,
+                'entry_options' => [
+                    'attr' => ['class' => 'smsdata-box'],
+                ],
             ))
             ->add('save', SubmitType::class, array('label' => 'Suivant'));
     }
@@ -50,7 +38,7 @@ class SmsDataType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults(array(
-            'data_class' => 'Cairn\UserBundle\Entity\SmsData'
+            'data_class' => 'Cairn\UserBundle\Entity\User'
         ));
     }
 

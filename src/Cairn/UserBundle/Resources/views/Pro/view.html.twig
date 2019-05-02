@@ -63,32 +63,32 @@
                 </div>
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
-                        {% set smsData = user.smsData %}
+                        {% for smsData in user.smsData %}
                         
-                        {% if smsData is not null %}
-
                             <div class="col s12 truncate"><i class="material-icons tiny">phone</i>&nbsp;{{ smsData.phoneNumber }}</div>
     
                             {% if user.hasRole('ROLE_PRO') %}
                                 <div class="col s12 truncate"><i class="material-icons tiny">arrow_forward</i>&nbsp;{{smsData.identifier}}</div>
                                 <div class="col s12 truncate"><i class="material-icons tiny">thumbs_up_down</i>
-                                  &nbsp; Réception de paiements par SMS : {{ user.smsData.smsEnabled ? 'Oui' : 'Non' }} </br>
-{#                                  &nbsp; Réalisation de paiements par SMS : {{ user.smsData.paymentEnabled ? 'Oui' : 'Non' }} </br> #}
+                                  &nbsp; Réception de paiements par SMS : {{ smsData.smsEnabled ? 'Oui' : 'Non' }} </br>
+{#                                  &nbsp; Réalisation de paiements par SMS : {{ smsData.paymentEnabled ? 'Oui' : 'Non' }} </br> #}
                                 </div>
 
                             {% endif %}
+                            {% if user.id == app.user.id %}
+                                {% set textSmsButton =  "Editer mes données SMS"%}
+                            {% else %}
+                                {% set textSmsButton =  "Editer les données SMS de " %}
+                            {% endif %}
+                            <a href="{{path('cairn_user_users_smsdata_edit',{'phoneNumber' : smsData.phoneNumber})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
+        
                         {% else %}
 
                             Aucune donnée SMS enregistrée !
 
-                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% if user.id == app.user.id %}
-                        <a href="{{path('cairn_user_users_smsdata_edit',{'username' : user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer mes accès SMS</a>
-                    {% else %}
-                        <a href="{{path('cairn_user_users_smsdata_edit',{'username' : user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>Editer les accès SMS</a>
 
-                    {% endif %}
                 </div>
 
             </li>

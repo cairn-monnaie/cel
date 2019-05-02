@@ -12,7 +12,16 @@
         <em> Attention </em> Un SMS vous sera envoyé en cas de changement de numéro. Assurez-vous d'être en mesure de le recevoir
 
 
+ {#   <div class="well">
+       {{ form_start(formSmsData) }}
+       {{ form_row(formSmsData.smsData) }}
 
+       <a href="#" id="add_smsdata" class="btn btn-default">Ajouter un numéro de téléphone</a> 
+       {{ form_rest(formSmsData) }}
+       {{ form_end(formSmsData) }}
+
+    </div>
+#}
        {{ form_start(formSmsData) }}
          {% if formSmsData.phoneNumber is defined %}
            {{ form_row(formSmsData.phoneNumber) }}                                         
@@ -25,17 +34,97 @@
            {{ form_row(formSmsData.identifier) }}                                         
         {% endif %}
 
-       {{ form_row(formSmsData.save) }}                                                  
+       {{ form_row(formSmsData.save) }}  
        {{ form_rest(formSmsData) }}
        {{ form_end(formSmsData) }}
 
-        {% if app.session.get('activationCode') %}
-            <div class="body_wrapper">
-                {{ form_start(formCode) }}                                                       
-                 {{ form_rest(formCode) }}                                                        
-                {{form_end(formCode) }}   
-            </div>
-        {% endif %}
-
 {% endblock %}              
+{#{% block javascripts %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        // On récupère la balise <div> en question qui contient l'attribut « data-prototype » qui nous intéresse.
+        var $container = $('div#cairn_userbundle_smsdata_smsData');
+
+        // On définit un compteur unique pour nommer les champs qu'on va ajouter dynamiquement
+        var index = $container.find('div.smsdata-box').length;
+        var nbInitialPersistedNumbers = index;
+        
+        // On ajoute un nouveau champ à chaque clic sur le lien d'ajout.
+        $('#add_smsdata').click(function(e) {
+            var nbPhoneNumberFields = $container.find('div.smsdata-box').length;
+
+            if(nbPhoneNumberFields > nbInitialPersistedNumbers){
+                alert('Hello world !');
+            }else{
+                addEntity($container);
+            }
+            
+            e.preventDefault(); // évite qu'un # apparaisse dans l'URL
+            return false;
+        });
+
+        // On ajoute un premier champ automatiquement s'il n'en existe pas déjà un (cas d'un nouveau téléphone par exemple).
+        if (index == 0) {
+            addEntity($container);
+        } else {
+            // S'il existe déjà des données SMS, on ajoute un lien de suppression pour chacune d'entre elles
+            $container.children('div').each(function() {
+                addDeleteLink($(this),true);
+            });
+        }
+
+        // La fonction qui ajoute un formulaire OneSmsDataType
+        function addEntity($container) {
+            // Dans le contenu de l'attribut « data-prototype », on remplace :
+            // - le texte "__name__label__" qu'il contient par le label du champ
+            // - le texte "__name__" qu'il contient par le numéro du champ
+            var template = $container.attr('data-prototype')
+                .replace(/__name__label__/g, 'Téléphone n°' + (index+1))
+                .replace(/__name__/g,        index)
+            ;
+
+            // On crée un objet jquery qui contient ce template
+            var $prototype = $(template);
+
+            // On ajoute au prototype un lien pour pouvoir supprimer l'entité smsData
+            addDeleteLink($prototype,false);
+
+            // On ajoute le prototype modifié à la fin de la balise <div>
+            $container.append($prototype);
+
+            // Enfin, on incrémente le compteur pour que le prochain ajout se fasse avec un autre numéro
+            index++;
+        }
+
+         // La fonction qui ajoute un lien de suppression d'une entité smsData
+        function addDeleteLink($prototype,persistedEntity) {
+            // Création du lien
+            if (persistedEntity){
+                var phoneValue = $prototype.find('input[id*=phoneNumber]').val();
+                console.log(phoneValue);
+                var url = "{{url('cairn_user_users_smsdata_delete', {'phoneNumber': 'text'})}}";
+                url = url.replace("text", phoneValue);
+                console.log(url);
+                var $deleteLink = $('<a href=url class="btn btn-danger">Supprimera</a>');
+                $deleteLink.attr("href",url);
+//                var $deleteLink = $('<a href="#" class="btn btn-danger">Supprimer</a>');
+
+            }else{
+                var $deleteLink = $('<a href="#" class="btn btn-danger">Supprimer</a>');
+            }
+            // Ajout du lien
+            $prototype.append($deleteLink);
+
+            // Ajout du listener sur le clic du lien pour effectivement supprimer l'entité smsData
+            $deleteLink.click(function(e) {
+                $prototype.remove();
+
+//                e.preventDefault(); // évite qu'un # apparaisse dans l'URL
+//                return false;
+            });
+        }
+    });
+</script>
+{% endblock %}
+#}
 

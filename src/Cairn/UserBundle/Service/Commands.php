@@ -820,7 +820,7 @@ class Commands
         $smsData = new SmsData($user);
 
         $smsData->setPhoneNumber('+33788888888');
-        $smsData->setSmsClient('dlncnlcdlkkncsjdj');
+        $user->setSmsClient('dlncnlcdlkkncsjdj');
 
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
