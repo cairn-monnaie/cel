@@ -191,13 +191,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
 
-    cairn_user.smsdata_validator:
-        class: Cairn\UserBundle\Validator\SmsDataValidator
-        arguments:
-            - "@cairn_user.repository_user"
-            - "@cairn_user.security"
-        tags:
-            - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
+#    cairn_user.smsdata_validator:
+#        class: Cairn\UserBundle\Validator\SmsDataValidator
+#        arguments:
+#            - "@cairn_user.repository_user"
+#            - "@cairn_user.security"
+#        tags:
+#            - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
 
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:

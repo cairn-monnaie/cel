@@ -195,6 +195,10 @@ cairn_user_users_remove_pending:
     path:     user/remove-pending
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
 
+cairn_user_users_smsdata_add:
+    path:     user/sms-data/add
+    defaults: { _controller: CairnUserBundle:User:addSmsData, _format: html}
+
 cairn_user_users_smsdata_edit:
     path:     user/sms-data/edit/{phoneNumber}
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}

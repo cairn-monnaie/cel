@@ -73,12 +73,12 @@
                                   &nbsp; Réception de paiements par SMS : {{ smsData.smsEnabled ? 'Oui' : 'Non' }} </br>
 {#                                  &nbsp; Réalisation de paiements par SMS : {{ smsData.paymentEnabled ? 'Oui' : 'Non' }} </br> #}
                                 </div>
-
+                                <br>
                             {% endif %}
                             {% if user.id == app.user.id %}
                                 {% set textSmsButton =  "Editer mes données SMS"%}
                             {% else %}
-                                {% set textSmsButton =  "Editer les données SMS de " %}
+                                {% set textSmsButton =  "Editer les données SMS de " ~ user.name %}
                             {% endif %}
                             <a href="{{path('cairn_user_users_smsdata_edit',{'phoneNumber' : smsData.phoneNumber})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
         
@@ -87,6 +87,10 @@
                             Aucune donnée SMS enregistrée !
 
                         {% endfor %}
+                        <br>
+                        <a href="{{path('cairn_user_users_smsdata_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+        
+
                     </div>
 
                 </div>

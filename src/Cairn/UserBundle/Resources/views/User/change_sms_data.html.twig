@@ -23,16 +23,20 @@
     </div>
 #}
        {{ form_start(formSmsData) }}
-         {% if formSmsData.phoneNumber is defined %}
-           {{ form_row(formSmsData.phoneNumber) }}                                         
-        {% endif %}
-       {{ form_row(formSmsData.smsEnabled) }}                                         
-         {% if formSmsData.paymentEnabled is defined %}
-           {{ form_row(formSmsData.paymentEnabled) }}                                         
-        {% endif %}
-         {% if formSmsData.identifier is defined %}
-           {{ form_row(formSmsData.identifier) }}                                         
-        {% endif %}
+         {% if formSmsData.activationCode is defined %}
+           {{ form_row(formSmsData.activationCode) }}                                         
+         {% else %}
+             {% if formSmsData.phoneNumber is defined %}
+                {{ form_row(formSmsData.phoneNumber) }}                                         
+             {% endif %}
+             {{ form_row(formSmsData.smsEnabled) }}                                         
+             {% if formSmsData.paymentEnabled is defined %}
+                {{ form_row(formSmsData.paymentEnabled) }}                                         
+             {% endif %}
+             {% if formSmsData.identifier is defined %}
+                {{ form_row(formSmsData.identifier) }}                                         
+             {% endif %}
+         {% endif %}
 
        {{ form_row(formSmsData.save) }}  
        {{ form_rest(formSmsData) }}
