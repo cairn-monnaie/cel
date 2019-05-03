@@ -81,13 +81,14 @@
                                 {% set textSmsButton =  "Editer les données SMS de " ~ user.name %}
                             {% endif %}
                             <a href="{{path('cairn_user_users_smsdata_edit',{'phoneNumber' : smsData.phoneNumber})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
-        
+                             <a href="{{path('cairn_user_users_smsdata_delete',{'phoneNumber' : smsData.phoneNumber})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
+       
                         {% else %}
 
                             Aucune donnée SMS enregistrée !
 
                         {% endfor %}
-                        <br>
+                        <br> <br>
                         <a href="{{path('cairn_user_users_smsdata_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
         
 

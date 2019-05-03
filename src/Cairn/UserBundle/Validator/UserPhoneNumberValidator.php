@@ -56,7 +56,7 @@ class UserPhoneNumberValidator extends ConstraintValidator
             $bothPersons = $currentUser->hasRole('ROLE_PERSON') && $userWithPhoneNumber->hasRole('ROLE_PERSON');
 
             $status = $currentUser->hasRole('ROLE_PRO') ? 'professionnel' : 'particulier';
-            if($bothPros || $bothPersons){
+            if( ($bothPros || $bothPersons) && ($userWithPhoneNumber !== $currentUser)){
                 $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé à titre ".$status)
                     ->atPath('phoneNumber')
                     ->addViolation();

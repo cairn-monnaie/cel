@@ -133,6 +133,7 @@ class UserController extends Controller
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
         $smsData = new SmsData($currentUser);
+        $smsData->setPhoneNumber('+33');
 
         $previousPhoneNumber = NULL;
 
@@ -316,9 +317,9 @@ class UserController extends Controller
         $previousPhoneNumber = $smsData->getPhoneNumber();
 
         //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
-        if( $user->hasRole('ROLE_PRO') && $isAdmin && ! (count($user->getSmsData()) == 0) ){
+        if( $user->hasRole('ROLE_PRO') && $isAdmin && (count($user->getSmsData()) == 0) ){
             $session->getFlashBag()->add('info','Ce professionnel n\'a pas saisi de coordonnées SMS');
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
@@ -367,6 +368,10 @@ class UserController extends Controller
             );
     }
 
+    /**
+     *
+     *@TODO : protect behind post request
+     */
     public function deleteSmsDataAction(Request $request, SmsData $smsData)
     {
         $session = $request->getSession();
@@ -390,7 +395,7 @@ class UserController extends Controller
         $em->flush();
 
         $session->getFlashBag()->add('success','Numéro de téléphone '.$phoneNumber.' supprimé');
-        return $this->redirectToRoute('cairn_user_users_smsdata_edit', array('username'=>$user->getUsername()));
+        return $this->redirectToRoute('cairn_user_profile_view', array('username'=>$user->getUsername()));
     }
 
     /**

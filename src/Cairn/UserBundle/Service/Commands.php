@@ -773,6 +773,17 @@ class Commands
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $user;
 
+        $user = $userRepo->findOneByUsername('stuart_andrew'); 
+        echo 'INFO: '. $user->getName(). ' has a phone number and admin is not referent'."\n";
+        $user->removeReferent($admin);
+        $smsData = new SmsData($user);
+        $smsData->setPhoneNumber('+33743434343');
+        $smsData->setIdentifier('STUART');
+        $user->addSmsData($smsData);
+
+        echo 'INFO: OK !'."\n";
+        $usersWithSmsInfo[] = $user;
+
         $user = $userRepo->findOneByUsername('hirundo_archi'); 
         echo 'INFO: '. $user->getName(). ' has one last trial to validate his phone number'."\n";
         $smsData = new SmsData($user);

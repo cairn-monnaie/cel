@@ -23,28 +23,153 @@ class UserControllerTest extends BaseControllerTest
     }
 
     /**
-     * Need to check that UserPhoneNumberValidator is called + that user can make payment with his new number
      *
+     * The data provider must provide target users with sms data. Otherwise, edition makes no sense
+     *@dataProvider provideDataForAddSmsData
+     */
+    public function testAddSmsData($login $newSmsData,$isValidData,$code,$isValidCode,$isSmsEnabled, $expectedMessages)
+    {
+        $crawler = $this->login($login, '@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+
+        $url = '/user/sms-data/add';
+        $crawler = $this->client->request('GET',$url);
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
+
+        $previous_phoneNumberActivationTries = $currentUser->getPhoneNumberActivationTries();
+        $previous_nbPhoneNumberRequests = $currentUser->getNbPhoneNumberRequests();
+        $nbSmsDataBefore = count($currentUser->getSmsData());
+
+
+        $formSmsData = $crawler->selectButton('cairn_userbundle_onesmsdata_save')->form();
+
+        $formSmsData['cairn_userbundle_onesmsdata[phoneNumber]']->setValue($newSmsData['phoneNumber']);
+
+        if(!$isSmsEnabled){
+            $formSmsData['cairn_userbundle_onesmsdata[smsEnabled]']->untick();
+        }else{
+            $formSmsData['cairn_userbundle_onesmsdata[smsEnabled]']->tick();
+        }
+
+        //            $formPhoneNumber['cairn_userbundle_smsdata[dailyNumberPaymentsThreshold]']->setValue($newSmsData['paymentsPerDay']);
+        //            $formPhoneNumber['cairn_userbundle_smsdata[dailyAmountThreshold]']->setValue($newSmsData['amountPerDay']);
+
+        $this->assertNotContains('dailyNumberPaymentsThreshold',$this->client->getResponse()->getContent());
+        $this->assertNotContains('dailyAmountThreshold',$this->client->getResponse()->getContent());
+
+        $crawler = $this->client->submit($formSmsData);
+
+        $this->em->refresh($currentUser);
+        $nbSmsDataBetween = count($currentUser->getSmsData());
+
+        if($isValidData){
+            $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests + 1);
+            $this->assertEquals($nbSmsDataBefore, $nbSmsDataBetween);
+            $this->assertContains($expectedMessages[0],$this->client->getResponse()->getContent());
+
+            $formCode = $crawler->selectButton('form_save')->form();
+            $formCode['form[code]']->setValue($code);
+            $crawler = $this->client->submit($formCode);
+
+            $this->em->refresh($currentUser);
+            $nbSmsDataAfter = count($currentUser->getSmsData());
+
+            if($isValidCode){
+                $this->assertEquals($currentUser->getPhoneNumberActivationTries(),0);
+                $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
+                $this->assertEquals($nbSmsDataAfter, $nbSmsDataBefore + 1);
+
+                $newSmsDataEntity = $currentUser->getSmsData()[$nbSmsDataAfter - 1];
+                $this->assertEquals($newSmsDataEntity->getPhoneNumber(),$newSmsData['phoneNumber']);
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
+                $crawler = $this->client->followRedirect();
+                $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
+
+                //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(), 'ACTIVE');
+                $this->assertTrue($accessClientVO != NULL);
+
+                //if this is first phone number association, an access client is created for the current user on Cyclos side.
+                //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
+                //on Cyclos side, breaking up the logic of our application
+                //Workaround : removing the access client "by hand" at test end
+                //this is a problem regarding isolation tests and Cyclos
+                if( $nbSmsDataAfter == 1){
+                    $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+                }
+
+                if($isSmsEnabled){
+                    $this->assertTrue($newSmsDataEntity->isSmsEnabled());
+                }else{
+                    $this->assertFalse($newSmsDataEntity->isSmsEnabled());
+                }
+            }else{
+                $this->assertTrue($this->client->getResponse()->isRedirect($url));
+                $crawler = $this->client->followRedirect();
+
+                $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
+
+
+                if($currentUser->getPhoneNumberActivationTries() >= 3){
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
+                    $crawler = $this->client->followRedirect();
+                    $crawler = $this->client->followRedirect();
+
+                    $this->assertUserIsDisabled($currentUser,true);
+
+                    $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+
+                }else{
+                    $this->assertUserIsEnabled($currentUser, false);
+                    //                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
+                    //                            $crawler = $this->client->followRedirect();
+
+                    $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+
+                }
+            }
+        }else{//assert nothing changed
+            $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests);
+            $this->assertTrue($smsDataBefore->getPhoneNumber() == $previous_phoneNumber);
+            $this->assertFalse($smsDataBefore->getPhoneNumber() == $newSmsData['phoneNumber']);
+
+            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+        }
+    }
+
+    /**
+     *
+     * The data provider must provide target users with sms data. Otherwise, edition makes no sense
      *@dataProvider provideDataForEditSmsData
      */
-    public function testEditSmsData($login,$target,$isExpectedForm, $smsData,$isValidData,$isPhoneNumberEdit,$code,$isValidCode,$hasPreviousPhoneNumber,$isSmsEnabled, $expectedMessages)
+    public function testEditSmsData($login,$target,$isExpectedForm, $newSmsData,$isValidData,$isPhoneNumberEdit,$code,$isValidCode,$isSmsEnabled, $expectedMessages)
     {
         $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $url = '/user/sms-data/edit/'.$targetUser->getUsername();
+        $smsDataBefore = ($targetUser->getSmsData()) ? $targetUser->getSmsData()[0] : NULL;
+
+        if(! $smsDataBefore){
+            echo $target.' has no sms data. Edit Sms data url cannot be called';
+            $this->assertTrue(false);
+        }
+
+        $url = '/user/sms-data/edit/'.$smsDataBefore->getPhoneNumber();
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
-
         $crawler = $this->inputCardKey($crawler,'1111');
         $crawler = $this->client->followRedirect();
 
         $previous_phoneNumberActivationTries = $currentUser->getPhoneNumberActivationTries();
         $previous_nbPhoneNumberRequests = $currentUser->getNbPhoneNumberRequests();
-        $previous_phoneNumber = $currentUser->getPhoneNumber();
+        $previous_phoneNumber = $smsDataBefore->getPhoneNumber();
 
         $isReferent = $targetUser->hasReferent($currentUser);
 
@@ -56,30 +181,30 @@ class UserControllerTest extends BaseControllerTest
             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
         }else{
-            $formSmsData = $crawler->selectButton('cairn_userbundle_smsdata_save')->form();
+            $formSmsData = $crawler->selectButton('cairn_userbundle_onesmsdata_save')->form();
 
             if($currentUser->isAdmin()){
-                $identifierField = $formSmsData['cairn_userbundle_smsdata[identifier]'];
-                $this->assertNotContains('cairn_userbundle_smsdata[phoneNumber]',$this->client->getResponse()->getContent());
+                $identifierField = $formSmsData['cairn_userbundle_onesmsdata[identifier]'];
+                $this->assertNotContains('cairn_userbundle_onesmsdata[phoneNumber]',$this->client->getResponse()->getContent());
 
                 if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                     $this->assertFalse($identifierField->isDisabled());
-                    $identifierField->setValue($smsData['identifier']);
+                    $identifierField->setValue($newSmsData['identifier']);
                 }else{
                     $this->assertTrue($identifierField->isDisabled());
                 }
             }else{
-                $formSmsData['cairn_userbundle_smsdata[phoneNumber]']->setValue($smsData['phoneNumber']);
+                $formSmsData['cairn_userbundle_onesmsdata[phoneNumber]']->setValue($newSmsData['phoneNumber']);
             }
 
             if(!$isSmsEnabled){
-                $formSmsData['cairn_userbundle_smsdata[smsEnabled]']->untick();
+                $formSmsData['cairn_userbundle_onesmsdata[smsEnabled]']->untick();
             }else{
-                $formSmsData['cairn_userbundle_smsdata[smsEnabled]']->tick();
+                $formSmsData['cairn_userbundle_onesmsdata[smsEnabled]']->tick();
             }
 
-//            $formPhoneNumber['cairn_userbundle_smsdata[dailyNumberPaymentsThreshold]']->setValue($smsData['paymentsPerDay']);
-//            $formPhoneNumber['cairn_userbundle_smsdata[dailyAmountThreshold]']->setValue($smsData['amountPerDay']);
+//            $formPhoneNumber['cairn_userbundle_smsdata[dailyNumberPaymentsThreshold]']->setValue($newSmsData['paymentsPerDay']);
+//            $formPhoneNumber['cairn_userbundle_smsdata[dailyAmountThreshold]']->setValue($newSmsData['amountPerDay']);
 
             $this->assertNotContains('dailyNumberPaymentsThreshold',$this->client->getResponse()->getContent());
             $this->assertNotContains('dailyAmountThreshold',$this->client->getResponse()->getContent());
@@ -88,13 +213,14 @@ class UserControllerTest extends BaseControllerTest
 
             $this->em->refresh($currentUser);
             $this->em->refresh($targetUser);
+            $this->em->refresh($smsDataBefore);
 
             if($isPhoneNumberEdit){
                 if($isValidData){
 
                     $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests + 1);
-                    $this->assertTrue($currentUser->getPhoneNumber() == $previous_phoneNumber);
-                    $this->assertFalse($currentUser->getPhoneNumber() == $smsData['phoneNumber']);
+                    $this->assertTrue($smsDataBefore->getPhoneNumber() == $previous_phoneNumber);
+                    $this->assertFalse($smsDataBefore->getPhoneNumber() == $newSmsData['phoneNumber']);
                     $this->assertContains($expectedMessages[0],$this->client->getResponse()->getContent());
 
                     $formCode = $crawler->selectButton('form_save')->form();
@@ -102,19 +228,18 @@ class UserControllerTest extends BaseControllerTest
                     $crawler = $this->client->submit($formCode);
 
                     $this->em->refresh($currentUser);
+                    $this->em->refresh($smsDataBefore);
 
                     if($isValidCode){
                         $this->assertEquals($currentUser->getPhoneNumberActivationTries(),0);
                         $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
 
-                        $this->assertEquals($targetUser->getPhoneNumber(),$smsData['phoneNumber']);
-                        $this->assertTrue($targetUser->getSmsData() != NULL);
+                        $this->assertEquals($smsDataBefore->getPhoneNumber(),$newSmsData['phoneNumber']);
                         $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                         $crawler = $this->client->followRedirect();
                         $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
-                        //Plus, we assert that access client exists on Cyclos side. It is either ACTIVE or BLOCKED 
-//                        $status = ($currentUser->getSmsData()->isSmsEnabled()) ? 'ACTIVE' : 'BLOCKED';
+                        //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                         $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(), 'ACTIVE');
                         $this->assertTrue($accessClientVO != NULL);
 
@@ -123,14 +248,14 @@ class UserControllerTest extends BaseControllerTest
                         //on Cyclos side, breaking up the logic of our application
                         //Workaround : removing the access client "by hand" at test end
                         //this is a problem regarding isolation tests and Cyclos
-                        if(! $hasPreviousPhoneNumber){
-                            $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
-                        }
+//                        if(! $hasPreviousPhoneNumber){
+//                            $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+//                        }
 
                         if($isSmsEnabled){
-                            $this->assertTrue($targetUser->getSmsData()->isSmsEnabled());
+                            $this->assertTrue($smsDataBefore->isSmsEnabled());
                         }else{
-                            $this->assertFalse($targetUser->getSmsData()->isSmsEnabled());
+                            $this->assertFalse($smsDataBefore->isSmsEnabled());
                         }
                     }else{
                         $this->assertTrue($this->client->getResponse()->isRedirect($url));
@@ -159,8 +284,8 @@ class UserControllerTest extends BaseControllerTest
                     }
                 }else{//assert nothing changed
                     $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests);
-                    $this->assertTrue($targetUser->getPhoneNumber() == $previous_phoneNumber);
-                    $this->assertFalse($targetUser->getPhoneNumber() == $smsData['phoneNumber']);
+                    $this->assertTrue($smsDataBefore->getPhoneNumber() == $previous_phoneNumber);
+                    $this->assertFalse($smsDataBefore->getPhoneNumber() == $newSmsData['phoneNumber']);
 
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
                 }
@@ -172,9 +297,9 @@ class UserControllerTest extends BaseControllerTest
 
 
                     if($isSmsEnabled){
-                        $this->assertTrue($targetUser->getSmsData()->isSmsEnabled());
+                        $this->assertTrue($smsDataBefore->isSmsEnabled());
                     }else{
-                        $this->assertFalse($targetUser->getSmsData()->isSmsEnabled());
+                        $this->assertFalse($smsDataBefore->isSmsEnabled());
                     }
 
                 }else{
@@ -187,17 +312,19 @@ class UserControllerTest extends BaseControllerTest
 
     }
 
+    /**
+     * target must match an user with sms data already persisted
+     */
     public function provideDataForEditSmsData()
     {
         $admin = $this->testAdmin;
         $baseData = array('login'=>'','target'=>'',
             'isExpectedForm'=>true,
-            'smsData'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
+            'newSmsData'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
             'isValidData'=>true,
             'isPhoneNumberEdit'=>true,
             'code'=>'1111',
             'isValidCode'=>true,
-            'hasPreviousPhoneNumber'=>true,
             'isSmsEnabled'=>true,
             'expectedMessages'=>array('')
         );
@@ -205,7 +332,7 @@ class UserControllerTest extends BaseControllerTest
         $validDataMsg = 'Un code vous a été envoyé';
         $validCodeMsg = 'enregistré';
         return array(
-            'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'vie_integrative', 'isValidData'=>false,
+            'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
                                                                      'isPhoneNumberEdit'=>false
              )),
 
@@ -215,12 +342,12 @@ class UserControllerTest extends BaseControllerTest
 
            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,
-                                                              'smsData'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
+                                                              'newSmsData'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
                                                               'expectedMessages'=>$validCodeMsg
                                                           )),
 
          'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                            'isPhoneNumberEdit'=>false,'smsData'=>array('phoneNumber'=>'+33611223344'),
+                                                            'isPhoneNumberEdit'=>false,'newSmsData'=>array('phoneNumber'=>'+33611223344'),
                                                             'isValidData'=>true,'isSmsEnabled'=>false,
                                                             'expectedMessages'=>$validCodeMsg
                                                         )),
@@ -240,44 +367,38 @@ class UserControllerTest extends BaseControllerTest
                                                         )),
 
             'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                            'smsData'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                                            'newSmsData'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
                                             'expectedMessages'=>'déjà utilisé')),
 
             'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'+33612345678'),
+                                                        'isValidData'=>false,'newSmsData'=>array('phoneNumber'=>'+33612345678'),
                                                         'expectedMessages'=>'déjà utilisé')),
 
             'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                                        'isValidData'=>false,'smsData'=>array('phoneNumber'=>'+33612345678'),
+                                                        'isValidData'=>false,'newSmsData'=>array('phoneNumber'=>'+33612345678'),
                                                         'expectedMessages'=>'déjà utilisé')),
 
             'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
-                                            'smsData'=>array('phoneNumber'=>'+33644332211'),
+                                            'newSmsData'=>array('phoneNumber'=>'+33644332211'),
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
             'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                            'smsData'=>array('phoneNumber'=>'+33611223344'),
+                                            'newSmsData'=>array('phoneNumber'=>'+33611223344'),
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
         'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'isValidCode'=>false,'hasPreviousPhoneNumber'=>true, 'code'=>'2222',
+                                                                'isValidCode'=>false, 'code'=>'2222',
                                                                 'expectedMessages'=>'compte a été bloqué')),
 
             'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                              'hasPreviousPhoneNumber'=>false,
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-          'never had phone number : valid code'=>array_replace($baseData, array('login'=>'jardins_epices','target'=>'jardins_epices',
-                                                                                'hasPreviousPhoneNumber'=>false,
-                                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                                            )),
-
-            'no phone number : referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'labonnepioche',
-                                                            'isExpectedForm'=>false,'expectedMessages'=>'pas saisi ses coordonnées')),
-
+//            'no phone number : referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'labonnepioche',
+//                                                            'isExpectedForm'=>false,'expectedMessages'=>'pas saisi ses coordonnées')),
+//
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_prod','target'=>'nico_faus_prod',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
                                                             )),

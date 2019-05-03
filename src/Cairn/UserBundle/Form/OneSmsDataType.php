@@ -41,7 +41,7 @@ class OneSmsDataType extends AbstractType
 
         }else{
             $builder
-                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable',
+                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +33)',
                                                               'constraints'=>new UserPhoneNumber() ))
                 ->add('smsEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
                     'required'=>false));
