@@ -157,60 +157,60 @@ class SmsControllerTest extends BaseControllerTest
         $validCredMsg = 'avez reçu';
 
         return array(
-            'balance : phone number not registered'=>array('0612121212','SOLDE',false,'1111',true,NULL),
-            'balance : user opposed'=>array('0744444444','SOLDE',false,'1111',true,array('opposition de compte')),
-            'balance : valid code + sms for pro & person'=>array('0612345678','SOLDE',true,'1111',true,
+            'balance : phone number not registered'=>array('+33612121212','SOLDE',false,'1111',true,NULL),
+            'balance : user opposed'=>array('+33744444444','SOLDE',false,'1111',true,array('opposition de compte')),
+            'balance : valid code + sms for pro & person'=>array('+33612345678','SOLDE',true,'1111',true,
                                                                   array($askCodeMsg,'Votre solde compte')),
 
-            'balance : invalid code + sms for pro & person'=>array('0612345678','SOLDE',true,'2222',false,
+            'balance : invalid code + sms for pro & person'=>array('+33612345678','SOLDE',true,'2222',false,
                                                                     array($askCodeMsg,$wrongCodeMsg)),
 
-            'login : no pro'=>array('0612345678','LOGIN',false,'1111',true,NULL),
-            'login : pro + valid code '=>array('0611223344','LOGIN',true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
-            'login : pro + wrong code '=>array('0611223344','LOGIN',true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
+            'login : no pro'=>array('+33612345678','LOGIN',false,'1111',true,NULL),
+            'login : pro + valid code '=>array('+33611223344','LOGIN',true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
+            'login : pro + wrong code '=>array('+33611223344','LOGIN',true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
 
-            'balance : invalid sms'=>array('0612345678','SOLD',false,'1111',true,array('SMS INVALIDE')),
-            'balance : invalid sms'=>array('0612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
-            'payment : wrong creditor identifier'=>array('0612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
-            'payment mistake : person to person with ID SMS'=>array('0612345678','PAYER10CRABEARNOLD',false,'1111',true,NULL),
+            'balance : invalid sms'=>array('+33612345678','SOLD',false,'1111',true,array('SMS INVALIDE')),
+            'balance : invalid sms'=>array('+33612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
+            'payment : wrong creditor identifier'=>array('+33612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
+            'payment mistake : person to person with ID SMS'=>array('+33612345678','PAYER10CRABEARNOLD',false,'1111',true,NULL),
 
-            'payment : balance error'=>array('0722222222','PAYER100MALTOBAR',false,'1111',true,
+            'payment : balance error'=>array('+33722222222','PAYER100MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
-            'payment : creditor has sms disabled'=>array('0612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
+            'payment : creditor has sms disabled'=>array('+33612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
 
-            'payment : valid,creditor has payments disabled but reception enabled'=>array('0612345678','PAYER10AMANSOL',false,'1111',true,
+            'payment : valid,creditor has payments disabled but reception enabled'=>array('+33612345678','PAYER10AMANSOL',false,'1111',true,
                                                                                                 array($validDebMsg,$validCredMsg),2),
 
-            'payment : debitor has sms disabled'=>array('0733333333','PAYER100MALTOBAR',false,'1111',true,
+            'payment : debitor has sms disabled'=>array('+33733333333','PAYER100MALTOBAR',false,'1111',true,
                                                                                 array('opposition aux SMS depuis')),
 
-            'payment : debitor is disabled'=>array('0744444444','PAYER100MALTOBAR',false,'1111',true,array('opposition de compte')),
+            'payment : debitor is disabled'=>array('+33744444444','PAYER100MALTOBAR',false,'1111',true,array('opposition de compte')),
 
-            'payment : debitor has payments disabled'=>array('0655667788','PAYER100MALT',false,'1111',true,array('opposition aux SMS')),
+            'payment : debitor has payments disabled'=>array('+33655667788','PAYER100MALT',false,'1111',true,array('opposition aux SMS')),
 
-            'payment : creditor=debitor'=>array('0611223344','PAYER100MALTOBAR',false,'1111',true,
+            'payment : creditor=debitor'=>array('+33611223344','PAYER100MALTOBAR',false,'1111',true,
                                                         array('identiques')),
 
-            'payment : too low amount'=>array('0612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
-            'payment : valid, no code'=>array('0612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-            'payment : pro to pro,valid, no code'=>array('0611223344','PAYER15NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-        'payment : valid + code'=>array('0612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
-            'payment : person to pro,valid, no code'=>array('0612345678','PAYER12.522maltobar',false,'1111',true,
+            'payment : too low amount'=>array('+33612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
+            'payment : valid, no code'=>array('+33612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : pro to pro,valid, no code'=>array('+33611223344','PAYER15NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+        'payment : valid + code'=>array('+33612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
+            'payment : person to pro,valid, no code'=>array('+33612345678','PAYER12.522maltobar',false,'1111',true,
                                                                     array($validDebMsg,$validCredMsg),2),
-          'payment : valid,no code'=>array('0612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-            'payment : invalid sms'=>array('0612345678','PAYER12.maltobar',false,'1111',true,array('SMS INVALIDE')),
-            'payment : invalid sms'=>array('0612345678','PAYERSHOP',false,'1111',true,array('Format du montant')),
-          'payment : valid amount'=>array('0612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYEZ'=>array('0612345678','PAYEZ00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYE'=>array('0612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAY'=>array('0612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+          'payment : valid,no code'=>array('+33612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : invalid sms'=>array('+33612345678','PAYER12.maltobar',false,'1111',true,array('SMS INVALIDE')),
+            'payment : invalid sms'=>array('+33612345678','PAYERSHOP',false,'1111',true,array('Format du montant')),
+          'payment : valid amount'=>array('+33612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+          'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+          'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+          'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
-          'payment : invalid access client'=>array('0788888888','PAYER00012maltobar',false,'1111',true,
+          'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',false,'1111',true,
                                                         array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
-          'validation  : nothing to validate'=>array('0612345678','1111',false,'1111',true,NULL),
+          'validation  : nothing to validate'=>array('+33612345678','1111',false,'1111',true,NULL),
 
-          'suspicious payment'=>array('0612345678','PAYER1500maltobar',false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
+          'suspicious payment'=>array('+33612345678','PAYER1500maltobar',false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
 
         );
     }
@@ -265,13 +265,13 @@ class SmsControllerTest extends BaseControllerTest
     public function provideDataForSmsSpam()
     {
         return array(
-          'error : invalid access client'=>array('0788888888','PAYER12maltobar',1,2,'ERREUR TECHNIQUE',false),
-          'cancel previous operation'=>array('0612345678','PAYER 45 MALTOBAR',4,1,'code de sécurité',false),
-          'unauthorized user'=>array('0644332211','PAYER 45 MALTOBAR',1,1,'SMS NON AUTORI',false),
-          'invalid SMS format'=>array('0612345678','SOLDEADO',4,1,'SMS INVALIDE',false),
-          'invalid SMS identifier'=>array('0612345678','PAYER 10 JOHNDOE',4,1,'aucun professionnel',false),
-          'request SMS identifier'=>array('0611223344','LOGIN',1,1,'code de sécurité',true),
-          'request account balance'=>array('0611223344','SOLDE',1,1,'code de sécurité',true),
+          'error : invalid access client'=>array('+33788888888','PAYER12maltobar',1,2,'ERREUR TECHNIQUE',false),
+          'cancel previous operation'=>array('+33612345678','PAYER 45 MALTOBAR',4,1,'code de sécurité',false),
+          'unauthorized user'=>array('+33644332211','PAYER 45 MALTOBAR',1,1,'SMS NON AUTORI',false),
+          'invalid SMS format'=>array('+33612345678','SOLDEADO',4,1,'SMS INVALIDE',false),
+          'invalid SMS identifier'=>array('+33612345678','PAYER 10 JOHNDOE',4,1,'aucun professionnel',false),
+          'request SMS identifier'=>array('+33611223344','LOGIN',1,1,'code de sécurité',true),
+          'request account balance'=>array('+33611223344','SOLDE',1,1,'code de sécurité',true),
         );
     }
 }

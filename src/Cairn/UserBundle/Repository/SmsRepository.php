@@ -16,7 +16,8 @@ class SmsRepository extends \Doctrine\ORM\EntityRepository
 
     public function wherePhoneNumbers(QueryBuilder $sb, $phoneNumbers)
     {
-        $sb->andWhere( $sb->expr()->in('s.phoneNumber', $phoneNumbers));
+        $sb->andWhere( $sb->expr()->in('s.phoneNumber', ':phoneNumbers'))
+            ->setParameter('phoneNumbers',$phoneNumbers);
         return $this;
     }
 

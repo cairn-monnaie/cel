@@ -181,9 +181,6 @@ class OperationValidator extends ConstraintValidator
                 $this->context->addViolation('Comptes débiteur et créditeur identiques');
             }
 
-            if(! $creditorUser->getSmsData()->isSmsEnabled()){
-                $this->context->addViolation('Les opérations SMS n\'ont pas été autorisées pour '.$creditorUser->getSmsData()->getIdentifier());
-            }
             if(count($this->context->getViolations()) == 0){
                 $account = $this->accountInfo->getDefaultAccount($debitorUser->getCyclosID());
                 $this->validateBalance($operation->getType(), $account,$operation->getAmount());

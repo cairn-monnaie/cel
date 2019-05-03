@@ -250,8 +250,7 @@ class UserController extends Controller
 
                 $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
                 $smsClient = $securityService->vigenereEncode($smsClient);
-                $smsData->setSmsClient($smsClient);
-
+                $currentUser->setSmsClient($smsClient);
             }
 
             if($isNewEntity){

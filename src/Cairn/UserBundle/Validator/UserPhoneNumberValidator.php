@@ -42,38 +42,27 @@ class UserPhoneNumberValidator extends ConstraintValidator
             return;
         }
 
+
         $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
 
-        $isNewPhoneNumber = true;
+        if(count($usersWithPhoneNumber) > 1){
+            $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé.")
+                ->atPath('phoneNumber')
+                ->addViolation();
+            return;
+        }elseif(count($usersWithPhoneNumber) == 1){
+            $userWithPhoneNumber = $usersWithPhoneNumber[0];
+            $bothPros = $currentUser->hasRole('ROLE_PRO') && $userWithPhoneNumber->hasRole('ROLE_PRO');
+            $bothPersons = $currentUser->hasRole('ROLE_PERSON') && $userWithPhoneNumber->hasRole('ROLE_PERSON');
 
-        //if current user is adherent and is not in the list of users owning the phone number, it means that it is an edit
-        if($currentUser->isAdmin()){
-            $isNewPhoneNumber = false;
-        }else{
-            foreach($usersWithPhoneNumber as $userWithPhoneNumber){
-                if($userWithPhoneNumber === $currentUser){
-                    $isNewPhoneNumber = false;
-                }
-            }
-        }
-
-        if($isNewPhoneNumber){ //relevant only if request is a new phone number
-            if(count($usersWithPhoneNumber) > 1){
-                $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé.")
+            $status = $currentUser->hasRole('ROLE_PRO') ? 'professionnel' : 'particulier';
+            if($bothPros || $bothPersons){
+                $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé à titre ".$status)
                     ->atPath('phoneNumber')
                     ->addViolation();
-            }elseif(count($usersWithPhoneNumber) == 1){
-                $userWithPhoneNumber = $usersWithPhoneNumber[0];
-                $bothPros = $currentUser->hasRole('ROLE_PRO') && $userWithPhoneNumber->hasRole('ROLE_PRO');
-                $bothPersons = $currentUser->hasRole('ROLE_PERSON') && $userWithPhoneNumber->hasRole('ROLE_PERSON');
-
-                if($bothPros || $bothPersons){
-                    $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé")
-                        ->atPath('phoneNumber')
-                        ->addViolation();
-                }
-
+                return;
             }
+
         }
 
 //        //check length for example

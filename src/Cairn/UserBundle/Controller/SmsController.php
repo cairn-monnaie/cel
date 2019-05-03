@@ -48,20 +48,20 @@ class SmsController extends Controller
     public function smsReceptionAction(Request $request)
     {
         if($this->getParameter('kernel.environment') == 'test'){
-            $this->smsAction($request->query->get('phone'),$request->query->get('content'));
+            $phoneNumber = '+'.trim($request->query->get('phone'));
+            $this->smsAction($phoneNumber,$request->query->get('content'));
         }else{
-//        $this->smsAction('0788888888','LOGIN');
-//        $this->smsAction('0611223344','2222');
-//        $this->smsAction('0611223344','1111');
+//        $this->smsAction('+33788888888','LOGIN');
+//        $this->smsAction('+33611223344','2222');
+//        $this->smsAction('+33611223344','1111');
 //
-          $this->smsAction('0612345678','PAYER 15 MALTOBAR ');
+          $this->smsAction('+33612345678','PAYER 10 DRDBREW');
 //
-//        $this->smsAction('0612345678','SOLDE');
-//        $this->smsAction('0612345678','2222');
-//        $this->smsAction('0612345678','1111');
-//        $this->smsAction('0655667788','SOLDE');
-//        $this->smsAction('0655667788','2222');
-//        $this->smsAction('0655667788','1111');
+//        $this->smsAction('+33612345678','2222');
+//        $this->smsAction('+33612345678','1111');
+//        $this->smsAction('+33655667788','SOLDE');
+//        $this->smsAction('+33655667788','2222');
+//        $this->smsAction('+33655667788','1111');
         }
         return new Response('ok');
 
@@ -193,7 +193,6 @@ class SmsController extends Controller
         $nbSpamSms = $smsRepo->getNumberOfSmsToday($debitorPhoneNumber, Sms::STATE_SPAM);
         if($nbSpamSms > 0){ return;}
 
-
         //2.1)Then, we ensure that user is active, and then sms actions are enabled for this user
         if(! $debitorUser->isEnabled()){
              $smsUnauthorized = new Sms($debitorPhoneNumber, $content, Sms::STATE_UNAUTHORIZED, NULL);
@@ -207,7 +206,8 @@ class SmsController extends Controller
         }
 
         //2.2)Then, we ensure that sms actions are enabled for this user
-        if(! $debitorUser->getSmsData()->isPaymentEnabled()){
+        $userSmsData = $em->getRepository('CairnUserBundle:SmsData')->findByUser($debitorUser, $debitorPhoneNumber);
+        if(! $userSmsData->isPaymentEnabled()){
              $smsUnauthorized = new Sms($debitorPhoneNumber, $content, Sms::STATE_UNAUTHORIZED, NULL);
 
              $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: opposition aux SMS depuis ce numéro',$smsUnauthorized);
@@ -306,7 +306,7 @@ class SmsController extends Controller
             if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
                return;
             }
-            $this->setUpSmsValidation($em, $debitorUser, $content);
+            $this->setUpSmsValidation($em, $debitorUser, $content, $userSmsData);
             $em->flush();
             return;
         }elseif($parsedSms->isOperationValidation){
@@ -363,12 +363,12 @@ class SmsController extends Controller
             $parsedInitialSms = $this->parseSms($smsPending->getContent());
             if($parsedInitialSms->isSmsIdentifier){
                 if($debitorUser->hasRole('ROLE_PRO')){
-                    $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$debitorUser->getSmsData()->getIdentifier(), $smsPending);
+                    $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userSmsData->getIdentifier(), $smsPending);
                     $this->persistSMS($smsSent);
                 }
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
-                $this->executePayment($debitorUser, $parsedInitialSms, false);    
+                $this->executePayment($debitorUser, $parsedInitialSms, false, $userSmsData);    
             }else{//initial sms was about account balance
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
@@ -383,7 +383,7 @@ class SmsController extends Controller
         }
 
         //last option : sms request is a payment to be validated
-        $this->executePayment($debitorUser,$parsedSms, true);    
+        $this->executePayment($debitorUser,$parsedSms, true, $userSmsData);    
         $em->flush();
         return;
 
@@ -401,13 +401,13 @@ class SmsController extends Controller
      * @param boolean $toAnalyze if false, the request payment has already been analyzed and validated : just process it
      * @see \Cairn\UserBundle\Validator\OperationValidator
      */
-    public function executePayment($debitorUser, $parsedSms, $toAnalyze)
+    public function executePayment($debitorUser, $parsedSms, $toAnalyze, $userSmsData)
     {
         $em = $this->getDoctrine()->getManager();
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $securityService = $this->get('cairn_user.security');
 
-        $debitorPhoneNumber = $debitorUser->getPhoneNumber();
+        $debitorPhoneNumber = $userSmsData->getPhoneNumber();
 
         $operation = new Operation();
         $operation->setType(Operation::TYPE_SMS_PAYMENT);
@@ -437,7 +437,7 @@ class SmsController extends Controller
             //oppose user and send sms
             $smsBlocked = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS bloqués : opération jugée suspicieuse. Veuillez contacter l\'Association',$smsPaymentRequest);
 
-            $debitorUser->getSmsData()->setSmsEnabled(false);
+            $userSmsData->setSmsEnabled(false);
 
             $em->persist($smsPaymentRequest); 
             $this->persistSMS($smsBlocked);
@@ -464,7 +464,17 @@ class SmsController extends Controller
             return;
         }
 
-        $creditorPhoneNumber = $creditorUser->getPhoneNumber();
+        if(! $creditorSmsData->isSmsEnabled()){                 
+            $smsInvalid = new Sms($debitorPhoneNumber, $parsedSms->content, Sms::STATE_INVALID, NULL);
+            $em->persist($smsInvalid);
+
+            $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Les opérations SMS n\'ont pas été autorisées pour '.$creditorSmsData->getIdentifier(),$smsInvalid);
+            $this->persistSMS($smsError);
+            return;
+
+        }
+
+        $creditorPhoneNumber = $creditorSmsData->getPhoneNumber();
         $operation->setCreditor($creditorUser);
 
         if($toAnalyze){
@@ -551,9 +561,9 @@ class SmsController extends Controller
 
             //the state of SMS paymentRequest can be WAITING_KEY, SUSPICIOUS or PROCESSED
 
-            $needsValidation = $securityService->paymentNeedsValidation($operation);
+            $needsValidation = $securityService->paymentNeedsValidation($operation,$userSmsData);
             if($needsValidation){
-                $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content);
+                $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content, $userSmsData);
                 $em->flush();
                 return;
             }else{//payment is checked, but is neither suspicious or to be validated
@@ -597,10 +607,10 @@ class SmsController extends Controller
      * @param User $user : adherent who sent the sms
      * @param string $content : sms content
      */
-    public function setUpSmsValidation($em, $user, $content)
+    public function setUpSmsValidation($em, $user, $content, $userSmsData)
     {
         $messageNotificator = $this->get('cairn_user.message_notificator'); 
-        $phoneNumber = $user->getPhoneNumber();
+        $phoneNumber = $userSmsData->getPhoneNumber();
         $sms = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$phoneNumber,
                                                                           'state'=>Sms::STATE_WAITING_KEY));
 

@@ -10,6 +10,7 @@ use Cairn\UserBundle\Repository\CardRepository;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserCyclosBundle\Entity\UserIdentificationManager;
 use Cairn\UserCyclosBundle\Service\UserIdentificationInfo;
 
@@ -245,8 +246,8 @@ class Security
 
     public function getSmsClient(User $user)
     {
-        if($smsData = $user->getSmsData()){
-            return $this->vigenereDecode($smsData->getSmsClient()) ;
+        if($user->getSmsClient()){
+            return $this->vigenereDecode($user->getSmsClient()) ;
         }
         return NULL;
     }
@@ -256,7 +257,7 @@ class Security
      *Beware, input Operation is not persisted, and is relevant only for sms payments
      *
      */
-    public function paymentNeedsValidation(Operation $operation)
+    public function paymentNeedsValidation(Operation $operation, SmsData $debitorSmsData)
     {
         if(! $operation->isSmsPayment()){ return false; }
 
@@ -285,7 +286,7 @@ class Security
         $totalDayAmount = (!$totalDayAmount) ? 0 : $totalDayAmount;
         $totalDayAmount += $operation->getAmount();
 
-        if($totalDayAmount > $debitor->getSmsData()->getDailyAmountThreshold()){
+        if($totalDayAmount > $debitorSmsData->getDailyAmountThreshold()){
            return true; 
         }
         
@@ -297,11 +298,11 @@ class Security
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
             ->whereDebitor($ob,$debitor)
-            ->whereAmountComparedWith($ob, $debitor->getSmsData()->getDailyAmountThreshold(), 'lt')
+            ->whereAmountComparedWith($ob, $debitorSmsData->getDailyAmountThreshold(), 'lt')
             ->whereCurrentDay($ob);
 
         $operations = $ob->getQuery()->getResult();
-        if(count($operations) > $debitor->getSmsData()->getDailyNumberPaymentsThreshold()){ return true; }
+        if(count($operations) > $debitorSmsData->getDailyNumberPaymentsThreshold()){ return true; }
 
         return false;
     }
