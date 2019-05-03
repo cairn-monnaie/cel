@@ -42,6 +42,36 @@ class UserPhoneNumberValidator extends ConstraintValidator
             return;
         }
 
+        $listPhoneNumbers = $currentUser->getPhoneNumbers();
+
+        /**
+         * treatment is different if entity is edited or if brand new sms data. For this reason, it is fundamental to get the
+         * current route
+         *1) If a smsData entity is edited, the new phone number replaces the previous one in the $listPhoneNumbers array. It means that,
+         *to consider this new phone number as a duplicate, it must appear two times in $listPhoneNumbers
+         *2) If it is a brand new smsData entity, the new phone number won't belong to $listPhoneNumbers. Then, it must appear only once
+         * to be considered as a duplicate
+         */
+
+        //whether it is an edit or add, if the phonenumber appears more than 2, wrong
+        $array_occurrences_phone = array_count_values($listPhoneNumbers);
+
+        if( array_key_exists($phoneNumber,$array_occurrences_phone)){
+            if($array_occurrences_phone[$phoneNumber]>= 2){
+                $this->context->buildViolation("Ce numéro vous appartient déjà.")
+                    ->atPath('phoneNumber')
+                    ->addViolation();
+                return;
+            }else{// 1 occurence
+                $route = $constraint->getRequest()->get('_route');
+                if(strpos($route,'smsdata_add') !== false){
+                    $this->context->buildViolation("Ce numéro vous appartient déjà.")
+                        ->atPath('phoneNumber')
+                        ->addViolation();
+                    return;
+                }
+            }
+        }
 
         $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
 

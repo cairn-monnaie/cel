@@ -108,8 +108,9 @@ class AccessPlatform
 
                 $this->changeUserStatus($user, 'DISABLED');
 
-                if($smsData = $user->getSmsData()){
-                    $smsData->setSmsEnabled(false);
+                $smsData = $user->getSmsData();
+                foreach($smsData as $oneSmsData){
+                    $oneSmsData->setSmsEnabled(false);
                 }
             }
         }

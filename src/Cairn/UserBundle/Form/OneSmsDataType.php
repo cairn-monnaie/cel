@@ -34,7 +34,8 @@ class OneSmsDataType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $session = $this->requestStack->getCurrentRequest()->getSession();
+        $request = $this->requestStack->getCurrentRequest();
+        $session= $request->getSession();
         if($session->has('activationCode')){
             $builder->add('activationCode',TextType::class, array('label'=>'Code activation','mapped'=>false))
                 ->add('save', SubmitType::class, array('label' => 'Valider'));
@@ -42,7 +43,7 @@ class OneSmsDataType extends AbstractType
         }else{
             $builder
                 ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +33)',
-                                                              'constraints'=>new UserPhoneNumber() ))
+                                                              'constraints'=>new UserPhoneNumber($request) ))
                 ->add('smsEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
                     'required'=>false));
             //           ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',

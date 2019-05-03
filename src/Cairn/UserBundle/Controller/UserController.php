@@ -138,7 +138,7 @@ class UserController extends Controller
         $previousPhoneNumber = NULL;
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+            $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de nouveau numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
         }
 
@@ -152,7 +152,7 @@ class UserController extends Controller
 
             // POST request is an activation code to validate a new phone number
             if($formSmsData->has('activationCode')){
-                return $this->checkActivationCode(true,$formSmsData,$session);
+                return $this->checkActivationCode($formSmsData,$session);
             }
 
             // POST request is a new phone number for an existing entity smsData
@@ -220,7 +220,7 @@ class UserController extends Controller
         $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
     }
 
-    public function checkActivationCode($isNewEntity,$formSmsData,$session)
+    public function checkActivationCode($formSmsData,$session, $previousPhoneNumber = NULL)
     {
         $currentUser = $this->getUser();
         $em = $this->getDoctrine()->getManager();
@@ -229,15 +229,15 @@ class UserController extends Controller
         $providedCode = $formSmsData->get('activationCode')->getData();
         $session_code = $session->get('activationCode');
 
+        if(! $previousPhoneNumber){
+            $res = $this->get('cairn_user.api')->deserialize($session->get('smsData'),'Cairn\UserBundle\Entity\SmsData');
+            $smsData = $em->merge($res);
+        }else{
+            $smsData = $em->merge($session->get('smsData'));
+        }
+
         //valid code
         if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
-
-            if($isNewEntity){
-                $res = $this->get('cairn_user.api')->deserialize($session->get('smsData'),'Cairn\UserBundle\Entity\SmsData');
-                $smsData = $em->merge($res);
-            }else{
-                $smsData = $em->merge($session->get('smsData'));
-            }
 
             $currentUser->setNbPhoneNumberRequests(0);
             $currentUser->setPhoneNumberActivationTries(0);
@@ -254,7 +254,7 @@ class UserController extends Controller
                 $currentUser->setSmsClient($smsClient);
             }
 
-            if($isNewEntity){
+            if(! $previousPhoneNumber){
                 $smsData->setUser($currentUser);
                 $currentUser->addSmsData($smsData);
             }
@@ -267,7 +267,7 @@ class UserController extends Controller
 
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
 
-            //invalid code
+        //invalid code
         }else{
             $currentUser->setPhoneNumberActivationTries($currentUser->getPhoneNumberActivationTries() + 1);
             $remainingTries = 3 - $currentUser->getPhoneNumberActivationTries();
@@ -280,7 +280,12 @@ class UserController extends Controller
             }
 
             $em->flush();
-            return new RedirectResponse($request->getRequestUri());
+
+            if(! $previousPhoneNumber){
+                return $this->redirectToRoute('cairn_user_users_smsdata_add');
+            }else{
+                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('id'=> $smsData->getID()));
+            }
         }
     }
 
@@ -337,7 +342,7 @@ class UserController extends Controller
 
             // POST request is an activation code to validate a new phone number
             if($formSmsData->has('activationCode')){
-                return $this->checkActivationCode(false,$formSmsData,$session);
+                return $this->checkActivationCode($formSmsData,$session, $previousPhoneNumber);
             }
 
             // POST request is a new phone number for an existing entity smsData
@@ -346,7 +351,7 @@ class UserController extends Controller
                     throw new AccessDeniedException('Action réservée à '.$user->getName());
                 }
                 $this->sendActivationCode(false,$session, $smsData);
-                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('phoneNumber'=>$previousPhoneNumber));
+                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('id'=>$smsData->getID()));
 
             }else{// POST request does not concern a new phone number
 

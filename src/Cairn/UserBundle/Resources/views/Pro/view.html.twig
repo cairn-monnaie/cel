@@ -80,8 +80,8 @@
                             {% else %}
                                 {% set textSmsButton =  "Editer les données SMS de " ~ user.name %}
                             {% endif %}
-                            <a href="{{path('cairn_user_users_smsdata_edit',{'phoneNumber' : smsData.phoneNumber})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
-                             <a href="{{path('cairn_user_users_smsdata_delete',{'phoneNumber' : smsData.phoneNumber})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
+                            <a href="{{path('cairn_user_users_smsdata_edit',{'id' : smsData.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
+                             <a href="{{path('cairn_user_users_smsdata_delete',{'id' : smsData.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
        
                         {% else %}
 

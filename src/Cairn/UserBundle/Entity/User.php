@@ -183,16 +183,17 @@ class User extends BaseUser
 
     public function getPhoneNumbers()
     {
+        $phoneNumbers = array();
+
         if(count($this->getSmsData()) > 0){
-            $phoneNumbers = array();
             $smsData = $this->getSmsData();
             foreach($smsData as $oneSmsData){
                 $phoneNumbers[] = $oneSmsData->getPhoneNumber();
             }
-            return $phoneNumbers;
         }
-        return NULL;
+        return $phoneNumbers;
     }
+
 
     public function isAdherent()
     {

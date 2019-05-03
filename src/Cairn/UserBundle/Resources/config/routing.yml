@@ -187,7 +187,7 @@ cairn_user_users_remove:
     path:     user/remove/{username}.{_format}
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser, _format: html }
     requirements:
-        #        id: \d+
+        id: \d+
         _format: html|json
 
 
@@ -200,12 +200,16 @@ cairn_user_users_smsdata_add:
     defaults: { _controller: CairnUserBundle:User:addSmsData, _format: html}
 
 cairn_user_users_smsdata_edit:
-    path:     user/sms-data/edit/{phoneNumber}
+    path:     user/sms-data/edit/{id}
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
+    requirements:
+        id: \d+
 
 cairn_user_users_smsdata_delete:
-    path:     user/sms-data/delete/{phoneNumber}
+    path:     user/sms-data/delete/{id}
     defaults: { _controller: CairnUserBundle:User:deleteSmsData, _format: html}
+    requirements:
+        id: \d+
 
 cairn_user_card_home:
     path:     card/home/{username}.{_format}
