@@ -62,9 +62,15 @@ parameters:
     sms_max_amount_without_security: 10
     sms_amount_block: 1000
     sms_nb_payments_block: 15
-    sms_api_token : ThisTokenIsNotSoSecretChangeIt
-    sms_provider_url : 'https://sms-provider.com'
 
     helloasso_api_login : login
     helloasso_api_password : password
+
+    notificator_consts:
+        sms:
+            api_token: 'ThisTokenIsNotSoSecret'
+            provider_url: 'https://sms-provider.com'
+        webpush:
+            private_key: 'ThisTokenIsNotSoSecret'
+            public_key: 'ThisTokenIsNotSoSecret'
 

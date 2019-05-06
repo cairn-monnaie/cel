@@ -6,6 +6,11 @@ cairn_user_welcome:
     requirements:
         _format: html|json
 
+cairn_user_api_notifications_subscription:
+    path: api/notifications/endpoint-subscription
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Security:notificationSubscription, _format: json }
+
 #cairn_user_api_get_tokens:
 #    path: oauth/get-tokens
 #    methods: POST

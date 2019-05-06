@@ -9,6 +9,11 @@ use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Repository\SmsRepository;
 use Cairn\UserBundle\Entity\Sms;
 
+use Cairn\UserBundle\Entity\User;
+
+use Minishlink\WebPush\WebPush;
+use Minishlink\WebPush\Subscription;
+
 /**
  * This class contains services related to the notifications/mailing.
  *
@@ -47,11 +52,9 @@ class MessageNotificator
 
     protected $env;
 
-    protected $smsApiToken;
+    protected $consts;
 
-    protected $smsProviderUrl;
-
-    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env,string $smsApiToken, string $smsProviderUrl)
+    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
     {
         $this->userRepo = $userRepo;
         $this->smsRepo = $smsRepo;
@@ -61,10 +64,60 @@ class MessageNotificator
         $this->technicalServices = $technicalServices;
         $this->noreply = $noreply;
         $this->env = $env;
-        $this->smsApiToken = $smsApiToken;
-        $this->smsProviderUrl = $smsProviderUrl;
+        $this->consts = $consts;
     }
 
+    public function sendNotification(User $user, $content)
+    {
+        $auth = array(
+            'VAPID'=>array(
+                'subject' => 'http://localhost',
+                'publicKey' => $this->consts['webpush']['public_key'],
+                'privateKey' => $this->consts['webpush']['private_key']
+            )
+        );
+
+        $defaultOptions = [
+            'TTL' => 7200, // defaults to 4 weeks
+            'urgency' => 'high', // protocol defaults to "normal"
+            'topic' => 'new_event', // not defined by default,
+            'batchSize' => 20, // defaults to 1000
+        ];
+
+        $webPush = new WebPush($auth);
+//        $webPush->setReuseVAPIDHeaders(true);
+        $webPush->setDefaultOptions($defaultOptions);
+
+        foreach($user->getWebPushEndpoints() as $subscription){
+            $notification = array(
+                'subscription'=> Subscription::create(
+                    array(
+                        'endpoint' => $subscription['endpoint'],
+                        'keys'=>array(
+                            'p256dh' => $subscription['keys']['p256dh'],
+                            'auth' => $subscription['keys']['auth']
+                        )
+                    )
+                ),
+                'payload'=>$content
+            );
+            
+            $webPush->sendNotification($notification['subscription'],$notification['payload']);
+        }
+
+        //check sent results
+        foreach ($webPush->flush() as $report) {
+            $endpoint = $report->getRequest()->getUri()->__toString();
+
+            if ($report->isSuccess()) {
+                echo "[v] Message sent successfully for subscription {$endpoint}.";
+            } else {
+                echo "[x] Message failed to sent for subscription {$endpoint}: {$report->getReason()}";
+            }
+
+            var_dump($report->getRequest());
+        }
+    }
 
     protected function listOfIds($minID,$maxID)
     {
@@ -84,7 +137,7 @@ class MessageNotificator
      */
     protected function getMessageData($campaignName)
     {
-        $apiToken = '&api_token='.$this->smsApiToken;
+        $apiToken = '&api_token='.$this->consts['sms']['api_token'];
         $full = '&full=0';
         $filter = '';//&filters%5Bname%5D=Validation';//Validation';
         $url = $this->smsProviderUrl.'/campaign/list/'.$this->listOfIds(34,36).'?'.$apiToken.$filter.$full;
@@ -196,68 +249,67 @@ class MessageNotificator
             }
         }
 
-        $action = ($this->env == 'prod') ? 'send' : 'test';
-        $action = '&action='.$action;
-
-        $apiToken = 'api_token='.$this->smsApiToken;
-
-        //get campaign ID
-        $campaignName = 'e-Cairn SMS';
-        $messageData =  $this->getMessageData($campaignName);
-
-        $campaignID = '&campaign_id='.$messageData['campaignID'];
-        $messageID = '&message_id='.$messageData['messageID'];
-
-        if(! $campaignID){
-            $subject = 'Service SMS indisponible';
-            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
-            $from = $this->getNoReplyEmail();
-            $to = $this->getMaintenanceEmail();
-
-            $this->notifyByEmail($subject, $from, $to, $body);
-            return;
-        }
-
-
-        //edit contact who will receive SMS to set parameters
-        $url = $this->smsProviderUrl.'/contact/edit/10?'.$apiToken;
-		$ch = \curl_init($url);
-        
-        $postfields_base = "p%5B{{list_id}}%5D=3&mobile=00169734539&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
-
-
-        $options = array(
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-                CURLOPT_HTTPHEADER => array('Content-type: application/x-www-form-urlencoded'),
-                CURLOPT_POST => 1,
-                CURLOPT_POSTFIELDS => $postfields_base.$this->generateContactFields( array('SMS_CONTENT'=> $content)),
-        );
-
-        \curl_setopt_array ($ch, $options);
-
-		$json = \curl_exec($ch);
-		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		$result = \json_decode($json);
+//        $action = ($this->env == 'prod') ? 'send' : 'test';
+//        $action = '&action='.$action;
+//
+//        $apiToken = 'api_token='.$this->consts['sms']['api_token'];
+//
+//        //get campaign ID
+//        $campaignName = 'e-Cairn SMS';
+//        $messageData =  $this->getMessageData($campaignName);
+//
+//        $campaignID = '&campaign_id='.$messageData['campaignID'];
+//        $messageID = '&message_id='.$messageData['messageID'];
+//
+//        if(! $campaignID){
+//            $subject = 'Service SMS indisponible';
+//            $body = 'Erreur : Campagne SMS non trouvée.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
+//            $from = $this->getNoReplyEmail();
+//            $to = $this->getMaintenanceEmail();
+//
+//            $this->notifyByEmail($subject, $from, $to, $body);
+//            return;
+//        }
+//
+//
+//        //edit contact who will receive SMS to set parameters
+//        $url = $this->smsProviderUrl.'/contact/edit/10?'.$apiToken;
+//		$ch = \curl_init($url);
+//        
+//        $postfields_base = "p%5B{{list_id}}%5D=3&mobile=00169734539&lang=fr&country=FR&continue_if_in_list=1&update_if_exist=1";
+//
+//
+//        $options = array(
+//                CURLOPT_RETURNTRANSFER => true,
+//                CURLOPT_ENCODING => "",
+//                CURLOPT_HTTPHEADER => array('Content-type: application/x-www-form-urlencoded'),
+//                CURLOPT_POST => 1,
+//                CURLOPT_POSTFIELDS => $postfields_base.$this->generateContactFields( array('SMS_CONTENT'=> $content)),
+//        );
+//
+//        \curl_setopt_array ($ch, $options);
+//
+//		$json = \curl_exec($ch);
+//		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+//		$result = \json_decode($json);
 
 //        var_dump($code);
 //        var_dump($result);
-
-        $phoneNumber = '+33669734539';
-        $mobile = '&mobile='.$phoneNumber;
-        $type='&type=text';
-        
-        $url = $this->smsProviderUrl.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
-		$ch = \curl_init($url);
-        
-        // Set the CURL options
-        $options = array(
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => "",
-        );
-
-        \curl_setopt_array ($ch, $options);
-
+//
+//        $mobile = '&mobile='.$phoneNumber;
+//        $type='&type=text';
+//        
+//        $url = $this->smsProviderUrl.'/campaign/sms/sendSms?'.$apiToken.$campaignID.$messageID.$action.$mobile.$type;
+//		$ch = \curl_init($url);
+//        
+//        // Set the CURL options
+//        $options = array(
+//                CURLOPT_RETURNTRANSFER => true,
+//                CURLOPT_ENCODING => "",
+//        );
+//
+//        \curl_setopt_array ($ch, $options);
+//
 //        // Execute the request
 //        $json = \curl_exec($ch);
 //        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);

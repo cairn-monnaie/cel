@@ -78,6 +78,86 @@ class SecurityController extends Controller
         }
     }
 
+    public function notificationSubscriptionAction(Request $request)
+    {
+        if($request->isMethod('POST')){
+
+            $em = $this->getDoctrine()->getManager();
+            $userRepo = $em->getRepository('CairnUserBundle:User');
+
+            $params = json_decode($request->getContent(),true);
+
+            $networkInfo = $this->get('cairn_user_cyclos_network_info');
+            $networkName = $this->getParameter('cyclos_currency_cairn');
+            $networkInfo->switchToNetwork($networkName,'session_token', $params['token']);
+
+//            $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+
+            //validate access token
+//            if($userVO->shortDisplay != $params['username']){
+//                $response = new Response('Access denied');
+//                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
+//                $response->headers->set('Content-Type', 'application/json'); 
+//                $response->headers->set('Accept', 'application/json'); 
+//               
+//                return $response;
+//            }
+
+
+            //validate endpoint exists
+            if(! array_key_exists('endpoint',$params['subscription'])){
+                $response = new Response('Subscription must have an endpoint');
+                $response->setStatusCode(Response::BAD_REQUEST);
+                $response->headers->set('Content-Type', 'application/json'); 
+                $response->headers->set('Accept', 'application/json'); 
+               
+                return $response;
+            }
+
+            $subscription = $params['subscription'];
+
+            //validate keys because we need payload support
+            if(! array_key_exists('keys',$params['subscription'])){
+                $response = new Response('Subscription must have encryption keys');
+                $response->setStatusCode(Response::BAD_REQUEST);
+                $response->headers->set('Content-Type', 'application/json'); 
+                $response->headers->set('Accept', 'application/json'); 
+               
+                return $response;
+            }else{
+                if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
+                    $response = new Response('Subscription must have valid encryption keys');
+                    $response->setStatusCode(Response::BAD_REQUEST);
+                    $response->headers->set('Content-Type', 'application/json'); 
+                    $response->headers->set('Accept', 'application/json'); 
+                   
+                    return $response;
+                }
+            }
+
+
+            $user = $userRepo->findOneByUsername($params['username']);
+
+            $user->addWebPushEndpoint($params['subscription']);
+
+            $em->flush();
+            $response = new Response('OK');
+            $response->setStatusCode(Response::HTTP_OK);
+            $response->headers->set('Content-Type', 'application/json'); 
+            $response->headers->set('Accept', 'application/json'); 
+
+            return $response;
+        }else{
+            $response = new Response('POST method required');
+            $response->setStatusCode(Response::HTTP_METHOD_NOT_ALLOWED);
+            $response->headers->set('Content-Type', 'application/json'); 
+            $response->headers->set('Accept', 'application/json'); 
+
+            return $response;
+
+        }
+    }
+
     /**
      * Creates symfony equivalent for changes, deposits and withdrawals made in BDC app
      *

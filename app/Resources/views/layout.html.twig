@@ -26,7 +26,7 @@
                             {% if app.user.image.url is defined %}
                                 <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
                             {% else %}
-                                <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                                <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle responsive-img">
                             {% endif %}
                             </a>
                         </li>
@@ -57,7 +57,7 @@
                             {% if app.user.image.url is defined %}
                                 <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle">
                             {% else %}
-                                <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}"alt="Logo utilisateur" class="circle">
+                                <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle">
                             {% endif %}
                         </a>
                         <a href="#name"><span class="white-text name">{{ app.user.username }}</span></a>
@@ -93,11 +93,165 @@
         <div class="{% block container_class %}container{% endblock%}">
             {% block body %}{% endblock%}
         </div>
+{#        <footer>
+            <div id="footer_contacts">
+                <h1>Nous contacter</h1>
+                <p> Mail contact </p>
+                <p> Mail gestion [e]-Cairn </p>
+                <p> Mail services techniques [e]-Cairn <p>
+                <p> Numéro du standard <p>
+
+            </div>
+            <div id="footer_docs">
+                <h1>Documentation utilisateur</h1>
+                <p> Mode d'emploi </p>
+                <p> FAQ </p>
+                <p> Vidéos tuto <p>
+            </div>
+            <div id="footer_legal">
+                <h1>Conditions générales</h1>
+            </div>
+
+        </footer>
+#}
+        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+            <div class="js-user-name" data-get-name="{{app.user.username}}">
+        {% endif %}
+
         <!-- Compiled and minified JavaScript -->
         {% include "JqueryBundle:Jquery:jquery.html.twig" %}
         <script src="{{ asset('bundles/cairnuser/materialize/js/materialize.min.js') }}"></script>
         <script src="{{ asset('bundles/cairnuser/dropify/js/dropify.min.js') }}"></script>
         <script src="{{ asset('bundles/cairnuser/js/app.js') }}"></script>
+
+        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+
+        <script type="text/javascript">
+        if (!('serviceWorker' in navigator)) {
+            // Service Worker isn't supported on this browser, disable or hide UI.
+            throw new Error('Service Worker not supported');
+        }
+
+        if (!('PushManager' in window)) {
+            // Push isn't supported on this browser, disable or hide UI.
+            throw new Error('push manager not supported');
+        }            
+
+        askPermission();
+//        state = getNotificationPermissionState();
+//        if( state instanceof Promise){
+//            console.log(state);
+//        }
+
+//        alert(Notification.permission);
+
+        //if granted, subscribe user
+        if(Notification.permission === 'granted'){
+
+            var userInfo = document.querySelector('.js-user-name');
+            var username = userInfo.dataset.getName;
+
+            subscribeUserToPush().then(function(subscription) {
+                sendSubscriptionToBackEnd(subscription, username);
+            });
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+        
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+        
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        function registerServiceWorker() {
+            return navigator.serviceWorker.register("{{ asset('bundles/cairnuser/js/service-worker.js') }}")
+                .then(function(registration) {
+                        return registration;
+                    })
+                .catch(function(err) {
+                        console.error('Unable to register service worker.', err);
+                    });
+        }
+
+        function askPermission() {
+            return new Promise(function(resolve, reject) {
+                    const permissionResult = Notification.requestPermission(function(result) {
+                            resolve(result);
+                            });
+        
+                    if (permissionResult) {
+                    permissionResult.then(resolve, reject);
+                    }
+                    })
+            .then(function(permissionResult) {
+                    if (permissionResult !== 'granted') {
+                    throw new Error('We weren\'t granted permission.');
+                    }
+                    });
+        }
+
+        function getNotificationPermissionState() {
+            if (navigator.permissions) {
+                return navigator.permissions.query({name: 'notifications'})
+                    .then((result) => {
+                            return result.state;
+                            });
+            }
+        
+            return new Promise((resolve) => {
+                    resolve(Notification.permission);
+                    });
+        }
+
+        function subscribeUserToPush() {
+            return registerServiceWorker()
+                .then(function(registration) {
+                        const subscribeOptions = {
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(
+                                    'BOgWoZItNVvw2sWwfQ8AammEU-bjTNyHtoFuJF6yk9llulIclOEFQzbvf3PCFRZqRltLVHrVomu1Vmb-YYf0JAA'
+                            )
+                        };
+                        return registration.pushManager.subscribe(subscribeOptions);
+
+        })
+        .then(function(pushSubscription) {
+                console.log('Received PushSubscription: ', JSON.stringify(pushSubscription));
+                return pushSubscription;
+                });
+        }
+        
+        function sendSubscriptionToBackEnd(subscription,username) {
+            var token = "{{app.session.get('cyclos_token')}}";
+            return fetch('api/notifications/endpoint-subscription', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'charset': 'UTF-8'
+                        },
+                        body: JSON.stringify({'username': username,
+                                              'token': token,
+                                              'subscription': subscription})
+                   })
+        .then(function(response) {
+                if (!response.ok) {
+                throw new Error('Bad status code from server.');
+                }
+        
+                return response;
+                });
+        }
+        </script>
+        {% endif %}
+
         {% block javascripts %}
         {% endblock %}
     </body>

@@ -10,9 +10,11 @@ LABEL description="Cairn App" \
 RUN apt-get -y update \
     && apt-get install -y git vim curl \
     && apt-get install -y python3.5 python3-pip \
-    && apt-get install -y zlib1g-dev \
+    && apt-get install -y libgmp-dev zlib1g-dev \
+    && ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/local/include/ \
+    && docker-php-ext-configure gmp \ 
     && pip3 install python-slugify PyYAML datetime requests \
-    && docker-php-ext-install pdo pdo_mysql zip \
+    && docker-php-ext-install gmp pdo pdo_mysql zip \
     && apt-get install -y libxrender1 libfontconfig1
 
 RUN if [ "$xdebug_enabled" = "true" ] ; then echo 'Install xdebug' \
