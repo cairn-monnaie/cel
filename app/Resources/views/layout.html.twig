@@ -93,7 +93,7 @@
         <div class="{% block container_class %}container{% endblock%}">
             {% block body %}{% endblock%}
         </div>
-{#        <footer>
+        <footer>
             <div id="footer_contacts">
                 <h1>Nous contacter</h1>
                 <p> Mail contact </p>
@@ -113,7 +113,7 @@
             </div>
 
         </footer>
-#}
+
         {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
             <div class="js-user-name" data-get-name="{{app.user.username}}">
         {% endif %}
@@ -137,24 +137,22 @@
             throw new Error('push manager not supported');
         }            
 
-        askPermission();
-//        state = getNotificationPermissionState();
-//        if( state instanceof Promise){
-//            console.log(state);
-//        }
-
-//        alert(Notification.permission);
-
         //if granted, subscribe user
-        if(Notification.permission === 'granted'){
 
-            var userInfo = document.querySelector('.js-user-name');
-            var username = userInfo.dataset.getName;
-
-            subscribeUserToPush().then(function(subscription) {
-                sendSubscriptionToBackEnd(subscription, username);
-            });
-        }
+        getNotificationPermissionState().then(function(permission) {
+            if(Notification.permission !== 'granted'){
+                askPermission().then(function(permission) {
+                    if(Notification.permission === 'granted'){
+                        var userInfo = document.querySelector('.js-user-name');
+                        var username = userInfo.dataset.getName;
+            
+                        subscribeUserToPush().then(function(subscription) {
+                            sendSubscriptionToBackEnd(subscription, username);
+                        });
+                    }
+                });
+            }
+        });
 
         function urlBase64ToUint8Array(base64String) {
             var padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -188,14 +186,12 @@
                             });
         
                     if (permissionResult) {
-                    permissionResult.then(resolve, reject);
+                        permissionResult.then(resolve, reject);
                     }
-                    })
+             })
             .then(function(permissionResult) {
-                    if (permissionResult !== 'granted') {
-                    throw new Error('We weren\'t granted permission.');
-                    }
-                    });
+                    return permissionResult;
+             });
         }
 
         function getNotificationPermissionState() {
