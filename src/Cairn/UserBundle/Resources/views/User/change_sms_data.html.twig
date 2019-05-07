@@ -42,93 +42,141 @@
        {{ form_rest(formSmsData) }}
        {{ form_end(formSmsData) }}
 
+        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+            <div class="js-user-name" data-get-name="{{app.user.username}}">
+            <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
+        {% endif %}
+
 {% endblock %}              
-{#{% block javascripts %}
-<script type="text/javascript">
-    $(document).ready(function() {
-        // On récupère la balise <div> en question qui contient l'attribut « data-prototype » qui nous intéresse.
-        var $container = $('div#cairn_userbundle_smsdata_smsData');
 
-        // On définit un compteur unique pour nommer les champs qu'on va ajouter dynamiquement
-        var index = $container.find('div.smsdata-box').length;
-        var nbInitialPersistedNumbers = index;
+{% block javascripts %}
+
+        <script type="text/javascript">
+        if (!('serviceWorker' in navigator)) {
+            // Service Worker isn't supported on this browser, disable or hide UI.
+            throw new Error('Service Worker not supported');
+        }
+
+        if (!('PushManager' in window)) {
+            // Push isn't supported on this browser, disable or hide UI.
+            throw new Error('push manager not supported');
+        }            
+
+        //if granted, subscribe user
+
+        var containerRole = document.querySelector('.js-user-role');
+        var isPro = containerRole.dataset.isPro;
+
+        if( isPro ){
+            getNotificationPermissionState().then(function(permission) {
+                if(Notification.permission !== 'granted'){
+                    askPermission().then(function(permission) {
+                        if(Notification.permission === 'granted'){
+                            var containerName = document.querySelector('.js-user-name');
+                            var username = containerName.dataset.getName;
+                
+                            subscribeUserToPush().then(function(subscription) {
+                                sendSubscriptionToBackEnd(subscription, username);
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
         
-        // On ajoute un nouveau champ à chaque clic sur le lien d'ajout.
-        $('#add_smsdata').click(function(e) {
-            var nbPhoneNumberFields = $container.find('div.smsdata-box').length;
-
-            if(nbPhoneNumberFields > nbInitialPersistedNumbers){
-                alert('Hello world !');
-            }else{
-                addEntity($container);
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+        
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
             }
-            
-            e.preventDefault(); // évite qu'un # apparaisse dans l'URL
-            return false;
-        });
-
-        // On ajoute un premier champ automatiquement s'il n'en existe pas déjà un (cas d'un nouveau téléphone par exemple).
-        if (index == 0) {
-            addEntity($container);
-        } else {
-            // S'il existe déjà des données SMS, on ajoute un lien de suppression pour chacune d'entre elles
-            $container.children('div').each(function() {
-                addDeleteLink($(this),true);
-            });
+            return outputArray;
         }
 
-        // La fonction qui ajoute un formulaire OneSmsDataType
-        function addEntity($container) {
-            // Dans le contenu de l'attribut « data-prototype », on remplace :
-            // - le texte "__name__label__" qu'il contient par le label du champ
-            // - le texte "__name__" qu'il contient par le numéro du champ
-            var template = $container.attr('data-prototype')
-                .replace(/__name__label__/g, 'Téléphone n°' + (index+1))
-                .replace(/__name__/g,        index)
-            ;
-
-            // On crée un objet jquery qui contient ce template
-            var $prototype = $(template);
-
-            // On ajoute au prototype un lien pour pouvoir supprimer l'entité smsData
-            addDeleteLink($prototype,false);
-
-            // On ajoute le prototype modifié à la fin de la balise <div>
-            $container.append($prototype);
-
-            // Enfin, on incrémente le compteur pour que le prochain ajout se fasse avec un autre numéro
-            index++;
+        function registerServiceWorker() {
+            return navigator.serviceWorker.register("{{ asset('bundles/cairnuser/js/service-worker.js') }}")
+                .then(function(registration) {
+                        return registration;
+                    })
+                .catch(function(err) {
+                        console.error('Unable to register service worker.', err);
+                    });
         }
 
-         // La fonction qui ajoute un lien de suppression d'une entité smsData
-        function addDeleteLink($prototype,persistedEntity) {
-            // Création du lien
-            if (persistedEntity){
-                var phoneValue = $prototype.find('input[id*=phoneNumber]').val();
-                console.log(phoneValue);
-                var url = "{{url('cairn_user_users_smsdata_delete', {'phoneNumber': 'text'})}}";
-                url = url.replace("text", phoneValue);
-                console.log(url);
-                var $deleteLink = $('<a href=url class="btn btn-danger">Supprimera</a>');
-                $deleteLink.attr("href",url);
-//                var $deleteLink = $('<a href="#" class="btn btn-danger">Supprimer</a>');
+        function askPermission() {
+            return new Promise(function(resolve, reject) {
+                    const permissionResult = Notification.requestPermission(function(result) {
+                            resolve(result);
+                            });
+        
+                    if (permissionResult) {
+                        permissionResult.then(resolve, reject);
+                    }
+             })
+            .then(function(permissionResult) {
+                    return permissionResult;
+             });
+        }
 
-            }else{
-                var $deleteLink = $('<a href="#" class="btn btn-danger">Supprimer</a>');
+        function getNotificationPermissionState() {
+            if (navigator.permissions) {
+                return navigator.permissions.query({name: 'notifications'})
+                    .then((result) => {
+                            return result.state;
+                            });
             }
-            // Ajout du lien
-            $prototype.append($deleteLink);
-
-            // Ajout du listener sur le clic du lien pour effectivement supprimer l'entité smsData
-            $deleteLink.click(function(e) {
-                $prototype.remove();
-
-//                e.preventDefault(); // évite qu'un # apparaisse dans l'URL
-//                return false;
-            });
+        
+            return new Promise((resolve) => {
+                    resolve(Notification.permission);
+                    });
         }
-    });
-</script>
+
+        function subscribeUserToPush() {
+            return registerServiceWorker()
+                .then(function(registration) {
+                        const subscribeOptions = {
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(
+                                    'BOgWoZItNVvw2sWwfQ8AammEU-bjTNyHtoFuJF6yk9llulIclOEFQzbvf3PCFRZqRltLVHrVomu1Vmb-YYf0JAA'
+                            )
+                        };
+                        return registration.pushManager.subscribe(subscribeOptions);
+
+        })
+        .then(function(pushSubscription) {
+                console.log('Received PushSubscription: ', JSON.stringify(pushSubscription));
+                return pushSubscription;
+                });
+        }
+        
+        function sendSubscriptionToBackEnd(subscription,username) {
+            var token = "{{app.session.get('cyclos_token')}}";
+            return fetch('api/notifications/endpoint-subscription', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'charset': 'UTF-8'
+                        },
+                        body: JSON.stringify({'username': username,
+                                              'token': token,
+                                              'subscription': subscription})
+                   })
+        .then(function(response) {
+                if (!response.ok) {
+                throw new Error('Bad status code from server.');
+                }
+        
+                return response;
+                });
+        }
+        </script>
+
 {% endblock %}
-#}
+
 
