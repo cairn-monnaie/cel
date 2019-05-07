@@ -117,6 +117,13 @@ class User extends BaseUser
     private $smsClient;
 
     /**
+     * @var array
+     *
+     * @ORM\Column(name="webPush_endpoints", type="array")
+     */
+    private $webPushEndpoints;
+
+    /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
      */
     private $passwordTries;
@@ -161,6 +168,7 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
+        $this->webPushEndpoints = array();
     }
 
     public function __toString()
@@ -526,6 +534,44 @@ class User extends BaseUser
             }
         }
         return false;
+    }
+
+    /**
+     * Add webPush endpoint
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function addWebPushEndpoint(array $endpoint)
+    {
+        $this->webPushEndpoints[] = $endpoint;
+
+        return $this;
+    }
+
+    /**
+     * Remove endpoint
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function removeWebPushEndpoint(array $endpoint)
+    {
+        $endpoints = $this->webPushEndpoints;
+
+        return $this;
+    }
+
+    /**
+     * Get webPushEndpoints
+     *
+     * @return array
+     */
+    public function getWebPushEndpoints()
+    {
+        return $this->webPushEndpoints;
     }
 
 

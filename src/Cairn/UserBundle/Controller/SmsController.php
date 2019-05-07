@@ -55,15 +55,16 @@ class SmsController extends Controller
 //        $this->smsAction('+33611223344','2222');
 //        $this->smsAction('+33611223344','1111');
 //
-          $this->smsAction('+33612345678','PAYER 10 DRDBREW');
+          $this->smsAction('+33611223344','PAYER 20 AMANSOL');
 //
 //        $this->smsAction('+33612345678','2222');
-//        $this->smsAction('+33612345678','1111');
+        $this->smsAction('+33611223344','1111');
 //        $this->smsAction('+33655667788','SOLDE');
 //        $this->smsAction('+33655667788','2222');
 //        $this->smsAction('+33655667788','1111');
         }
         return new Response('ok');
+//        return $this->render('CairnUserBundle:Banking:test.html.twig');
 
     }
 
@@ -586,7 +587,8 @@ class SmsController extends Controller
         //to notify creditor with creditor data, we need to connect to Cyclos with his access client
         $messageCreditor = 'Vous avez reçu un paiement de '.$operation->getAmount().' de la part de '.$debitorUser->getName() ;
         $smsSuccessCreditor = $messageNotificator->sendSMS($creditorPhoneNumber,$messageCreditor);
-   
+        $webPushSuccessDebitor = $messageNotificator->sendNotification($creditorUser,$messageCreditor);
+  
 
         $em->persist($operation);
         $this->persistSMS($smsSuccessDebitor);
