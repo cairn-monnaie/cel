@@ -1,8 +1,8 @@
 {# src/Cairn/UserBundle/Resources/views/User/index.html.twig #}         
                                                                                
-{% extends "CairnUserBundle::layout.html.twig" %}                        
+{% extends "CairnUserBundle::layout.html.twig" %} 
                                                                                
-{% block title %}{% endblock %}                                                                 
+{% block title %}{% endblock %}                                               
                                                                                
 {%block stylesheets %}
 {% endblock %}
@@ -51,13 +51,13 @@
         <div id="network" >
             <div class="card">
                 <div class="card-image">
-                    <img src="{{asset('bundles/cairnuser/img/purple-network.png')}}">
-                    <span class="card-title black-text">Ils ont rejoint le [e]cairn</span>
+                    <img src="{{asset('bundles/cairnuser/img/reseau.png')}}">
+                    <span class="card-title black-text">Ils ont rejoint le [e]-Cairn</span>
                 </div>
                 <ul class="collapsible">
                     {% for user in lastUsers %}
                         <li class="users_show">
-                            <div class="collapsible-header">
+                            <div class="collapsible-header card-content">
                                 <span> {{user.name}} </span>
                                 {% if user.image is not null %}
                                     <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
@@ -92,9 +92,9 @@
                             <td>{{transaction.executionDate|date('Y-m-d')}}</td>
                             <td>{{transaction.reason}}</td>
                             {% if transaction.debitorName == app.user.name %}
-                                <td> -{{transaction.amount}} cairns</td>
+                                <td class="deb-amount"> -{{transaction.amount}} cairns </td>
                             {% else %}
-                                <td> +{{transaction.amount}} cairns</td>
+                                <td class="cred-amount"> +{{transaction.amount}} cairns </td>
                             {% endif %}
                         </tr>
                     {% endfor %}

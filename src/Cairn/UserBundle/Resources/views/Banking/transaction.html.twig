@@ -16,7 +16,7 @@
                     {% if app.user.image.url is defined %}
                         <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
                     {% else %}
-                        <img src="{{asset('bundles/cairnuser/img/anonymous.png')}}" alt="Logo utilisateur" class="circle responsive-img">
+                        <img src="{{asset('bundles/cairnuser/img/usager.png')}}" alt="Logo utilisateur" class="circle responsive-img">
                     {% endif %}
                     <span class="card-title">{{ app.user.name }}</span>
                     {{ form_row(form.fromAccount) }}

@@ -93,6 +93,7 @@
         <div class="{% block container_class %}container{% endblock%}">
             {% block body %}{% endblock%}
         </div>
+{#
         <footer>
             <div id="footer_contacts">
                 <h1>Nous contacter</h1>
@@ -113,7 +114,7 @@
             </div>
 
         </footer>
-
+#}
         {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
             <div class="js-user-name" data-get-name="{{app.user.username}}">
         {% endif %}
