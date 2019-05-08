@@ -11,7 +11,6 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * @ORM\Table(name="user_sms_data")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\SmsDataRepository")
- * @UniqueEntity(fields = {"identifier"},message="Cet identifiant SMS est déjà utilisé") 
  */
 class SmsData
 {
@@ -34,7 +33,7 @@ class SmsData
     /**
      * @var string
      *
-     * @ORM\Column(name="identifier", type="string", length=30, nullable=true)
+     * @ORM\Column(name="identifier", type="string", length=30, unique=true, nullable=true)
      */
     private $identifier;
 
@@ -93,6 +92,64 @@ class SmsData
     static function cleanPhoneNumber($phoneNumber) {
         return preg_replace('/[^0-9+]/', '',trim($phoneNumber)); 
     }
+
+
+    static function makeIdentifier($name, $extra = '')
+    {
+        $name = preg_replace('/[-\/]+/', ' ', $name);
+        $ln = explode(' ', $name);
+
+        //        var_dump($ln);
+        //get rid off articles
+        $tmp = $ln;
+        for($i = 0; $i < count($ln); $i++){
+            if( strlen($ln[$i]) < 3){
+                array_splice($ln,$i,1);
+                $i -= 1;
+                //                var_dump($ln);
+            }
+        }
+
+        //        var_dump($ln);
+        if(count($ln) == 0){//name contains only words with less than 3 characters
+            $ln = $tmp;
+        }
+
+        if(count($ln) == 1){
+            $ln = $ln[0];   
+        }elseif(count($ln) == 2){
+            $ln = $ln[0] . $ln[1];
+        }else{
+            if( strlen($ln[0]) == 3){
+                $tmp = $ln[0].$ln[1];
+                $offset = 2;
+            }else{
+                $tmp = $ln[0];
+                $offset = 1;
+            }
+
+            for($i = $offset; $i < count($ln); $i++){
+                $tmp .= substr($ln[$i], 0, 1);
+            }
+            $ln = $tmp;
+        }
+
+
+        $identifier = strtoupper($ln);
+        $identifier = preg_replace('/[^A-Z0-9]/', '', $identifier);
+
+        //identifier must be easy to use, so it is shorcutted if too long : 8 characters at most
+        $lengthExtra = strlen($extra);
+
+        if($lengthExtra == 0){
+            $identifier = substr($identifier,0,8);
+        }else{
+            $identifier = substr($identifier,0,8 - $lengthExtra);
+        }
+        $identifier .= $extra;
+        return $identifier;
+    }
+
 
     /**
      * Get id.

@@ -178,7 +178,7 @@ class Card
     /**
      * Get fields
      *
-     * @return string
+     * @return array
      */
     public function getFields()
     {

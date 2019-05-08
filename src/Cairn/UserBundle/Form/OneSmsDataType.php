@@ -19,6 +19,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Repository\SmsDataRepository;
+
 class OneSmsDataType extends AbstractType
 {
 
@@ -26,10 +29,13 @@ class OneSmsDataType extends AbstractType
 
     protected $requestStack;                                                   
 
-    public function __construct(AuthorizationChecker $authorizationChecker,RequestStack $requestStack)
+    private $smsDataRepo;
+
+    public function __construct(AuthorizationChecker $authorizationChecker,RequestStack $requestStack,SmsDataRepository $smsDataRepo)
     {
         $this->authorizationChecker = $authorizationChecker;
-        $this->requestStack = $requestStack;     
+        $this->requestStack = $requestStack;
+        $this->smsDataRepo = $smsDataRepo;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -68,12 +74,45 @@ class OneSmsDataType extends AbstractType
                         return;
                     }
 
-                    if($smsData->getUser()->hasRole('ROLE_PRO')){
+                    $ownerUser = $smsData->getUser();
+                    if($ownerUser->hasRole('ROLE_PRO')){
+                        if(! $smsData->getIdentifier()){
+
+                            $identifier = SmsData::makeIdentifier($ownerUser->getName());
+
+                            $sb = $this->smsDataRepo->createQueryBuilder('s');
+                            $smsDataWithIdentifier = $sb->andWhere('s.user = :user')
+                                ->orderBy('s.identifier','DESC')
+                                ->setParameter('user',$ownerUser)
+                                ->getQuery()->getResult();
+
+                            if( count($smsDataWithIdentifier)){
+                                //@TODO : apply this process for names with numbers
+                                //retrieve the first one, because we ordered DESC
+                                $count = 1;
+                                $firstIdentifier = $smsDataWithIdentifier[0]->getIdentifier();
+                                if(preg_match_all('/\d+$/', $firstIdentifier, $numbers)) {
+                                    $count = end($numbers[0]) + 1;
+                                    $identifier = preg_replace('/'.end($numbers[0]).'$/',$count, $firstIdentifier);
+                                }else{
+                                    $identifier = $firstIdentifier . $count;
+                                }
+                            }else{
+                                while($this->smsDataRepo->findOneByIdentifier($identifier)){
+                                    $extra = strtoupper(chr(rand(65,90)) . chr(rand(65,90)) . chr(rand(65,90)));
+                                    $identifier = SmsData::makeIdentifier($ownerUser->getName(),$extra);
+                                }
+                            }
+
+                            $smsData->setIdentifier($identifier);
+                        }
+
                         $form->add('paymentEnabled',CheckboxType::class, array('label'=>'Autoriser la réalisation de paiements par SMS depuis ce numéro','required'=>false))
                             ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser la réception de paiements par SMS',
-                                'required'=>false));
+                                'required'=>false))
+                            ->add('identifier', TextType::class, array('label' => 'ID SMS','disabled'=>true));
 
-                        if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
+                        if($this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
                             $form->add('identifier', TextType::class, array('label' => 'ID SMS'))
                                 ->remove('phoneNumber');
                         }

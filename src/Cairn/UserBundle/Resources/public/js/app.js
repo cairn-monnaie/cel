@@ -40,7 +40,7 @@ defer(function(){
         }
     });
     $("[name*=\"[image][file]\"]").dropify({
-        allowedFileExtensions: ['gif','png','jpg','jpeg'],
+        allowedFileExtensions: ['png','jpg','jpeg'],
         messages: {
             'default': '',//'Glissez déposez un fichier ici ou cliquez',
             'replace': '',//'Glissez déposez ou cliquez pour remplacer',

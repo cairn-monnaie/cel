@@ -115,9 +115,6 @@
 
         </footer>
 #}
-        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-            <div class="js-user-name" data-get-name="{{app.user.username}}">
-        {% endif %}
 
         <!-- Compiled and minified JavaScript -->
         {% include "JqueryBundle:Jquery:jquery.html.twig" %}

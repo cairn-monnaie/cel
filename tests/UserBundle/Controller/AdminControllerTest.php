@@ -57,8 +57,9 @@ class AdminControllerTest extends BaseControllerTest
 
                 $this->em->refresh($targetUser);
 
-                if($smsData = $targetUser->getSmsData()){
-                    $this->assertFalse($smsData->isSmsEnabled());
+                $smsData = $targetUser->getSmsData();
+                foreach($smsData as $oneSmsData){
+                    $this->assertFalse($oneSmsData->isSmsEnabled());
                 }
                 //assert email
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');

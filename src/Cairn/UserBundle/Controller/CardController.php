@@ -349,9 +349,12 @@ class CardController extends Controller
                     $saveCode = $card->getCode();
                     $em->remove($card);
 
-                    if($smsData = $user->getSmsData()){
-                        $smsData->setSmsEnabled(false);
-                        $session->getFlashBag()->add('info','Les fonctionnalités SMS sont désormais bloquées pour le numéro :'.$smsData->getPhoneNumber());
+                    $smsData = $user->getSmsData(); 
+                    if(count($smsData) > 0){
+                        foreach($smsData as $oneSmsData){
+                            $oneSmsData->setSmsEnabled(false);
+                        }
+                        $session->getFlashBag()->add('info','Les fonctionnalités SMS sont désormais bloquées pour tous vos numéros de téléphone');
                     }
 
                     $em->flush();

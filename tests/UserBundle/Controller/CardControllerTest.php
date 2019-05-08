@@ -348,7 +348,7 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertEquals($targetUser->getCard(),NULL);
 
                 //assert SMS operations disabled
-                if($smsData = $targetUser->getSmsData()){
+                foreach($targetUser->getSmsData() as $smsData){
                     $this->assertFalse($smsData->isSmsEnabled());
                 }
 

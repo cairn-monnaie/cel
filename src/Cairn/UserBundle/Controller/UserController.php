@@ -190,17 +190,13 @@ class UserController extends Controller
 
         if(!$isNewEntity){ //otherwise, nothing to refresh
             //detach is necessary for serialization of associated entities before setting it in session
+
             $em->detach($smsData);
-            var_dump($em->contains($smsData));
+            $currentUser->removeSmsData($smsData);
             $session->set('smsData',$smsData);
-//            $smsData = $em->merge($session->get('smsData'));
-            var_dump($em->contains($smsData));
-            var_dump($smsData->getPhoneNumber());
+            $smsData = $em->merge($session->get('smsData'));
 
-//            var_dump($smsData);
-//            $em->refresh($smsData);
-            var_dump($smsData->getPhoneNumber());
-
+            $em->refresh($smsData);
         }else{
             $session->set('smsData',$this->get('cairn_user.api')->serialize($smsData));
         }
@@ -265,13 +261,23 @@ class UserController extends Controller
                 $currentUser->setSmsClient($smsClient);
             }
 
-            if(! $previousPhoneNumber){
-                $smsData->setUser($currentUser);
-                $currentUser->addSmsData($smsData);
+            //we check if the new number was associated to a personal and professional account
+            //if so, send message
+            if($previousPhoneNumber){
+                $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
+                if(count($existingUsers) == 2){
+                    if($currentUser->hasRole('ROLE_PERSON')){
+                        $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des opérations par SMS');
+                    }
+                }
             }
+
+            $smsData->setUser($currentUser);
+            $currentUser->addSmsData($smsData);
 
             $em->flush();
             $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
+            $this->get('cairn_user.message_notificator')->sendNotification($currentUser,'Notifications de paiement SMS [e]-Cairn','Félicitations !!');
 
             $session->remove('activationCode');
             $session->remove('smsData');
@@ -776,7 +782,8 @@ class UserController extends Controller
         }
 
         $id_doc = $user->getIdentityDocument();
-        return $this->file($id_doc->getWebPath(), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
+        $env = $this->getParameter('kernel.environment');
+        return $this->file($id_doc->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
     }
 
     /**
@@ -799,7 +806,7 @@ class UserController extends Controller
             throw new AccessDeniedException('Pas les droits nécessaires');
         }elseif(!$user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -815,7 +822,7 @@ class UserController extends Controller
                 $em->flush();
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('id' => $user->getID()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
 
         }
 
@@ -893,7 +900,7 @@ class UserController extends Controller
             foreach($accounts as $account){
                 if($account->status->balance != 0){
                     $session->getFlashBag()->add('error','Certains comptes ont un solde non nul. La clôture du compte ne peut aboutir.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id' => $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'username' => $user->getUsername()));
                 }
             }
         }
@@ -914,7 +921,7 @@ class UserController extends Controller
                             $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                         }else{
                             $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
-                            return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                            return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
                         }
                     }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
                         $user->setRemovalRequest(true);
@@ -930,7 +937,7 @@ class UserController extends Controller
                 }
                 else{
                     $session->getFlashBag()->add('info','La demande de clôture a été annulée.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format,'id'=> $user->getID()));
+                    return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
                 }
             }
         }

@@ -67,7 +67,7 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendNotification(User $user, $content)
+    public function sendNotification(User $user, $title, $content)
     {
         $auth = array(
             'GCM' => 'MY_GCM_API_KEY',
@@ -101,7 +101,7 @@ class MessageNotificator
                     )
                 ),
                 'payload'=>json_encode( array(
-                    'title' => 'Paiement SMS [e]-Cairn',
+                    'title' => $title,
                     'body'=> $content,
                 ))
             );
