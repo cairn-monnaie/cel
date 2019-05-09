@@ -12,19 +12,20 @@
     <div class="security-card-header">
 
          <div class="security-card-logo">
-             <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/favicon.png" alt="Logo Cairn">
+             <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
          </div>
          <div class="security-card-title">
               <span> Carte de sécurité Cairn </span>
          </div>
+
          <div class="security-card-info">
-                         <em class="security-card-owner"> Propriétaire : 
-                             {% if card.user %}
-                                 {{card.user.name}}
-                                 </em> 
-                             {% endif %}
-                               </br>
-                               <em class="security-card-code"> Code : {{ code }} </em>
+            <em class="security-card-owner"> Propriétaire : 
+                 {% if card.user %}
+                     {{card.user.name}}
+                 {% endif %}
+            </em>
+         </br>
+         <em class="security-card-code"> Code : {{ code }} </em>
          </div>
 
     </div>
