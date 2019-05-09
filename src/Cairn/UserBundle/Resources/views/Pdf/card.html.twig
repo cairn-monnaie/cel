@@ -2,40 +2,58 @@
 
 {% extends 'CairnUserBundle::layout-pdf.html.twig' %}
 
-
-{% block fos_user_content %}
+{% block content %}
+<div class="security-card">
     {% set rows = card.fields|length %}
     {% set cols = card.fields|length %}
-    <table>
-        <caption> <strong> Carte de sécurité Cairn </strong> </br>
-                    <em> Propriétaire : 
-                        {% if card.user %}
-                            {{card.user.name}}
-                        {% endif %}
-                    </em> </br>
-                    <em> Code d'association : {{ code }} </em>
 
-        </caption>
+    <table class="security-card centered">
+       {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know anything about the context of the project, so absolute path must be provided. asset function not working #}
+    <div class="security-card-header">
 
-        <thead>
-           <tr> 
-            <th></th>
-            {% for i in 1..cols %}
-                <th><strong> {{i}}</strong></th>
-            {% endfor %}
-           </tr> 
-        </thead>
-        <tbody>
-            {% for letter in 1..rows %}
-                <tr>
-                    <td> <strong> &#{{64+letter}} </strong> </td>
-                    {% for i in 1..cols%}
-                        <td>{{card.fields[letter-1][i-1]}}</td>        
-                    {% endfor %}
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+         <div class="security-card-logo">
+             <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/favicon.png" alt="Logo Cairn">
+         </div>
+         <div class="security-card-title">
+              <span> Carte de sécurité Cairn </span>
+         </div>
+         <div class="security-card-info">
+                         <em class="security-card-owner"> Propriétaire : 
+                             {% if card.user %}
+                                 {{card.user.name}}
+                                 </em> 
+                             {% endif %}
+                               </br>
+                               <em class="security-card-code"> Code : {{ code }} </em>
+         </div>
 
-    Cette carte de sécurité vous permet de réaliser les opérations considérées comme sensibles sur la plateforme de paiements du Cairn. Ne la transmettez sous aucun prétexte. En cas de perte ou de vol, révoquez-là immédiatement puis commandez-en une nouvelle.
+    </div>
+
+        <div class="security-card-body">
+
+            <thead class="card-posx-head">
+               <tr class="card-posx-row"> 
+               <th></th>
+                {% for i in 1..cols %}
+                    <th class="card-posx-index"><span class="card-posx-value"> {{i}}</span></th>
+                {% endfor %}
+               </tr> 
+            </thead>
+            <tbody>
+                {% for letter in 1..rows %}
+                    <tr class="card-row">
+                        <td class="card-posy"> <span class="card-posy-value"> &#{{64+letter}} </span> </td>
+                        {% for i in 1..cols%}
+                            <td class="card-key"><span class="card-key-value">{{card.fields[letter-1][i-1]}} </span></td>        
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </div>
+        </table>
+
+         <div class="security-card-footer">
+            <span class="security-card-warning">Cette carte de sécurité vous permet de réaliser les opérations considérées comme sensibles sur la plateforme de paiements du Cairn. Ne la transmettez sous aucun prétexte. En cas de perte ou de vol, révoquez-là immédiatement puis commandez-en une nouvelle. </span>
+        </div>
+</div>
 {% endblock %}
