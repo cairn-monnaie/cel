@@ -7,6 +7,119 @@ body {
   height: 100%;
 }
 
+.page-footer {
+  padding-top: 20px;
+  color: #f07254;
+  background-color: #f07254 ;
+}
+
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20px;
+  color: #f07254;
+  background-color: #f07254 ;
+  margin: auto;
+}
+
+table.security-card {
+  border-collapse: collapse; /* Les bordures du tableau seront collées (plus joli) */
+  border: 1px solid black;
+}
+
+div.security-card {
+  width: 1028px;
+  height: 50%;
+  border: 1px solid red;
+}
+
+table.security-card thead tr th{
+  background-color: lightgray;
+  border: 1px solid black;
+  font-weight: bold;
+}
+
+.card-posy {
+  background-color: lightgray;
+  border: 1px solid black;
+  font-weight: bold;
+}
+
+.card-posy-value .card-posx-value {
+  font-weight: bold;
+}
+
+.card-key-value{
+  font-weight: bold;
+}
+
+table.security-card > tbody > tr:nth-child(even) {
+  background-color: rgba(170, 213, 213, 0.5);
+  border: 1px solid black;
+}
+
+div.security-card-body {
+  height: 673px;
+}
+
+em.security-card-owner{
+  margin-right: 40px;
+  color: #E96B46;
+  font-weight: bold;
+}
+
+em.security-card-code{
+  color: #E96B46;
+  font-weight: bold;
+}
+
+.security-card-title span{
+  color: #E96B46;
+  font-weight: bold;
+}
+
+.security-card-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: stretch;
+  justify-content: space-between;
+}
+
+.security-card-header div{
+  border: 1px solid blue;
+}
+
+.security-card-warning {
+  font-weight: bold;
+}
+
+.security-card-info .security-card-title{
+  color: #f07254; 
+  font-weight: bold;
+}
+
+.security-card-logo {
+  box-sizing: border-box;
+  width: 50%;
+  margin-right: 0;
+  display: -webkit-box; /* wkhtmltopdf uses this one */
+  display: -webkit-flex;
+  -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+  -webkit-justify-content: center;
+}
+
+img.security-card-logo {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+
+.card-key {
+  border: 1px solid black;
+}
+
 .w-100 {
   width: 100%;
 }
