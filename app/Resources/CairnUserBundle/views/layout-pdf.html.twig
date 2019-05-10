@@ -3,11 +3,13 @@
 
 {% block body %}
     {# Layout for PDF files #}
-    <div>
+    <div class="pdf-body">
         {% block content %}{% endblock %}
     </div>
 {% endblock %}
 
 {% block stylesheets %}
+    {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know anything about the context of the project, so absolute path must be provided. asset function not working #}
     <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn.css" rel="stylesheet" type="text/css">
 {% endblock %}
+
