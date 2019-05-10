@@ -22,13 +22,25 @@ body {
   margin: auto;
 }
 
+div.set-security-cards {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  position: static;
+  border: 1px solid black;
+}
+
+
 div.security-card {
   display: inline-flex;
   flex-direction: column;
-  width: 370px;
+  width: 360px;
+  border: 1px solid red;
 }
 
 table.security-card {
+  border: none;
   border-collapse: collapse; /* Les bordures du tableau seront collées (plus joli) */
 }
 
@@ -76,11 +88,10 @@ div.security-card-info {
   display: flex;
   flex-direction: column;
   -webkit-flex-direction: column;
-  justify-content: center;
-  -webkit-justify-content: center;
+  justify-content: space-between;
+  -webkit-justify-content: end;
   -webkit-box-pack: justify;
-  -webkit-align-items: center;
-  align-items: center;
+  -webkit-align-items: end;
 }
 
 .security-card-logo {
@@ -108,10 +119,20 @@ em.security-card-code {
 }
 
 table.security-card td.card-key {
-  border: 1px solid black;
   font-weight: bold;
   padding-right: 5px;
   padding-left: 5px;
+  border-left: 1px solid #000;
+  border-right: 1px solid #000;
+  text-align: center;
+}
+
+tr.card-row td.card-key:first-child {
+    border-right: none;
+}
+
+table.security-card td.card-key:last-child {
+    border-right: none;
 }
 
 .card-posy, th.card-posx-index {
@@ -132,7 +153,6 @@ table.security-card > tbody > tr:nth-child(even) {
 }
 
 .card-key {
-  border: 1px solid black;
   text-align: center;
 }
 
