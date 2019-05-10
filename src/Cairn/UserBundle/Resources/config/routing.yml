@@ -102,6 +102,10 @@ cairn_user_iddocument_download:
     requirements:
         id: \d+
 
+cairn_user_iddocument_add:
+    path:     user/id-document/add/{username}
+    defaults: { _controller: CairnUserBundle:Admin:addIdentityDocument, _format: html }
+
 #cairn_user_api_beneficiaries_options:
 #    path: api/beneficiaries
 #    methods: OPTIONS

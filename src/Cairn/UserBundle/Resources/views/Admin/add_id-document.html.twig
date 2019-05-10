@@ -1,0 +1,27 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/add_id-document.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    <div class="section">
+      {{ form_start(form) }}
+
+            <div class="col s12">
+                {{ form_errors(form.identityDocument) }}
+                {{ form_label(form.identityDocument) }}
+            </div>
+            <div class="col s12">
+                {{ form_widget(form.identityDocument) }}
+            </div>
+        {{ form_widget(form) }}
+        {{ form_rest(form) }}
+
+    {{ form_end(form) }}
+    </div>
+{% endblock %}
+

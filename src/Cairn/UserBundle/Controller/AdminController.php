@@ -21,8 +21,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 //manage Forms
+use Cairn\UserBundle\Form\ProfileType;
+use Cairn\UserBundle\Form\AddIdentityDocumentType;
 use Cairn\UserBundle\Form\ConfirmationType;
-use Cairn\UserCyclosBundle\Form\UserType;
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;                   
@@ -66,6 +67,30 @@ class AdminController extends Controller
         $this->bankingManager = new BankingManager();
 
     }   
+
+    public function addIdentityDocumentAction(Request $request, User $user)
+    {
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+
+        if(! ( $user->hasReferent($currentUser) ) ){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }
+
+        $form = $this->createForm(AddIdentityDocumentType::class, $user);
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()){
+                $session->getFlashBag()->add('success','Pièce ajoutée');
+                $this->getDoctrine()->getManager()->flush();
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+            }
+        }
+        return $this->render('CairnUserBundle:Admin:add_id-document.html.twig',array('form'=>$form->createView()));
+
+
+    }
 
 
     /**
