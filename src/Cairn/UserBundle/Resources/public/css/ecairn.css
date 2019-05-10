@@ -7,6 +7,139 @@ body {
   height: 100%;
 }
 
+.page-footer {
+  padding-top: 20px;
+  color: #f07254;
+  background-color: #f07254 ;
+}
+
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20px;
+  color: #f07254;
+  background-color: #f07254 ;
+  margin: auto;
+}
+
+div.security-card {
+  display: inline-flex;
+  flex-direction: column;
+  width: 370px;
+}
+
+table.security-card {
+  border-collapse: collapse; /* Les bordures du tableau seront collées (plus joli) */
+}
+
+.security-card div {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+}
+
+.security-card-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  
+  -webkit-box-pack: justify;
+  -webkit-justify-content: stretch;
+  justify-content: space-between;
+  height: 80px;
+  border: 1px solid black;
+
+}
+
+.security-card-body {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: stretch;
+  justify-content: space-between;
+  border: 1px solid black;
+
+}
+
+div.security-card-logo {
+  width: 50%;
+  border: 1px solid red;
+}
+
+div.security-card-info {
+  width: 50%;
+  color: #f07254;
+  font-weight: bold;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  flex-direction: column;
+  -webkit-flex-direction: column;
+  justify-content: center;
+  -webkit-justify-content: center;
+  -webkit-box-pack: justify;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.security-card-logo {
+  width: 100%;
+  margin-right: 0;
+  display: -webkit-box; /* wkhtmltopdf uses this one */
+  display: -webkit-flex;
+  -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+  -webkit-justify-content: center;
+  text-align: center;
+}
+
+img.security-card-logo {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+em.security-card-owner, em.security-card-code {
+  color: #E96B46;
+  font-weight: bold;
+}
+
+em.security-card-code {
+  text-decoration: underline;
+}
+
+table.security-card td.card-key {
+  border: 1px solid black;
+  font-weight: bold;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.card-posy, th.card-posx-index {
+  background-color: lightgray;
+  font-weight: bold;
+  text-align: center;
+  padding-right: 7px;
+  padding-left: 7px;
+}
+
+.card-posy-value, .card-posx-value,.card-key-value {
+  font-weight: bold;
+  text-align: center;
+}
+
+table.security-card > tbody > tr:nth-child(even) {
+  background-color: rgba(170, 213, 213, 0.5);
+}
+
+.card-key {
+  border: 1px solid black;
+  text-align: center;
+}
+
+.security-card-warning {
+  font-weight: bold;
+}
+
 .w-100 {
   width: 100%;
 }

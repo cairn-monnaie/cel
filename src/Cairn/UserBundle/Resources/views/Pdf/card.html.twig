@@ -14,18 +14,10 @@
          <div class="security-card-logo">
              <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
          </div>
-         <div class="security-card-title">
-              <span> Carte de sécurité Cairn </span>
-         </div>
-
          <div class="security-card-info">
-            <em class="security-card-owner"> Propriétaire : 
-                 {% if card.user %}
-                     {{card.user.name}}
-                 {% endif %}
-            </em>
-         </br>
-         <em class="security-card-code"> Code : {{ code }} </em>
+            <em class="security-card-owner">Carte de sécurité</em>
+            <br>
+            <em class="security-card-code">Code : {{ code }}</em>
          </div>
 
     </div>
@@ -52,9 +44,5 @@
             </tbody>
         </div>
         </table>
-
-         <div class="security-card-footer">
-            <span class="security-card-warning">Cette carte de sécurité vous permet de réaliser les opérations considérées comme sensibles sur la plateforme de paiements du Cairn. Ne la transmettez sous aucun prétexte. En cas de perte ou de vol, révoquez-là immédiatement puis commandez-en une nouvelle. </span>
-        </div>
 </div>
 {% endblock %}
