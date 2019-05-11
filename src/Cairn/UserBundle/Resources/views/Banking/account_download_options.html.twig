@@ -1,7 +1,7 @@
 {# src/Cairn/UserBundle/Resources/views/Banking/account_download_options.html.twig #}
-
+{#
     <a href="{{path('cairn_user_banking_rib_download',{'id':account.id})}}" class="btn"><i class="material-icons left">file_download</i>RIB Cairn</a>
-
+#}
     {% if not app.user.hasRole('ROLE_ADMIN') %}
         <a href="{{path('cairn_user_banking_accounts_overview_download')}}" class="btn"><i class="material-icons left">file_download</i> Relevé de compte </a>
     {% endif %}
