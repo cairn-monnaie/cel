@@ -11,7 +11,7 @@
         <li> date de réalisation : {{helloasso.date|date('d-m-Y')}} </li>
     </ul>
 
-    Veuillez nous adresser par mail à l'adresse suivante : ecairn@cairn-monnaie.com
+    Veuillez nous adresser par mail à l'adresse suivante : e-cairn@cairn-monnaie.com
     <ul>
         <li> Le justificatif de paiement Helloasso correspondant au virement </li>
         <li> Vos informations de compte [e]-Cairn <br>
@@ -20,7 +20,7 @@
         </li>
     </ul>
 
-    Le Cairn,
+    {{signature}},
 
 {% elseif reason == 'cyclos_payment' %}
     Un virement Helloasso a été effectué auprès du Cairn afin de créditer un compte [e]-Cairn le {{helloasso.date|date('d-m-Y')}} à {{helloasso.date|date('H:i')}}. Malheureusement, une erreur est survenue lors du traitement. <br> <br>
@@ -39,7 +39,7 @@
         <li> Le cas échéant, créditer le compte correspondant "à la main" depuis l'application BDC </li>
     </ul>
 
-    Le Cairn,
+    {{signature}},
 
 {% elseif reason == 'empty_safe' %}
     Suite à un virement Helloasso effectué auprès du Cairn afin de créditer un compte [e]-Cairn le {{helloasso.date|date('d-m-Y')}} à {{helloasso.date|date('H:i')}}, <strong> le stock de [e]-cairns disponible est VIDE !! </strong>
@@ -63,10 +63,10 @@
 
     Ainsi, le solde de [e]-cairn gagés n’est pas suffisant pour assurer la totalité de votre crédit de {{helloasso.amount}}€. Vous disposez donc d’un acompte de {{diff}}€ qui sera honoré au prochain dépôt d’euros en fonds de garantie. 
     <br>
-    Plus de détails à ecairn@cairn-monnaie.com
+    Plus de détails à e-cairn@cairn-monnaie.com
 
     <br> <br>
-    Le Cairn,
+    {{signature}},
 
 {% endif %}
 

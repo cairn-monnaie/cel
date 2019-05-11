@@ -5,12 +5,6 @@
         <div class="col s4 offset-s4">
             <div class="row login_form">
                 {{ form_start(form, { 'action': path('fos_user_resetting_reset', {'token': token}), 'attr': { 'class': 'fos_user_resetting_reset' } }) }}
-                <div class="input-field col s12">
-                    <i class="material-icons prefix">person_outline</i>
-                    {{ form_widget(form.username) }}
-                    {{ form_label(form.username) }}
-                    <span class="red-text">{{ form_errors(form.username) }}</span>
-                </div>
                 <div>
                     <input type="submit" class="btn btn-primary" value="{{ 'resetting.reset.submit'|trans }}" />
                 </div>

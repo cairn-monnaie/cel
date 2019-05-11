@@ -62,7 +62,7 @@ class RegistrationListener
             $response->setStatusCode(Response::HTTP_OK);
             $event->setResponse($response);
         }else{
-            $profileUrl = $router->generate('cairn_user_profile_view',array('id'=>$user->getID()));
+            $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
             $event->setResponse(new RedirectResponse($profileUrl));
         }
     }

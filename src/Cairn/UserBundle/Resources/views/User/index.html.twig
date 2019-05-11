@@ -59,9 +59,6 @@
                         <li class="users_show">
                             <div class="collapsible-header card-content">
                                 <span> {{user.name}} </span>
-                                {% if user.image is not null %}
-                                    <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
-                                {% endif %}
                             </div>
                             <div class="collapsible-body" style="display: none;">
                                 <blockquote>

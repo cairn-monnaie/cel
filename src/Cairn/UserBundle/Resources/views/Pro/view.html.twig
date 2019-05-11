@@ -13,7 +13,7 @@
             <div class="col s6 m2 offset-s3 offset-m5">
                 <h5 class="center-align">
                     {% if user.image.url is defined %}
-                        <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="circle responsive-img">
+                        <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="responsive-img">
                     {% else %}
                         <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle responsive-img">
                     {% endif %}<br>
@@ -146,7 +146,7 @@
                         <div class="collapsible-body">
         
                             {% if adminReferent is null %}
-                                <em> Aucun groupe local référent ! </em>
+                                <em> Pas encore de groupe local référent ! </em>
                                 <a href="{{path('cairn_user_referents_assign',{'username': user.username})}}">Ajouter un groupe local référent</a>
                             {% else %}
                                 <em> {{adminReferent.name}} </em> </br>
@@ -160,5 +160,3 @@
         </ul>
     </div>
 {% endblock %}              
-
-

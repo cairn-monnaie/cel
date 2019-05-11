@@ -4,7 +4,7 @@
 {{ form_start(form, { 'action': path('fos_user_profile_edit'), 'attr': { 'class': 'fos_user_profile_edit' } }) }}
     <div class="input-field col s6 m4 offset-s3 offset-m4 center-align">
         {% if app.user.image.url is defined %}
-            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
+            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="responsive-img">
         {% else %}
             <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle responsive-img">
         {% endif %}

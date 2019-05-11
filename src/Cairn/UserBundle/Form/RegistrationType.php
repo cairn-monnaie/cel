@@ -53,10 +53,11 @@ class RegistrationType extends AbstractType
                     return;
                 }
                 if($user->isAdherent()){
+                    $label = ($user->hasRole('ROLE_PRO')) ? 'Justificatif d\'activité professionnelle' :'Pièce d\'identité';
                     $form->add('identityDocument', IdentityDocumentType::class,
                         array(
 //                            'compound'=> true,
-                            'label'=>'Votre pièce d\'identité',
+                            'label'=>$label,
                             'attr' => array('class'=>'identity-document')
                         ));
                 }

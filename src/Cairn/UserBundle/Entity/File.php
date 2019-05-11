@@ -113,7 +113,7 @@ class File
 
         if(null !== $this->url){
             $this->tempFileName = $this->url;
-            $this->url = null;
+//            $this->url = null;
             $this->alt = null;
         }else{
             //little trick to allow PreUpdate callback to be called if the user had no file before

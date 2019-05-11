@@ -16,7 +16,7 @@ class IdentityDocumentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('file', FileType::class,array('label'=>'identityDocument','required'=>false,
+            ->add('file', FileType::class,array('label'=>'identityDocument',
                 'constraints'=>array(
                     new Assert\File(array(
                         'maxSize'=>'5M',

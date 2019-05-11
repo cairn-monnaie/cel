@@ -1,21 +1,8 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/opening_refused.html.twig #}
 
-{% block body_text %}
-    {% autoescape false %}
-        L'ouverture de votre compte [e]-Cairn a été refusée par l'Association. Vous recevrez un mail expliquant plus en détails les raisons dudit refus.
-        Êtes-vous bien adhérent(e) au Cairn ?
+L'ouverture de votre compte [e]-Cairn a été refusée par l'Association. Vous recevrez un mail expliquant plus en détails les raisons dudit refus. <br>
+  Êtes-vous bien adhérent(e) au Cairn ? <br>
 
-        S'il s'agit d'une erreur de notre part, veuillez nous contacter au plus vite.
-
-        Le Cairn,
-    {% endautoescape %}
-{% endblock %}
-
-{% block body_html %}
-        L'ouverture de votre compte [e]-Cairn a été refusée par l'Association. Vous recevrez un mail expliquant plus en détails les raisons dudit refus. <br>
-        Êtes-vous bien adhérent(e) au Cairn ? <br>
-
-        S'il s'agit d'une erreur de notre part, veuillez nous contacter au plus vite.<br>
-        <br>
-        Le Cairn,
-{% endblock %}
+  S'il s'agit d'une erreur de notre part, veuillez nous contacter au plus vite.<br>
+  <br>
+  {{signature}},
