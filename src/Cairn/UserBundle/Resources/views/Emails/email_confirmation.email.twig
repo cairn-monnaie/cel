@@ -1,0 +1,25 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/email_confirmation.email.twig #}
+
+{% block subject %}Validez votre adresse e-mail{% endblock %}
+
+{% block body_text %}
+    {% autoescape false %}
+        Bonjour {% if user.firstname is defined %}{{ user.firstname | capitalize }}{% else %}{{ user.name | capitalize }}{% endif %} !
+
+        Vous avez soumis une demande d'inscription sur la plateforme [e]-Cairn via cette adresse e-mail.
+        Merci de valider cette demande en suivant ce lien : {{ confirmationUrl }}
+
+        {{signature}}
+
+    {% endautoescape %}
+{% endblock %}
+
+{% block body_html %}
+    Bonjour <b>{% if user.firstname is defined %}{{ user.firstname | capitalize }}{% else %}{{ user.name | capitalize }}{% endif %}</b> !<br>
+    <br>
+    Vous avez soumis une demande d'inscription sur la plateforme [e]-Cairn avec cette adresse e-mail.<br>
+    Merci de valider cette demande en suivant ce <a href="{{ confirmationUrl }}">lien</a><br>
+    <br>
+    {{signature}}<br>
+    <br>
+{% endblock %}

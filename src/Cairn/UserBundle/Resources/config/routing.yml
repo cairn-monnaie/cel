@@ -228,8 +228,10 @@ cairn_user_card_home:
         _format: html|json
 
 cairn_user_card_order:
-    path:     card/order
+    path:     card/order/{type}
     defaults: { _controller: CairnUserBundle:Card:orderCard, _format: html }
+    requirements:
+        type: remote|local
 
 
 cairn_user_card_revoke:

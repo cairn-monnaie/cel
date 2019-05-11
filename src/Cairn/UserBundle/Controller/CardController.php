@@ -145,7 +145,7 @@ class CardController extends Controller
      * An user with no card can notify the association to receive a security card
      * 
      */
-    public function orderCardAction(Request $request)
+    public function orderCardAction(Request $request, $type)
     {
         $session = $request->getSession();
         $messageNotificator = $this->get('cairn_user.message_notificator');
@@ -168,17 +168,24 @@ class CardController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
         }
 
-        $subject = 'Envoi postal de carte de sécurité Cairn';
+        if($type == 'remote'){
+            $subject = 'Envoi postal de carte de sécurité Cairn';
+        }else{
+            $subject = 'Récupération de carte de sécurité Cairn au local';
+        }
+
         $from = $this->getParameter('cairn_email_noreply');
         $to = $currentUser->getEmail();
-        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>false));
+        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>false,'type'=>$type));
+        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+    
+        $to = $this->getParameter('cairn_email_management');
+        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>true,'type'=>$type));
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-        $to = $this->getParameter('cairn_email_management');
-        $body = $this->renderView('CairnUserBundle:Emails:request_card.html.twig', array('toAdmin'=>true));
-        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
         $session->getFlashBag()->add('success','La demande a bien été enregistrée. L\'Association en a été informée. ');
+        $session->getFlashBag()->add('info','Vous avez reçu un mail récapitulatif de votre demande ');
 
         $session->set('orderCard',true);
         return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));

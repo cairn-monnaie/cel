@@ -1,21 +1,44 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/request_card.html.twig #}
 
 {% if toAdmin %}
-    Une demande d'envoi de carte de sécurité Cairn par voie postale a été effectuée par {{app.user.name}}.
-    Ces données de compte [e]-Cairn sont : {{app.user.username}} et {{app.user.email}} </br>
-    Adresse postale : {{app.user.address.street1}}
-                      {{app.user.address.zipCity.zipCode}}, {{app.user.city}}
+    {% if type == 'remote' %} 
+        Une demande d'envoi de carte de sécurité Cairn par voie postale a été effectuée par <b>{{app.user.name}}</b>. <br>
+        Ces données de compte [e]-Cairn sont : {{app.user.username}} et {{app.user.email}} <br>
+        Adresse postale : <b> {{app.user.address.street1}} <br>
+                          {{app.user.address.zipCity.zipCode}}, {{app.user.city}}</b> <br>
+        <br>
 
+    {% else %}
+        L'adhérent <b>{{app.user.name}}</b> a indiqué qu'il viendrait récupérer sa carte de sécurité Cairn au local de l'Association ! <br>
+        Pas la peine de la lui envoyer par carte postale donc  :) <br>
+        <br>
 
-    Le Cairn,
+    {% endif %}
+
+        {{signature}},
 
 {% else %}
-    Vous avez demandé l'envoi d'une carte de sécurité Cairn par voie postale.
-    Conformément aux informations que vous avez renseignées sur votre compte [e]-Cairn, elle vous sera envoyée à l'adresse suivante :
-    Adresse postale : {{app.user.address.street1}}
-                      {{app.user.address.zipCity.zipCode}}, {{app.user.city}}
+    {% if type == 'remote' %} 
+        Bonjour <b>{{app.user.name}}</b> ! <br>
+        <br> 
+        Vous avez demandé l'envoi d'une carte de sécurité Cairn par voie postale.<br>
+        Conformément aux informations que vous avez renseignées sur votre compte [e]-Cairn, elle vous sera envoyée à l'adresse suivante :<br>
+         <b>{{app.user.address.street1}} <br>
+         {{app.user.address.zipCity.zipCode}}, {{app.user.city}}</b> <br>
 
-    Le Cairn,
+        <br>
+    {% else %}
+         Bonjour <b>{{app.user.name}}</b> ! <br>
+         <br> 
+  
+         Vous nous avez indiqué, depuis votre compte [e]-Cairn, que vous passeriez chercher une carte de sécurité au local de l'Association. <br>
+         Nous vons attendons donc à l'adresse suivante pour la récupérer :   <br> 
+             <b>          7 rue Très Cloîtres <br>
+                          38000, Grenoble<br>
+            </b>
+        <br>
+    {% endif %}
+        {{signature}},
 {% endif %}
 
 

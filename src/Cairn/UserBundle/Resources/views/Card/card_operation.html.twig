@@ -6,7 +6,10 @@
  
     {% else %}
         {% if user == app.user  %}
-            <a class="btn teal" href="{{path('cairn_user_card_order')}}">Commander une carte par voie postale</a>
+            {% if not app.session.get('orderCard') %}
+                <a class="btn teal" href="{{path('cairn_user_card_order',{'type': 'remote'})}}">Commander une carte par voie postale</a>
+                <a class="btn teal" href="{{path('cairn_user_card_order',{'type': 'local'})}}">Récupérer une carte au local du Cairn</a>
+            {% endif %}
             <a class="btn green" href="{{path('cairn_user_card_associate',{'username':user.username})}}">Associer mon compte et ma carte de sécurité</a>
         {% elseif user.hasReferent(app.user) %}
             <a class="btn teal" href="{{path('cairn_user_card_download',{'username':user.username})}}">Télécharger une nouvelle carte automatiquement associée</a>

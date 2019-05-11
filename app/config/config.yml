@@ -47,6 +47,7 @@ twig:
         register_url: '%cairn_default_register_url%'
         cgu_url: '%cairn_default_cgu_url%'
         pathToWeb: '%kernel.project_dir%/web'
+        signature: '%leading_company%' 
     form_themes:
         - 'form/materialize_form_theme.html.twig'
         - 'form/cairn_form_theme.html.twig'
@@ -115,13 +116,13 @@ fos_user:
 
     resetting: 
         email:
-            template:   CairnUserBundle:Emails:resetting_password_confirmation.html.twig          
+            template:   CairnUserBundle:Emails:resetting_password_confirmation.email.twig          
     registration:
         form:
             type: Cairn\UserBundle\Form\RegistrationType
         confirmation:
             enabled:    true # change to false to disable registration email confirmation  
-            template:   CairnUserBundle:Emails:email_confirmation.html.twig
+            template:   CairnUserBundle:Emails:email_confirmation.email.twig
 
 fos_oauth_server:
     db_driver: orm       
