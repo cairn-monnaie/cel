@@ -602,7 +602,7 @@ class BankingController extends Controller
                 }
             }
         }
-        return $this->render('CairnUserBundle:Banking:operation_confirm.html.twig', array('form' => $form->createView(),'operationReview' => $paymentReview));
+        return $this->render('CairnUserBundle:Banking:operation_confirm.html.twig', array('form' => $form->createView(),'operationReview' => $paymentReview,'date'=>$operation->getExecutionDate()));
 
     }
 

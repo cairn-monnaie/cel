@@ -39,7 +39,13 @@
         {% endif %}
         {{ toID }}</strong>
 
-    
+    <br> <br>
+    {% if date|date('Y-m-d') == 'now'|date('Y-m-d') %}
+        Execution : <b> Maintenant </b>
+    {% else %}
+        A exécuter le <b>{{date|date('d/m/Y')}}</b>
+    {% endif %}
+    <br><br>
     <div class="well">
       {{ form(form) }}
     </div>
