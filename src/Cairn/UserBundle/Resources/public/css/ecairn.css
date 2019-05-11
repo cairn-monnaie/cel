@@ -22,20 +22,29 @@ body {
   margin: auto;
 }
 
+
 div.set-security-cards {
   display: -webkit-box;
   display: -webkit-flex;
-  display: flex;
   -webkit-flex-wrap: wrap;
-  position: static;
-  border: 1px solid black;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  border: 3px solid black;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
 }
 
 
 div.security-card {
+  display: inline-block;
+  box-sizing: border-box;
   display: inline-flex;
   flex-direction: column;
   width: 360px;
+  height: 360px;
   border: 1px solid red;
 }
 
@@ -59,8 +68,6 @@ table.security-card {
   -webkit-justify-content: stretch;
   justify-content: space-between;
   height: 80px;
-  border: 1px solid black;
-
 }
 
 .security-card-body {
@@ -70,13 +77,10 @@ table.security-card {
   -webkit-box-pack: justify;
   -webkit-justify-content: stretch;
   justify-content: space-between;
-  border: 1px solid black;
-
 }
 
 div.security-card-logo {
   width: 50%;
-  border: 1px solid red;
 }
 
 div.security-card-info {
@@ -114,7 +118,6 @@ em.security-card-owner, em.security-card-code {
   font-weight: bold;
 }
 
-<<<<<<< HEAD
 em.security-card-code {
   text-decoration: underline;
 }
@@ -268,6 +271,7 @@ nav {
 .card.transaction {
   padding-top: 50px;
 }
+
 .card.transaction .card-content > img {
   width: 100px;
   height: 100px;
@@ -275,6 +279,20 @@ nav {
   top: -50px;
   left: 50%;
   margin-left: -50px;
+}
+
+.card-image.pro > img {
+  height: 200px;
+}
+
+td.deb-amount {
+  color: red;
+  font-weight: bold;
+}
+
+td.cred-amount {
+  color: purple;
+  font-weight: bold;
 }
 
 /*# sourceMappingURL=ecairn.css.map */

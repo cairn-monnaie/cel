@@ -1,53 +1,65 @@
 {# src/Cairn/UserBundle/Resources/views/Pdf/card.html.twig #}         
 
-{% extends 'CairnUserBundle::layout-pdf.html.twig' %}
+<!DOCTYPE html>                                                                
+<html class="test">                                                                         
+    <head>                                                                     
+        <meta charset="UTF-8" />                                               
+        <title>Welcome</title>                 
+        {% block stylesheets %}
+          {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know a    nything about the context of the project, so absolute path must be provided. asset function not working #}
+          <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn.css" rel="stylesheet" type="text/css">
+        {% endblock %}                                  
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
+    </head>                                                                    
 
-{% block content %}
-<div class="set-security-cards">
-
-{% for k in 1..1 %}
-    <div class="security-card">
-        {% set rows = card.fields|length %}
-        {% set cols = card.fields|length %}
+    <body>                                                                     
+    <div class="set-security-cards">
     
-        <table class="security-card centered">
-           {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know anything about the context of the project, so absolute path must be provided. asset function not working #}
-        <div class="security-card-header">
-    
-             <div class="security-card-logo">
-                 <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
-             </div>
-             <div class="security-card-info">
-                <em class="security-card-owner">Carte de sécurité</em>
-                <br>
-                <em class="security-card-code">Code : {{ code }}</em>
-             </div>
-    
-        </div>
-    
-            <div class="security-card-body">
-    
-                <thead class="card-posx-head">
-                   <tr class="card-posx-row"> 
-                   <th></th>
-                    {% for i in 1..cols %}
-                        <th class="card-posx-index"><span class="card-posx-value"> {{i}}</span></th>
-                    {% endfor %}
-                   </tr> 
-                </thead>
-                <tbody>
-                    {% for letter in 1..rows %}
-                        <tr class="card-row">
-                            <td class="card-posy"> <span class="card-posy-value"> &#{{64+letter}} </span> </td>
-                            {% for i in 1..cols%}
-                                <td class="card-key"><span class="card-key-value">{{card.fields[letter-1][i-1]}} </span></td>        
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
-                </tbody>
+    {% for k in 1..8 %}
+        <div class="security-card">
+            {% set rows = card.fields|length %}
+            {% set cols = card.fields|length %}
+        
+            <table class="security-card centered">
+               {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know anything about the context of the project, so absolute path must be provided. asset function not working #}
+            <div class="security-card-header">
+        
+                 <div class="security-card-logo">
+                     <img  class="security-card-logo" src="{{ pathToWeb }}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
+                 </div>
+                 <div class="security-card-info">
+                    <em class="security-card-owner">Carte de sécurité</em>
+                    <br>
+                    <em class="security-card-code">Code : {{ code }}</em>
+                 </div>
+        
             </div>
-            </table>
+        
+                <div class="security-card-body">
+        
+                    <thead class="card-posx-head">
+                       <tr class="card-posx-row"> 
+                       <th></th>
+                        {% for i in 1..cols %}
+                            <th class="card-posx-index"><span class="card-posx-value"> {{i}}</span></th>
+                        {% endfor %}
+                       </tr> 
+                    </thead>
+                    <tbody>
+                        {% for letter in 1..rows %}
+                            <tr class="card-row">
+                                <td class="card-posy"> <span class="card-posy-value"> &#{{64+letter}} </span> </td>
+                                {% for i in 1..cols%}
+                                    <td class="card-key"><span class="card-key-value">{{card.fields[letter-1][i-1]}} </span></td>        
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </div>
+                </table>
+        </div>
+    {% endfor %}
     </div>
-{% endfor %}
-</div>
-{% endblock %}
+    </body>                                                                    
+</html>
+
