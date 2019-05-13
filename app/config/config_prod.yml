@@ -26,7 +26,7 @@ framework:
         # https://symfony.com/doc/current/reference/configuration/framework.html#handler-id
         handler_id: session.handler.native_file
         save_path: '%kernel.project_dir%/var/sessions/%kernel.environment%'
-        gc_maxlifetime: 300
-        cookie_lifetime: 120
+        gc_maxlifetime: '%session_timeout%'
+        cookie_lifetime: '%session_timeout%'
 
 

@@ -7,6 +7,17 @@ body {
   height: 100%;
 }
 
+html.test, body.pdf-cards-body {
+  height: 100%;
+  min-height:100%;
+}
+
+/*
+body.pdf-cards-body {
+  box-sizing: border-box;
+  margin: 0;
+}
+*/
 .page-footer {
   padding-top: 20px;
   color: #f07254;
@@ -22,104 +33,77 @@ body {
   margin: auto;
 }
 
-
+/*
 div.set-security-cards {
   display: -webkit-box;
   display: -webkit-flex;
   -webkit-flex-wrap: wrap;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  border: 3px solid black;
   position: absolute;
   top: 0;
   bottom: 0;
   width: 100%;
 }
-
+*/
 
 div.security-card {
-  display: inline-block;
-  box-sizing: border-box;
-  display: inline-flex;
+  width: max-content;
+  height: max-content;
+  display:inline-block;
+
+/*  display: inline-block;
   flex-direction: column;
-  width: 360px;
-  height: 360px;
-  border: 1px solid red;
+*/
 }
 
 table.security-card {
-  border: none;
   border-collapse: collapse; /* Les bordures du tableau seront collées (plus joli) */
 }
 
-.security-card div {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: flex;
-}
-
-.security-card-header {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: flex;
-  
-  -webkit-box-pack: justify;
-  -webkit-justify-content: stretch;
-  justify-content: space-between;
+caption.security-card {
   height: 80px;
 }
 
-.security-card-body {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-box-pack: justify;
-  -webkit-justify-content: stretch;
-  justify-content: space-between;
-}
-
-div.security-card-logo {
+caption.security-card div {
+  float:left;
   width: 50%;
 }
 
+.security-card-info {
+  width: 50%;
+  color: #f07254;
+  font-weight: bold;
+  display: -webkit-flex;
+  -webkit-flex-direction: column;
+}
+/*
 div.security-card-info {
   width: 50%;
+  height: 100%;
   color: #f07254;
   font-weight: bold;
   display: -webkit-box;
   display: -webkit-flex;
-  display: flex;
-  flex-direction: column;
   -webkit-flex-direction: column;
-  justify-content: space-between;
   -webkit-justify-content: end;
-  -webkit-box-pack: justify;
-  -webkit-align-items: end;
+  background-color: blue;
 }
 
+
+div.security-card-info > p {
+  display:inline-block;
+  height: max-content;
+}
+*/
+
 .security-card-logo {
-  width: 100%;
-  margin-right: 0;
-  display: -webkit-box; /* wkhtmltopdf uses this one */
-  display: -webkit-flex;
-  -webkit-box-pack: center; /* wkhtmltopdf uses this one */
-  -webkit-justify-content: center;
-  text-align: center;
+  width: 40%;
 }
 
 img.security-card-logo {
-  margin-right: 0;
-  margin-left: 0;
-}
-
-em.security-card-owner, em.security-card-code {
-  color: #E96B46;
-  font-weight: bold;
-}
-
-em.security-card-code {
-  text-decoration: underline;
+  display: block;
+  margin: 0 auto;
+  height: 100%;
+  width: 100%;
 }
 
 table.security-card td.card-key {
