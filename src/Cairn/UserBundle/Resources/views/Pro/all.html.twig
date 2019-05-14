@@ -1,0 +1,34 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/all.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    <div class="list-pros">
+        <div class="row">
+            {% for pro in pros %}
+            <div class="col s12 m6 l4">
+                <div class="card small">
+                    <div class="card-image pro">
+                        {% if pro.image.url is defined %}
+                            <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img">
+                        {% else %}
+                            <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img">
+                        {% endif %}<br>
+                    </div>
+                    <div class="card-content">
+                        <p><b>{{pro.name}}</b></p>
+                    </div>
+                    <div class="card-action">
+                        <span>{{pro.description}}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}              
