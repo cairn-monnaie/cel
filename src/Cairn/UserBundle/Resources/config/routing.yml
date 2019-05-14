@@ -156,9 +156,9 @@ cairn_user_beneficiaries_remove:
 #    requirements:
 #        id: \d+
 
-cairn_user_users_list:
-    path:     users/list
-    defaults: { _controller: CairnUserBundle:User:listAdherents, _format: html }
+cairn_user_pros_list:
+    path:     pros
+    defaults: { _controller: CairnUserBundle:User:listPros, _format: html }
     requirements:
         _format: html
 
@@ -262,18 +262,16 @@ cairn_user_card_destruct:
         id: \d+
         _format: html|json
 
-cairn_user_card_list_available:
-    path:     card/list-available
-    defaults: { _controller: CairnUserBundle:Card:listAvailableCards, _format: html }
+cairn_user_cards_dashboard:
+    path:     admin/cards/dashboard
+    defaults: { _controller: CairnUserBundle:Card:cardsDashboard, _format: html }
     requirements:
-        id: \d+
         _format: html|json
 
 cairn_user_card_generate_set:
     path:     card/generate-set
     defaults: { _controller: CairnUserBundle:Card:generateSetOfCards, _format: html }
     requirements:
-        id: \d+
         _format: html|json
 
 cairn_user_helloasso_notification:

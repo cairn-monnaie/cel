@@ -1,0 +1,79 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/cards_dashboard.html.twig #}         
+                                                                              
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+    
+<div class="row">
+    <br>
+    <a href="{{path('cairn_user_card_generate_set') }}" class="btn green" ><i class="material-icons left">add</i>Générer des cartes de sécurité </a>
+
+    <h2> les cartes en attente d'association </h2>
+    <ul class="collapsible">
+        <li>
+            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres</div>
+            <div class="collapsible-body">
+                {{ form_start(form) }}
+                <div class="row">
+                    <div class="col s12 m6 l4">
+                        {{ form_row(form.orderBy) }}
+                    </div>
+                    <div class="col s6 m4 l3">
+                        {{ form_label(form.before) }}
+                        {{ form_widget(form.before) }}
+                    </div>
+                    <div class="col s6 l3">
+                        {{ form_label(form.after) }}
+                        {{ form_widget(form.after) }}
+                    </div>
+                    <div class="col s6 l2">
+                        {{ form_label(form.expires_before) }}
+                        {{ form_widget(form.expires_before) }}
+                    </div>
+                    <div class="col s6">
+                        {{ form_row(form.code) }}
+                        {{ form_row(form.save) }}
+                    </div>
+                    {{ form_rest(form) }}
+                </div>
+
+                {{form_end(form) }}
+            </div>
+        </li>
+    </ul>
+
+    {% for card in availableCards %}
+      {% set code = security_service.vigenereEncode(card.code) %}
+
+      <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+                <span class="card-title">Code : {{code}}</span>
+                <p>
+                    Date de génération : {{card.creationDate | date('d/m/Y H:i:s')}}
+                    <br>
+                    Date limite d'association : {{card.expirationDate | date('d/m/Y')}}
+                </p>
+            </div>
+            <div class="card-action center">
+                <a href="{{path('cairn_user_card_destruct', {'id': card.id})}}"> Détruire</a>
+            </div>
+        </div>
+      </div>
+    {% else %}  
+        Aucune carte en attente d'association ne correspond à votre recherche!
+    {% endfor %}
+
+</div>
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+

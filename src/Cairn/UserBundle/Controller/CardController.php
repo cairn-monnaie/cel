@@ -198,7 +198,7 @@ class CardController extends Controller
      * This action lists all the available cards. The list can be filtered by creation date and by code
      *@Security("is_granted('ROLE_ADMIN')")
      */
-    public function listAvailableCardsAction(Request $request)
+    public function cardsDashboardAction(Request $request)
     {
         $cardRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:Card');
 
@@ -210,9 +210,9 @@ class CardController extends Controller
 
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
-                'label' => 'affiché par',
-                'choices' => array('dates de génération décroissantes'=>'DESC',
-                                   'dates de génération croissantes' => 'ASC')))
+                'label' => 'affichées par date',
+                'choices' => array('génération décroissantes'=>'DESC',
+                                   'génération croissantes' => 'ASC')))
             ->add('before',     DateTimeType::class, array(
                 'label' => 'générées avant',
                 'date_widget' => 'single_text',
@@ -273,7 +273,7 @@ class CardController extends Controller
             }
         }
 
-        return $this->render('CairnUserBundle:Card:list_available_cards.html.twig',array('form'=>$form->createView(),
+        return $this->render('CairnUserBundle:Admin:cards_dashboard.html.twig',array('form'=>$form->createView(),
                                                                                          'availableCards'=>$availableCards));
     }
 
@@ -307,7 +307,7 @@ class CardController extends Controller
                     $session->getFlashBag()->add('info', 'La carte de sécurité n\'a pas été détruite.');
                 }
 
-                return $this->redirectToRoute('cairn_user_card_list_available');
+                return $this->redirectToRoute('cairn_user_cards_dashboard');
             }
         }
 
@@ -412,7 +412,7 @@ class CardController extends Controller
         $nbAvailableCards = count($cardRepo->findAvailableCards());
         $nbPrintableCards = $this->getParameter('max_printable_cards') - $nbAvailableCards;
 
-        if($nbPrintableCards == 0){
+        if($nbPrintableCards <= 0){
             $session->getFlashBag()->add('info','La limite de cartes générables a été atteinte : '.$this->getParameter('max_printable_cards'));
             return $this->redirectToRoute('cairn_user_welcome');
         }
@@ -428,22 +428,24 @@ class CardController extends Controller
                 $nbRequestedCards =  $form->get('number')->getData();
 
                 if($nbPrintableCards < $nbRequestedCards){
-                    $nbRequestedCards = $nbPrintableCards;
                     $session->getFlashBag()->add('info','Vous avez demandé la génération de '.$nbRequestedCards.' mais seules '.$nbPrintableCards.' peuvent être fournies.');
+                    $nbRequestedCards = $nbPrintableCards;
                 }
 
                 $uploadDir = $this->getParameter('kernel.project_dir').'/web/uploads/cards/';
 
-                $zip = new \ZipArchive();
-                $zipName = 'cards-set-'.time().'.zip';
-                $zipWebPath = $uploadDir.$zipName;
-//                $zipName = $this->getParameter('kernel.project_dir').'/test.zip';
-                $zip->open($zipWebPath,  \ZipArchive::CREATE);
+                $cards = array();
+                $snappy = new Pdf($this->getParameter('kernel.project_dir').'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
+//              $snappy->setTemporaryFolder($this->getParameter('kernel.project_dir').'/temp');
 
-                $files = array();
+//                $zip = new \ZipArchive();
+//                $zipName = 'cards-set-'.time().'.zip';
+//                $zipWebPath = $uploadDir.$zipName;
+////                $zipName = $this->getParameter('kernel.project_dir').'/test.zip';
+//                $zip->open($zipWebPath,  \ZipArchive::CREATE);
+
                 for($i=0; $i<$nbRequestedCards; $i++){
-                    $snappy = new Pdf($this->getParameter('kernel.project_dir').'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
-//                    $snappy->setTemporaryFolder($this->getParameter('kernel.project_dir').'/temp');
+                    echo $i;
 
                     $salt = $this->get('cairn_user.security')->generateCardSalt();
 
@@ -451,36 +453,40 @@ class CardController extends Controller
 
                     $card = new Card(NULL,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,$this->getParameter('card_association_delay'));
                     $card->generateCard($this->getParameter('kernel.environment'));
-                    $fields = $card->getFields();
-
-                    $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
-                        array('card'=>$card,'code'=>$this->get('cairn_user.security')->vigenereEncode($uniqueCode)));
-
-                    $pdfName = 'card-'.time().'-'.$card->getCode().'.pdf';
-                    $webPath = $uploadDir.$pdfName;
-                    $snappy->generateFromHtml($html,$webPath);
-                    $zip->addFromString($pdfName, file_get_contents($webPath));
 
                     $em->persist($card);
 
+                    $cards[] = $card;
+
                 }
 
-                $zip->close();
+                $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
+                    array('cards'=>$cards));
 
-                $response = new Response(file_get_contents($zipWebPath));
-                $response->headers->set('Content-Type', 'application/zip');
-                $response->headers->set('Content-Disposition', 'attachment;filename="' . $zipName . '"');
-                $response->headers->set('Content-length', filesize($zipWebPath));
+                $pdfName = 'cards-'.time().'.pdf';
+                $webPath = $uploadDir.$pdfName;
+                $snappy->generateFromHtml($html,$webPath);
+
+                $session->getFlashBag()->add('info','Pensez à supprimer le fichier de votre ordinateur dès que les cartes ont été imprimées !');
+   
+                $response = new Response(
+                    $this->get('knp_snappy.pdf')->getOutputFromHtml($html),
+                    200,
+                    [
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => sprintf('attachment; filename="%s"', $pdfName),
+                    ]
+                );
 
                 $em->flush();
 
-                $session->getFlashBag()->add('success',$nbPrintableCards.' ont été téléchargées avec succès !');
+                $session->getFlashBag()->add('success',$nbRequestedCards.' cartes ont été téléchargées avec succès !');
                 return $response;
             }
+
         }
         return $this->render('CairnUserBundle:Card:generate_set_cards.html.twig',array('form'=>$form->createView(),
                                                                                        'nbPrintableCards'=>$nbPrintableCards));
-
     }
 
 

@@ -141,3 +141,6 @@ knp_snappy:
     pdf:
         enabled:    true
         binary:     '%kernel.project_dir%/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64'
+        options:
+            - { name: 'viewport-size', value: ‘2480x3508’ }
+            - { name: 'page-size', value: 'A4' }
