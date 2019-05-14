@@ -13,8 +13,10 @@
     </head>                                                                    
 
     <body class="pdf-cards-body">                                                                     
-    
-    {% for k in 1..1 %}
+   
+    {% for card in cards %}
+        {% set code = security_service.vigenereEncode(card.code) %}
+
         <div class="security-card">
             {% set rows = card.fields|length %}
             {% set cols = card.fields|length %}
