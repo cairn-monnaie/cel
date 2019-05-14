@@ -59,6 +59,19 @@ class UserController extends Controller
         $this->userManager = new UserManager();
     }
 
+    public function listProsAction(Request $request)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $qb = $userRepo->createQueryBuilder('u');
+        $userRepo->whereRole($qb,'ROLE_PRO');
+        $pros = $qb->getQuery()->getResult();
+
+        shuffle($pros);
+        return $this->render('CairnUserBundle:Pro:all.html.twig',array('pros'=>$pros ));
+    }
+
     public function indexAction(Request $request, $_format)
     {
         $checker = $this->get('security.authorization_checker');

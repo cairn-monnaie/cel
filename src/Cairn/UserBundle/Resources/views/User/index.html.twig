@@ -50,10 +50,13 @@
         </div>
         <div id="network" >
             <div class="card">
+                <a href="{{path('cairn_user_pros_list')}}">
                 <div class="card-image">
+
                     <img src="{{asset('bundles/cairnuser/img/reseau.png')}}">
-                    <span class="card-title black-text">Ils ont rejoint le [e]-Cairn</span>
+                    <span class="card-title black-text"><b>Ils ont rejoint le [e]-Cairn</b></span>
                 </div>
+                </a>
                 <ul class="collapsible">
                     {% for user in lastUsers %}
                         <li class="users_show">
