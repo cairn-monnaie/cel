@@ -1,4 +1,4 @@
-{# src/Cairn/UserBundle/Resources/views/Pdf/card.html.twig #}         
+{# src/Cairn/UserBundle/Resources/views/Pdf/card.html.twig #} 
 
 <!DOCTYPE html>                                                                
 <html class="test">                                                                         
@@ -7,12 +7,12 @@
         <title>Welcome</title>                 
         {% block stylesheets %}
           {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know a    nything about the context of the project, so absolute path must be provided. asset function not working #}
-          <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn.css" rel="stylesheet" type="text/css">
+          <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn-pdf.css" rel="stylesheet" type="text/css">
         {% endblock %}                                  
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
     </head>                                                                    
 
-    <body class="pdf-cards-body">                                                                     
+    <body class="cards-body">                                                                     
    
     {% for card in cards %}
         {% set code = security_service.vigenereEncode(card.code) %}

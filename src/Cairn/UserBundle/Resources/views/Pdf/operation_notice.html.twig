@@ -2,79 +2,79 @@
 
 {% extends 'CairnUserBundle::layout-pdf.html.twig' %}
 
+{% trans_default_domain 'messages' %}
+
+    {% block title %} Avis d'opération [e]-Cairn{% endblock %}
+
+        {% block stylesheets %}
+          {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know a    nything about the context of the project, so absolute path must be provided. asset function not working #}
+          <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn-pdf.css" rel="stylesheet" type="text/css">
+        {% endblock %}                                  
+
 {% block content %}
-    <figure>
-        <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
-    </figure>
 
-   <table>
-        <tbody>
-           <td> <strong> Avis d'opération de virement </strong> </td> 
-           <td> Compte-rendu de votre virement, enregistré le {{transfer.submissionDate|date('Y-m-d')}}} </td>
-           <td> Imprimé le {{ 'now'|date('d - m -Y') }} <td>
-           <td> Identifiant du paiement {{transfer.paymentID}} </td>
-        </tbody>
-    </table> 
-
-   <table>
-        <thead>
-            <tr>
-                <th> Montant </th>
-                <th> Date d'éxecution </th>
-                <th> Etat </th>
+<div class="notice">
+    <div class="notice-header">
+{#        <figure>
+            <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
+        </figure>
+#}    
+       <table>
+            <thead> <b> Avis d'opération </b> </thead>
+            <tbody>
+               <tr><td> Compte-rendu de votre opération, enregistrée le {{transfer.submissionDate|date('d-m-Y')}}  </td></tr>
+               <tr><td> Imprimé le {{ 'now'|date('d - m -Y') }} </td> </tr>
+               <tr><td> Identifiant du paiement {{transfer.paymentID}} </td></tr>
+            </tbody>
+        </table> 
     
-
-            </tr>
-        </thead>
+    </div>
     
-        <tbody>
-            <td> {{transfer.amount}} </td> 
-            <td> {{transfer.executionDate|date('Y-m-d')}} </td>
-            <td>
-                {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
-                    Etat : <em> A exécuter </em>
-                {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
-                    Etat : <em> Echoué </em>
-                {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
-                    Etat : <em> Exécuté </em>
-            </td>
-            {% endif %}
-        </tbody>
-    </table> 
-
-   <table>
-    <caption> Compte à débiter </caption>
-        <thead>
-            <tr>
-                <th> Compte </th>
+    <div class="notice-data">
+       <table>
+            <thead> <b> Données du virement </b> </thead>
+                <tr>
+                    <th> Type d'opération </th>
+                    <th> Montant </th>
+                    <th> Date d'éxecution </th>
+                    <th> Etat </th>
+                </tr>
+            <tbody>
+                <td> {{'deposit'|trans}} </td> 
+                <td> {{transfer.amount}} </td> 
+                <td> {{transfer.executionDate|date('Y-m-d')}} </td>
+                <td>
+                    {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                        Etat : <em> A exécuter </em>
+                    {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                        Etat : <em> Echoué </em>
+                    {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                        Etat : <em> Exécuté </em>
+                </td>
+                {% endif %}
+            </tbody>
+        </table> 
     
-            </tr>
-        </thead>
+       <table>
+            <caption> <b> Compte débiteur </b> </caption>
+            <thead></thead>
+            <tbody>
+                <tr> <td>{{transfer.fromAccountNumber}}</td> </tr>
+                <tr> <td> {{transfer.debitorName}} </td> </tr>
+            </tbody>
+        </table> 
     
-        <tbody>
-            <td> {{transfer.fromAccountNumber}} </br>
-                 {{transfer.debitorName}}
-             </td> 
-        </tbody>
-    </table> 
-
-
-   <table>
-    <caption> Compte à créditer </caption>
-        <thead>
-            <tr>
-                <th> Compte </th>
-    
-            </tr>
-        </thead>
-    
-        <tbody>
-            <td> {{transfer.toAccountNumber}} </br>
-                 {{transfer.creditorName}}
-             </td> 
-        </tbody>
-    </table> 
-
+        <table>
+            <caption> <b> Compte créditeur </b> </caption>
+            <thead></thead>
+            <tbody>
+                <tr><td> {{transfer.toAccountNumber}}</td> </tr>
+                <tr><td> {{transfer.creditorName}} </td> </tr>
+            </tbody>
+        </table> 
+   
+    </div>
+</div>
 {% endblock %}
 
 

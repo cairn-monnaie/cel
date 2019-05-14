@@ -7,12 +7,6 @@ body {
   height: 100%;
 }
 
-html.test, body.pdf-cards-body {
-  margin: 0;
-  padding: 0;
-  height: 29.7cm;
-  width: 21cm;
-}
 
 .page-footer {
   padding-top: 20px;
@@ -30,111 +24,6 @@ html.test, body.pdf-cards-body {
 }
 
 
-div.security-card {
-  width: max-content;
-  height: max-content;
-  display:inline-block;
-}
-
-table.security-card {
-  border-collapse: collapse; /* Les bordures du tableau seront collées (plus joli) */
-}
-
-caption.security-card {
-  height: 80px;
-}
-
-caption.security-card div {
-  float:left;
-}
-
-.security-card-info {
-  width: 60%;
-  color: #f07254;
-  font-weight: bold;
-  display: -webkit-flex;
-  -webkit-flex-direction: column;
-}
-/*
-div.security-card-info {
-  width: 50%;
-  height: 100%;
-  color: #f07254;
-  font-weight: bold;
-  display: -webkit-box;
-  display: -webkit-flex;
-  -webkit-flex-direction: column;
-  -webkit-justify-content: end;
-  background-color: blue;
-}
-
-
-div.security-card-info > p {
-  display:inline-block;
-  height: max-content;
-}
-*/
-
-.security-card-logo {
-  width: 40%;
-}
-
-img.security-card-logo {
-  display: block;
-  margin: 0 auto;
-  height: 100%;
-  width: 100%;
-}
-
-table.security-card td.card-key {
-  font-weight: bold;
-  padding-right: 5px;
-  padding-left: 5px;
-  border-left: 1px solid #000;
-  border-right: 1px solid #000;
-  text-align: center;
-}
-
-table.security-card thead{
-  display: table-row-group;
-}
-
-tr {
-  page-break-inside: avoid;
-}
-
-tr.card-row td.card-key:first-child {
-    border-right: none;
-}
-
-table.security-card td.card-key:last-child {
-    border-right: none;
-}
-
-.card-posy, th.card-posx-index {
-  background-color: lightgray;
-  font-weight: bold;
-  text-align: center;
-  padding-right: 7px;
-  padding-left: 7px;
-}
-
-.card-posy-value, .card-posx-value,.card-key-value {
-  font-weight: bold;
-  text-align: center;
-}
-
-table.security-card > tbody > tr:nth-child(even) {
-  background-color: rgba(170, 213, 213, 0.5);
-}
-
-.card-key {
-  text-align: center;
-}
-
-.security-card-warning {
-  font-weight: bold;
-}
 
 .w-100 {
   width: 100%;
