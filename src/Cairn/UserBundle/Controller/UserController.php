@@ -795,8 +795,14 @@ class UserController extends Controller
         }
 
         $id_doc = $user->getIdentityDocument();
-        $env = $this->getParameter('kernel.environment');
-        return $this->file($id_doc->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
+
+        if($id_doc){
+            $env = $this->getParameter('kernel.environment');
+            return $this->file($id_doc->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
+        }else{
+            $session->getFlashBag()->add($user->getName() . ' n\'a pas de pièce d\'identité');
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+        }
     }
 
     /**
