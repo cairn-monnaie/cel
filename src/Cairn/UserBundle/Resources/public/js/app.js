@@ -4,7 +4,7 @@ $(document).ready(function() {
     $('.datepicker_cairn').attr('type','text').datepicker({
         autoClose: true,
         showClearBtn: false,
-        format: 'dd-mm-yyyy',
+        format: 'yyyy-mm-dd',
         firstDay: 1,
         i18n: {
             months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],

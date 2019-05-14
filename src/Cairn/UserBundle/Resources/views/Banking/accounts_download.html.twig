@@ -14,10 +14,14 @@
             {{ form_row(form.accounts) }}
         </div>
         <div class="col s6 l2">
-            {{ form_row(form.begin) }}
+            {{ form_label(form.begin) }}
+            {{ form_errors(form.begin) }}
+            {{ form_widget(form.begin) }}
         </div>
         <div class="col s6 l2">
-            {{ form_row(form.end) }}
+            {{ form_label(form.end) }}
+            {{ form_errors(form.end) }}
+            {{ form_widget(form.end) }}
         </div>
         {{ form_rest(form) }}
     </div>

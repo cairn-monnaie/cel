@@ -107,7 +107,7 @@ class OneSmsDataType extends AbstractType
                             $smsData->setIdentifier($identifier);
                         }
 
-                        $form->add('paymentEnabled',CheckboxType::class, array('label'=>'Autoriser la réalisation de paiements par SMS depuis ce numéro','required'=>false))
+                        $form->add('paymentEnabled',CheckboxType::class, array('label'=>'Autoriser la réalisation de paiements par SMS depuis ce numéro'))
                             ->add('smsEnabled',  CheckboxType::class, array('label'=>'Autoriser la réception de paiements par SMS',
                                 'required'=>false))
                             ->add('identifier', TextType::class, array('label' => 'ID SMS','disabled'=>true));

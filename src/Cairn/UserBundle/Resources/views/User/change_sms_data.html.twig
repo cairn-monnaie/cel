@@ -2,6 +2,8 @@
                                                                                
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
+{% form_theme formSmsData 'form/materialize_form_theme.html.twig' %}
+
 {% block title %}{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
@@ -9,19 +11,10 @@
 
 {% block body %}
     {{parent()}} 
-        <em> Attention </em> Un SMS vous sera envoyé en cas de changement de numéro. Assurez-vous d'être en mesure de le recevoir
+        <em><b> Attention ! Un SMS vous sera envoyé en cas de changement de numéro. Assurez-vous d'être en mesure de le recevoir</b></em>
+        <br><br>
 
 
- {#   <div class="well">
-       {{ form_start(formSmsData) }}
-       {{ form_row(formSmsData.smsData) }}
-
-       <a href="#" id="add_smsdata" class="btn btn-default">Ajouter un numéro de téléphone</a> 
-       {{ form_rest(formSmsData) }}
-       {{ form_end(formSmsData) }}
-
-    </div>
-#}
        {{ form_start(formSmsData) }}
          {% if formSmsData.activationCode is defined %}
            {{ form_row(formSmsData.activationCode) }}                                         
@@ -29,16 +22,26 @@
              {% if formSmsData.phoneNumber is defined %}
                 {{ form_row(formSmsData.phoneNumber) }}                                         
              {% endif %}
-             {{ form_row(formSmsData.smsEnabled) }}                                         
+
+             <label>
+               {{ form_widget(formSmsData.smsEnabled) }}                                         
+               <span>Recevoir par SMS</span>
+             </label>
+             <br>
              {% if formSmsData.paymentEnabled is defined %}
-                {{ form_row(formSmsData.paymentEnabled) }}                                         
+                 <label>
+                   {{ form_widget(formSmsData.paymentEnabled) }}                                         
+                   <span>Payer par SMS</span>
+                 </label>
              {% endif %}
+
+             <br><br>
+
              {% if formSmsData.identifier is defined %}
                 {{ form_row(formSmsData.identifier) }}                                         
              {% endif %}
          {% endif %}
 
-       {{ form_row(formSmsData.save) }}  
        {{ form_rest(formSmsData) }}
        {{ form_end(formSmsData) }}
 

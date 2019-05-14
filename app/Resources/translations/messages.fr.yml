@@ -2,9 +2,16 @@
 #
 
 Hello: Bonjour
-withdrawal: retrait sur compte
-deposit: dépôt de compte
+withdrawal: retrait de compte
+deposit: dépôt sur compte
 conversion: conversion
 sms payment: paiement SMS
 transaction: virement
+Feb: Fév
+Mar: Mar
+Apr: Avr
+May: Mai
+Jun: Juin
+Jul: Jui
+Aug: Août
 

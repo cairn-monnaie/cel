@@ -1075,10 +1075,12 @@ class BankingController extends Controller
                 ))
                     ->add('begin', DateType::class,array(
                         'label'=>'depuis',
+                        'choice_translation_domain'=>true,
                         'data'=> date_modify(new \Datetime(),'-1 months'),
                         'required'=>false))
                         ->add('end', DateType::class,array(
                             'label'=>'jusqu\'à',
+                            'choice_translation_domain'=>true,
                             'data'=> new \Datetime(),
                             'required'=>false))
                             ->add('save', SubmitType::class,array(
