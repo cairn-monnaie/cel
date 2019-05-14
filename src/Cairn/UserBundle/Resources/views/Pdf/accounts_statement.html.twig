@@ -3,7 +3,7 @@
 {% extends 'CairnUserBundle::layout-pdf.html.twig' %}
 
 
-{% block fos_user_content %}
+{% block content %}
     {% set transactions = history.transactions %}
     {% set status = history.status %}
     {% set currency = account.currency %}

@@ -2,13 +2,9 @@
 
 {% extends 'CairnUserBundle::layout-pdf.html.twig' %}
 
-{% block fos_user_content %}
-    <p>This is the PDF content.</p>
-
-
+{% block content %}
     <figure>
-        <img src="{{ asset('bundles/cairnuser/img/usager.png') }}" alt="Logo Cairn">
-        <figcaption>A picture with an absolute URL</figcaption>
+        <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
     </figure>
 
    <table>
