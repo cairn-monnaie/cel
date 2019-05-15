@@ -163,3 +163,57 @@ div.notice-data table td.title{
   width: 40%;
   padding-left: 5px;
 }
+
+table.account-overview, div.account-operations table{
+    border-collapse: collapse;
+} 
+
+div.account-operations table {
+  margin: 0 auto;
+  width: 100%;
+  padding-top: 5px;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+table.account-overview caption, div.account-operations caption {
+  font-size: 24px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font-weight: bold;
+  border: 1px solid black;
+} 
+
+table.account-overview td, div.account-operations table td {
+  border: 1px solid #000;
+}
+
+table.account-overview td.value {
+  font-weight: bold;
+}
+
+table.account-overview {
+    display: table-cell;
+    vertical-align: middle;
+    margin-bottom: 50px;
+}
+
+table.account-overview tr, div.account-operations tr {
+  border: 1px solid black;
+}
+
+table.account-overview td, div.account-operations td {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+div.account-operations table td.value{
+  padding-left: 5px;
+  font-weight: bold;
+}
+
+div.account-operations table td.title{
+  font-size: 18px; 
+  width: 40%;
+  padding-left: 5px;
+}

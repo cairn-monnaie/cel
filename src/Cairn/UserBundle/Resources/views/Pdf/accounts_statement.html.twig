@@ -2,31 +2,66 @@
 
 {% extends 'CairnUserBundle::layout-pdf.html.twig' %}
 
+{% trans_default_domain 'messages' %}
 
-{% block content %}
+{% block stylesheets %}
+  {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know a    nything about the context of the project, so absolute path must be provided. asset function not working #}
+  <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn-pdf.css" rel="stylesheet" type="text/css">
+{% endblock %}                                  
+
+    {% block title %} Relevé [e]-Cairn{% endblock %}
+
     {% set transactions = history.transactions %}
     {% set status = history.status %}
     {% set currency = account.currency %}
     {% set balance = status.balanceAtBegin %}
 
+    {% block top_right_info %}
+
+    <table class="account-overview">
+        <caption> Situation de votre compte</caption>
+        <tbody>
+            <tr>
+                <td class="title">Type de compte</td>
+                <td class="value">{{account.type.name}} {{account.number}}</td>
+            </tr>
+            <tr>
+                <td class="title">Propriétaire</td>
+                <td class="value">
+                    {% if account.owner.display is defined %}
+                        {{account.owner.display}}
+                    {% else %}
+                        {{signature}} 
+                    {% endif %}
+                </td>
+            </tr>
+            <tr> 
+                <td class="title"> Solde au {{period.begin|date('d-m-Y')}} </td>
+                <td class="value"> {{status.balanceAtBegin}} </td>
+            </tr>
+            <tr> 
+                <td class="title"> Solde au {{period.end|date('d-m-Y')}} </td>
+                <td class="value"> {{status.balanceAtEnd}} </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% endblock %}
+
+{% block content %}
+
+<div class="account-operations">
+
+
     <table>
-        <caption> Situation de votre compte {{account.type.name}}
-            {% if account.owner.display is defined %}
-                {{account.owner.display}}
-            {% else %}
-                Association Le Cairn 
-            {% endif %}
-             ({{currency.name}}) au {{period.end}}         </br>             RIB Cairn : {{account.number}}
-       </caption>
-        <tr> Solde au {{period.begin}} : {{status.balanceAtBegin}} </tr>
+        <caption> Opérations </caption>
         <thead>
             <tr>
                 <th> Date de valeur </th>
-                <th> Description </th>
+                <th> Motif </th>
                 <th> Débit </th>
                 <th> Crédit </th> 
                 <th> Solde </th> 
-    
             </tr>
         </thead>
     
@@ -34,16 +69,16 @@
             {% for transaction in transactions %}
                 {% set balance = balance + transaction.amount %}
                 <tr>
-                    <td> {{transaction.date}} </td>
+                    <td> {{transaction.date|date('d-m-Y')}} </td>
                     <td> {{transaction.description}} </td>
                     <td> 
                         {% if transaction.amount < 0 %}
-                            {{transaction.amount}} {{currency.symbol}}
+                            {{transaction.amount}}
                         {% endif %}
                     </td>
                     <td> 
                         {% if transaction.amount > 0 %}
-                            {{transaction.amount}} {{currency.symbol}}
+                            {{transaction.amount}}
                         {% endif %}
                     </td>
 
@@ -55,8 +90,8 @@
             {% endfor %}
         </tbody>
 
-        <tr> Solde au {{period.end}} : {{status.balanceAtEnd}} </tr>
 
     </table>
+</div>
 {% endblock %}
 
