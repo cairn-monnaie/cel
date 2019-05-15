@@ -15,66 +15,83 @@
 
 <div class="notice">
     <div class="notice-header">
-{#        <figure>
+        <div class="pdf-logo">
             <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
-        </figure>
-#}    
-       <table>
-            <thead> <b> Avis d'opération </b> </thead>
-            <tbody>
-               <tr><td> Compte-rendu de votre opération, enregistrée le {{transfer.submissionDate|date('d-m-Y')}}  </td></tr>
-               <tr><td> Imprimé le {{ 'now'|date('d - m -Y') }} </td> </tr>
-               <tr><td> Identifiant du paiement {{transfer.paymentID}} </td></tr>
-            </tbody>
-        </table> 
-    
+        </div>
+        <div class="doc-info">
+            <table>
+                 <caption> Avis d'opération </caption>
+                 <tbody>
+                    <tr><td> Compte-rendu de votre opération, enregistrée le {{transfer.submissionDate|date('d-m-Y')}}  </td></tr>
+                    <tr><td> Imprimé le {{ 'now'|date('d-m-Y') }} </td> </tr>
+                    <tr><td> Identifiant du paiement : {{transfer.paymentID}} </td></tr>
+                 </tbody>
+            </table> 
+        </div>
+
     </div>
-    
+
     <div class="notice-data">
        <table>
-            <thead> <b> Données du virement </b> </thead>
-                <tr>
-                    <th> Type d'opération </th>
-                    <th> Montant </th>
-                    <th> Date d'éxecution </th>
-                    <th> Etat </th>
-                </tr>
-            <tbody>
-                <td> {{'deposit'|trans}} </td> 
-                <td> {{transfer.amount}} </td> 
-                <td> {{transfer.executionDate|date('Y-m-d')}} </td>
-                <td>
-                    {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
-                        Etat : <em> A exécuter </em>
-                    {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
-                        Etat : <em> Echoué </em>
-                    {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
-                        Etat : <em> Exécuté </em>
-                </td>
-                {% endif %}
-            </tbody>
+            <caption> Données du virement </caption>
+                <tbody>
+                    <tr> 
+                        <td class="title">Type d'opération</td>
+                        <td class="value"> {{'deposit'|trans}} </td> 
+                    </tr>
+                    <tr> 
+                        <td class="title">Montant</td>
+                        <td class="value">{{transfer.amount}} CRN</td> 
+                    </tr>
+                    <tr> 
+                        <td class="title">Date de soumission</td>
+                        <td class="value"> {{transfer.submissionDate|date('d-m-Y')}} </td>
+                    </tr>
+                    <tr> 
+                        <td class="title">Date d'éxecution</td>
+                        <td class="value"> {{transfer.executionDate|date('d-m-Y')}} </td>
+                    </tr>
+                    <tr> 
+                        <td class="title">Etat</td> 
+                        <td class="value">
+                            {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                                 A exécuter 
+                            {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                                 Echoué 
+                            {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                                 Exécuté
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr> 
+                        <td class="title">Motif</td>
+                        <td class="value"> {{transfer.reason}} </td>
+                    </tr>
+                </tbody>
         </table> 
     
        <table>
-            <caption> <b> Compte débiteur </b> </caption>
-            <thead></thead>
+            <caption> Parties prenantes </caption>
             <tbody>
-                <tr> <td>{{transfer.fromAccountNumber}}</td> </tr>
-                <tr> <td> {{transfer.debitorName}} </td> </tr>
+                <tr>
+                    <td class="title">Compte débiteur </td>
+                    <td class="value">{{transfer.fromAccountNumber}} 
+                        <br>
+                        {{transfer.debitorName}}
+                    </td> 
+                </tr>
+                <tr>
+                    <td class="title">Compte créditeur </td>
+                    <td class="value">{{transfer.toAccountNumber}} 
+                        <br>
+                        {{transfer.creditorName}}
+                    </td> 
+                </tr>
             </tbody>
         </table> 
-    
-        <table>
-            <caption> <b> Compte créditeur </b> </caption>
-            <thead></thead>
-            <tbody>
-                <tr><td> {{transfer.toAccountNumber}}</td> </tr>
-                <tr><td> {{transfer.creditorName}} </td> </tr>
-            </tbody>
-        </table> 
-   
     </div>
 </div>
+    
 {% endblock %}
 
 
