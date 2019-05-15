@@ -93,28 +93,45 @@
         <div class="{% block container_class %}container{% endblock%}">
             {% block body %}{% endblock%}
         </div>
-{#
-        <footer>
-            <div id="footer_contacts">
-                <h1>Nous contacter</h1>
-                <p> Mail contact </p>
-                <p> Mail gestion [e]-Cairn </p>
-                <p> Mail services techniques [e]-Cairn <p>
-                <p> Numéro du standard <p>
 
+        <footer class="page-footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col l5 m3 s12">
+                        <h5 class="white-text">Nous contacter</h5>
+                        <ul id="contacts_list">
+                            <li class="emails">
+                                <div class="emails-logo">
+                                    <i class="material-icons small left">email</i>
+                                </div>
+                                <div>
+                                    <ul>
+                                        <li>contact: <a href="#" class="mailto">contact@cairn-monnaie.com</a> </li>
+                                        <li>gestion: <a href="#" class="mailto">e-cairn@cairn-monnaie.com</a> </li>
+                                        <li>support: <a href="#" class="mailto">si@cairn-monnaie.com</a>  </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li><i class="material-icons small left">phone</i><a href="tel:+33665446587" class="tel">06.65.44.65.87</a></li>
+                        </ul>
+                    </div>
+                    <div class="col l3 m1 offset-l2 s12">
+                        <h5 class="white-text">Comment ça marche</h5>
+                        <ul>
+                            <li><a class="grey-text text-lighten-3" href="https://www.cairn-monnaie.com/mode-demploi/" target="_blank">Mode d'emploi</a></li>
+                            <li><a class="grey-text text-lighten-3" href="https://www.cairn-monnaie.com/le-e-cairn/" target="_blank">FAQ</a></li>
+                            <li><a class="grey-text text-lighten-3" href="#!">Vidéos tuto</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div id="footer_docs">
-                <h1>Documentation utilisateur</h1>
-                <p> Mode d'emploi </p>
-                <p> FAQ </p>
-                <p> Vidéos tuto <p>
+            <div class="footer-copyright">
+                <div class="container">
+                    <span> &copy; Cairn 2019 </span>
+                    <a class="col grey-text text-lighten-4 right" href="https://www.cairn-monnaie.com/mentions-legales/" target="_blank">Mentions légales</a> <a class="col grey-text text-lighten-4 right" href="https://www.cairn-monnaie.com/wp-content/uploads/2019/03/CGU_CAIRN.pdf" target="_blank">Conditions Générales d'Utilisation</a>
+                </div>
             </div>
-            <div id="footer_legal">
-                <h1>Conditions générales</h1>
-            </div>
-
         </footer>
-#}
 
         <!-- Compiled and minified JavaScript -->
         {% include "JqueryBundle:Jquery:jquery.html.twig" %}

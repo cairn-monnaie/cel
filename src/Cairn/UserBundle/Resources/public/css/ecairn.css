@@ -3,26 +3,25 @@ html {
 }
 
 body {
-  min-height: 100%;
-  height: 100%;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
 }
 
+main {
+    flex: 1 0 auto;
+}
 
 .page-footer {
-  padding-top: 20px;
-  color: #f07254;
-  background-color: #f07254 ;
+  width: 100%;
+  background-color: #f07254;
 }
-
-.footer-row {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 20px;
-  color: #f07254;
-  background-color: #f07254 ;
-  margin: auto;
+               
+ul#contacts_list li.emails {
+    display: flex;
+    justify-content: start;
+    align-items: center;
 }
-
 
 
 .w-100 {
