@@ -92,39 +92,19 @@ table.security-card > tbody > tr:nth-child(even) {
   font-weight: bold;
 }
 
-div.notice {
-    height: max-content;
-    width: max-content;
-}
 
-div.notice-header {
+div.body-header {
     height: 200px;
     padding-top: 60px;
 }
 
-div.notice table{
-    border-collapse: collapse;
-}
-
-
-div.notice caption {
-  font-size: 24px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  font-weight: bold;
-}
-
-div.notice table td {
-  border: 1px solid #000;
-}
-
-div.notice-header div.pdf-logo {
+div.body-header div.pdf-logo {
     height: 100%;
     width: 50%;
     float: left;
 }
 
-div.notice-header div.doc-info {
+div.body-header div.doc-info {
     height: 100%;
     width: 50%;
     float: left;
@@ -138,23 +118,40 @@ div.pdf-logo img {
     display: inline-block;
 }
 
-div.pdf-logo table {
+div.notice-data table {
+  margin: 0 auto;
+  width: 100%;
+  padding-top: 5px;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+table.notice-history table, div.notice-data table{
+    border-collapse: collapse;
+} 
+
+table.notice-history caption, div.notice-data caption {
+  font-size: 24px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font-weight: bold;
+  border: 1px solid black;
+} 
+
+table.notice-history td, div.notice-data table td {
+  border: 1px solid #000;
+}
+
+
+table.notice-history {
     display: table-cell;
     vertical-align: middle;
     margin-bottom: 30px;
 }
 
-div.notice-data table {
-    width: 100%;
-    padding-top: 5px;
-    padding-bottom: 20px;
-    margin-bottom: 30px;
-}
-
-div.notice tr,caption {
+table.notice-history tr, div.notice-data tr {
     border: 1px solid black;
 }
-
 
 div.notice-data table td.value{
   padding-left: 5px;

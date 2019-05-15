@@ -11,15 +11,8 @@
           <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn-pdf.css" rel="stylesheet" type="text/css">
         {% endblock %}                                  
 
-{% block content %}
-
-<div class="notice">
-    <div class="notice-header">
-        <div class="pdf-logo">
-            <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
-        </div>
-        <div class="doc-info">
-            <table>
+        {% block top_right_info %}
+            <table class="notice-history">
                  <caption> Avis d'opération </caption>
                  <tbody>
                     <tr><td> Compte-rendu de votre opération, enregistrée le {{transfer.submissionDate|date('d-m-Y')}}  </td></tr>
@@ -27,9 +20,9 @@
                     <tr><td> Identifiant du paiement : {{transfer.paymentID}} </td></tr>
                  </tbody>
             </table> 
-        </div>
+        {% endblock %}
 
-    </div>
+{% block content %}
 
     <div class="notice-data">
        <table>
@@ -37,7 +30,7 @@
                 <tbody>
                     <tr> 
                         <td class="title">Type d'opération</td>
-                        <td class="value"> {{'deposit'|trans}} </td> 
+                        <td class="value"> {{transfer.getTypeName(transfer.type)|trans}} </td> 
                     </tr>
                     <tr> 
                         <td class="title">Montant</td>
@@ -90,7 +83,6 @@
             </tbody>
         </table> 
     </div>
-</div>
     
 {% endblock %}
 

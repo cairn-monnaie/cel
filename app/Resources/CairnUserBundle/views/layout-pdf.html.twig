@@ -4,6 +4,14 @@
 {% block body %}
     {# Layout for PDF files #}
     <div class="body">
+        <div class="body-header">                                                
+           <div class="pdf-logo">                                                 
+               <img src="{{pathToWeb}}/bundles/cairnuser/img/e-cairn-logo-orange.png" alt="Logo Cairn">
+           </div> 
+           <div class="doc-info">
+                {% block top_right_info %}{% endblock %}
+           </div>
+        </div>
         {% block content %}{% endblock %}
     </div>
 {% endblock %}
