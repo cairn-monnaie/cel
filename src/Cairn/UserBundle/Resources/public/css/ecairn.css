@@ -23,6 +23,9 @@ ul#contacts_list li.emails {
     align-items: center;
 }
 
+ul#contacts_list li a {
+  font-weight: bold;
+}
 
 .w-100 {
   width: 100%;
