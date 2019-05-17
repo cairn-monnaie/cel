@@ -17,9 +17,18 @@
 <div class="row">
     <br>
     <a href="{{path('cairn_user_registration') }}" class="btn green" ><i class="material-icons left">add</i>Créer un espace membre </a>
-    <a href="{{path('cairn_user_users_search') }}" class="btn blue"><i class="material-icons left">search</i>Rechercher un compte</a>
+    <a href="#" class="user-search-button btn blue"><i class="material-icons left">search</i>Rechercher un compte</a>
+    <div class="row">
+        {{ form_start(form, {'method': 'post', 'attr': {'class': 'form_search_user'}} ) }}
+        <div class="col s12 m8 l6">
+        {{form_row(form.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
+        {{form_row(form.forward) }}
+        </div>
+        {{ form_rest(form) }}
+        {{form_end(form) }}   
+    </div>
 
-    <div>
+    <br>
 
         <h2> les membres en attente de carte </h2>
         <h3> Particuliers </h3>
@@ -173,4 +182,35 @@
     </div>
 </div>
 {% endblock %}              
+{% block javascripts %}
+    <script>
+        $(function (){
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ path('cairn_accounts_ajax') }}",
+                dataType: 'json',
+                success: function (response) {
+                    var accounts = response;
+                    var data = {};
+                    for (var i = 0; i < accounts.length; i++) {
+                        data[accounts[i].name] = null;
+                    }
+                    console.log();
 
+                    $("#form_cairn_user").autocomplete({
+                        data: data,
+                        limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
+                        onAutocomplete: function(val){
+                            baseUrl = "{{ path('cairn_user_profile_view',{'username': 'username_value'}) }}";
+                            var redirectUrl = baseUrl.replace('username_value',response[Object.keys(data).indexOf(val)].username);
+
+                            $('.form_search_user').attr('action', redirectUrl);
+                        }
+                    });
+                }, 
+            });
+        });
+
+    </script>
+
+{% endblock %}

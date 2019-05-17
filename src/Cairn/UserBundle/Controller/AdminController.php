@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 //manage Forms
+use Cairn\UserBundle\Form\AccountType;
 use Cairn\UserBundle\Form\ProfileType;
 use Cairn\UserBundle\Form\AddIdentityDocumentType;
 use Cairn\UserBundle\Form\ConfirmationType;
@@ -141,6 +142,11 @@ class AdminController extends Controller
             $superAdmins->pending = $userRepo->findPendingUsers($currentUserID,'ROLE_SUPER_ADMIN');
         }
 
+        $form = $this->createFormBuilder()
+            ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom')))
+            ->add('forward', SubmitType::class, array('label' => 'Accéder au profil'))
+            ->getForm();
+
         $allUsers = array(
             'pros'=>$pros, 
             'persons'=>$persons,
@@ -148,7 +154,7 @@ class AdminController extends Controller
             'superAdmins'=>$superAdmins,
         );
 
-        return $this->render('CairnUserBundle:Admin:dashboard.html.twig',array('allUsers'=>$allUsers));
+        return $this->render('CairnUserBundle:Admin:dashboard.html.twig',array('form'=>$form->createView(),'allUsers'=>$allUsers));
     }
 
     /**

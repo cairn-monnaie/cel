@@ -126,9 +126,9 @@ class DefaultController extends Controller
             $ub = $userRepo->createQueryBuilder('u');
 
             if($currentUser->isAdherent()){
-                $userRepo->whereEnabled($ub,true)->whereAdherent($ub);
+                $userRepo->whereEnabled($ub,true)->whereAdherent($ub)->whereConfirmed($ub);
             }else{
-                $userRepo->whereReferent($ub, $currentUserID)->whereConfirmed($ub);
+                $userRepo->whereReferent($ub, $currentUserID);
             }
 
             $users = $ub->getQuery()->getResult();
@@ -136,7 +136,7 @@ class DefaultController extends Controller
             $returnArray = array();
             foreach ($users as $user){
                 $image = $user->getImage();
-                $returnArray[] = array('name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
+                $returnArray[] = array('username'=> $user->getUsername(), 'name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
             }
             return new JsonResponse($returnArray);
         }
