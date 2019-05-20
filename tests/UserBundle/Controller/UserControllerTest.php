@@ -794,7 +794,7 @@ class UserControllerTest extends BaseControllerTest
                 }else{
                     $this->assertSame(0,$crawler->filter('a[href*="card/revoke"]')->count());
                     $this->assertSame(1,$crawler->filter('a[href*="card/associate/'.$targetUser->getUsername().'"]')->count());
-                    $this->assertSame(1,$crawler->filter('a[href*="card/order"]')->count());
+                    $this->assertSame(2,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
             }else{//admin, as referent, watching adherent's profile

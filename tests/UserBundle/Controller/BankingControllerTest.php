@@ -85,10 +85,10 @@ class BankingControllerTest extends BaseControllerTest
     public function provideTransactionData()
     {
         $today = new \Datetime();
-        $today_format = $today->format('d-m-Y');
+        $today_format = $today->format('Y-m-d');
 
         $future = date_modify(new \Datetime(),'+1 months');
-        $future_format = $future->format('d-m-Y');
+        $future_format = $future->format('Y-m-d');
 
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 

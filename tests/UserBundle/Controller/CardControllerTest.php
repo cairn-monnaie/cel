@@ -57,7 +57,7 @@ class CardControllerTest extends BaseControllerTest
             'referent for user with no card'=>array('referent'=>$adminUsername,'target'=>'episol','isReferent'=>true,2),
             'non referent'=> array('referent'=>$adminUsername,'target'=>'vie_integrative','isReferent'=>false,0),
             'pro with card'=> array('referent'=>'vie_integrative','target'=>'vie_integrative','isReferent'=>false,1),
-            'pro without card'=>array('referent'=>'episol','target'=>'episol','isReferent'=>false,2),
+            'pro without card'=>array('referent'=>'episol','target'=>'episol','isReferent'=>false,3),
             'non referent'=>array('referent'=>'vie_integrative','target'=>'DrDBrew','isReferent'=>false,0),
         );
     }
@@ -66,7 +66,7 @@ class CardControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForOrderCard
      */
-    public function testOrderCard($login, $isAdherent, $hasCard,$expectMessage )
+    public function testOrderCard($login, $isAdherent, $hasCard,$type, $expectMessage )
     {
         $crawler = $this->login($login, '@@bbccdd');
 
@@ -74,7 +74,7 @@ class CardControllerTest extends BaseControllerTest
 
         $this->client->enableProfiler();
 
-        $url = '/card/order';
+        $url = '/card/order/'.$type;
         $crawler = $this->client->request('GET',$url );
 
         if(! $isAdherent){
@@ -114,9 +114,9 @@ class CardControllerTest extends BaseControllerTest
     public function provideDataForOrderCard()
     {
         return array(
-            'is admin' => array('gl_grenoble',false,true,'réservée aux adhérents'),
-            'has card' => array('benoit_perso',true,true,'déjà une carte'),
-            'valid : adherent has no card' => array('episol',true,false,''),
+            'is admin' => array('gl_grenoble',false,true,'remote','réservée aux adhérents'),
+            'has card' => array('benoit_perso',true,true,'remote','déjà une carte'),
+            'valid : adherent has no card' => array('episol',true,false,'remote',''),
 
         );
 
@@ -416,7 +416,7 @@ class CardControllerTest extends BaseControllerTest
             $form = $crawler->selectButton('confirmation_save')->form();
             $form['confirmation[current_password]']->setValue('@@bbccdd');
             $crawler =  $this->client->submit($form);
-            $this->assertTrue($this->client->getResponse()->isRedirect('/card/list-available'));
+            $this->assertTrue($this->client->getResponse()->isRedirect('/admin/cards/dashboard'));
         }else{
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }
@@ -434,12 +434,12 @@ class CardControllerTest extends BaseControllerTest
         );
     }
 
-    public function testListAvailableCards()
+    public function testCardsDashboard()
     {
         $crawler = $this->login('admin_network', '@@bbccdd');
 
         //sensible operation
-        $url = '/card/list-available';
+        $url = '/admin/cards/dashboard';
         $crawler = $this->client->request('GET',$url);
 
         $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
