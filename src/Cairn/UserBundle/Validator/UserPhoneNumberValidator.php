@@ -10,6 +10,7 @@ use Cairn\UserBundle\Service\Security;
 use Cairn\UserBundle\Repository\UserRepository;
 
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\User;
 
 class UserPhoneNumberValidator extends ConstraintValidator
@@ -31,7 +32,7 @@ class UserPhoneNumberValidator extends ConstraintValidator
     {
         $currentUser = $this->security->getCurrentUser();
 
-        $phoneNumber = SmsData::cleanPhoneNumber($phoneNumber);
+        $phoneNumber = Phone::cleanPhoneNumber($phoneNumber);
 
         preg_match('#^\+33(6|7)\d{8}$#',$phoneNumber,$matches_number);
 

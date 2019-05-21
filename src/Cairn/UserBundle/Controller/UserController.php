@@ -17,6 +17,7 @@ use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 //manage HTTP format
@@ -27,7 +28,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 //manage Forms
 use Cairn\UserBundle\Form\SmsDataType;
-use Cairn\UserBundle\Form\OneSmsDataType;
+use Cairn\UserBundle\Form\PhoneType;
 use Cairn\UserBundle\Form\ConfirmationType;
 
 use Cairn\UserBundle\Validator\UserPassword;
@@ -110,7 +111,7 @@ class UserController extends Controller
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
-            ->orderBy('o.executionDate','ASC')
+            ->orderBy('o.executionDate','DESC')
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
@@ -145,8 +146,15 @@ class UserController extends Controller
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
-        $smsData = new SmsData($currentUser);
-        $smsData->setPhoneNumber('+33');
+        if(!$currentUser->getSmsData()){
+            $smsData = new SmsData($currentUser);
+            $currentUser->setSmsData($smsData);
+        }else{
+            $smsData = $currentUser->getSmsData();
+        }
+
+        $phone = new Phone($smsData);
+        $phone->setPhoneNumber('+33');
 
         $previousPhoneNumber = NULL;
 
@@ -157,32 +165,31 @@ class UserController extends Controller
 
         //************************ end of cases where edit sms is disallowed *************************//
 
-        $formSmsData = $this->createForm(OneSmsDataType::class, $smsData);
+        $formPhone = $this->createForm(PhoneType::class, $phone);
 
-        $formSmsData->handleRequest($request);
-        if($formSmsData->isSubmitted() && $formSmsData->isValid()){
-            $dataForm = $formSmsData->getData();
+        $formPhone->handleRequest($request);
+        if($formPhone->isSubmitted() && $formPhone->isValid()){
+            $dataForm = $formPhone->getData();
 
             // POST request is an activation code to validate a new phone number
-            if($formSmsData->has('activationCode')){
-                return $this->checkActivationCode($formSmsData,$request);
+            if($formPhone->has('activationCode')){
+                return $this->checkActivationCode($formPhone,$request);
             }
 
             // POST request is a new phone number for an existing entity smsData
-            if($previousPhoneNumber != $smsData->getPhoneNumber()){
-                $this->sendActivationCode(true,$session, $smsData);
+            if($previousPhoneNumber != $phone->getPhoneNumber()){
+                $this->sendActivationCode(true,$session, $phone);
                 return $this->redirectToRoute('cairn_user_users_smsdata_add');
             }
-
          }
 
         return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
-            array('formSmsData'=>$formSmsData->createView())
+            array('formPhone'=>$formPhone->createView())
             );
     }
    
 
-    public function sendActivationCode($isNewEntity,$session, $smsData)
+    public function sendActivationCode($isNewEntity,$session, Phone $phone)
     {
         $currentUser = $this->getUser();
         $em = $this->getDoctrine()->getManager();
@@ -199,19 +206,19 @@ class UserController extends Controller
         //then, an exception would be thrown due to unique key constraint error
         //that's why we retrieve the instance right away and refresh it to not flush modifications, as it should be done only
         //after code validation
-        $newPhoneNumber = $smsData->getPhoneNumber(); //let's save it before refresh
+        $newPhoneNumber = $phone->getPhoneNumber(); //let's save it before refresh
 
         if(!$isNewEntity){ //otherwise, nothing to refresh
             //detach is necessary for serialization of associated entities before setting it in session
 
-            $em->detach($smsData);
-            $currentUser->removeSmsData($smsData);
-            $session->set('smsData',$smsData);
-            $smsData = $em->merge($session->get('smsData'));
+            $em->detach($phone);
+            $currentUser->getSmsData()->removePhone($phone);
+            $session->set('phone',$phone);
+            $phone = $em->merge($session->get('phone'));
 
-            $em->refresh($smsData);
+            $em->refresh($phone);
         }else{
-            $session->set('smsData',$this->get('cairn_user.api')->serialize($smsData));
+            $session->set('phone',$this->get('cairn_user.api')->serialize($phone));
         }
 
         //give a new code to be validated
@@ -230,22 +237,23 @@ class UserController extends Controller
         $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
         $session->set('activationCode', $session_code);
 
-        $existSmsData = $em->getRepository('CairnUserBundle:SmsData')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
-        if($existSmsData){
+        $existPhone = $em->getRepository('CairnUserBundle:Phone')->findOneBy(array('phoneNumber'=>$newPhoneNumber));
+        if($existPhone){
             $session->getFlashBag()->add('info', 'Ce numéro sera associé à un compte professionnel et un compte particulier. Seul le compte particulier pourra réaliser des opérations par SMS depuis ce numéro.');
         }
 
         $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
     }
 
-    public function checkActivationCode($formSmsData, Request $request, $previousPhoneNumber = NULL)
+    public function checkActivationCode($formPhone, Request $request, $previousPhoneNumber = NULL)
     {
         $session = $request->getSession();
         $currentUser = $this->getUser();
+        $smsData = $currentUser->getSmsData();
         $em = $this->getDoctrine()->getManager();
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
-        $providedCode = $formSmsData->get('activationCode')->getData();
+        $providedCode = $formPhone->get('activationCode')->getData();
         $session_code = $session->get('activationCode');
 
 
@@ -253,10 +261,10 @@ class UserController extends Controller
         if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
 
             if(! $previousPhoneNumber){
-                $res = $this->get('cairn_user.api')->deserialize($session->get('smsData'),'Cairn\UserBundle\Entity\SmsData');
-                $smsData = $em->merge($res);
+                $res = $this->get('cairn_user.api')->deserialize($session->get('phone'),'Cairn\UserBundle\Entity\Phone');
+                $phone = $em->merge($res);
             }else{
-                $smsData = $em->merge($session->get('smsData'));
+                $phone = $em->merge($session->get('phone'));
             }
 
             $currentUser->setNbPhoneNumberRequests(0);
@@ -271,7 +279,7 @@ class UserController extends Controller
 
                 $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
                 $smsClient = $securityService->vigenereEncode($smsClient);
-                $currentUser->setSmsClient($smsClient);
+                $smsData->setSmsClient($smsClient);
             }
 
             //we check if the new number was associated to a personal and professional account
@@ -286,11 +294,16 @@ class UserController extends Controller
             }
 
             $smsData->setUser($currentUser);
-            $currentUser->addSmsData($smsData);
+            $phone->setSmsData($smsData);
+            $smsData->addPhone($phone);
 
+//            if($currentUser->hasRole('ROLE_PRO') && !$currentUser->getNotificationPermission()){
+//                $notificationPermission = new NotificationPermission();
+//                $em->persist($notificationPermission);
+//            }
             $em->flush();
             $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
-            $this->get('cairn_user.message_notificator')->sendNotification($currentUser,'Notifications de paiement SMS [e]-Cairn','Félicitations !!');
+
 
             $session->remove('activationCode');
             $session->remove('smsData');
@@ -320,13 +333,13 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function editSmsDataAction(Request $request, SmsData $smsData)
+    public function editSmsDataAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
 
         $currentUser = $this->getUser();
-        $user = $smsData->getUser();
+        $user = $phone->getUser();
         $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN');
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($user);
@@ -345,13 +358,8 @@ class UserController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
         }
 
-        $previousPhoneNumber = $smsData->getPhoneNumber();
+        $previousPhoneNumber = $phone->getPhoneNumber();
 
-        //cas à gérer : un ADMIN veut modifier l'ID SMS d'un PRO qui n'a pas renseigné de numéro de téléphone
-        if( $user->hasRole('ROLE_PRO') && $isAdmin && (count($user->getSmsData()) == 0) ){
-            $session->getFlashBag()->add('info','Ce professionnel n\'a pas saisi de coordonnées SMS');
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
-        }
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
             $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
@@ -360,34 +368,35 @@ class UserController extends Controller
 
         //************************ end of cases where edit sms is disallowed *************************//
 
-        $formSmsData = $this->createForm(OneSmsDataType::class, $smsData);
+        $formPhone = $this->createForm(PhoneType::class, $phone);
 
-        $formSmsData->handleRequest($request);
-        if($formSmsData->isSubmitted() && $formSmsData->isValid()){
-            $dataForm = $formSmsData->getData();
+        $formPhone->handleRequest($request);
+        if($formPhone->isSubmitted() && $formPhone->isValid()){
+            $dataForm = $formPhone->getData();
 
             // POST request is an activation code to validate a new phone number
-            if($formSmsData->has('activationCode')){
-                return $this->checkActivationCode($formSmsData,$request, $previousPhoneNumber);
+            if($formPhone->has('activationCode')){
+                return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
             }
 
             // POST request is a new phone number for an existing entity smsData
-            if($previousPhoneNumber != $smsData->getPhoneNumber()){
+            if($previousPhoneNumber != $phone->getPhoneNumber()){
                 if($user !== $currentUser ){
                     throw new AccessDeniedException('Action réservée à '.$user->getName());
                 }
-                $this->sendActivationCode(false,$session, $smsData);
-                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('id'=>$smsData->getID()));
+                $this->sendActivationCode(false,$session, $phone);
+                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('id'=>$phone->getID()));
 
             }else{// POST request does not concern a new phone number
 
-                if($smsData->isSmsEnabled() ){
-                    $session->getFlashBag()->add('info','Les opérations SMS sont autorisées pour le numéro '.$smsData->getPhoneNumber());
+                if($phone->isPaymentEnabled() ){
+                    $session->getFlashBag()->add('info','Les opérations SMS sont autorisées pour le numéro '.$phone->getPhoneNumber());
                 }else{
-                    $session->getFlashBag()->add('info','Les opérations SMS n\'ont pas été autorisées pour le numéro '.$smsData->getPhoneNumber());
+                    $session->getFlashBag()->add('info','Les opérations SMS n\'ont pas été autorisées pour le numéro '.$phone->getPhoneNumber());
                 }
 
                 $em->flush();
+
                 $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
                 return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
             }
@@ -395,7 +404,7 @@ class UserController extends Controller
          }
 
         return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
-            array('formSmsData'=>$formSmsData->createView())
+            array('formPhone'=>$formPhone->createView())
             );
     }
 
@@ -403,12 +412,12 @@ class UserController extends Controller
      *
      *@TODO : protect behind post request
      */
-    public function deleteSmsDataAction(Request $request, SmsData $smsData)
+    public function deleteSmsDataAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
-        $user = $smsData->getUser();
+        $user = $phone->getUser();
 
         $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN');
 
@@ -421,8 +430,8 @@ class UserController extends Controller
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
 
-        $phoneNumber = $smsData->getPhoneNumber();
-        $em->remove($smsData);
+        $phoneNumber = $phone->getPhoneNumber();
+        $em->remove($phone);
         $em->flush();
 
         $session->getFlashBag()->add('success','Numéro de téléphone '.$phoneNumber.' supprimé');

@@ -11,6 +11,7 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\Phone;
 
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -45,6 +46,12 @@ class Api
                          'id'=>$child->getID()
                      );
         }
+        if($child instanceOf SmsData){
+            return array('user'=>$this->objectCallback($child->getUser()),
+                         'id'=>$child->getID()
+                     );
+        }
+
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
@@ -65,9 +72,17 @@ class Api
                         'debitor'=>  function ($child) {return $this->objectCallback($child);}
            ));
         }
+
         if($object instanceOf SmsData){
             $defaultIgnoredAttributes = array();
             $normalizer->setCallbacks(array(
+                        'user'=> function ($child) {return $this->objectCallback($child);},
+           ));
+        }
+        if($object instanceOf Phone){
+            $defaultIgnoredAttributes = array();
+            $normalizer->setCallbacks(array(
+                        'smsData'=> function ($child) {return $this->objectCallback($child);},
                         'user'=> function ($child) {return $this->objectCallback($child);},
            ));
         }

@@ -9,7 +9,7 @@ body {
 }
 
 main {
-    flex: 1 0 auto;
+  flex: 1 0 auto;
 }
 
 .page-footer {
@@ -25,6 +25,16 @@ ul#contacts_list li.emails {
 
 ul#contacts_list li a {
   font-weight: bold;
+}
+
+div.smsdata {
+  margin-top: 30px;
+}
+
+table.smsdata_notification > tbody > tr > td {
+  font-weight: bold;
+  padding: 0px!important;
+  margin: 0px;
 }
 
 .w-100 {

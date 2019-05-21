@@ -79,6 +79,18 @@ class Phone
         $this->setDailyAmountThreshold(30);
     }
 
+
+    /**
+     * Get id.
+     *
+     * @return int
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+
     public function getUser()
     {
         return $this->getSmsData()->getUser();

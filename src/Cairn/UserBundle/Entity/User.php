@@ -172,13 +172,33 @@ class User extends BaseUser
         return $this->getAddress()->getZipCity()->getCity();
     }
 
+    public function getPhones()
+    {
+        if($smsData = $this->getSmsData()){
+            return $smsData->getPhones();
+        }else{
+            return array();
+        }
+    }
+
+    public function getWebPushEndpoints()
+    {
+        if($smsData = $this->getSmsData()){
+            return $smsData->getWebPushEndpoints();
+        }else{
+            return array();
+        }
+    }
+
     public function getPhoneNumbers()
     {
         $phoneNumbers = array();
 
-        $phones = $this->getSmsData()->getPhones();
-        foreach($phones as $phone){
-          $phoneNumbers[] = $phone->getPhoneNumber();
+        if($smsData = $this->getSmsData()){
+            $phones = $smsData->getPhones();
+            foreach($phones as $phone){
+                $phoneNumbers[] = $phone->getPhoneNumber();
+            }
         }
 
         return $phoneNumbers;

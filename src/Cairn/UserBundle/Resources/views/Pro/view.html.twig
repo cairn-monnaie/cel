@@ -52,7 +52,7 @@
                         <a href="{{path('fos_user_change_password')}}" class="btn waves-effect waves-light">Modifier mon mot de passe</a>
                     {% endif %}
                 </div>
-{#
+
             <li class="">
                 <div class="collapsible-header"><i class="material-icons">phone_android</i>
                     {% if user.id == app.user.id %}
@@ -63,41 +63,72 @@
                 </div>
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
-                        {% for smsData in user.smsData %}
-                        
-                            <div class="col s12 truncate"><i class="material-icons tiny">phone</i>&nbsp;{{ smsData.phoneNumber }}</div>
-    
-                            {% if user.hasRole('ROLE_PRO') %}
-                                <div class="col s12 truncate"><i class="material-icons tiny">arrow_forward</i>&nbsp;{{smsData.identifier}}</div>
-                                <div class="col s12 truncate"><i class="material-icons tiny">thumbs_up_down</i>
-                                  &nbsp; Réception de paiements par SMS : {{ smsData.smsEnabled ? 'Oui' : 'Non' }} </br>
-                                  &nbsp; Réalisation de paiements par SMS : {{ smsData.paymentEnabled ? 'Oui' : 'Non' }} </br> 
-                                </div>
-                                <br>
-                            {% endif %}
-                            {% if user.id == app.user.id %}
-                                {% set textSmsButton =  "Editer mes données SMS"%}
-                            {% else %}
-                                {% set textSmsButton =  "Editer les données SMS de " ~ user.name %}
-                            {% endif %}
-                            <a href="{{path('cairn_user_users_smsdata_edit',{'id' : smsData.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
-                             <a href="{{path('cairn_user_users_smsdata_delete',{'id' : smsData.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
-       
-                        {% else %}
+                        {% if (user.hasRole('ROLE_PRO')) and (user.smsData) %}
+                        <div class="container">
+                            <div class="smsdata_notification">
+                            <table class="striped smsdata_notification">
+                                <caption>Recevoir une notification de paiement SMS</caption>
+                                <tbody>
+                                  <tr>
+                                    <td>Notification sur ce navigateur </td>
+                                    <td><i class="material-icons tiny permission"></i></td>
+                                  </tr>
+                                  <tr>
+                                    <td>Email à {{user.email}}</td>
+                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.emailEnabled ? 'check' : 'cancel'}}</i></td>
+                                  </tr>
+                                  <tr>
+                                    <td>SMS</td>
+                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.smsEnabled ? 'check' : 'cancel'}}</i></td>
+                                  </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        {% endif %}
 
-                            Aucune donnée SMS enregistrée !
-
-                        {% endfor %}
-                        <br> <br>
-                        <a href="{{path('cairn_user_users_smsdata_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                        {% if user.smsData %}
+                            {% for phone in user.smsData.phones %}
+                            <div class="smsdata">
+                       
+                                <div class="smsdata_payment">
+                                    <div class="col s12 truncate"><i class="material-icons tiny">phone</i>&nbsp;{{ phone.phoneNumber }}</div>
         
+                                    {% if user.hasRole('ROLE_PRO') %}
+                                        <div class="col s12 truncate"><i class="material-icons tiny">perm_identity</i>&nbsp;{{phone.identifier}}</div>
+                                    {% endif %}
+                                    <div class="col s12 truncate"><i class="material-icons tiny">money</i><i class="material-icons tiny">{{ phone.paymentEnabled ? 'check' : 'cancel'}}</i></td>
+
+                                </div>
+                                <div class="smsdata_options">
+                                {% if user.id == app.user.id %}
+                                    {% set textSmsButton = "Editer mes données SMS"%}
+                                {% else %}
+                                    {% set textSmsButton = "Editer les données SMS de " ~ user.name %}
+                                {% endif %}
+                                <a href="{{path('cairn_user_users_smsdata_edit',{'id' : phone.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
+                                 <a href="{{path('cairn_user_users_smsdata_delete',{'id' : phone.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
+                                 </div>
+                            </div>
+                            {% else %}
+
+                                Aucune donnée SMS enregistrée !
+
+                            {% endfor %}
+                        {% else %}
+                                Aucune donnée SMS enregistrée !
+                        {% endif %}
+                        <br> <br>
+                        <div class="smsdata_new">
+                            <a href="{{path('cairn_user_users_smsdata_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                        </div>
 
                     </div>
 
                 </div>
 
             </li>
-#}
+
             {% set card = user.card %}
             {% if user.hasReferent(app.user) or user == app.user %}
             <li>
@@ -130,7 +161,7 @@
 
                 {% if user.id == app.user.id %}
                     <li>
-                        <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Mon groupe local référent</div>
+                        <div class="collapsible-header"><i class="material-icons">supervisor_account</i>Mon groupe local référent</div>
                         <div class="collapsible-body">
                             {% if adminReferent is null %}
                                 <em> Aucun groupe local référent ! </em>
@@ -143,7 +174,7 @@
 
                 {% elseif app.user.hasRole('ROLE_SUPER_ADMIN')  %}
                     <li>
-                        <div class="collapsible-header"><i class="material-icons">supervised_user_circle</i>Le groupe local référent de {{user.name}}</div>
+                        <div class="collapsible-header"><i class="material-icons">supervisor_account</i>Le groupe local référent de {{user.name}}</div>
                         <div class="collapsible-body">
         
                             {% if adminReferent is null %}
@@ -161,3 +192,22 @@
         </ul>
     </div>
 {% endblock %}              
+
+
+{% block javascripts %}
+
+<script type="text/javascript">
+    var containerNotifCell = document.querySelector('.permission');
+
+    if(Notification.permission !== 'granted'){
+        var isNotifAuthorized = 'cancel';
+    }else{
+        var isNotifAuthorized = 'check';
+    }
+
+    containerNotifCell.innerHTML = isNotifAuthorized;
+
+</script>
+
+{% endblock %}
+

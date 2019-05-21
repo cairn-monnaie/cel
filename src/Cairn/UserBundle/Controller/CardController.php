@@ -356,13 +356,11 @@ class CardController extends Controller
                     $saveCode = $card->getCode();
                     $em->remove($card);
 
-                    $smsData = $user->getSmsData(); 
-                    if(count($smsData) > 0){
-                        foreach($smsData as $oneSmsData){
-                            $oneSmsData->setSmsEnabled(false);
-                        }
-                        $session->getFlashBag()->add('info','Les fonctionnalités SMS sont désormais bloquées pour tous vos numéros de téléphone');
+                    $phones = $user->getPhones(); 
+                    foreach($phones as $phone){
+                        $phone->setPaymentEnabled(false);
                     }
+                    $session->getFlashBag()->add('info','Les paiements SMS sont désormais bloquées pour tous vos numéros de téléphone');
 
                     $em->flush();
 
@@ -618,7 +616,7 @@ class CardController extends Controller
             $user->setCard($card);
 
             $html =  $this->renderView('CairnUserBundle:Pdf:card.html.twig',
-                array('card'=>$card,'code'=>$this->get('cairn_user.security')->vigenereEncode($uniqueCode)));
+                array('cards'=>array($card)));
     
     
             $this->get('cairn_user.security')->encodeCard($card);

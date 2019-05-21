@@ -25,6 +25,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\SmsData]
 
+    cairn_user.repository_phone: 
+        class: PhoneRepository
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Phone]
+
     cairn_user.repository_card: 
         class: CardRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
@@ -213,8 +218,8 @@ services:
         class: Cairn\UserBundle\Form\DataTransformer\AccountToStringTransformer
         arguments: ["@doctrine.orm.entity_manager","@cairn_user.bridge_symfony","@cairn_user_cyclos_user_info","@cairn_user_cyclos_account_info"]
 
-    Cairn\UserBundle\Form\OneSmsDataType:
-        arguments: ['@security.authorization_checker','@request_stack','@cairn_user.repository_smsdata']
+    Cairn\UserBundle\Form\PhoneType:
+        arguments: ['@security.authorization_checker','@request_stack','@cairn_user.repository_phone']
         tags: [form.type]
 
     Cairn\UserBundle\Form\ChangePasswordType:

@@ -61,6 +61,7 @@ class SmsData
     {
         $this->setUser($user);
         $this->phones = new ArrayCollection();
+        $this->notificationPermission = new NotificationPermission();
     }
 
 

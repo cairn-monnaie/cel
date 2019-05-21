@@ -148,8 +148,9 @@ class UserRepository extends EntityRepository
     {
         $ub = $this->createQueryBuilder('u');                  
 
-        $ub->leftJoin('u.smsData','s')                                           
-            ->andWhere('s.phoneNumber = :number') //smsData is the owning-side in the association user/smsData
+        $ub->leftJoin('u.smsData','s') //smsData is the owning-side in the association user/smsData                                
+            ->join('s.phones','p')
+            ->andWhere('p.phoneNumber = :number') 
             ->setParameter('number',$phoneNumber)
             ->addSelect('s');
 

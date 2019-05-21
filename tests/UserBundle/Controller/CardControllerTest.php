@@ -348,8 +348,10 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertEquals($targetUser->getCard(),NULL);
 
                 //assert SMS operations disabled
-                foreach($targetUser->getSmsData() as $smsData){
-                    $this->assertFalse($smsData->isSmsEnabled());
+
+                $phones = $targetUser->getPhones();
+                foreach($phones as $phone){
+                    $this->assertFalse($phone->isPaymentEnabled());
                 }
 
                 $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
@@ -481,7 +483,7 @@ class CardControllerTest extends BaseControllerTest
 
         $this->assertTrue($this->client->getResponse()->headers->contains(
             'Content-Type',
-            'application/zip'));
+            'application/pdf'));
 
     }
 

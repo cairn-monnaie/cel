@@ -11,6 +11,8 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\Phone;
+
 use Cairn\UserCyclosBundle\Entity\UserIdentificationManager;
 use Cairn\UserCyclosBundle\Service\UserIdentificationInfo;
 
@@ -65,7 +67,6 @@ class Security
         $this->smsMaxAmountWithoutSecurity = $smsMaxAmountWithoutSecurity;
         $this->smsAmountBlock = $smsAmountBlock;
         $this->smsNbPaymentsBlock = $smsNbPaymentsBlock;
-
     }
 
     /**
@@ -174,6 +175,7 @@ class Security
         return base64_encode($return);
     }
 
+
     public function vigenereDecode($string){
         $string = base64_decode($string);
         $return = str_pad('', strlen($string), ' ', STR_PAD_LEFT);
@@ -244,10 +246,11 @@ class Security
         return $userIdentificationManager->changeAccessClientStatus($accessClientVO,$status);
     }
 
+
     public function getSmsClient(User $user)
     {
-        if($user->getSmsClient()){
-            return $this->vigenereDecode($user->getSmsClient()) ;
+        if($user->getSmsData()->getSmsClient()){
+            return $this->vigenereDecode($user->getSmsData()->getSmsClient()) ;
         }
         return NULL;
     }
@@ -257,7 +260,7 @@ class Security
      *Beware, input Operation is not persisted, and is relevant only for sms payments
      *
      */
-    public function paymentNeedsValidation(Operation $operation, SmsData $debitorSmsData)
+    public function paymentNeedsValidation(Operation $operation, Phone $debitorPhone)
     {
         if(! $operation->isSmsPayment()){ return false; }
 
@@ -286,7 +289,7 @@ class Security
         $totalDayAmount = (!$totalDayAmount) ? 0 : $totalDayAmount;
         $totalDayAmount += $operation->getAmount();
 
-        if($totalDayAmount > $debitorSmsData->getDailyAmountThreshold()){
+        if($totalDayAmount > $debitorPhone->getDailyAmountThreshold()){
            return true; 
         }
         
@@ -298,11 +301,11 @@ class Security
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
             ->whereDebitor($ob,$debitor)
-            ->whereAmountComparedWith($ob, $debitorSmsData->getDailyAmountThreshold(), 'lt')
+            ->whereAmountComparedWith($ob, $debitorPhone->getDailyAmountThreshold(), 'lt')
             ->whereCurrentDay($ob);
 
         $operations = $ob->getQuery()->getResult();
-        if(count($operations) > $debitorSmsData->getDailyNumberPaymentsThreshold()){ return true; }
+        if(count($operations) > $debitorPhone->getDailyNumberPaymentsThreshold()){ return true; }
 
         return false;
     }

@@ -2,7 +2,7 @@
                                                                                
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
-{% form_theme formSmsData 'form/materialize_form_theme.html.twig' %}
+{% form_theme formPhone 'form/materialize_form_theme.html.twig' %}
 
 {% block title %}{% endblock %}                                                                 
                                                                                
@@ -15,35 +15,50 @@
         <br><br>
 
 
-       {{ form_start(formSmsData) }}
-         {% if formSmsData.activationCode is defined %}
-           {{ form_row(formSmsData.activationCode) }}                                         
+       {{ form_start(formPhone) }}
+         {% if formPhone.activationCode is defined %}
+           {{ form_row(formPhone.activationCode) }}                                         
          {% else %}
-             {% if formSmsData.phoneNumber is defined %}
-                {{ form_row(formSmsData.phoneNumber) }}                                         
+             {% if formPhone.phoneNumber is defined %}
+                {{ form_row(formPhone.phoneNumber) }}                                         
              {% endif %}
 
-             <label>
-               {{ form_widget(formSmsData.smsEnabled) }}                                         
+{#             <label>
+               {{ form_widget(formPhone.smsEnabled) }}                                         
                <span>Recevoir par SMS</span>
              </label>
+
              <br>
-             {% if formSmsData.paymentEnabled is defined %}
+             <label>
+               {{ form_widget(formPhone.emailEnabled) }}                                         
+               <span>Recevoir par e-mail</span>
+             </label>
+
+             <br>
+             {% if formPhone.webPushEnabled is defined %}
                  <label>
-                   {{ form_widget(formSmsData.paymentEnabled) }}                                         
+                   {{ form_widget(formPhone.webPushEnabled) }}                                         
+                   <span>Recevoir par notification</span>
+                 </label>
+             {% endif %}
+#}
+             <br>
+             {% if formPhone.paymentEnabled is defined %}
+                 <label>
+                   {{ form_widget(formPhone.paymentEnabled) }}                                         
                    <span>Payer par SMS</span>
                  </label>
              {% endif %}
 
              <br><br>
 
-             {% if formSmsData.identifier is defined %}
-                {{ form_row(formSmsData.identifier) }}                                         
+             {% if formPhone.identifier is defined %}
+                {{ form_row(formPhone.identifier) }}                                         
              {% endif %}
          {% endif %}
 
-       {{ form_rest(formSmsData) }}
-       {{ form_end(formSmsData) }}
+       {{ form_rest(formPhone) }}
+       {{ form_end(formPhone) }}
 
         {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
             <div class="js-user-name" data-get-name="{{app.user.username}}">
@@ -70,11 +85,11 @@
         var containerRole = document.querySelector('.js-user-role');
         var isPro = containerRole.dataset.isPro;
 
-        if( isPro ){
+        function checkNotification() {
             getNotificationPermissionState().then(function(permission) {
                 if(Notification.permission !== 'granted'){
                     askPermission().then(function(permission) {
-                        if(Notification.permission === 'granted'){
+                        if(permission === 'granted'){
                             var containerName = document.querySelector('.js-user-name');
                             var username = containerName.dataset.getName;
                 
@@ -85,6 +100,26 @@
                     });
                 }
             });
+        }
+        if( isPro ){
+            var containerNotifBox = document.querySelector('#cairn_userbundle_onesmsdata_webPushEnabled');
+            if(Notification.permission !== 'granted'){
+                containerNotifBox.checked = false;
+            }else{
+                containerNotifBox.checked = true;
+            }
+           
+            if(containerNotifBox){ 
+                if(containerNotifBox.checked){
+                    checkNotification();
+                }
+
+                containerNotifBox.addEventListener('change', function() {
+                    if(this.checked){
+                        checkNotification();
+                    }
+                });
+            }
         }
 
         function urlBase64ToUint8Array(base64String) {
