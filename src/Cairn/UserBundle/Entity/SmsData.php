@@ -6,11 +6,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
+use Doctrine\Common\Collections\ArrayCollection;
+
 /**
  * SmsData
  *
  * @ORM\Table(name="user_sms_data")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\SmsDataRepository")
+ * @UniqueEntity(fields = {"smsClient"},message="Ce client SMS est déjà utilisé") 
  */
 class SmsData
 {
@@ -26,128 +29,38 @@ class SmsData
     /**
      * @var string
      *
-     * @ORM\Column(name="phoneNumber", type="string", length=15)
+     * @ORM\Column(name="smsClient", type="string", length=255, nullable=true, unique=true)
      */
-    private $phoneNumber;
+    private $smsClient;
 
     /**
-     * @var string
-     *
-     * @ORM\Column(name="identifier", type="string", length=30, unique=true, nullable=true)
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\Phone", mappedBy="smsData", cascade={"persist","remove"})
      */
-    private $identifier;
+    private $phones;
 
     /**
-     * @var bool
+     * @var array
      *
-     * Can ask for LOGIN, BALANCE and receive payments
-     *
-     * @ORM\Column(name="smsEnabled", type="boolean")
+     * @ORM\Column(name="webPush_endpoints", type="array")
      */
-    private $smsEnabled;
+    private $webPushEndpoints;
 
     /**
-     * @var bool
-     *
-     * @ORM\Column(name="payment_enabled", type="boolean")
-     */
-    private $paymentEnabled;
-
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationPermission", cascade={"persist","remove"})
+     */ 
+    private $notificationPermission;
 
     /**
-     * @var int
-     *
-     * @ORM\Column(name="dailyAmountThreshold", type="integer")
-     */
-    private $dailyAmountThreshold;
-
-    /**
-     * @var int
-     *
-     * @ORM\Column(name="dailyNumberPaymentsThreshold", type="integer")
-     */
-    private $dailyNumberPaymentsThreshold;
-
-    /**
-     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", mappedBy="smsData", cascade={"persist"})
      *@ORM\JoinColumn(nullable=false)
      */
     private $user;
 
+
     public function __construct(User $user)
     {
         $this->setUser($user);
-        $this->setSmsEnabled(true);
-
-        if($user->hasRole('ROLE_PRO')){
-            $this->setPaymentEnabled(false);
-        }else{
-            $this->setPaymentEnabled(true);
-        }
-
-        $this->setDailyNumberPaymentsThreshold(4);
-        $this->setDailyAmountThreshold(30);
-    }
-
-    static function cleanPhoneNumber($phoneNumber) {
-        return preg_replace('/[^0-9+]/', '',trim($phoneNumber)); 
-    }
-
-
-    static function makeIdentifier($name, $extra = '')
-    {
-        $name = preg_replace('/[-\/]+/', ' ', $name);
-        $ln = explode(' ', $name);
-
-        //        var_dump($ln);
-        //get rid off articles
-        $tmp = $ln;
-        for($i = 0; $i < count($ln); $i++){
-            if( strlen($ln[$i]) < 3){
-                array_splice($ln,$i,1);
-                $i -= 1;
-                //                var_dump($ln);
-            }
-        }
-
-        //        var_dump($ln);
-        if(count($ln) == 0){//name contains only words with less than 3 characters
-            $ln = $tmp;
-        }
-
-        if(count($ln) == 1){
-            $ln = $ln[0];   
-        }elseif(count($ln) == 2){
-            $ln = $ln[0] . $ln[1];
-        }else{
-            if( strlen($ln[0]) == 3){
-                $tmp = $ln[0].$ln[1];
-                $offset = 2;
-            }else{
-                $tmp = $ln[0];
-                $offset = 1;
-            }
-
-            for($i = $offset; $i < count($ln); $i++){
-                $tmp .= substr($ln[$i], 0, 1);
-            }
-            $ln = $tmp;
-        }
-
-
-        $identifier = strtoupper($ln);
-        $identifier = preg_replace('/[^A-Z0-9]/', '', $identifier);
-
-        //identifier must be easy to use, so it is shorcutted if too long : 8 characters at most
-        $lengthExtra = strlen($extra);
-
-        if($lengthExtra == 0){
-            $identifier = substr($identifier,0,8);
-        }else{
-            $identifier = substr($identifier,0,8 - $lengthExtra);
-        }
-        $identifier .= $extra;
-        return $identifier;
+        $this->phones = new ArrayCollection();
     }
 
 
@@ -162,157 +75,29 @@ class SmsData
     }
 
     /**
-     * Set phoneNumber.
+     * Set smsClient.
      *
-     * @param string $phoneNumber
+     * @param string $smsClient
      *
      * @return SmsData
      */
-    public function setPhoneNumber($phoneNumber)
+    public function setSmsClient($smsClient)
     {
-        $this->phoneNumber = self::cleanPhoneNumber($phoneNumber);
+        $this->smsClient = $smsClient;
 
         return $this;
     }
 
     /**
-     * Get phoneNumber.
+     * Get smsClient.
      *
      * @return string
      */
-    public function getPhoneNumber()
+    public function getSmsClient()
     {
-        return $this->phoneNumber;
+        return $this->smsClient;
     }
 
-    /**
-     * Set identifier.
-     *
-     * @param string $identifier
-     *
-     * @return SmsData
-     */
-    public function setIdentifier($identifier)
-    {
-        $this->identifier = $identifier;
-
-        return $this;
-    }
-
-    /**
-     * Get identifier.
-     *
-     * @return string
-     */
-    public function getIdentifier()
-    {
-        return $this->identifier;
-    }
-
-    /**
-     * Set smsEnabled.
-     *
-     * @param bool $smsEnabled
-     *
-     * @return SmsData
-     */
-    public function setSmsEnabled($smsEnabled)
-    {
-        $this->smsEnabled = $smsEnabled;
-
-        if(! $smsEnabled){
-            $this->setPaymentEnabled(false);
-        }else{
-            if($this->getUser()->hasRole('ROLE_PERSON')){
-                $this->setPaymentEnabled(true);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get smsEnabled.
-     *
-     * @return bool
-     */
-    public function isSmsEnabled()
-    {
-        return $this->smsEnabled;
-    }
-
-
-    /**
-     * Set paymentEnabled.
-     *
-     * @param bool $paymentEnabled
-     *
-     * @return PaymentData
-     */
-    public function setPaymentEnabled($paymentEnabled)
-    {
-        $this->paymentEnabled = $paymentEnabled;
-
-        return $this;
-    }
-
-    /**
-     * Get paymentEnabled.
-     *
-     * @return bool
-     */
-    public function isPaymentEnabled()
-    {
-        return $this->paymentEnabled;
-    }
-
-    /**
-     * Set dailyAmountThreshold.
-     *
-     * @param int $dailyAmountThreshold
-     *
-     * @return SmsData
-     */
-    public function setDailyAmountThreshold($dailyAmountThreshold)
-    {
-        $this->dailyAmountThreshold = $dailyAmountThreshold;
-
-        return $this;
-    }
-
-    /**
-     * Get dailyAmountThreshold.
-     *
-     * @return int
-     */
-    public function getDailyAmountThreshold()
-    {
-        return $this->dailyAmountThreshold;
-    }
-
-    /**
-     * Set dailyNumberPaymentsThreshold.
-     *
-     * @param int $dailyNumberPaymentsThreshold
-     *
-     * @return SmsData
-     */
-    public function setDailyNumberPaymentsThreshold($dailyNumberPaymentsThreshold)
-    {
-        $this->dailyNumberPaymentsThreshold = $dailyNumberPaymentsThreshold;
-
-        return $this;
-    }
-
-    /**
-     * Get dailyNumberPaymentsThreshold.
-     *
-     * @return int
-     */
-    public function getDailyNumberPaymentsThreshold()
-    {
-        return $this->dailyNumberPaymentsThreshold;
-    }
 
     /**
      * Set user
@@ -337,5 +122,119 @@ class SmsData
     {
         return $this->user;
     }
+
+    /**
+     * Set notificationPermission
+     *
+     * @param string $notificationPermission
+     *
+     * @return User
+     */
+    public function setNotificationPermission($notificationPermission)
+    {
+        $this->notificationPermission = $notificationPermission;
+
+        return $this;
+    }
+
+    /**
+     * Get notificationPermission
+     *
+     * @return string
+     */
+    public function getNotificationPermission()
+    {
+        return $this->notificationPermission;
+    }
+
+    /**
+     * Add webPush endpoint
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function addWebPushEndpoint(array $endpoint)
+    {
+        $this->webPushEndpoints[] = $endpoint;
+
+        return $this;
+    }
+
+    /**
+     * Remove endpoint
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function removeWebPushEndpoint(array $endpoint)
+    {
+        $endpoints = $this->webPushEndpoints;
+
+        return $this;
+    }
+
+    /**
+     * Get webPushEndpoints
+     *
+     * @return array
+     */
+    public function getWebPushEndpoints()
+    {
+        return $this->webPushEndpoints;
+    }
+
+    /**
+     * Add phone
+     *
+     * @param \Cairn\UserBundle\Entity\Phone $phone
+     *
+     * @return User
+     */
+    public function addPhone(\Cairn\UserBundle\Entity\Phone $phone)
+    {
+        $this->phones[] = $phone;
+
+        return $this;
+    }
+
+    /**
+     * Remove phone
+     *
+     * @param \Cairn\UserBundle\Entity\Phone $phone
+     */
+    public function removePhone(\Cairn\UserBundle\Entity\Phone $phone)
+    {
+        $this->phones->removeElement($phone);
+    }
+
+    /**
+     * Get phones
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getPhones()
+    {
+        return $this->phones;
+    }
+
+    /**
+     * check if phone exists
+     *
+     * @param \Cairn\UserBundle\Entity\Phone $phone
+     */
+    public function hasPhone(\Cairn\UserBundle\Entity\Phone $testPhone)
+    {
+        $phones = $this->getPhones();
+
+        foreach($phones as $phone){
+            if($phone == $testPhone){
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 }

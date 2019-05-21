@@ -19,7 +19,6 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
- * @UniqueEntity(fields = {"smsClient"},message="Ce client SMS est déjà utilisé") 
  */
 class User extends BaseUser
 {
@@ -105,23 +104,9 @@ class User extends BaseUser
     private $card;
 
     /**
-     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\SmsData", mappedBy="user", cascade={"persist","remove"})
      */
     private $smsData;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="smsClient", type="string", length=255, nullable=true, unique=true)
-     */
-    private $smsClient;
-
-    /**
-     * @var array
-     *
-     * @ORM\Column(name="webPush_endpoints", type="array")
-     */
-    private $webPushEndpoints;
 
     /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
@@ -160,7 +145,6 @@ class User extends BaseUser
         $this->creationDate = new \Datetime();
         $this->beneficiaries = new ArrayCollection();
         $this->referents = new ArrayCollection();
-        $this->smsData = new ArrayCollection();
         $this->setPasswordTries(0);
         $this->setCardKeyTries(0);
         $this->setCardAssociationTries(0);
@@ -168,7 +152,6 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
-        $this->webPushEndpoints = array();
     }
 
     public function __toString()
@@ -193,12 +176,11 @@ class User extends BaseUser
     {
         $phoneNumbers = array();
 
-        if(count($this->getSmsData()) > 0){
-            $smsData = $this->getSmsData();
-            foreach($smsData as $oneSmsData){
-                $phoneNumbers[] = $oneSmsData->getPhoneNumber();
-            }
+        $phones = $this->getSmsData()->getPhones();
+        foreach($phones as $phone){
+          $phoneNumbers[] = $phone->getPhoneNumber();
         }
+
         return $phoneNumbers;
     }
 
@@ -537,45 +519,6 @@ class User extends BaseUser
     }
 
     /**
-     * Add webPush endpoint
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function addWebPushEndpoint(array $endpoint)
-    {
-        $this->webPushEndpoints[] = $endpoint;
-
-        return $this;
-    }
-
-    /**
-     * Remove endpoint
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function removeWebPushEndpoint(array $endpoint)
-    {
-        $endpoints = $this->webPushEndpoints;
-
-        return $this;
-    }
-
-    /**
-     * Get webPushEndpoints
-     *
-     * @return array
-     */
-    public function getWebPushEndpoints()
-    {
-        return $this->webPushEndpoints;
-    }
-
-
-    /**
      * Set passwordTries
      *
      * @param integer $passwordTries
@@ -701,78 +644,27 @@ class User extends BaseUser
     }
 
     /**
-     * Add smsData
+     * Set smsData
      *
      * @param \Cairn\UserBundle\Entity\SmsData $smsData
      *
      * @return User
      */
-    public function addSmsData(\Cairn\UserBundle\Entity\SmsData $smsData)
+    public function setSmsData(\Cairn\UserBundle\Entity\SmsData $smsData = null)
     {
-        $this->smsData[] = $smsData;
+        $this->smsData = $smsData;
 
         return $this;
-    }
-
-    /**
-     * Remove smsData
-     *
-     * @param \Cairn\UserBundle\Entity\SmsData $smsData
-     */
-    public function removeSmsData(\Cairn\UserBundle\Entity\SmsData $smsData)
-    {
-        $this->smsData->removeElement($smsData);
     }
 
     /**
      * Get smsData
      *
-     * @return \Doctrine\Common\Collections\Collection
+     * @return \Cairn\UserBundle\Entity\SmsData
      */
     public function getSmsData()
     {
         return $this->smsData;
-    }
-
-    /**
-     * check if smsData exists
-     *
-     * @param \Cairn\UserBundle\Entity\SmsData $smsData
-     */
-    public function hasSmsData(\Cairn\UserBundle\Entity\SmsData $testSmsData)
-    {
-        $smsData = $this->getSmsData();
-
-        foreach($smsData as $smsData){
-            if($smsData == $testSmsData){
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Set smsClient.
-     *
-     * @param string $smsClient
-     *
-     * @return SmsData
-     */
-    public function setSmsClient($smsClient)
-    {
-        $this->smsClient = $smsClient;
-
-        return $this;
-    }
-
-    /**
-     * Get smsClient.
-     *
-     * @return string
-     */
-    public function getSmsClient()
-    {
-        return $this->smsClient;
     }
 
     /**
