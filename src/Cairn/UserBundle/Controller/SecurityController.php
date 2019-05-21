@@ -141,6 +141,9 @@ class SecurityController extends Controller
             $user->addWebPushEndpoint($params['subscription']);
 
             $em->flush();
+
+            $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Notifications fonctionnelles sur ce navigateur');
+
             $response = new Response('OK');
             $response->setStatusCode(Response::HTTP_OK);
             $response->headers->set('Content-Type', 'application/json'); 

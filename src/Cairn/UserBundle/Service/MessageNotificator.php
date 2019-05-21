@@ -89,27 +89,29 @@ class MessageNotificator
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        foreach($user->getWebPushEndpoints() as $subscription){
-            $notification = array(
-                'subscription'=> Subscription::create(
-                    array(
-                        'endpoint' => $subscription['endpoint'],
-                        'keys'=>array(
-                            'p256dh' => $subscription['keys']['p256dh'],
-                            'auth' => $subscription['keys']['auth']
+        if($user->getWebPushEndpoints() && count($user->getWebPushEndpoints()) > 0){
+            foreach($user->getWebPushEndpoints() as $subscription){
+                $notification = array(
+                    'subscription'=> Subscription::create(
+                        array(
+                            'endpoint' => $subscription['endpoint'],
+                            'keys'=>array(
+                                'p256dh' => $subscription['keys']['p256dh'],
+                                'auth' => $subscription['keys']['auth']
+                            )
                         )
-                    )
-                ),
-                'payload'=>json_encode( array(
-                    'title' => $title,
-                    'body'=> $content,
-                ))
-            );
-            
-            $webPush->sendNotification($notification['subscription'],$notification['payload']);
+                    ),
+                    'payload'=>json_encode( array(
+                        'title' => $title,
+                        'body'=> $content,
+                    ))
+                );
+                
+                $webPush->sendNotification($notification['subscription'],$notification['payload']);
+            }
         }
 
-        //check sent results
+        ////check sent results
         foreach ($webPush->flush() as $report) {
             $endpoint = $report->getRequest()->getUri()->__toString();
 
