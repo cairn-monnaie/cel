@@ -1,0 +1,63 @@
+{# src/Cairn/UserBundle/Resources/views/User/phone.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% form_theme formPhone 'form/materialize_form_theme.html.twig' %}
+
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+        <em><b> Attention ! Un SMS vous sera envoyé en cas de nouveau numéro de téléphone. Assurez-vous d'être en mesure de le recevoir</b></em>
+        <br><br>
+
+<div class="row">
+    {{ form_start(formPhone) }}
+    {% if formPhone.activationCode is defined %}
+      {{ form_row(formPhone.activationCode) }}                                         
+    {% else %}
+            {% if formPhone.phoneNumber is defined %}
+                {% if formPhone.identifier is defined %}
+                    <div class="input-field col s12 m6">
+                {% else %}
+                    <div class="input-field">
+                {% endif %}
+                   {{ form_widget(formPhone.phoneNumber) }} 
+                   {{ form_label(formPhone.phoneNumber) }} 
+                </div>                                        
+             {% endif %}
+       
+            {% if formPhone.identifier is defined %}
+                <div class="input-field col s12 m6">
+                   {{ form_widget(formPhone.identifier) }} 
+                   {{ form_label(formPhone.identifier) }} 
+                </div>                                        
+            {% endif %}
+            <p>
+               <label>
+                 {{ form_widget(formPhone.paymentEnabled) }}                                         
+                 <span><b>Payer par SMS</b></span>
+               </label>
+            </p>
+
+            <div><button type="submit" class="waves-effect waves-light btn">Suivant</button></div> 
+    {% endif %}
+
+    {{ form_rest(formPhone) }}
+    {{ form_end(formPhone) }}
+    
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <div class="js-user-name" data-get-name="{{app.user.username}}">
+        <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
+    {% endif %}
+
+</div>
+{% endblock %}              
+
+{% block javascripts %}
+{% endblock %}
+
+
