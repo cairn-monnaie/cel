@@ -28,15 +28,15 @@ class UserControllerTest extends BaseControllerTest
     /**
      *
      * The data provider must provide target users with sms data. Otherwise, edition makes no sense
-     *@dataProvider provideDataForAddSmsData
+     *@dataProvider provideDataForAddPhone
      */
-    public function testAddSmsData($login,$isExpectedForm, $newPhone,$isValidData,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
+    public function testAddPhone($login,$isExpectedForm, $newPhone,$isValidData,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
     {
         $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
 
-        $url = '/user/sms-data/add';
+        $url = '/user/phone/add';
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
@@ -152,7 +152,7 @@ class UserControllerTest extends BaseControllerTest
 
     /**
      */
-    public function provideDataForAddSmsData()
+    public function provideDataForAddPhone()
     {
         $admin = $this->testAdmin;
         $baseData = array('login'=>'stuart_andrew',
@@ -226,9 +226,9 @@ class UserControllerTest extends BaseControllerTest
     /**
      *
      * The data provider must provide target users with sms data. Otherwise, edition makes no sense
-     *@dataProvider provideDataForEditSmsData
+     *@dataProvider provideDataForEditPhone
      */
-    public function testEditSmsData($login,$target,$isExpectedForm, $newPhone,$isValidData,$isPhoneNumberEdit,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
+    public function testEditPhone($login,$target,$isExpectedForm, $newPhone,$isValidData,$isPhoneNumberEdit,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
     {
         $crawler = $this->login($login, '@@bbccdd');
 
@@ -242,7 +242,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertTrue(false);
         }
 
-        $url = '/user/sms-data/edit/'.$phoneBefore->getID();
+        $url = '/user/phone/edit/'.$phoneBefore->getID();
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
@@ -397,9 +397,9 @@ class UserControllerTest extends BaseControllerTest
     }
 
     /**
-     * target must match an user with sms data already persisted
+     * target must match an user with phone already persisted
      */
-    public function provideDataForEditSmsData()
+    public function provideDataForEditPhone()
     {
         $admin = $this->testAdmin;
         $baseData = array('login'=>'','target'=>'',
@@ -557,7 +557,6 @@ class UserControllerTest extends BaseControllerTest
         $form['fos_user_change_password_form[plainPassword][first]']->setValue($new);
         $form['fos_user_change_password_form[plainPassword][second]']->setValue($confirm);
         return $this->client->submit($form);
-
     }
 
     /**
