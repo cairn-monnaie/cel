@@ -37,6 +37,10 @@ table.smsdata_notification > tbody > tr > td {
   margin: 0px;
 }
 
+table.smsdata_notification:hover {
+  background: #eeeeee !important;
+}
+
 .w-100 {
   width: 100%;
 }

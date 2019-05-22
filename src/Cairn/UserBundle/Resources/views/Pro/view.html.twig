@@ -61,10 +61,12 @@
                         Accès SMS
                     {% endif %}
                 </div>
+
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
                         {% if (user.hasRole('ROLE_PRO')) and (user.smsData) %}
                         <div class="container">
+
                             <div class="smsdata_notification">
                             <table class="striped smsdata_notification">
                                 <caption>Recevoir une notification de paiement SMS</caption>
@@ -97,7 +99,7 @@
                                     {% if user.hasRole('ROLE_PRO') %}
                                         <div class="col s12 truncate"><i class="material-icons tiny">perm_identity</i>&nbsp;{{phone.identifier}}</div>
                                     {% endif %}
-                                    <div class="col s12 truncate"><i class="material-icons tiny">money</i><i class="material-icons tiny">{{ phone.paymentEnabled ? 'check' : 'cancel'}}</i></td>
+                                    <div class="col s12 truncate"><i class="material-icons tiny"></i>Peut payer par SMS : {{ phone.paymentEnabled ? 'Oui' : 'Non'}}</td>
 
                                 </div>
                                 <div class="smsdata_options">
@@ -106,8 +108,8 @@
                                 {% else %}
                                     {% set textSmsButton = "Editer les données SMS de " ~ user.name %}
                                 {% endif %}
-                                <a href="{{path('cairn_user_users_smsdata_edit',{'id' : phone.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
-                                 <a href="{{path('cairn_user_users_smsdata_delete',{'id' : phone.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
+                                <a href="{{path('cairn_user_users_phone_edit',{'id' : phone.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
+                                 <a href="{{path('cairn_user_users_phone_delete',{'id' : phone.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
                                  </div>
                             </div>
                             {% else %}
@@ -120,7 +122,7 @@
                         {% endif %}
                         <br> <br>
                         <div class="smsdata_new">
-                            <a href="{{path('cairn_user_users_smsdata_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                            <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
                         </div>
 
                     </div>
@@ -191,22 +193,48 @@
             {% endif %}
         </ul>
     </div>
+
+        {% if (app.user == user) and user.hasRole('ROLE_PRO') and user.smsData %}
+            <div class="js-smsdata-id" data-get-smsdataid="{{user.smsData.id}}">
+
+            {% set nP = user.smsData.notificationPermission %}            
+            <div class="js-user-webpush" data-get-wp="{{nP.webPushEnabled}}">
+        {% endif %}
+
 {% endblock %}              
 
 
 {% block javascripts %}
 
 <script type="text/javascript">
-    var containerNotifCell = document.querySelector('.permission');
 
-    if(Notification.permission !== 'granted'){
-        var isNotifAuthorized = 'cancel';
-    }else{
-        var isNotifAuthorized = 'check';
+    var containerNotifTable = document.querySelector('table.smsdata_notification');
+
+    if (containerNotifTable){
+        var containerID = document.querySelector('.js-smsdata-id');
+
+        if(containerID){
+        var smsDataID = containerID.dataset.getSmsdataid;
+
+            containerNotifTable.addEventListener('click', function() {
+               url = "{{ path('cairn_user_users_smsdata') }}"
+               window.location.href = url;
+            });
+        }
+
+        var containerWP = document.querySelector('.js-user-webpush');
+        var webPushEnabled = containerWP.dataset.getWp;
+
+        var containerNotifCell = document.querySelector('.permission');
+
+        if( (Notification.permission == 'granted') && webPushEnabled){
+            var isNotifAuthorized = 'check';
+        }else{
+            var isNotifAuthorized = 'cancel';
+        }
+
+        containerNotifCell.innerHTML = isNotifAuthorized;
     }
-
-    containerNotifCell.innerHTML = isNotifAuthorized;
-
 </script>
 
 {% endblock %}
