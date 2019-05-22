@@ -78,6 +78,7 @@ class SecurityController extends Controller
         }
     }
 
+
     public function notificationSubscriptionAction(Request $request)
     {
         if($request->isMethod('POST')){
@@ -89,19 +90,31 @@ class SecurityController extends Controller
 
             $networkInfo = $this->get('cairn_user_cyclos_network_info');
             $networkName = $this->getParameter('cyclos_currency_cairn');
-            $networkInfo->switchToNetwork($networkName,'session_token', $params['token']);
 
-//            $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+            $token = $this->container->get('cairn_user.security')->vigenereDecode($params['token']);
+            $networkInfo->switchToNetwork($networkName,'session_token', $token);
+
+            try{
+                $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
+            }catch(\Exception $e){
+                $response = new Response('Invalid authentication');
+                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
+                $response->headers->set('Content-Type', 'application/json'); 
+                $response->headers->set('Accept', 'application/json'); 
+               
+                return $response;
+               
+            }
 
             //validate access token
-//            if($userVO->shortDisplay != $params['username']){
-//                $response = new Response('Access denied');
-//                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
-//                $response->headers->set('Content-Type', 'application/json'); 
-//                $response->headers->set('Accept', 'application/json'); 
-//               
-//                return $response;
-//            }
+            if($userVO->shortDisplay != $params['username']){
+                $response = new Response('Access denied');
+                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
+                $response->headers->set('Content-Type', 'application/json'); 
+                $response->headers->set('Accept', 'application/json'); 
+               
+                return $response;
+            }
 
 
             //validate endpoint exists
