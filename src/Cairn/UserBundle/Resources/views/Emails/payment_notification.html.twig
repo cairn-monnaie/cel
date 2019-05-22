@@ -8,7 +8,7 @@ Bonjour <b>{{operation.creditorName}}</b>,
         <li> Montant : {{operation.amount}} </li>
         <li> nom du payeur : {{operation.debitorName}} </li>
         <li> Date de réalisation : {{operation.executionDate|date('d-m-Y H:i')}} </li>
-        <li> Identifiant indiqué du receveur : {{smsData.identifier}} </li>
+        <li> Identifiant indiqué du receveur : {{phone.identifier}} </li>
         <li> Identifiant du paiement : {{operation.paymentID}} </li>
 
     </ul>

@@ -138,11 +138,11 @@ class SecurityController extends Controller
 
             $user = $userRepo->findOneByUsername($params['username']);
 
-            $user->addWebPushEndpoint($params['subscription']);
+            $user->getSmsData()->addWebPushEndpoint($params['subscription']);
 
             $em->flush();
 
-            $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Notifications fonctionnelles sur ce navigateur');
+            $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
 
             $response = new Response('OK');
             $response->setStatusCode(Response::HTTP_OK);

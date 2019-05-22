@@ -403,13 +403,13 @@ class SmsController extends Controller
      * @param boolean $toAnalyze if false, the request payment has already been analyzed and validated : just process it
      * @see \Cairn\UserBundle\Validator\OperationValidator
      */
-    public function executePayment($debitorUser, $parsedSms, $toAnalyze, Phone $userPhone)
+    public function executePayment($debitorUser, $parsedSms, $toAnalyze, Phone $debitorPhone)
     {
         $em = $this->getDoctrine()->getManager();
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $securityService = $this->get('cairn_user.security');
 
-        $debitorPhoneNumber = $userPhone->getPhoneNumber();
+        $debitorPhoneNumber = $debitorPhone->getPhoneNumber();
 
         $operation = new Operation();
         $operation->setType(Operation::TYPE_SMS_PAYMENT);
@@ -439,7 +439,7 @@ class SmsController extends Controller
             //oppose user and send sms
             $smsBlocked = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS bloqués : opération jugée suspicieuse. Veuillez contacter l\'Association',$smsPaymentRequest);
 
-            $userPhone->setPaymentEnabled(false);
+            $debitorPhone->setPaymentEnabled(false);
 
             $em->persist($smsPaymentRequest); 
             $this->persistSMS($smsBlocked);
@@ -554,9 +554,9 @@ class SmsController extends Controller
 
             //the state of SMS paymentRequest can be WAITING_KEY, SUSPICIOUS or PROCESSED
 
-            $needsValidation = $securityService->paymentNeedsValidation($operation,$userPhone);
+            $needsValidation = $securityService->paymentNeedsValidation($operation,$debitorPhone);
             if($needsValidation){
-                $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content, $userPhone);
+                $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content, $debitorPhone);
                 $em->flush();
                 return;
             }else{//payment is checked, but is neither suspicious or to be validated
@@ -591,7 +591,7 @@ class SmsController extends Controller
             $subject = 'Paiement SMS [e]-Cairn';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $creditorUser->getEmail();
-            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'smsData'=>$creditorSmsData));
+            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'phone'=>$creditorPhone));
         
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
         }
