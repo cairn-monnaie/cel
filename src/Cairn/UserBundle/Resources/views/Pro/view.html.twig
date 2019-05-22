@@ -120,10 +120,13 @@
                         {% else %}
                                 Aucune donnée SMS enregistrée !
                         {% endif %}
-                        <br> <br>
-                        <div class="smsdata_new">
-                            <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
-                        </div>
+
+                        {% if app.user.isAdherent() %}
+                            <br> <br>
+                            <div class="smsdata_new">
+                                <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                            </div>
+                        {% endif %}
 
                     </div>
 

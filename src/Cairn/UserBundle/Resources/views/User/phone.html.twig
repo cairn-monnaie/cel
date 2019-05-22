@@ -25,8 +25,9 @@
                 {% else %}
                     <div class="input-field">
                 {% endif %}
-                   {{ form_widget(formPhone.phoneNumber) }} 
                    {{ form_label(formPhone.phoneNumber) }} 
+                   {{ form_errors(formPhone.phoneNumber) }} 
+                   {{ form_widget(formPhone.phoneNumber) }} 
                 </div>                                        
              {% endif %}
        
@@ -43,7 +44,7 @@
                </label>
             </p>
 
-            <div><button type="submit" class="waves-effect waves-light btn">Suivant</button></div> 
+            <div><button type="submit" id="cairn_userbundle_phone_save" class="waves-effect waves-light btn">Suivant</button></div> 
     {% endif %}
 
     {{ form_rest(formPhone) }}

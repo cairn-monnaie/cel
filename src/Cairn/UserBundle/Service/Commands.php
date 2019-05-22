@@ -748,11 +748,12 @@ class Commands
 
         $person2 = $userRepo->findOneByUsername('benoit_perso'); 
         $this->createSmsData($person2,'+33644332211');
+        $person2->getPhones()[0]->setPaymentEnabled(false);
 
         echo 'INFO: ' .$pro2->getName(). ' with role PRO, has phone number : '. $pro2->getPhoneNumbers()[0]."\n";
         echo 'INFO: ' .$pro2->getName(). ' with role PRO has ENabled all sms operations : '."\n";
         echo 'INFO: ' .$person2->getName(). ' with role PERSON, has phone number : '. $person2->getPhoneNumbers()[0]."\n";
-        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled all sms operations'."\n";
+        echo 'INFO: ' .$person2->getName(). ' with role PERSON has DISabled sms operations'."\n";
         echo 'INFO: OK !'."\n";
         $usersWithSmsInfo[] = $person2;
         $usersWithSmsInfo[] = $pro2;

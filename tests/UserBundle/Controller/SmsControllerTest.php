@@ -176,7 +176,6 @@ class SmsControllerTest extends BaseControllerTest
 
             'payment : balance error'=>array('+33722222222','PAYER100MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
-            'payment : creditor has sms disabled'=>array('+33612345678','PAYER100DRDBREW',false,'1111',true,array('pas été autorisées pour')),
 
             'payment : valid,creditor has payments disabled but reception enabled'=>array('+33612345678','PAYER10AMANSOL',false,'1111',true,
                                                                                                 array($validDebMsg,$validCredMsg),2),

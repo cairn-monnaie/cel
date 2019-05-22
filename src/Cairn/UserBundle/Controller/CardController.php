@@ -443,8 +443,6 @@ class CardController extends Controller
 //                $zip->open($zipWebPath,  \ZipArchive::CREATE);
 
                 for($i=0; $i<$nbRequestedCards; $i++){
-                    echo $i;
-
                     $salt = $this->get('cairn_user.security')->generateCardSalt();
 
                     $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
