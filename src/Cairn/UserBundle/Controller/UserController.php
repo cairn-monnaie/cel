@@ -129,12 +129,50 @@ class UserController extends Controller
 
     }
 
+    /**
+     *
+     *@Security("is_granted('ROLE_PRO')")
+     */
+    public function editSmsDataAction(Request $request)
+    {
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $currentUser = $this->getUser();
+
+        if(! $currentUser->isAdherent() ){
+            throw new AccessDeniedException('Réserver aux comptes adhérents');
+        }
+
+        $smsData = $currentUser->getSmsData();
+
+        $formSmsData = $this->createForm(SmsDataType::class, $smsData);
+
+        $formSmsData->handleRequest($request);
+        if($formSmsData->isSubmitted() && $formSmsData->isValid()){
+            $em->flush();
+            $session->getFlashBag()->add('success','Vos systèmes de notification de paiement ont été mis à jour avec succès');
+
+            $nP = $smsData->getNotificationPermission();
+            if(! ($nP->isEmailEnabled() || $nP->isSmsEnabled() || $nP->isWebPushEnabled()) ){
+                $session->getFlashBag()->add('error','Attention ! Vous n\'avez séléctionné aucun système de notification. En cas de réception de paiement par SMS, vous ne pourrez pas vérifier l\'exécution du paiement en dehors de votre compte [e]-Cairn ');
+            }
+
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+
+        }
+
+        return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
+            array('formSmsData'=>$formSmsData->createView())
+            );
+
+    }
+
      /**
      * Add user's sms data
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function addSmsDataAction(Request $request)
+    public function addPhoneAction(Request $request)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -179,11 +217,11 @@ class UserController extends Controller
             // POST request is a new phone number for an existing entity smsData
             if($previousPhoneNumber != $phone->getPhoneNumber()){
                 $this->sendActivationCode(true,$session, $phone);
-                return $this->redirectToRoute('cairn_user_users_smsdata_add');
+                return $this->redirectToRoute('cairn_user_users_phone_add');
             }
          }
 
-        return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
+        return $this->render('CairnUserBundle:User:phone.html.twig',
             array('formPhone'=>$formPhone->createView())
             );
     }
@@ -306,7 +344,7 @@ class UserController extends Controller
 
 
             $session->remove('activationCode');
-            $session->remove('smsData');
+            $session->remove('phone');
 
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
 
@@ -333,7 +371,7 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function editSmsDataAction(Request $request, Phone $phone)
+    public function editPhoneAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -385,7 +423,7 @@ class UserController extends Controller
                     throw new AccessDeniedException('Action réservée à '.$user->getName());
                 }
                 $this->sendActivationCode(false,$session, $phone);
-                return $this->redirectToRoute('cairn_user_users_smsdata_edit',array('id'=>$phone->getID()));
+                return $this->redirectToRoute('cairn_user_users_phone_edit',array('id'=>$phone->getID()));
 
             }else{// POST request does not concern a new phone number
 
@@ -403,7 +441,7 @@ class UserController extends Controller
 
          }
 
-        return $this->render('CairnUserBundle:User:change_sms_data.html.twig',
+        return $this->render('CairnUserBundle:User:phone.html.twig',
             array('formPhone'=>$formPhone->createView())
             );
     }
@@ -412,7 +450,7 @@ class UserController extends Controller
      *
      *@TODO : protect behind post request
      */
-    public function deleteSmsDataAction(Request $request, Phone $phone)
+    public function deletePhoneAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();

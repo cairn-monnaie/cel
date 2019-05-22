@@ -22,7 +22,7 @@ class PhoneRepository extends \Doctrine\ORM\EntityRepository
             ->setParameter('phoneNumber',$phoneNumber)
             ;
 
-        return $sb->getQuery()->getOneOrNullResult();
+        return $pb->getQuery()->getOneOrNullResult();
     }
 
 }

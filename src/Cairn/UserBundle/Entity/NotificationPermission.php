@@ -78,7 +78,7 @@ class NotificationPermission
      *
      * @return bool
      */
-    public function getEmailEnabled()
+    public function isEmailEnabled()
     {
         return $this->emailEnabled;
     }
@@ -102,7 +102,7 @@ class NotificationPermission
      *
      * @return bool
      */
-    public function getWebPushEnabled()
+    public function isWebPushEnabled()
     {
         return $this->webPushEnabled;
     }
@@ -126,7 +126,7 @@ class NotificationPermission
      *
      * @return bool
      */
-    public function getSmsEnabled()
+    public function isSmsEnabled()
     {
         return $this->smsEnabled;
     }

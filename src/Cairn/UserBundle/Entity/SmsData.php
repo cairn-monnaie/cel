@@ -47,6 +47,7 @@ class SmsData
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationPermission", cascade={"persist","remove"})
+     *@Assert\Valid()
      */ 
     private $notificationPermission;
 

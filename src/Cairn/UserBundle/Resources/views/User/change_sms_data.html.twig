@@ -2,7 +2,7 @@
                                                                                
 {% extends "CairnUserBundle::layout.html.twig" %}                        
                                                                                
-{% form_theme formPhone 'form/materialize_form_theme.html.twig' %}
+{% form_theme formSmsData 'form/materialize_form_theme.html.twig' %}
 
 {% block title %}{% endblock %}                                                                 
                                                                                
@@ -11,60 +11,86 @@
 
 {% block body %}
     {{parent()}} 
-        <em><b> Attention ! Un SMS vous sera envoyé en cas de changement de numéro. Assurez-vous d'être en mesure de le recevoir</b></em>
-        <br><br>
 
+<div class="row">
+    <div class="container">
+        <h2>Les notifications de paiement SMS</h2>
 
-       {{ form_start(formPhone) }}
-         {% if formPhone.activationCode is defined %}
-           {{ form_row(formPhone.activationCode) }}                                         
-         {% else %}
-             {% if formPhone.phoneNumber is defined %}
-                {{ form_row(formPhone.phoneNumber) }}                                         
-             {% endif %}
+    {{ form_start(formSmsData) }}
 
-{#             <label>
-               {{ form_widget(formPhone.smsEnabled) }}                                         
-               <span>Recevoir par SMS</span>
-             </label>
+        <table class="highlight">
+            <caption><b>Méthodes de notification</b></caption>
+            <tbody>
+              <tr>
+                <td>Notification sur <b>ce navigateur</b> </td>
+                <td>
+                    <p>
+                    <label>
+                      {{ form_widget(formSmsData.notificationPermission.webPushEnabled) }}                                         
+                      <span></span>
+                    </label>
+                    </p>
+                </td>
+              </tr>
+              <tr>
+                <td>Email à <b>{{app.user.email}}</b> </td>
+                <td>
+                    <p>
+                    <label>
+                      {{ form_widget(formSmsData.notificationPermission.emailEnabled) }}                                         
+                      <span></span>
+                    </label>
+                    </p>
+                </td>
+              </tr>
+              <tr>
+                <td>SMS</td>
+                <td>
+                    <p>
+                    <label>
+                      {{ form_widget(formSmsData.notificationPermission.smsEnabled) }}                                         
+                       <span></span>
+                   </label>
+                    </p>
+                </td>
+              </tr>
+            </tbody>
+        </table>
+    
+    </div> 
+        {% for form in formSmsData.phones %}
+            {% if form.phoneNumber is defined %}
+            <div class="input-field col s12 m6">
+               {{ form_widget(form.phoneNumber) }} 
+               {{ form_label(form.phoneNumber) }} 
+            </div>                                        
+            {% endif %}
+        
+            {% if form.identifier is defined %}
+                <div class="input-field col s12 m6">
+                   {{ form_widget(form.identifier) }} 
+                   {{ form_label(form.identifier) }} 
+                </div>                                        
+            {% endif %}
+            <p>
+               <label>
+                 {{ form_widget(form.paymentEnabled) }}                                         
+                 <span>Payer par SMS</span>
+               </label>
+            </p>
+        
+        {% endfor %}
+        
+    <br><br>
+    {{ form_rest(formSmsData) }}
+    {{ form_end(formSmsData) }}
+    
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <div class="js-user-name" data-get-name="{{app.user.username}}">
+        <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
+    {% endif %}
 
-             <br>
-             <label>
-               {{ form_widget(formPhone.emailEnabled) }}                                         
-               <span>Recevoir par e-mail</span>
-             </label>
-
-             <br>
-             {% if formPhone.webPushEnabled is defined %}
-                 <label>
-                   {{ form_widget(formPhone.webPushEnabled) }}                                         
-                   <span>Recevoir par notification</span>
-                 </label>
-             {% endif %}
-#}
-             <br>
-             {% if formPhone.paymentEnabled is defined %}
-                 <label>
-                   {{ form_widget(formPhone.paymentEnabled) }}                                         
-                   <span>Payer par SMS</span>
-                 </label>
-             {% endif %}
-
-             <br><br>
-
-             {% if formPhone.identifier is defined %}
-                {{ form_row(formPhone.identifier) }}                                         
-             {% endif %}
-         {% endif %}
-
-       {{ form_rest(formPhone) }}
-       {{ form_end(formPhone) }}
-
-        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-            <div class="js-user-name" data-get-name="{{app.user.username}}">
-            <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
-        {% endif %}
-
+</div>
 {% endblock %}              
 
 {% block javascripts %}
@@ -101,14 +127,13 @@
                 }
             });
         }
+
         if( isPro ){
-            var containerNotifBox = document.querySelector('#cairn_userbundle_onesmsdata_webPushEnabled');
+            var containerNotifBox = document.querySelector('#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
             if(Notification.permission !== 'granted'){
                 containerNotifBox.checked = false;
-            }else{
-                containerNotifBox.checked = true;
-            }
-           
+            }           
+
             if(containerNotifBox){ 
                 if(containerNotifBox.checked){
                     checkNotification();

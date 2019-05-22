@@ -121,10 +121,7 @@ class PhoneType extends AbstractType
 
                     }
 
-
                 });
-
-            $builder->add('save', SubmitType::class, array('label' => 'Suivant'));
         }
     }
 
