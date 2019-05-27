@@ -72,6 +72,78 @@ class AdminController extends Controller
 
     }   
 
+    /**
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function generateApiTokenAction(Request $request){
+        if ($request->isXmlHttpRequest()){
+            $em = $this->getDoctrine()->getManager();
+            $securityService = $this->get('cairn_user.security');
+
+            $token = $securityService->generateToken();
+            $apiClient = $em->getRepository(ApiClient::class)->findByAccessToken($securityService->vigenereEncode($token));
+
+            while($apiClient){
+                $token = $securityService->generateToken();
+                $apiClient = $em->getRepository(ApiClient::class)->findByAccessToken($securityService->vigenereEncode($token));
+            }
+
+            $returnArray = array('token'=>$token) ;
+            return new JsonResponse($returnArray);
+        }
+        return new Response("Ajax only",400);
+    }
+
+    /**
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function editApiClientAction(Request $request, User $user)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $securityService = $this->get('cairn_user.security');
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+
+        if(! $user->hasRole('ROLE_PRO')){
+            throw new AccessDeniedException('Action réservée aux prestataires');
+        }
+
+        $apiClient = new ApiClient();
+
+        $login = ($user->getApiClient()) ? $user->getApiClient()->getLogin() : NULL;
+        $apiClient->setLogin($login);
+
+        $form = $this->createForm(ApiClientType::class, $apiClient);
+
+         if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()){
+                $dataForm = $form->getData();
+
+                if( ! ($userApiClient = $user->getApiClient())) {
+                    $userApiClient = new ApiClient($user);
+                }
+
+                if($accessToken = $apiClient->getAccessToken()){
+                    $userApiClient->setAccessToken( $securityService->vigenereEncode($accessToken) );
+                }
+
+                if($webhook = $apiClient->getWebhook()){
+                    $userApiClient->setWebhook( $securityService->vigenereEncode($webhook) );
+                }
+
+                $userApiClient->setLogin($apiClient->getLogin());
+                $em->persist($userApiClient);                
+                $em->flush();
+                $session->getFlashBag()->add('success','Données API éditées avec succès');
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+            }
+        }
+         return $this->render('CairnUserBundle:Admin:edit_apiclient.html.twig',array('form'=>$form->createView()));
+      
+    }
 
     /**
      * Administrator can add id document to user profile
