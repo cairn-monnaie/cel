@@ -145,8 +145,9 @@ class Operation
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
     const TYPE_SMS_PAYMENT = 8;
+    const TYPE_ONLINE_PAYMENT = 9;
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
 
     public function isSmsPayment()
     {
@@ -166,7 +167,7 @@ class Operation
             return 'conversion en bureau de change';
             break;
         case "4":
-            return 'conversion par virement';
+            return 'conversion par virement bancaire';
             break;
         case "5":
             return 'deposit';
@@ -180,13 +181,16 @@ class Operation
         case "8":
             return 'sms payment';
             break;
+        case "9":
+            return 'online payment';
+            break;
         default:
             return NULL;
         }
     }
     public static function getFromOperationTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL);//,self::TYPE_RECONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_ONLINE_PAYMENT);//,self::TYPE_RECONVERSION);
     }
 
     public static function getDebitOperationTypes()
