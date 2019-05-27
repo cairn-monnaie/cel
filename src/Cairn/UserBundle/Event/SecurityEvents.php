@@ -44,6 +44,7 @@ final class SecurityEvents
         'cairn_user_users_smsdata',
         'cairn_user_electronic_mlc_dashboard',
         'cairn_user_electronic_mlc_edit',
+        'cairn_user_pros_apiclient_edit',
     ];
 
     /**

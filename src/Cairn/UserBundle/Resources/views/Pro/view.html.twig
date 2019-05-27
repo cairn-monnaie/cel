@@ -68,7 +68,7 @@
                         <div class="container">
 
                             <div class="smsdata_notification">
-                            <table class="striped smsdata_notification">
+                            <table class="striped smsdata_notification hoverable">
                                 <caption>Recevoir une notification de paiement SMS</caption>
                                 <tbody>
                                   <tr>
@@ -192,6 +192,13 @@
                             {% endif %}
                         </div>
                     </li>
+                    <li>
+                        <div class="collapsible-header"><i class="material-icons">sync</i> Données API</div>
+                        <div class="collapsible-body">
+                            <a class="btn waves-effect waves-light" href="{{path('cairn_user_pros_apiclient_edit',{'username': user.username})}}">Editer les données API</a>
+                        </div>
+                    </li>
+
                 {% endif %}
             {% endif %}
         </ul>

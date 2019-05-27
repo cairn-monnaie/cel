@@ -189,11 +189,11 @@ class Security
 
     public function findAvailableCode()                                        
     {                                                                          
-        $uniqueCode = substr($this->generateCardSalt(),0,5);        
+        $uniqueCode = substr($this->generateToken(),0,5);        
         $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);         
 
         while($existingCard){                                                  
-            $uniqueCode = substr($this->generateCardSalt(),0,5);    
+            $uniqueCode = substr($this->generateToken(),0,5);    
             $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);     
         }                                                                      
 
@@ -201,7 +201,7 @@ class Security
     }
 
 
-    public function generateCardSalt()
+    public function generateToken()
     {
         $salt = rtrim(str_replace('+', '.', base64_encode(random_bytes(32))), '=');
         return $salt;

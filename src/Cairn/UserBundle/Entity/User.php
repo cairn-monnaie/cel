@@ -109,6 +109,11 @@ class User extends BaseUser
     private $smsData;
 
     /**
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist","remove"})
+     */
+    private $apiClient;
+
+    /**
      * @ORM\Column(name="pwd_tries", type="smallint", unique=false, nullable=false)
      */
     private $passwordTries;
@@ -685,6 +690,30 @@ class User extends BaseUser
     public function getSmsData()
     {
         return $this->smsData;
+    }
+
+    /**
+     * Set apiClient
+     *
+     * @param \Cairn\UserBundle\Entity\ApiClient $apiClient
+     *
+     * @return User
+     */
+    public function setApiClient(\Cairn\UserBundle\Entity\ApiClient $apiClient = null)
+    {
+        $this->apiClient = $apiClient;
+
+        return $this;
+    }
+
+    /**
+     * Get apiClient
+     *
+     * @return \Cairn\UserBundle\Entity\ApiClient
+     */
+    public function getApiClient()
+    {
+        return $this->apiClient;
     }
 
     /**

@@ -443,7 +443,7 @@ class CardController extends Controller
 //                $zip->open($zipWebPath,  \ZipArchive::CREATE);
 
                 for($i=0; $i<$nbRequestedCards; $i++){
-                    $salt = $this->get('cairn_user.security')->generateCardSalt();
+                    $salt = $this->get('cairn_user.security')->generateToken();
 
                     $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
@@ -604,7 +604,7 @@ class CardController extends Controller
                 return $this->redirectToRoute('cairn_user_profile_view', array('_format'=>$_format,'username'=>$user->getUsername()));
             }
 
-            $salt = $this->get('cairn_user.security')->generateCardSalt();
+            $salt = $this->get('cairn_user.security')->generateToken();
             $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
             $card = new Card($user,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);

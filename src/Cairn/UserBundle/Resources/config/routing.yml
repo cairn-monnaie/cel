@@ -162,15 +162,20 @@ cairn_user_pros_list:
     requirements:
         _format: html
 
+
 cairn_user_users_block:
     path:     user/block/{username}
     defaults: { _controller: CairnUserBundle:User:blockUser, _format: html }
 #    requirements:
 #        id: \d+
 
-cairn_user_users_search:
-    path:     user/search/
-    defaults: { _controller: CairnUserBundle:Admin:searchUser }
+cairn_user_apiclient_token_generate:
+    path:     admin/api-client/generate
+    defaults: { _controller: CairnUserBundle:Admin:generateApiToken, _format: json }
+
+cairn_user_pros_apiclient_edit:
+    path:     admin/api-client/edit/{username}
+    defaults: { _controller: CairnUserBundle:Admin:editApiClient, _format: html }
 
 
 cairn_user_users_activate:

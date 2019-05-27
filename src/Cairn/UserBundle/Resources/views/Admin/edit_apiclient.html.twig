@@ -1,0 +1,41 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/edit_apiclient.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    <div class="section">
+      {{ form_start(form) }}
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+    </div>
+    <a id="apiclient_webhook" href="#">Changer le point de rappel</a>
+    <a id="apiclient_token" href="#"> Nouvelle clé ?</a>
+
+{% endblock %}
+
+{% block javascripts %}
+
+    <script>
+        $(function (){
+            $('a#apiclient_token').on('click', function () {
+                jQuery.ajax({
+                    type: 'POST',
+                    url: "{{ path('cairn_user_apiclient_token_generate') }}",
+                    dataType: 'json',
+                    success: function (response) {
+                        $('input#cairn_userbundle_apiclient_accessToken').attr('value',response.token);
+                        alert('Attention ! Notez la clé avant de sauvegarder');
+                    }, 
+                });
+            })
+        });
+
+    </script>
+
+{% endblock %}
+
