@@ -9,12 +9,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Deposit;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Entity\ApiClient;
 
 use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
 
 //manage HTTP format
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +25,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 //manage Forms
 use Cairn\UserBundle\Form\AccountType;
 use Cairn\UserBundle\Form\ProfileType;
+use Cairn\UserBundle\Form\ApiClientType;
 use Cairn\UserBundle\Form\AddIdentityDocumentType;
 use Cairn\UserBundle\Form\ConfirmationType;
 use Symfony\Component\Form\AbstractType;                                       
@@ -69,6 +72,12 @@ class AdminController extends Controller
 
     }   
 
+
+    /**
+     * Administrator can add id document to user profile
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
     public function addIdentityDocumentAction(Request $request, User $user)
     {
         $session = $request->getSession();
@@ -218,10 +227,10 @@ class AdminController extends Controller
                 $debitAccount = $account;
             }
         }
-        $availableAmount = $debitAccount->status->balance;
+        $moneySafeBalance = $debitAccount->status->balance;
 
         $form = $this->createFormBuilder()
-            ->add('amount',    NumberType::class, array('label' => 'Nombre de [e]-cairns actuellement gagés'))
+            ->add('amount',    NumberType::class, array('label' => 'Nombre de [e]-cairns nouvellement gagés'))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
             ->getForm();
 
@@ -239,8 +248,8 @@ class AdminController extends Controller
                         $creditTransferType = $paymentType;
                     }
                 }
-                $amountToCredit = $newAvailableAmount - $availableAmount;
-                $description = 'Declaration de '.$newAvailableAmount .' [e]-cairns disponibles par '.$currentUser->getName().' le '.date('d-m-Y');
+                $amountToCredit = $newAvailableAmount;
+                $description = 'Declaration de '.$newAvailableAmount .' nouveaux [e]-cairns disponibles par '.$currentUser->getName().' le '.date('d-m-Y');
 
 
                 $res = $this->bankingManager->makeSinglePreview($paymentData,$amountToCredit,$description,$creditTransferType,new \Datetime());
@@ -256,9 +265,10 @@ class AdminController extends Controller
                 $reason = 'Acompte post virement Helloasso'; 
 
                 //while there is enough available electronic mlc, credit user
+
+                $moneySafeBalance += $newAvailableAmount;
                 foreach($deposits as $deposit){
-                    if($deposit->getAmount() <= $newAvailableAmount){
-                        var_dump($deposit->getID());
+                    if($deposit->getAmount() <= $moneySafeBalance){
                         $paymentData = $bankingService->getPaymentData('SYSTEM',$deposit->getCreditor()->getCyclosID(),NULL);
                         foreach($paymentData->paymentTypes as $paymentType){
                             if(preg_match('#credit_du_compte#', $paymentType->internalName)){
@@ -285,7 +295,7 @@ class AdminController extends Controller
 
                         $em->persist($operation);
 
-                        $newAvailableAmount -= $deposit->getAmount();
+                        $moneySafeBalance -= $deposit->getAmount();
                     }
                 }
 
@@ -299,7 +309,7 @@ class AdminController extends Controller
             }
         }
 
-        return $this->render('CairnUserBundle:Admin:money_safe_edit.html.twig',array('form' => $form->createView(),'availableAmount'=>$availableAmount));
+        return $this->render('CairnUserBundle:Admin:money_safe_edit.html.twig',array('form' => $form->createView(),'availableAmount'=>$moneySafeBalance));
 
     }
 
