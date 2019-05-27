@@ -4,39 +4,68 @@
 
 {% block body %}
     {{parent()}}
+
+<div class="row">
     <div>
-        <h1> Détail de l'opération </h1>
+        <h1> Détail de votre {{transfer.getTypeName(transfer.type)|trans}} </h1>
         {% if transfer.id is defined %}
             <a href="{{path('cairn_user_banking_transfer_notice_download',{'paymentID':transfer.paymentID})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
         {% endif %}
+    </div>
 
+    <div class="container center-align">
+        <div class="col s12 l5">
+            <div class="card blue-grey darken-1">
+                <div class="card-content purple darken-2 white-text">
+                    <span class="card-title">Compte débité</span>
+                    <p>
+                        Nom : {{transfer.debitorName}}
+                        <br>
+                        N° de compte : {{transfer.fromAccountNumber}}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col l2 hide-on-med-and-down valign-wrapper">
+            <p><i class="material-icons large">arrow_forward</i></p>
+        </div>
 
-        <h2> Compte débité </h2>
+        <div class="col s12 hide-on-large-only">
+             <p><i class="material-icons large">arrow_downward</i></p>
+        </div>
+
+        <div class="col s12 l5">
+            <div class="card blue-grey darken-1">
+                <div class="card-content purple darken-2 white-text">
+                    <span class="card-title">Compte crédité</span>
+                    <p>
+                        Nom : {{transfer.creditorName}}
+                        <br>
+                        N° de compte : {{transfer.toAccountNumber}}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="center-align transfer_data">
             <ul>
-                <li> Nom : {{transfer.debitorName}}</li>
-                <li> ICC : {{transfer.fromAccountNumber}}</li>
+               <li><span class="black-text"> Montant </span>: <span class="grey-text text-darken-3">{{transfer.amount}} [e]-Cairns</span> </li> 
+               <li><span class="black-text"> Date d'exécution demandée</span> : <span class="grey-text text-darken-3">{{transfer.executionDate|date('d-m-Y')}}</span> </li> 
+               <li><span class="black-text"> Date de soumission</span> : <span class="grey-text text-darken-3">{{transfer.submissionDate|date('d-m-Y')}}</span> </li> 
+               <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{transfer.reason}}</span> </li>
+               <li><span class="black-text"> Description</span> : <span class="grey-text text-darken-3">{{transfer.description}}</span> </li>
+               <li><span class="black-text">Etat</span>:  
+                    <span class="grey-text text-darken-3"> 
+                    {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                        En cours 
+                    {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                        Echoué 
+                    {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                        Exécuté 
+                    {% endif %}
+                    </span>
+               </li>
             </ul>
-
-        <h2> Compte crédité </h2>
-            <ul>
-                 <li>Nom : {{transfer.creditorName}}</li>
-                 <li> ICC : {{transfer.toAccountNumber}}</li>
-                </li>
-
-            </ul>
-
-        <em> Date d'exécution demandée : {{transfer.executionDate|date('Y-m-d')}} </em> </br>
-        <em> Date de soumission : {{transfer.submissionDate|date('Y-m-d')}} </em> </br>
-        <em> Montant : {{transfer.amount}} </em></br>
-        <em> Motif : {{transfer.reason}} </em></br>
-        <em> Description : {{transfer.description}} </em></br>
-        {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
-            Etat : <em> En cours </em>
-        {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
-            Etat : <em> Echoué </em>
-        {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
-            Etat : <em> Exécuté </em>
-        {% endif %}
-
-    </div>    
+        </div>
+    </div>
+</div>
 {% endblock %}

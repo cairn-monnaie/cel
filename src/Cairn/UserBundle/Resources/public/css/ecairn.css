@@ -23,6 +23,11 @@ ul#contacts_list li.emails {
     align-items: center;
 }
 
+div.transfer_data ul li span,em {
+  font-weight: bold;
+}
+
+
 ul#contacts_list li a {
   font-weight: bold;
 }
@@ -35,10 +40,6 @@ table.smsdata_notification > tbody > tr > td {
   font-weight: bold;
   padding: 0px!important;
   margin: 0px;
-}
-
-table.smsdata_notification:hover {
-  background: #eeeeee !important;
 }
 
 .w-100 {

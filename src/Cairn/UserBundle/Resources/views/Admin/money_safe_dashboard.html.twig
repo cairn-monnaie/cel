@@ -9,11 +9,14 @@
 {% block body %}
     {{parent()}} 
 
+<div class="row">
+
     <h2> [e]-cairns disponibles : {{availableAmount}} </h2>
 
     <h3> Somme des crédits à réaliser : {{amountOfDeposits}} </h3>
 
-     <a href="{{path('cairn_user_electronic_mlc_edit')}}" class="btn waves-effect waves-light">Déclarer le nombre de [e]-cairns disponibles</a>
+     <a href="{{path('cairn_user_electronic_mlc_edit')}}" class="btn waves-effect waves-light">Déclarer des [e]-cairns disponibles</a>
+     <a href="{{path('cairn_user_helloasso_sync')}}" class="btn waves-effect waves-light">Synchroniser un virement Helloasso</a>
 
     <table>
     <thead>
@@ -39,5 +42,6 @@
         Aucun dépôt à réaliser !
     {% endfor %}
 
+</div>
 {% endblock %}              
 

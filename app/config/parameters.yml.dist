@@ -63,6 +63,7 @@ parameters:
     sms_amount_block: 1000
     sms_nb_payments_block: 15
 
+    helloasso_campaign_id: '0000011111122222'
     helloasso_api_login : login
     helloasso_api_password : password
 
