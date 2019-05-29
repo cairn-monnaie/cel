@@ -1,0 +1,30 @@
+{# src/Cairn/UserBundle/Resources/views/Admin/online_payment.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row">
+
+    <div class="center-align operation_data">
+        <ul>
+           <li><span class="black-text"> Montant </span>: <span class="grey-text text-darken-3">{{operation.amount}} [e]-Cairns</span> </li> 
+           <li><span class="black-text"> Date d'exécution</span> : <span class="grey-text text-darken-3">{{operation.executionDate|date('d-m-Y')}}</span> </li> 
+           <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{operation.reason}}</span> </li>
+        </ul>
+    </div>
+
+    <div class="section">
+      {{ form_start(form) }}
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+    </div>
+
+</div>
+{% endblock %}
+

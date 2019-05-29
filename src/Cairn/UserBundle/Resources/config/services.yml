@@ -41,6 +41,13 @@ services:
         arguments:
             - "@request_stack"
 
+    cairn_user.api_authenticator:
+        public: true
+        class: Cairn\UserBundle\Security\TokenAuthenticator
+        arguments:
+            - "@cairn_user.repository_user"
+            - "@cairn_user.security"
+
     cairn_user.commands:
         class: Cairn\UserBundle\Service\Commands
         arguments:
@@ -187,6 +194,7 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }
 
+
     cairn_user.operation_validator:
         class: Cairn\UserBundle\Validator\OperationValidator
         arguments:
@@ -195,14 +203,6 @@ services:
             - "@cairn_user_cyclos_account_info"
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
-
-#    cairn_user.smsdata_validator:
-#        class: Cairn\UserBundle\Validator\SmsDataValidator
-#        arguments:
-#            - "@cairn_user.repository_user"
-#            - "@cairn_user.security"
-#        tags:
-#            - { name: validator.constraint_validator, alias: cairn_smsdata_validator }
 
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:

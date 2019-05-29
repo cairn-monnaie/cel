@@ -74,4 +74,4 @@ parameters:
         webpush:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
-
+    online_payment_hosts: 'localhost$|domain.com$'

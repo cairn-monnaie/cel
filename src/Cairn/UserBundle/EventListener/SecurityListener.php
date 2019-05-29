@@ -178,12 +178,15 @@ class SecurityListener
     {
         $request = $event->getRequest();
 
-        $username = $request->request->all()['_username'];
-        $password = $request->request->all()['_password'];
+        if(! $this->container->get('cairn_user.api')->isApiCall()){
 
-        $session = $request->getSession();
-
-        $this->loginPaymentApp($username,$password,$session);
+            $username = $request->request->all()['_username'];
+            $password = $request->request->all()['_password'];
+    
+            $session = $request->getSession();
+    
+            $this->loginPaymentApp($username,$password,$session);
+        }
     }
 
     protected function loginPaymentApp($username, $password, $session)

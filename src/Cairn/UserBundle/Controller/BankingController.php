@@ -1190,4 +1190,181 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:accounts_download.html.twig',array('form'=>$form->createView(),'accounts'=>$accounts));
     }
 
+    public function confirmOnlinePaymentAction(Request $request, $suffix)
+    {
+        $debitorUser = $this->getUser();
+
+        if(! $debitorUser->isAdherent()){
+            throw new AccessDeniedException('Pas adhérent');
+        }
+
+        $session = $request->getSession();
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+        $oPRepo = $em->getRepository('CairnUserBundle:OnlinePayment');
+        $securityService = $this->get('cairn_user.security');
+
+        $onlinePayment = $oPRepo->findOneByUrlValidationSuffix($suffix);
+
+        if(! $onlinePayment){
+            $session->getFlashBag()->add('error','Aucun paiement ne correspond à votre recherche');
+            return $this->redirect($request->headers->get('referer'));
+        }
+
+        $creditorUser = $userRepo->findOneByMainICC($onlinePayment->getAccountNumber());
+
+        $operation = new Operation();
+        $operation->setToAccountNumber($onlinePayment->getAccountNumber()); //todo: hack, make it cleaner
+        $operation->setAmount($onlinePayment->getAmount());
+        $operation->setReason($onlinePayment->getReason());
+        $operation->setType(Operation::TYPE_ONLINE_PAYMENT);
+
+        //TODO : change the form : the user should not be able to edit amount etc.
+        $form = $this->createFormBuilder()
+            ->add('execute', SubmitType::class, array('label' => 'Exécuter'))
+            ->add('cancel', SubmitType::class, array('label' => 'Annuler'))
+            ->getForm();
+
+        if ($request->isMethod('POST')){
+            if($form->handleRequest($request)->isValid()){
+                if($form->get('execute')->isClicked()){
+
+                    //make payment on Cyclos-side
+                    try{
+                        $bankingService = $this->get('cairn_user_cyclos_banking_info');
+
+                        $paymentData = $bankingService->getPaymentData($debitorUser->getCyclosID(),$creditorUser->getCyclosID(),NULL);
+                        foreach($paymentData->paymentTypes as $paymentType){
+                            if(preg_match('#virement_inter_adherent#', $paymentType->internalName)){
+                                $onlineTransferType = $paymentType;
+                            }
+                        }
+
+                        //preview allows to make sure payment would be executed according to provided data
+                        $res = $this->bankingManager->makeSinglePreview($paymentData,$onlinePayment->getAmount(),$onlinePayment->getReason(),$onlineTransferType,$operation->getExecutionDate());
+                    }catch(\Exception $e){
+                        if($e instanceof Cyclos\ServiceException){
+                            /*this is the only criteria that could be checked whether payment data have already been checked or not
+                             */
+                            if($e->errorCode == 'INSUFFICIENT_BALANCE'){ 
+                                $session->getFlashBag()->add('error','Solde insuffisant');
+                                return new RedirectResponse($request->getRequestUri());
+                            }
+                        }
+
+                        throw $e;
+                    }
+
+                    //preview payment passed
+                    $operation->setFromAccountNumber($res->fromAccount->number);
+                    $operation->setToAccountNumber($res->toAccount->number);
+                    $operation->setDebitor($debitorUser);
+                    $operation->setCreditor($creditorUser);
+
+                    $paymentVO = $this->bankingManager->makePayment($res->payment);
+
+                    $operation->setPaymentID($paymentVO->id);
+
+                    $redirectUrl = $onlinePayment->getUrlSuccess();
+
+
+                    $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
+
+                    $payload = json_encode(array(
+                        'code' => Response::HTTP_CREATED,
+                        'payment_id'=> $operation->getPaymentID(),
+                        'amount' => $operation->getAmount(),
+                        'invoice_id' => $onlinePayment->getInvoiceID(),
+                        'reason' => $operation->getReason(),
+                        'creditor_account_number' => $operation->getToAccountNumber(),
+                    ));
+
+                    $em->persist($operation);
+                    $em->remove($onlinePayment);
+                    $em->flush();
+
+                    $ch = \curl_init($webhook);
+                    \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    \curl_setopt($ch, CURLOPT_POST, true);
+                    \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+                    \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                        'Content-Type: application/json',
+                        'Content-Length: ' . strlen($payload))
+                    );
+
+                    $result = \curl_exec($ch);
+                    \curl_close($ch);
+
+
+                }else{
+                    $redirectUrl = $onlinePayment->getUrlFailure();
+
+                    $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
+
+                    $payload = json_encode(array(
+                        'code' => Response::HTTP_NO_CONTENT,
+                        'invoice_id' => $onlinePayment->getInvoiceID(),
+                        'info' => 'The payment has been canceled'
+                    ));
+
+                    $em->remove($onlinePayment);
+                    $em->flush();
+
+                    $ch = \curl_init($webhook);
+                    \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    \curl_setopt($ch, CURLOPT_POST, true);
+                    \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+                    \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                        'Content-Type: application/json',
+                        'Content-Length: ' . strlen($payload))
+                    );
+
+                    $result = \curl_exec($ch);
+                    \curl_close($ch);
+
+
+                }
+            }else{
+                $redirectUrl = $onlinePayment->getUrlFailure();
+
+                $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
+
+                $payload = json_encode(array(
+                    'code' => 200,
+                    'payment_id'=> $operation->getPaymentID(),
+                    'amount' => $operation->getAmount(),
+                    'invoice_id' => $onlinePayment->getInvoiceID(),
+                    'reason' => $operation->getReason(),
+                    'debitor_account_number' => $operation->getFromAccountNumber(),
+                ));
+
+                $em->remove($onlinePayment);
+                $em->flush();
+
+                $ch = \curl_init($webhook);
+                \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                \curl_setopt($ch, CURLOPT_POST, true);
+                \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+                \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                    'Content-Type: application/json',
+                    'Content-Length: ' . strlen($payload))
+                );
+
+                $result = \curl_exec($ch);
+                \curl_close($ch);
+            }
+
+            return $this->redirect($redirectUrl);
+
+        }
+
+        return $this->render('CairnUserBundle:Banking:online_payment.html.twig', array(
+            'form' => $form->createView(), 'operation'=>$operation
+        ));
+
+    }
 }

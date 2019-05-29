@@ -157,4 +157,15 @@ class UserRepository extends EntityRepository
         return $ub->getQuery()->getResult();
     }
 
+    public function findOneByAccessToken($token)
+    {
+        $ub = $this->createQueryBuilder('u');                  
+
+        $ub->join('u.apiClient','a') //smsData is the owning-side in the association user/smsData                                
+            ->andWhere('a.accessToken = :token') 
+            ->setParameter('token',$token);
+
+        return $ub->getQuery()->getOneOrNullResult();
+    }
+
 }
