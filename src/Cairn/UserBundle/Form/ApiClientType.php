@@ -10,6 +10,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
@@ -23,7 +25,13 @@ class ApiClientType extends AbstractType
         $builder
             ->add('login', TextType::class, array('label'=> 'Login API'))
             ->add('accessToken', TextType::class, array('label'=>'Nouvelle clé API','required'=>false))
-            ->add('webhook', TextType::class,array('label'=>'Point de rappel','required'=>false))
+            ->add('webhook', TextType::class,array('label'=>'Point de rappel','required'=>false,
+                'constraints'=> new Assert\Regex( array(
+                    'pattern'=>'#^https:\/\/#', 
+                    'message'=>'Format d\'URL  invalide. Doit être en https'
+                   )
+                )
+            ))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'));
 
 

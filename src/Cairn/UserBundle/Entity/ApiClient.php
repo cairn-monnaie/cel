@@ -46,7 +46,7 @@ class ApiClient
     private $webhook;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", mappedBy="apiClient", cascade={"persist"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="apiClient", cascade={"persist"})
      *@ORM\JoinColumn(nullable=false)
      */
     private $user;

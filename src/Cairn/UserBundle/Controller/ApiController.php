@@ -10,7 +10,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Cairn\UserCyclosBundle\Entity\BankingManager;
 
 use Symfony\Component\Form\FormBuilderInterface;                               
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;                   
@@ -29,16 +28,6 @@ use Cairn\UserBundle\Entity\OnlinePayment;
  */
 class ApiController extends Controller
 {
-    /**
-     * Deals with all account actions to operate on Cyclos-side
-     *@var BankingManager $bankingManager
-     */
-    private $bankingManager;
-
-    public function __construct()
-    {
-        $this->bankingManager = new BankingManager();
-    }
 
     public function createOnlinePaymentAction(Request $request)
     {
@@ -57,41 +46,41 @@ class ApiController extends Controller
         }
 
         if(! ($request->headers->get('Content-Type') == 'application/json')){
-            $response = new Response('Invalid JSON');
+            $response = new Response(' { "message"=>"Invalid JSON" }');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
             return $response;
         }
 
-
-        $postParameters = json_decode($request->getContent(),true);
+        //no possible code injection
+        $postParameters = json_decode( htmlspecialchars($request->getContent(),ENT_NOQUOTES),true );
 
         $postAccountNumber = $postParameters['account_number'];
 
 
         if($creditorUser->getMainICC() != $postAccountNumber ){
-            $response = new Response('User not found with account number ' .$postAccountNumber);
+            $response = new Response(' { "message"=>"User not found with provided account number"} ');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_NOT_FOUND);
             return $response;
         }
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            $response = new Response('Access denied');
+            $response = new Response(' { "message"=>"Access denied"} ');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
             return $response;
         }
 
         if(! $creditorUser->getApiClient()){
-            $response = new Response('User has no data to perform online payment');
+            $response = new Response(' { "message"=>"User has no data to perform online payment"} ');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_PRECONDITION_FAILED);
             return $response;
         }
 
         if(! $creditorUser->getApiClient()->getWebhook()){
-            $response = new Response('User has no webhook to perform online payment');
+            $response = new Response(' { "message"=>"No webhook defined to perform online payment"} ');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_PRECONDITION_FAILED);
             return $response;
@@ -110,6 +99,29 @@ class ApiController extends Controller
             $onlinePayment->setInvoiceID($postParameters['invoice_id']);
         }
 
+        //validate POST content
+        if( (! is_float($postParameters['amount'])) || (floatval($postParameters['amount']) < 0.01)  ){
+            $response = new Response('Invalid payment amount');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        }
+
+        if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_success'])){
+            $response = new Response(' { "message"=>"Invalid return_url_success format value" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        }
+
+        if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_failure'])){
+            $response = new Response(' { "message"=>"Invalid return_url_failure format value" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        }
+
+        //finally register new onlinePayment data
         $onlinePayment->setUrlSuccess($postParameters['return_url_success']);
         $onlinePayment->setUrlFailure($postParameters['return_url_failure']);
         $onlinePayment->setAmount($postParameters['amount']);
@@ -126,7 +138,7 @@ class ApiController extends Controller
 
         $response = new Response(json_encode($payload) );
         $response->headers->set('Content-Type', 'application/json');
-        $response->setStatusCode(Response::HTTP_OK);
+        $response->setStatusCode(Response::HTTP_CREATED);
         return $response;
     }
 
