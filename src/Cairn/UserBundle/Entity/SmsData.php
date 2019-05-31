@@ -52,7 +52,7 @@ class SmsData
     private $notificationPermission;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", mappedBy="smsData", cascade={"persist"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
      *@ORM\JoinColumn(nullable=false)
      */
     private $user;
