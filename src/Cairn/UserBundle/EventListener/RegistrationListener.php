@@ -123,7 +123,7 @@ class RegistrationListener
             array('user'=>$user));
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
-        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse mail ! Vous recevrez un mail lorsque l\'Association aura ouvert votre compte.');
+        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse électronique ! Vous recevrez un email lorsque l\'Association aura ouvert votre compte.');
 
         $router = $this->container->get('router');          
         $loginUrl = $router->generate('fos_user_security_login');
