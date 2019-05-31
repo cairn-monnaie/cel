@@ -14,7 +14,8 @@
         {% block stylesheets %}
         {% endblock %}
     </header>
-    <main class="{% block body_class %}{% endblock%}">
+    <body class="{% block body_class %}{% endblock%}">
+        {% block navbar %}
         <nav class="" role="navigation">
             <div class="nav-wrapper container">
                 <a id="logo-container" href="{{ path('cairn_user_welcome') }}" class="brand-logo"><img src="{{asset('bundles/cairnuser/img/e-cairn.png')}}" alt="Logo du Cairn"></a>
@@ -76,6 +77,7 @@
                 <li><a href="{{ path('fos_user_security_login') }}"><span class="glyphicon glyphicon-log-in"></span> {{ 'layout.login'|trans({}, 'FOSUserBundle') }}</a></li>
             {% endif %}
         </ul>
+        {% endblock navbar %}
         {% if app.request.hasPreviousSession %}
             {% for type, messages in app.session.flashBag.all %}
                 {% for message in messages %}
@@ -104,8 +106,9 @@
 
         {% block javascripts %}
         {% endblock %}
-    </main>
+    </body>
 
+    {% block footer %}
     <footer class="page-footer">
             <div class="row">
                 <div class="col l4 m6 s12">
@@ -150,6 +153,7 @@
                 <span> &copy; Cairn 2019 </span>
                 <a class="col grey-text text-lighten-4 right" href="https://www.cairn-monnaie.com/mentions-legales/" target="_blank">Mentions légales</a> <a class="col grey-text text-lighten-4 right" href="https://www.cairn-monnaie.com/wp-content/uploads/2019/03/CGU_CAIRN.pdf" target="_blank">Conditions Générales d'Utilisation</a>
             </div>
+        </div>
     </footer>
-
+    {% endblock %}
 </html>

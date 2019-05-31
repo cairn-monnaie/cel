@@ -1,28 +1,94 @@
 {# src/Cairn/UserBundle/Resources/views/Admin/online_payment.html.twig #}         
                                                                                
-{% extends "CairnUserBundle::layout.html.twig" %}                        
+{% extends "::layout.html.twig" %}                        
                                                                                
 {% block title %}{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
 {% endblock %}
 
+{% block container_class %}{% endblock%}
+{% block footer %}{% endblock %}
+
+{% block navbar %}
+ <div class="navbar-fixed">
+    <nav class="online_payment">
+      <div class="nav-wrapper">
+        <a id="logo-container" href="#" class="brand-logo center"><img src="{{asset('bundles/cairnuser/img/e-cairn-logo-orange.png')}}" alt="Logo du Cairn"></a>
+      </div>
+    </nav>
+  </div>
+    
+{% endblock %}
+
 {% block body %}
+<div class="row online_payment">
 
-<div class="row">
+    <div class="col s12 m4 center-align data_col">
+        <div class="online_payment_pro_logo">
+             {% if operation.creditor.image.url is defined %}
 
-    <div class="center-align operation_data">
-        <ul>
-           <li><span class="black-text"> Montant </span>: <span class="grey-text text-darken-3">{{operation.amount}} [e]-Cairns</span> </li> 
-           <li><span class="black-text"> Date d'exécution</span> : <span class="grey-text text-darken-3">{{operation.executionDate|date('d-m-Y')}}</span> </li> 
-           <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{operation.reason}}</span> </li>
-        </ul>
+                 <img src="{{asset('uploads/img/' ~ operation.creditor.image.id ~ '.' ~ operation.creditor.image.url)}}" alt="{{operation.creditor.image.alt}}" class="responsive-img">
+             {% endif %}
+
+             <table>
+                 <tbody>
+                   <tr>
+                     <td>Commerçant </td>
+                     <td class="grey darken-1 white-text">{{operation.creditorName}}</td>
+                   </tr>
+                   <tr>
+                     <td>Référence</td>
+                     <td class="grey darken-1 white-text">{{onlinePayment.invoiceID}}</td>
+                   </tr>
+                   <tr>
+                     <td>Montant</td>
+                     <td class="grey darken-1 white-text">{{operation.amount}} CRN</td>
+                   </tr>
+                 </tbody>
+             </table>
+        </div>
+
+        <div class="footer-copyright">                                         
+             <span> &copy; Cairn 2019 </span>                               
+        </div>
     </div>
+    <div class="col s12 m8 form_col center-align">
+        <div>
+            <h3> Montant de la transaction : {{operation.amount}} CRN </h3>
+            <ul class="operation_data">
+               <li><span class="black-text"> Numéro de compte</span> : <span class="grey-text text-darken-3">{{operation.fromAccountNumber}}</span> </li> 
+               <li><span class="black-text"> Date d'exécution</span> : <span class="grey-text text-darken-3">{{operation.executionDate|date('d-m-Y')}}</span> </li> 
+               <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{operation.reason}}</span> </li>
+            </ul>
+        </div>
 
-    <div class="section">
-      {{ form_start(form) }}
-        {{ form_rest(form) }}
-    {{ form_end(form) }}
+        <div class="row">
+            {{ form_start(form) }}
+                <div class="row valign-wrapper">
+                    <div class="input-field col s4 offset-s4 center-align">
+                       {{ form_widget(form.field) }} 
+                       {{ form_label(form.field) }} 
+                    </div>
+                    <div class="valign-wrapper">
+                        <i class="material-icons small class="col s2">help</i><a onclick="M.toast({html: 'Clé contenue dans votre carte de sécurité [e]-Cairn', displayLength: 10000})">Qu'est-ce donc ?</a>
+                    </div>
+                </div>
+                <div class="input-field col s6 right-align">
+                   {{ form_widget(form.execute, { 'attr': {'class': 'btn green'} }) }} 
+                   {{ form_label(form.execute) }} 
+                </div>                                        
+                <div class="input-field col s6 left-align">
+                   {{ form_widget(form.cancel, { 'attr': {'class': 'btn red'} }) }} 
+                   {{ form_label(form.cancel) }} 
+                </div>                                        
+
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+        </div>
+        <div class="bottom_note">
+          <i class="material-icons medium class="valign-wrapper">info</i><span> Pour annuler votre paiement, cliquez sur le bouton "Abandonner"</span>
+        </div>
     </div>
 
 </div>

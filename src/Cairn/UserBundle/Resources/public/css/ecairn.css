@@ -138,6 +138,11 @@ a:hover > img {
   opacity: 0.5;
 }
 
+nav.online_payment {
+  background-color: white;
+  border-bottom: 3px solid #f07254;
+}
+
 nav {
   background-color: #f07254;
 }
@@ -171,6 +176,26 @@ td.deb-amount {
 td.cred-amount {
   color: purple;
   font-weight: bold;
+}
+
+div.online_payment {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+}
+
+div.online_payment div.data_col {
+  height: max-width;
+}
+
+div.online_payment_pro_logo > img {
+  width: 40%;
+  height: auto;
+}
+
+#toast-container {
+    top: auto !important;
+    right: auto !important;
 }
 
 /*# sourceMappingURL=ecairn.css.map */
