@@ -16,7 +16,8 @@ cairn_user_online_payment_execute:
     defaults: { _controller: CairnUserBundle:Banking:confirmOnlinePayment, _format: html }
 
 cairn_user_api_online_payment_create:
-    path: api/online-payment/create
+    path: api/online-payment
+    methods: POST
     defaults: { _controller: CairnUserBundle:Api:createOnlinePayment, _format: json }
 
 #cairn_user_api_get_tokens:

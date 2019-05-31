@@ -11,6 +11,11 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Entity\Card;
+
+//manage Events 
+use Cairn\UserBundle\Event\SecurityEvents;
+use Cairn\UserBundle\Event\InputCardKeyEvent;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -23,22 +28,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 //manage Forms
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\OperationType;
+use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\SimpleOperationType;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;                     
 use Symfony\Component\Form\Extension\Core\Type\NumberType;                     
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use Symfony\Component\Form\FormEvent;                                          
-use Symfony\Component\Form\FormEvents;
+
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -1213,6 +1214,13 @@ class BankingController extends Controller
         }
 
         $creditorUser = $userRepo->findOneByMainICC($onlinePayment->getAccountNumber());
+        if(! $creditorUser->hasRole('ROLE_PRO')){
+            return $this->redirect($onlinePayment->getUrlFailure());
+        }
+
+        if(! $debitorUser->getCard()){
+            return $this->redirect($onlinePayment->getUrlFailure());
+        }
 
         $operation = new Operation();
         $operation->setToAccountNumber($onlinePayment->getAccountNumber()); //todo: hack, make it cleaner
@@ -1222,16 +1230,40 @@ class BankingController extends Controller
         $operation->setCreditor($creditorUser);
         $operation->setDebitor($debitorUser);
         $operation->setFromAccountNumber($debitorUser->getMainICC());
+        $operation->setSubmissionDate($onlinePayment->getSubmittedAt());
 
-        //TODO : change the form : the user should not be able to edit amount etc.
+        $positions = $debitorUser->getCard()->generateCardPositions();
+        if($request->isMethod('GET')){
+            $session->set('position',$positions['index']);
+        }
+        $string_pos = $positions['cell'];
+
         $form = $this->createFormBuilder()
-            ->add('execute', SubmitType::class, array('label' => 'Exécuter','attr' => array('class' => 'btn green')))
-            ->add('cancel', SubmitType::class, array('label' => 'Abandonner','attr' => array('class' => 'btn red')))
+            ->add('field',   PasswordType::class, array('label'=>'Code de vérification '.$string_pos))
+            ->add('execute', SubmitType::class, array('label' => 'Exécuter'))
+            ->add('cancel', SubmitType::class, array('label' => 'Abandonner'))
             ->getForm();
 
         if ($request->isMethod('POST')){
             if($form->handleRequest($request)->isValid()){
                 if($form->get('execute')->isClicked()){
+
+                    $position = $session->get('position');
+                    $cardKey =  $form->get('field')->getData();
+
+                    $event = new InputCardKeyEvent($debitorUser,$cardKey,$position, $session);
+                    $this->get('event_dispatcher')->dispatch(SecurityEvents::INPUT_CARD_KEY,$event);
+
+                    if($event->getRedirect()){
+                        $redirectUrl = $onlinePayment->getFailureSuccess();
+                        return $this->redirect($redirectUrl);
+                    }
+
+                    $nbTries = $debitorUser->getCardKeyTries();
+                    if($nbTries != 0){
+                        $session->getFlashBag()->add('error','Clé invalide. Veuillez réessayer');
+                        return new RedirectResponse($request->getRequestUri());
+                    }
 
                     //make payment on Cyclos-side
                     try{
@@ -1253,7 +1285,7 @@ class BankingController extends Controller
                             /*this is the only criteria that could be checked whether payment data have already been checked or not
                              */
                             if($e->errorCode == 'INSUFFICIENT_BALANCE'){ 
-                                $session->getFlashBag()->add('error','Solde insuffisant');
+                                $session->getFlashBag()->add('error','Le solde de votre compte est insuffisant');
                                 return new RedirectResponse($request->getRequestUri());
                             }
 
@@ -1277,7 +1309,9 @@ class BankingController extends Controller
                         'amount' => $operation->getAmount(),
                         'invoice_id' => $onlinePayment->getInvoiceID(),
                         'reason' => $operation->getReason(),
+                        'debitor_account_number' => $operation->getFromAccountNumber(),
                         'creditor_account_number' => $operation->getToAccountNumber(),
+                        'payment_date' => $operation->getExecutionDate()->format('d-m-Y H:i:s'),
                     ));
 
                     $em->persist($operation);
@@ -1301,61 +1335,32 @@ class BankingController extends Controller
                 }else{
                     $redirectUrl = $onlinePayment->getUrlFailure();
 
-                    $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
-
-                    $payload = json_encode(array(
-                        'code' => Response::HTTP_NO_CONTENT,
-                        'invoice_id' => $onlinePayment->getInvoiceID(),
-                        'info' => 'The payment has been canceled'
-                    ));
-
+//                    $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
+//
+//                    $payload = json_encode(array(
+//                        'code' => Response::HTTP_NO_CONTENT,
+//                        'invoice_id' => $onlinePayment->getInvoiceID(),
+//                        'info' => 'The payment has been canceled'
+//                    ));
+//
                     $em->remove($onlinePayment);
                     $em->flush();
-
-                    $ch = \curl_init($webhook);
-                    \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    \curl_setopt($ch, CURLOPT_POST, true);
-                    \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-
-                    \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                        'Content-Type: application/json',
-                        'Content-Length: ' . strlen($payload))
-                    );
-
-                    $result = \curl_exec($ch);
-                    \curl_close($ch);
+//
+//                    $ch = \curl_init($webhook);
+//                    \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//                    \curl_setopt($ch, CURLOPT_POST, true);
+//                    \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+//
+//                    \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+//                        'Content-Type: application/json',
+//                        'Content-Length: ' . strlen($payload))
+//                    );
+//
+//                    $result = \curl_exec($ch);
+//                    \curl_close($ch);
 
 
                 }
-            }else{
-                $redirectUrl = $onlinePayment->getUrlFailure();
-
-                $webhook = $securityService->vigenereDecode($creditorUser->getApiClient()->getWebhook());
-
-                $payload = json_encode(array(
-                    'code' => 200,
-                    'payment_id'=> $operation->getPaymentID(),
-                    'amount' => $operation->getAmount(),
-                    'invoice_id' => $onlinePayment->getInvoiceID(),
-                    'reason' => $operation->getReason(),
-                    'debitor_account_number' => $operation->getFromAccountNumber(),
-                ));
-
-                $em->remove($onlinePayment);
-                $em->flush();
-
-                $ch = \curl_init($webhook);
-                \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                \curl_setopt($ch, CURLOPT_POST, true);
-                \curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-
-                \curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($payload))
-                );
-
-                $result = \curl_exec($ch);
-                \curl_close($ch);
             }
 
             return $this->redirect($redirectUrl);

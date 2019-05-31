@@ -70,6 +70,19 @@ class OnlinePayment
      */
     private $urlValidationSuffix;
 
+    /**
+     * @var \Datetime
+     *
+     * @ORM\Column(name="submitted_at", type="datetime")
+     */
+    private $submittedAt;
+
+
+    public function __construct()
+    {
+        $today = new \Datetime();
+        $this->setSubmittedAt($today);
+    }
 
     /**
      * Get id.
@@ -248,4 +261,29 @@ class OnlinePayment
     {
         return $this->urlValidationSuffix;
     }
+
+    /**
+     * Set submittedAt
+     *
+     *
+     * @param \DateTime $submittedAt
+     * @return Operation
+     */
+    public function setSubmittedAt($date)
+    {
+        $this->submittedAt = $date;
+
+        return $this;
+    }
+
+    /**
+     * Get submittedAt
+     *
+     * @return \DateTime
+     */
+    public function getSubmittedAt()
+    {
+        return $this->submittedAt;
+    }
+
 }
