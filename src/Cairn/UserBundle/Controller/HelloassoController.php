@@ -219,7 +219,7 @@ class HelloassoController extends Controller
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if($request->isMethod('POST')){
-             $data = $request->getContent();
+             $data = htmlspecialchars($request->getContent(),ENT_NOQUOTES) ;
 
              preg_match('#^id=(\d+)#',$data,$match_id);
 
@@ -260,10 +260,15 @@ class HelloassoController extends Controller
                  return $response;
              }
 
+             //can be null
              $operation = $this->creditUserAccount($creditorUser, $newHelloassoPayment);
 
              $em->persist($newHelloassoPayment);
-             $em->persist($operation);
+
+             if($operation){
+                $em->persist($operation);
+             }
+
              $em->flush();
 
              $response = new Response('helloasso payment handled');
