@@ -15,17 +15,20 @@
                 <div class="card small">
                     <div class="card-image pro">
                         {% if pro.image.url is defined %}
-                            <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img">
+                            <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img activator">
                         {% else %}
-                            <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img">
-                        {% endif %}<br>
+                            <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img activator">
+                        {% endif %}
                     </div>
                     <div class="card-content">
-                        <p><b>{{pro.name}}</b></p>
+                        <span class="card-title pro grey-text activator text-darken-4">{{pro.name}}<i class="material-icons right">more_vert</i></span>
+                        <p>{{ pro.description|length > 25 ? pro.description|slice(0, 25) ~ '...' : pro.description  }}</p>
                     </div>
-                    <div class="card-action">
-                        <span>{{pro.description}}</span>
+                    <div class="card-reveal">
+                        <span class="card-title pro grey-text text-darken-4">{{pro.name}}<i class="material-icons right">close</i></span>
+                        <p>{{pro.description}}</p>
                     </div>
+
                 </div>
             </div>
             {% endfor %}

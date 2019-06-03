@@ -168,6 +168,11 @@ nav {
   height: 200px;
 }
 
+.card-title.pro {
+  font-size: 15px !important;
+  font-weight: bold;
+}
+
 td.deb-amount {
   color: red;
   font-weight: bold;
