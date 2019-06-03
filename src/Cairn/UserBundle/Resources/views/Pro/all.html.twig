@@ -14,7 +14,7 @@
             <div class="col s12 m6 l4">
                 <div class="card small">
                     <div class="card-image pro">
-                        {% if pro.image.url is defined %}
+                        {% if pro.image.url is not null %}
                             <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img activator">
                         {% else %}
                             <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img activator">
