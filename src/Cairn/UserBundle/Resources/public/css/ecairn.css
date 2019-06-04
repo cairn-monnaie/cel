@@ -164,9 +164,25 @@ nav {
   margin-left: -50px;
 }
 
-/*
-.card-image.pro > img {
-  height: 200px;
+/*.card.pro {
+  height: max-height !important;
+}
+*/
+
+/*.card.pro {
+  height: 600px !important; 
+  overflow: hidden;
+}
+*/
+
+/*.card-image.pro {
+  position:relative;
+  overflow:hidden;
+  padding-bottom:100%;
+}
+
+.card-image.pro img {
+  position: absolute;
 }
 */
 .card-title.pro {
