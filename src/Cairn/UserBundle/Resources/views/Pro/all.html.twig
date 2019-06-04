@@ -7,34 +7,25 @@
 {%block stylesheets %}
 {% endblock %}
 
+{% block container_class %}{% endblock %}
 {% block footer %}{% endblock %}
-
-{#{% block navbar %}
- <div class="navbar-fixed">
-    <nav class="online_payment">
-      <div class="nav-wrapper">
-        <a id="logo-container" href="#" class="brand-logo center"><img src="{{asset('bundles/cairnuser/img/e-cairn-logo-orange.png')}}" alt="Logo du Cairn"></a>
-      </div>
-    </nav>
-  </div>
-    
-{% endblock %}#}
+{% block navbar %}{% endblock %}
 
 {% block body %}
     <div class="list-pros">
         <div class="row">
             {% for pro in pros %}
             <div class="col s12 m6 l4">
-                <div class="card small">
+                <div class="card hoverable small">
                     <div class="card-image pro">
                         {% if pro.image is not null %}
                             {% if pro.image.url is not null %}
                                 <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img activator">
                             {% else %}
-                                <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img activator">
+                                <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="responsive-img activator">
                             {% endif %}
                         {% else %}
-                            <img src="{{asset('bundles/cairnuser/img/pro.jpg')}}"alt="Logo utilisateur" class="responsive-img activator">
+                            <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="responsive-img activator">
                         {% endif %}
                     </div>
                     <div class="card-content">
