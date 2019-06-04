@@ -166,8 +166,8 @@ cairn_user_beneficiaries_remove:
 #        id: \d+
 
 cairn_user_pros_list:
-    path:     pros
-    defaults: { _controller: CairnUserBundle:User:listPros, _format: html }
+    path:     pros-ecairn
+    defaults: { _controller: CairnUserBundle:Public:listPros, _format: html }
     requirements:
         _format: html
 
@@ -221,6 +221,12 @@ cairn_user_users_remove_pending:
 cairn_user_users_smsdata:
     path:     user/smsdata
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
+
+cairn_user_phones_dashboard:
+    path:     admin/phones/dashboard
+    defaults: { _controller: CairnUserBundle:Admin:phonesDashboard, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_user_users_phone_add:
     path:     user/phone/add

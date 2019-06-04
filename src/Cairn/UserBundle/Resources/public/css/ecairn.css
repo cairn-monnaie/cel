@@ -164,10 +164,11 @@ nav {
   margin-left: -50px;
 }
 
+/*
 .card-image.pro > img {
   height: 200px;
 }
-
+*/
 .card-title.pro {
   font-size: 15px !important;
   font-weight: bold;
