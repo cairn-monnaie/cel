@@ -54,7 +54,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  * This class contains actions related to user, cards or accounts management by administrators
  *
  * Adminisatrators can have either a role ROLE_ADMIN (resp. ROLE_SUPER_ADMIN) depending on the level of restrictions and rights
- * @Security("has_role('ROLE_ADMIN')")
+ * @Security("is_granted('ROLE_ADMIN')")
  */
 class AdminController extends Controller
 {
@@ -170,10 +170,71 @@ class AdminController extends Controller
             }
         }
         return $this->render('CairnUserBundle:Admin:add_id-document.html.twig',array('form'=>$form->createView()));
-
-
     }
 
+    public function phonesDashboardAction(Request $request)
+    {
+        $currentUser = $this->getUser();
+        $currentUserID = $currentUser->getID();
+        $em = $this->getDoctrine()->getManager();
+        $phoneRepo = $em->getRepository('CairnUserBundle:Phone');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $allPhones = $phoneRepo->findAllPros();
+
+        $form = $this->createFormBuilder()
+            ->add('phoneNumber',  TextType::class,array(
+                'label'=>'N° de téléphone',
+                'data'=>'+33',
+                'required'=>false))
+            ->add('identifier',  TextType::class,array(
+                'label'=>'ID SMS',
+                'required'=>false))
+            ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom','required'=>false)))
+            ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
+                ->getForm();
+
+        if($request->isMethod('POST')){ //form filled and submitted
+
+            $form->handleRequest($request);    
+            if($form->isValid()){
+                $dataForm = $form->getData();            
+                $phoneNumber = $dataForm['phoneNumber'];
+                $identifier = $dataForm['identifier'];
+                $formAutocompleteName = $dataForm['cairn_user'];
+
+                $pb = $phoneRepo->createQueryBuilder('p');
+
+                if($phoneNumber){
+                    $phoneRepo->wherePhoneNumber($pb, $phoneNumber);
+                }
+                if($identifier){
+                    $phoneRepo->whereIdentifier($pb, $identifier);
+                }
+                if($formAutocompleteName){
+                    preg_match('#\((.*)\)$#',$formAutocompleteName,$matches_email);
+    
+                    if (! $matches_email){
+                        $session->getFlashBag()->add('error','Votre recherche ne contient aucun email');
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+
+                    $user = $userRepo->findOneByEmail($matches_email[1]);
+
+                    if($user){
+                        $phoneRepo->whereUser($pb, $user);
+                    }
+                }
+
+                $allPhones = $pb->getQuery()->getResult();
+            }
+
+        }
+        return $this->render('CairnUserBundle:Admin:phones_dashboard.html.twig',array(
+            'form'=>$form->createView(),
+            'allPhones'=>$allPhones));
+
+    }
 
     /**
      * Administrator's dashboard to see users status on a single page
