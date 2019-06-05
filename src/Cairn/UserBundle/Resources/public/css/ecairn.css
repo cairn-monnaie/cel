@@ -180,11 +180,12 @@ nav {
   overflow:hidden;
   padding-bottom:100%;
 }
-
-.card-image.pro img {
-  position: absolute;
-}
 */
+.card-image.pro {
+  height: auto !important;
+}
+
+
 .card-title.pro {
   font-size: 15px !important;
   font-weight: bold;

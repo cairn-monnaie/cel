@@ -15,14 +15,14 @@
     <div class="list-pros">
         <div class="row">
             {% for pro in pros %}
-            <div class="col s12 m6 l4">
-                <div class="card pro hoverable small">
+            <div class="col s6 l4">
+                <div class="card pro hoverable">
                     <div class="card-image pro">
                         {% if pro.image is not null %}
                             {% if pro.image.url is not null %}
-                                <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="responsive-img activator">
+                                <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="activator">
                             {% else %}
-                                <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="responsive-img activator">
+                                <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="activator">
                             {% endif %}
                         {% else %}
                             <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="responsive-img activator">
