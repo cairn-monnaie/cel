@@ -469,5 +469,10 @@ class MessageNotificator
         return false;
     }
 
+    public function getTemplatingService()
+    {
+        return $this->templating;
+    }
+
 }
 

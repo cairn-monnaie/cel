@@ -67,8 +67,7 @@ class SecurityListener
             $logoutUrl = $router->generate('fos_user_security_logout');
             $event->setResponse(new RedirectResponse($logoutUrl));
 
-            $body = 'Une demande de changement de mot de passe a été effectuée avant même votre première connexion sur votre compte. Pour des raisons de sécurité, votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation . Veuillez contacter l\'Association';
-            $this->container->get('cairn_user.access_platform')->disable(array($user),'Changement de mot de passe',$body);
+            $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
             $this->container->get('doctrine.orm.entity_manager')->flush();
 
             return;
@@ -376,9 +375,7 @@ class SecurityListener
             $counter->incrementTries($user,'cardKey');
 
             if($user->getCardKeyTries() > 2){
-                $subject = 'Votre espace membre a été bloqué';
-                $body = 'Suite à 3 échecs de validation de votre carte de clés personnelles, votre espace membre a été bloqué par souci de sécurité. \n Veuillez contacter nos services pour plus d\'information';
-                $accessPlatform->disable(array($user),$subject,$body);
+                $accessPlatform->disable(array($user),'card_tries_exceeded');
                 $event->setRedirect(true);
             }
         }

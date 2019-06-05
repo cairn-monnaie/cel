@@ -1,0 +1,81 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/block_account.html.twig #}
+
+Bonjour <b>{% if user.firstname is defined %}{{ user.firstname | capitalize }}{% else %}{{ user.name | capitalize }}{% endif %}</b>, <br>
+<br>
+
+
+{% if reason == 'self' %}
+    Vous avez fait opposition à votre compte [e]-Cairn. Il vous est désormais inaccessible jusqu'à réouverture. 
+    <br>
+    <br>
+    
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'admin' %}
+    L'administrateur {{app.user.name}} a fait opposition à votre compte [e]-Cairn. Il vous est désormais inaccessible jusqu'à réouverture.  
+    <br>
+    <br>
+    
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'removal_request' %}
+    Vous avez demandé la clôture de votre compte [e]-Cairn. 
+    <br>
+    Vous recevrez un courriel lorsque votre compte aura été définitivement clôturé.
+    <br>
+    
+    S'il s'agit d'une erreur, contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'phone_tries_exceeded' %}
+    Vous avez excédé le nombre de saisies autorisé pour valider votre nouveau numéro de téléphone. 
+    <br>
+    Pour des raisons de sécurité, votre compte [e]-Cairn a été automatiquement bloqué.
+
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'password_reset_first_login' %}
+    Vous avez demandé à réinitialiser votre mot de passe, mais nous n'avons enregistré aucune connexion sur votre compte [e]-Cairn. 
+    <br>
+    Un mot de passe temporaire vous a été assigné lors de votre ouverture de compte. Peut-être l'avez-vous perdu ? <br>
+    Pour des raisons de sécurité, votre compte [e]-Cairn a été automatiquement bloqué.
+
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'card_tries_exceeded' %}
+    Vous avez excédé le nombre de saisies autorisé pour valider votre carte de sécurité. 
+    <br>
+    Pour des raisons de sécurité, votre compte [e]-Cairn a été automatiquement bloqué.
+
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% elseif reason == 'password_tries_exceeded' %}
+    Vous avez excédé le nombre autorisé de saisies de mot de passe. 
+    <br>
+    Pour des raisons de sécurité, votre compte [e]-Cairn a été automatiquement bloqué.
+
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% else %}
+    Votre compte [e]-Cairn a été automatiquement bloqué. 
+
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    <br>
+    {{signature}},
+
+{% endif %}
+
+

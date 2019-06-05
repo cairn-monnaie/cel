@@ -511,7 +511,7 @@ class CardController extends Controller
         }
 
         if($user->getRemovalRequest() || !$user->isEnabled() ){
-            $session->getFlashBag()->add('info',$user->getName().' est soit bloqué, soit en instance de suppression. L\'association de carte est donc impossible');
+            $session->getFlashBag()->add('info',$user->getName().' est soit bloqué, soit en instance de clôture. L\'association de carte est donc impossible');
             return $this->redirectToRoute('cairn_user_profile_view',array('_format'=>$_format, 'username'=>$user->getUsername()));
         }
 

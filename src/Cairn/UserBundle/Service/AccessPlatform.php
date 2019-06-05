@@ -87,21 +87,23 @@ class AccessPlatform
     /**
      *Disable users and send an email with subject $subject and content $body
      *
-     *@param text $body HTML to set at the content in the email
+     *@param string $reason In one word, why the acocunt has been opposed
      *@param string $subject 
      *@param array $users 
      */
-    public function disable($users, $subject = NULL, $body = NULL)
+    public function disable($users, $reason = NULL, $subject = NULL)
     {
+        $templating = $this->messageNotificator->getTemplatingService();
+
         if(!$subject){
-            $subject = "Compte e-Cairn bloqué";
-        }
-        if(!$body){
-            $body = "Votre compte e-Cairn est désormais bloqué";
+            $subject = "Compte [e]-Cairn bloqué";
         }
 
         $from = $this->messageNotificator->getNoReplyEmail();
         foreach($users as $user){
+            $body = $templating->render('CairnUserBundle:Emails:blocked_account.html.twig',
+                 array('reason'=>$reason, 'user'=>$user)); 
+
             if($user->isEnabled()){
                 $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
                 $user->setEnabled(false);
@@ -129,10 +131,10 @@ class AccessPlatform
     public function enable($users, $subject = NULL, $body = NULL)
     {
         if(!$subject){
-            $subject = "Votre espace membre Cairn a été activé";
+            $subject = "Votre compte [e]-Cairn a été activé";
         }
         if(!$body){
-            $body = "Votre compte est désormais accessible";
+            $body = "Votre compte [e]-Cairn est désormais accessible";
         }
 
         $from = $this->messageNotificator->getNoReplyEmail();
@@ -141,6 +143,7 @@ class AccessPlatform
             if(!$user->isEnabled()){
                 $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
                 $user->setEnabled(true);
+                $user->setRemovalRequest(false);
                 $user->setPasswordTries(0);
                 $user->setCardKeyTries(0);
                 $user->setPhoneNumberActivationTries(0);

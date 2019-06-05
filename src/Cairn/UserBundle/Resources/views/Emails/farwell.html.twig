@@ -1,8 +1,25 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/farwell.html.twig #}
 
-Votre compte a été supprimé avec succès par {{currentUser.name}}.
+{% if receiver == 'user' %}
+Bonjour <b>{% if removedUser.firstname is defined %}{{ removedUser.firstname | capitalize }}{% else %}{{ removedUser.name | capitalize }}{% endif %}</b>, <br>
+<br>
 
-Nous espérons vous revoir bientôt dans le réseau numérique du Cairn.
+Votre compte a été supprimé avec succès par {{app.user.name}}.<br>
+Nous espérons vous revoir bientôt dans notre réseau numérique !
 
+<br>
+<br>
 
-Le Cairn,
+{{signature}},
+
+{% elseif receiver == 'admin' %}
+Bonjour <b> </b>, <br>
+<br>
+Le compte [e]-Cairn de {{user_name}} a été clôturé par {{app.user.name}}. Quel dommage ! <br>
+
+<br>
+<br>
+
+{{signature}},
+
+{% endif %}

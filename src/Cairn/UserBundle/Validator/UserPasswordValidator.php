@@ -55,10 +55,7 @@ class UserPasswordValidator extends ConstraintValidator
                 ->addViolation();
 
             if($currentUser->getPasswordTries() > 2){                                
-
-                $subject = 'Trop d\'essais de mot de passe';                   
-                $body = 'Trois échecs ont été enregistrés lors de la saisie de votre mot de passe. Votre compte a donc été automatiquement     bloqué. Veuillez nous contacter pour trouver une solution.';
-                $this->accessPlatform->disable(array($currentUser),$subject,$body);   
+                $this->accessPlatform->disable(array($currentUser),'password_tries_exceeded');   
             }    
         }else{
             $this->counter->reinitializeTries($currentUser,'password');
