@@ -40,7 +40,7 @@ class RegistrationListener
      * On profile edit, the Cyclos user profile is edited accordingly
      *
      */
-    public function onProfileEdit(FormEvent $event)
+    public function onProfileEditSuccess(FormEvent $event)
     {
         $router = $this->container->get('router');          
 

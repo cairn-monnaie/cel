@@ -46,6 +46,7 @@ final class SecurityEvents
         'cairn_user_electronic_mlc_edit',
         'cairn_user_pros_apiclient_edit',
         'cairn_user_helloasso_sync',
+        'cairn_user_profile_edit',
     ];
 
     /**

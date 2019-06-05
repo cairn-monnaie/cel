@@ -23,20 +23,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 //manage Forms
-use Cairn\UserBundle\Form\AccountType;
 use Cairn\UserBundle\Form\ProfileType;
 use Cairn\UserBundle\Form\ApiClientType;
 use Cairn\UserBundle\Form\AddIdentityDocumentType;
 use Cairn\UserBundle\Form\ConfirmationType;
-use Symfony\Component\Form\AbstractType;                                       
-use Symfony\Component\Form\FormBuilderInterface;                               
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;                   
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\FormType;
 
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -49,6 +42,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
+//Events
+use FOS\UserBundle\FOSUserEvents;
+use FOS\UserBundle\Event\FormEvent;
 
 /**
  * This class contains actions related to user, cards or accounts management by administrators
@@ -71,6 +67,41 @@ class AdminController extends Controller
         $this->bankingManager = new BankingManager();
 
     }   
+
+    /**
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function editProfileAction(Request $request, User $user)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $session = $request->getSession();
+
+        $form = $this->createForm(ProfileType::class, $user);
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()) {                        
+
+            $event = new FormEvent($form, $request);                           
+            $this->get('event_dispatcher')->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
+
+            $session->getFlashBag()->add('success','Profil utilisateur édité avec succès');
+            $em->flush();
+
+            if (null === $response = $event->getResponse()) {                  
+                $url = $this->generateUrl('cairn_user_profile_view',array('username' => $user->getUsername()));            
+                $response = new RedirectResponse($url);                        
+            }
+
+            return $response;
+            }
+        }
+        return $this->render('CairnUserBundle:Admin:edit_profile_content.html.twig',
+            array('form'=>$form->createView(),'user'=>$user)
+            );
+
+    }
 
     /**
      *

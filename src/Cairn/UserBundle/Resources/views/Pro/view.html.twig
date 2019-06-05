@@ -41,7 +41,10 @@
                             &nbsp;{{ user.address.zipCity.city}}
                         </div>
                         <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
-                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.id})}}"> Pièce d'identité</a>
+                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
+                            {% if user.hasRole('ROLE_PRO') %}
+                                &nbsp;<a href="{{path('cairn_user_logo_download',{'id': user.image.id})}}"> Logo</a>
+                            {% endif %}
                         </div>
                     </div>
                     <blockquote>
@@ -50,6 +53,10 @@
                     {% if user.id == app.user.id %}
                         <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
                         <a href="{{path('fos_user_change_password')}}" class="btn waves-effect waves-light">Modifier mon mot de passe</a>
+                    {% else %}
+                        {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
+                            <a href="{{path('cairn_user_profile_edit',{'username': user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
+                        {% endif %}
                     {% endif %}
                 </div>
 
