@@ -84,7 +84,7 @@ class User extends BaseUser
     private $referents;
 
     /**
-     *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\Beneficiary", mappedBy="sources",  cascade={"persist"})
+     *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\Beneficiary", mappedBy="sources",  cascade={"persist","remove"})
      */ 
     private $beneficiaries;
 

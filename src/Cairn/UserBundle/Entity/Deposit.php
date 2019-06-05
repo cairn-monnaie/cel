@@ -24,7 +24,7 @@ class Deposit
      /**
      * @var \Cairn\UserBundle\Entity\User
      *
-     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist","remove"})
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
      */
     private $creditor;
 
