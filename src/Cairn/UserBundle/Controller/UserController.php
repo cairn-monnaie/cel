@@ -12,12 +12,14 @@ use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\Event\InputCardKeyEvent;
 
 //manage Entities
+use Cairn\UserBundle\Entity\File as CairnFile;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Phone;
+use Cairn\UserBundle\Entity\Deposit;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 //manage HTTP format
@@ -60,19 +62,6 @@ class UserController extends Controller
         $this->userManager = new UserManager();
     }
 
-    public function listProsAction(Request $request)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository('CairnUserBundle:User');
-
-        $qb = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($qb,'ROLE_PRO');
-        $pros = $qb->getQuery()->getResult();
-
-        shuffle($pros);
-        return $this->render('CairnUserBundle:Pro:all.html.twig',array('pros'=>$pros ));
-    }
-
     public function indexAction(Request $request, $_format)
     {
         $checker = $this->get('security.authorization_checker');
@@ -111,7 +100,7 @@ class UserController extends Controller
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
-            ->orderBy('o.executionDate','DESC')
+            ->orderBy('o.executionDate','ASC')
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
@@ -355,8 +344,7 @@ class UserController extends Controller
             if($remainingTries > 0){
                 $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte');
             }else{
-                $body = 'Vous avez commis 3 erreurs en tentant de valider votre nouveau de numéro de téléphone. Pour des raisons de sécurité, votre compte [e]-Cairn a été bloqué. Veuillez contacter l\'Association pour résoudre le problème.';
-                $this->get('cairn_user.access_platform')->disable(array($currentUser),'Compte [e]-Cairn bloqué',$body);
+                $this->get('cairn_user.access_platform')->disable(array($currentUser),'phone_tries_exceeded');
                 $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
             }
 
@@ -833,23 +821,31 @@ class UserController extends Controller
         return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
     }                      
 
-    public function downloadIdentityDocumentAction(Request $request, User $user)
+    public function downloadUserDocumentAction(Request $request, CairnFile $file)
     {
         $currentUser = $this->getUser();
+        $userRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:User');
+
+        if( preg_match('#logo#',$request->get('_route')) ){
+            $user = $userRepo->findOneByImage($file);
+        }elseif(preg_match('#iddoc#',$request->get('_route'))){
+            $user = $userRepo->findOneByIdentityDocument($file);
+        }else{
+            $session->getFlashBag()->add('Type de fichier demandé incorrect');
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+        }
 
         if(! ( ($user === $currentUser) || $user->hasReferent($currentUser) ) ){
             throw new AccessDeniedException('Ce document n\'existe pas');
         }
 
-        $id_doc = $user->getIdentityDocument();
-
-        if($id_doc){
-            $env = $this->getParameter('kernel.environment');
-            return $this->file($id_doc->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$id_doc->getUrl());
-        }else{
-            $session->getFlashBag()->add($user->getName() . ' n\'a pas de pièce d\'identité');
+        if( preg_match('#logo#',$request->get('_route')) && (! $user->hasRole('ROLE_PRO')) ){
+            $session->getFlashBag()->add('Réservé aux professionnels');
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
+
+        $env = $this->getParameter('kernel.environment');
+        return $this->file($file->getWebPath($env), 'piece-identite_'.$user->getUsername().'.'.$file->getUrl());
     }
 
     /**
@@ -880,10 +876,10 @@ class UserController extends Controller
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('save')->isClicked()){
 
-                $subject = 'Opposition à votre compte e-Cairn';
-                $body = 'Une opposition de votre compte a été réalisée par' .$currentUser->getName();
+                $subject = 'Opposition de compte [e]-Cairn';
 
-                $this->get('cairn_user.access_platform')->disable(array($user),$subject,$body);
+                $reason = ($user === $currentUser) ? 'self' : 'admin';
+                $this->get('cairn_user.access_platform')->disable(array($user),$reason,$subject);
                 $session->getFlashBag()->add('success','L\'opposition du compte de ' . $user->getName() . ' a été effectuée avec succès. Il ne peut plus accéder à la plateforme.');
                 $em->flush();
             }
@@ -986,12 +982,12 @@ class UserController extends Controller
                         if($isRemoved){
                             $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                         }else{
-                            $session->getFlashBag()->add('success','La fermeture de compte a échoué. '.$user->getName(). 'a un compte non soldé');
+                            $session->getFlashBag()->add('error','La fermeture de compte a échoué. '.$user->getName(). ' a un compte non soldé');
                             return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
                         }
                     }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
                         $user->setRemovalRequest(true);
-                        $this->get('cairn_user.access_platform')->disable(array($user));
+                        $this->get('cairn_user.access_platform')->disable(array($user),'removal_request');
 
                         $redirection = 'fos_user_security_logout';
                         $session->getFlashBag()->add('success','Votre demande de clôture d\'espace membre a été prise en compte');
@@ -1026,6 +1022,7 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+        $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
@@ -1039,14 +1036,13 @@ class UserController extends Controller
         $params->user = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
 
         try{
-            $this->userManager->changeStatusUser($params);
             $emailTo = $user->getEmail();
 
-            //remove beneficiaries associated to the user to remove
-            $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
-            foreach($beneficiaries as $beneficiary){
-                $em->remove($beneficiary);
-            }
+//            //remove beneficiaries associated to the user to remove
+//            $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
+//            foreach($beneficiaries as $beneficiary){
+//                $em->remove($beneficiary);
+//            }
             
             //TODO : ONE single SQL insert request instead of the two here
             //set Operations with user to remove as creditor/debitor to NULL
@@ -1060,18 +1056,33 @@ class UserController extends Controller
                 $operation->setDebitor(NULL);
             }
 
-            $em->remove($user);
+            //if deposit scheduled, cancel removal
+            $scheduledDeposits = $depositRepo->findBy(array('creditor'=>$user,'status'=> Deposit::STATE_SCHEDULED));
 
-            $subject = 'Ce n\'est qu\'un au revoir !';
+            if($scheduledDeposits){ return false; }
+
+            $deposits = $depositRepo->findBy(array('creditor'=>$user));
+
+            foreach($deposits as $deposit){
+                $em->remove($deposit);
+            }
+
+
+            $subject = 'Compte [e]-Cairn clôturé';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $emailTo;
-            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('currentUser'=>$currentUser));
+            $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('receiver'=>'user','removedUser'=>$user));
 
+            $em->remove($user);
+            $this->userManager->changeStatusUser($params);
+
+            //send email AFTER user has effectively been removed
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
             if($isPro){
-                $subject = 'Un professionnel a été supprimé de la plateforme';
+                $subject = 'Compte [e]-Cairn pro fermé';
                 $body = $saveName .' a été supprimé de la plateforme par '. $currentUser->getName();
+                $body = $this->renderView('CairnUserBundle:Emails:farwell.html.twig',array('receiver'=>'admin','user_name'=>$saveName));
                 foreach($referents as $referent){
                     $to = $referent->getEmail();
                     $messageNotificator->notifyByEmail($subject,$from,$to,$body);
