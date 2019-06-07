@@ -3,6 +3,13 @@
 
 <div class="row">
     <h2 class="center-align">Inscription {%  if (app.session.get('registration_type') == "person") %}particulier{% elseif(app.session.get('registration_type') == "pro") %}pro{% endif %}</h2>
+
+    <div class= "center-align">
+        <b>Pas encore adhérent ?</b>  <br>
+        <a class="waves-effect waves-light btn orange" href="{{ register_url }}"  target="_blank">Adhérer</a>
+    </div>
+
+    <br>
     {{ form_start(form, {'method': 'post', 'action': path('fos_user_registration_register'), 'attr': {'class': 'fos_user_registration_register'}}) }}
     {{ form_errors(form) }}
     <div class="input-field col s12 m4">
