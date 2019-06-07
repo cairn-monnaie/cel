@@ -42,7 +42,7 @@ class UserPasswordValidator extends ConstraintValidator
         $encoder = $this->encoderFactory->getEncoder($currentUser);                   
         $salt = $currentUser->getSalt();                                              
 
-        if(!$encoder->isPasswordValid($currentUser->getPassword(), $password, $salt)){
+        if(! $encoder->isPasswordValid($currentUser->getPassword(), $password, $salt)){
             $this->em->refresh($currentUser);
 
             //plainPassword is not refreshed because it does not belong to persisted attributes
@@ -57,10 +57,13 @@ class UserPasswordValidator extends ConstraintValidator
             if($currentUser->getPasswordTries() > 2){                                
                 $this->accessPlatform->disable(array($currentUser),'password_tries_exceeded');   
             }    
+
+            $this->em->flush($currentUser); 
+  
         }else{
             $this->counter->reinitializeTries($currentUser,'password');
         }
 
-        $this->em->flush($currentUser); 
+
     }
 }

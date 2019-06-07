@@ -149,7 +149,7 @@ class SecurityListener
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
         $currentPassword = $form->get('current_password')->getData(); 
-        $newPassword = $user->getPlainPassword();
+        $newPassword = $form->get('plainPassword')->getData();//$user->getPlainPassword();
 
         $changed = $this->changeCyclosPassword($currentPassword, $newPassword, $user);
 

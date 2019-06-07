@@ -53,6 +53,7 @@ class ChangePasswordType extends AbstractType
                 $newPassword = $form->get('plainPassword')->getData();
                 if($this->passwordEncoder->isPasswordValid($user, $newPassword)){
                     $error = new FormError('Ce mot de passe est déjà utilisé');
+                    $error->setOrigin($form->get('plainPassword'));
                     $form->addError($error);
                 }
             }
