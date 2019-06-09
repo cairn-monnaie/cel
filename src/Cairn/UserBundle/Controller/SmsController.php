@@ -48,26 +48,42 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        if($this->getParameter('kernel.environment') == 'test'){
+        $env = $this->getParameter('kernel.environment');
+        if($env == 'test'){
             $phoneNumber = '+'.trim($request->query->get('phone'));
             $this->smsAction($phoneNumber,$request->query->get('content'));
-        }else{
+        }elseif($env == 'dev'){
+//
 //        $this->smsAction('+33788888888','LOGIN');
-//        $this->smsAction('+33611223344','2222');
+            $this->smsAction('+33611223344','2222');
 //        $this->smsAction('+33611223344','1111');
 //
-          $this->smsAction('+33612345678','PAYER 20 MALTOBAR');
+            //+33744444444', 'SOLDE
+//          $this->smsAction('+33612345678','PAYER 10 MALTOBAR');
 //
 //        $this->smsAction('+33612345678','2222');
-        $this->smsAction('+33612345678','1111');
+//        $this->smsAction('+33612345678','1111');
 //        $this->smsAction('+33655667788','SOLDE');
 //        $this->smsAction('+33655667788','2222');
 //        $this->smsAction('+33655667788','1111');
-        }
-        return new Response('ok');
-//        return $this->render('CairnUserBundle:Banking:test.html.twig');
+        }elseif($env == 'prod'){
 
+            parse_str( $request->getQueryString(), $query) ;
+
+            if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
+                $response = new Response(' { "message"=>"Invalid request" }');
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                return $response;
+            } 
+
+            $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
+            $this->smsAction($sender_phoneNumber,$query['message']);
+        }
+
+        return new Response('ok');
     }
+
 
     /**
      * Analyzes received sms, parses it and hydrates the object to return with relevant information

@@ -71,6 +71,7 @@ parameters:
         sms:
             api_token: 'ThisTokenIsNotSoSecret'
             provider_url: 'https://sms-provider.com'
+            originator: '+33611223344'
         webpush:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
