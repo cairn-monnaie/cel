@@ -79,7 +79,7 @@ class SecurityController extends Controller
     }
 
 
-    public function notificationSubscriptionAction(Request $request)
+    public function webPushSubscriptionAction(Request $request)
     {
         if($request->isMethod('POST')){
 
@@ -151,7 +151,7 @@ class SecurityController extends Controller
 
             $user = $userRepo->findOneByUsername($params['username']);
 
-            $user->getSmsData()->addWebPushEndpoint($params['subscription']);
+            $user->getSmsData()->addWebPushSubscription($params['subscription']);
 
             $em->flush();
 

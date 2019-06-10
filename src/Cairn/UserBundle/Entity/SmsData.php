@@ -41,9 +41,9 @@ class SmsData
     /**
      * @var array
      *
-     * @ORM\Column(name="webPush_endpoints", type="array")
+     * @ORM\Column(name="webPush_subscriptions", type="array")
      */
-    private $webPushEndpoints;
+    private $webPushSubscriptions;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationPermission", cascade={"persist","remove"})
@@ -150,41 +150,47 @@ class SmsData
     }
 
     /**
-     * Add webPush endpoint
+     * Add webPush subscription
      *
      * @param 
      *
      * @return User
      */
-    public function addWebPushEndpoint(array $endpoint)
+    public function addWebPushSubscription(array $subscription)
     {
-        $this->webPushEndpoints[] = $endpoint;
+        $this->webPushSubscriptions[] = $subscription;
 
         return $this;
     }
 
     /**
-     * Remove endpoint
+     * Remove subscription
      *
      * @param 
      *
      * @return User
      */
-    public function removeWebPushEndpoint(array $endpoint)
+    public function removeWebPushSubscription(string $endpoint)
     {
-        $endpoints = $this->webPushEndpoints;
+        $subscriptions = $this->webPushSubscriptions;
+
+        foreach($subscriptions as $key=>$subscription){
+            if($subscription['endpoint'] == $endpoint){
+                array_splice($this->webPushSubscriptions,$key,1);
+            }
+        }
 
         return $this;
     }
 
     /**
-     * Get webPushEndpoints
+     * Get webPushSubscriptions
      *
      * @return array
      */
-    public function getWebPushEndpoints()
+    public function getWebPushSubscriptions()
     {
-        return $this->webPushEndpoints;
+        return $this->webPushSubscriptions;
     }
 
     /**

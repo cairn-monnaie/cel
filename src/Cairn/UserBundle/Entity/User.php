@@ -186,10 +186,10 @@ class User extends BaseUser
         }
     }
 
-    public function getWebPushEndpoints()
+    public function getWebPushSubscriptions()
     {
         if($smsData = $this->getSmsData()){
-            return $smsData->getWebPushEndpoints();
+            return $smsData->getWebPushSubscriptions();
         }else{
             return array();
         }

@@ -79,7 +79,7 @@ class MessageNotificator
         );
 
         $defaultOptions = [
-            'TTL' => 7200, // defaults to 4 weeks
+            'TTL' => 7200, // 2h 
             'urgency' => 'high', // protocol defaults to "normal"
             'topic' => 'new_event', // not defined by default,
             'batchSize' => 20, // defaults to 1000
@@ -89,8 +89,8 @@ class MessageNotificator
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        if($user->getWebPushEndpoints() && count($user->getWebPushEndpoints()) > 0){
-            foreach($user->getWebPushEndpoints() as $subscription){
+        if($user->getWebPushSubscriptions() && count($user->getWebPushSubscriptions()) > 0){
+            foreach($user->getWebPushSubscriptions() as $subscription){
                 $notification = array(
                     'subscription'=> Subscription::create(
                         array(
@@ -113,11 +113,14 @@ class MessageNotificator
 
         ////check sent results
         foreach ($webPush->flush() as $report) {
-            $endpoint = $report->getRequest()->getUri()->__toString();
+            $endpoint = $report->getEndPoint();
 
             if ($report->isSuccess()) {
                 echo "[v] Message sent successfully for subscription {$endpoint}.";
             } else {
+                if($report->isSubscriptionExpired()){
+                    $user->getSmsData()->removeWebPushSubscription($endpoint);
+                }
                 echo "[x] Message failed to sent for subscription {$endpoint}: {$report->getReason()}";
             }
         }
@@ -299,7 +302,7 @@ class MessageNotificator
 //        var_dump($result);
 //        var_dump($code);
 //        var_dump($result);
-//
+
         $mobile = '&mobile='.$phoneNumber;
         $type='&type=text';
         

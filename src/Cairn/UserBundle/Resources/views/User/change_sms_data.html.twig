@@ -219,7 +219,7 @@
         
         function sendSubscriptionToBackEnd(subscription,username) {
             var token = "{{app.session.get('cyclos_token')}}";
-            return fetch(self.location.protocol +"//" + self.location.host + '/api/notifications/endpoint-subscription', {
+            return fetch(self.location.protocol +"//" + self.location.host + '/webpush/subscription', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

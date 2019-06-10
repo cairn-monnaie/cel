@@ -7,9 +7,9 @@ cairn_user_welcome:
         _format: html|json
 
 cairn_user_api_notifications_subscription:
-    path: api/notifications/endpoint-subscription
+    path: webpush/subscription
     methods: POST
-    defaults: { _controller: CairnUserBundle:Security:notificationSubscription, _format: json }
+    defaults: { _controller: CairnUserBundle:Security:webPushSubscription, _format: json }
 
 cairn_user_online_payment_execute:
     path: online-payment/confirm/{suffix}
