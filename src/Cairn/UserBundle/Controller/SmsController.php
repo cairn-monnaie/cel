@@ -55,14 +55,14 @@ class SmsController extends Controller
         }elseif($env == 'dev'){
 //
 //        $this->smsAction('+33788888888','LOGIN');
-            $this->smsAction('+33611223344','2222');
+//            $this->smsAction('+33611223344','2222');
 //        $this->smsAction('+33611223344','1111');
 //
             //+33744444444', 'SOLDE
-//          $this->smsAction('+33612345678','PAYER 10 MALTOBAR');
+          $this->smsAction('+33612345678','PAYER 10 MALTOBAR');
 //
 //        $this->smsAction('+33612345678','2222');
-//        $this->smsAction('+33612345678','1111');
+        $this->smsAction('+33612345678','1111');
 //        $this->smsAction('+33655667788','SOLDE');
 //        $this->smsAction('+33655667788','2222');
 //        $this->smsAction('+33655667788','1111');
@@ -215,7 +215,7 @@ class SmsController extends Controller
         if(! $debitorUser->isEnabled()){
              $smsUnauthorized = new Sms($debitorPhoneNumber, $content, Sms::STATE_UNAUTHORIZED, NULL);
 
-             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: opposition de compte',$smsUnauthorized);
+             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: le compte est actuellement bloqué',$smsUnauthorized);
 
              $em->persist($smsUnauthorized);
              $this->persistSMS($sms);
@@ -228,7 +228,7 @@ class SmsController extends Controller
         if(! $userPhone->isPaymentEnabled()){
              $smsUnauthorized = new Sms($debitorPhoneNumber, $content, Sms::STATE_UNAUTHORIZED, NULL);
 
-             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: opposition aux SMS depuis ce numéro',$smsUnauthorized);
+             $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'SMS NON AUTORISÉ: les paiements SMS depuis ce numéro sont interdits',$smsUnauthorized);
 
              $em->persist($smsUnauthorized);
              $this->persistSMS($sms);
@@ -244,6 +244,13 @@ class SmsController extends Controller
             $accessClient = $securityService->getSmsClient($debitorUser);
 
             if(!$accessClient){
+                $subject = 'Accès client Cyclos';
+                $from = $this->getParameter('cairn_email_noreply');
+                $to = $this->getParameter('cairn_email_technical_services');
+                $body = 'L\'utilisateur '.$debitorUser->getUsername().' n\'a aucun accès client Cyclos ';
+
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
                 $smsError = new Sms($debitorPhoneNumber, $content, Sms::STATE_ERROR, NULL);
 
                 $sms = $messageNotificator->sendSMS($debitorPhoneNumber,'ERREUR TECHNIQUE : L\'Association en a été informée.',$smsError);
@@ -252,12 +259,6 @@ class SmsController extends Controller
                 $this->persistSMS($sms);
                 $em->flush();
 
-                $subject = 'Accès client Cyclos';
-                $from = $this->getParameter('cairn_email_noreply');
-                $to = $this->getParameter('cairn_email_technical_services');
-                $body = 'L\'utilisateur '.$debitorUser->getUsername().' n\'a aucun accès client Cyclos ';
-
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
                 return; 
             }
             $networkInfo->switchToNetwork($networkName,'access_client', $accessClient);
@@ -507,7 +508,7 @@ class SmsController extends Controller
             }
         }
 
-        $reason = 'Paiement '.$this->getParameter('cyclos_currency_cairn').' par SMS';
+        $reason = 'Paiement par SMS';
         $description = 'Paiement effectué le '.$operation->getExecutionDate()->format('d-m-Y').' à '.$operation->getExecutionDate()->format('H:i').' à destination de '.$creditorUser->getName();
         $operation->setReason($reason);
         $operation->setDescription($description);

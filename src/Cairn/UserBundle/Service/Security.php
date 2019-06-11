@@ -49,13 +49,10 @@ class Security
 
     protected $secret;
 
-    protected $smsMaxAmountWithoutSecurity;
+    protected $smsDailyThresholds;
 
-    protected $smsAmountBlock;
 
-    protected $smsNbPaymentsBlock;
-
-    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret,string $smsMaxAmountWithoutSecurity,string $smsAmountBlock,string $smsNbPaymentsBlock)
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret, array $smsDailyThresholds)
     {
         $this->userRepo = $userRepo;
         $this->operationRepo = $operationRepo;
@@ -64,9 +61,7 @@ class Security
         $this->encoderFactory = $encoderFactory;
         $this->userIdentificationInfo= $userIdentificationInfo;
         $this->secret = $secret;
-        $this->smsMaxAmountWithoutSecurity = $smsMaxAmountWithoutSecurity;
-        $this->smsAmountBlock = $smsAmountBlock;
-        $this->smsNbPaymentsBlock = $smsNbPaymentsBlock;
+        $this->smsDailyThresholds = $smsDailyThresholds; 
     }
 
     /**
@@ -289,23 +284,23 @@ class Security
         $totalDayAmount = (!$totalDayAmount) ? 0 : $totalDayAmount;
         $totalDayAmount += $operation->getAmount();
 
-        if($totalDayAmount > $debitorPhone->getDailyAmountThreshold()){
+        if($totalDayAmount > $this->smsDailyThresholds['amount']['cumulated']){
            return true; 
         }
         
         //criteria 3 : amount in a single payment
-        if( $operation->getAmount() >= $this->smsMaxAmountWithoutSecurity ){return true;}
+        if( $operation->getAmount() >= $this->smsDailyThresholds['amount']['unique'] ){return true;}
 
        //criteria 4 : number of current day payments (lower than threshold ?)
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
             ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
             ->whereDebitor($ob,$debitor)
-            ->whereAmountComparedWith($ob, $debitorPhone->getDailyAmountThreshold(), 'lt')
+//            ->whereAmountComparedWith($ob, $debitorPhone->getDailyAmountThreshold(), 'lt')
             ->whereCurrentDay($ob);
 
         $operations = $ob->getQuery()->getResult();
-        if(count($operations) > $debitorPhone->getDailyNumberPaymentsThreshold()){ return true; }
+        if(count($operations) > $this->smsDailyThresholds['qty']['step']){ return true; }
 
         return false;
     }
@@ -325,7 +320,7 @@ class Security
 
         $debitor = $operation->getDebitor();
 
-        if( $operation->getAmount() >= $this->smsAmountBlock ){return true;}
+        if( $operation->getAmount() >= $this->smsDailyThresholds['amount']['block'] ){return true;}
 
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
@@ -334,7 +329,7 @@ class Security
             ->whereCurrentDay($ob);
 
         $operations = $ob->getQuery()->getResult();
-        if(count($operations) >= $this->smsNbPaymentsBlock){ return true; }
+        if(count($operations) >= $this->smsDailyThresholds['qty']['block']){ return true; }
 
         return false;
     }

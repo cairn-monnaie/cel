@@ -113,9 +113,7 @@ services:
             - "@security.encoder_factory" 
             - "@cairn_user_cyclos_useridentification_info"
             - "%secret%" 
-            - "%sms_max_amount_without_security%" 
-            - "%sms_amount_block%" 
-            - "%sms_nb_payments_block%"
+            - "%sms_daily_thresholds%" 
 
     cairn_user.operation_listener:
         class: Cairn\UserBundle\EventListener\OperationListener
