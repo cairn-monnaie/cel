@@ -119,9 +119,33 @@
                             var containerName = document.querySelector('.js-user-name');
                             var username = containerName.dataset.getName;
                 
-                            subscribeUserToPush().then(function(subscription) {
-                                sendSubscriptionToBackEnd(subscription, username);
+                            navigator.serviceWorker.register("/service-worker.js", {
+                                scope: '/'
+                            })
+                            .then(function(reg) {
+                                navigator.serviceWorker.ready
+                                .then(function(reg) {
+                                    var subscribeOptions = {
+                                        userVisibleOnly: true,
+                                        applicationServerKey: urlBase64ToUint8Array(
+                                                'BOgWoZItNVvw2sWwfQ8AammEU-bjTNyHtoFuJF6yk9llulIclOEFQzbvf3PCFRZqRltLVHrVomu1Vmb-YYf0JAA'
+                                        )
+                                    };
+                                    console.log(reg.pushManager);
+                                    return reg.pushManager.subscribe(subscribeOptions);
+                                })
+                                .then(function(subscription) {
+                                    sendSubscriptionToBackEnd(subscription, username);
+                                })
+                                .catch(function(err) {
+                                    console.error('Unable to register service worker 2.', err);
+                                });
+
+                            })
+                            .catch(function(err) {
+                                throw new Error(err);
                             });
+
                         }
                     });
                 }
@@ -163,13 +187,6 @@
         }
 
         function registerServiceWorker() {
-            return navigator.serviceWorker.register("{{ asset('bundles/cairnuser/js/service-worker.js') }}")
-                .then(function(registration) {
-                        return registration;
-                    })
-                .catch(function(err) {
-                        console.error('Unable to register service worker.', err);
-                    });
         }
 
         function askPermission() {
@@ -200,22 +217,6 @@
                     });
         }
 
-        function subscribeUserToPush() {
-            return registerServiceWorker()
-                .then(function(registration) {
-                        const subscribeOptions = {
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(
-                                    'BOgWoZItNVvw2sWwfQ8AammEU-bjTNyHtoFuJF6yk9llulIclOEFQzbvf3PCFRZqRltLVHrVomu1Vmb-YYf0JAA'
-                            )
-                        };
-                        return registration.pushManager.subscribe(subscribeOptions);
-
-        })
-        .then(function(pushSubscription) {
-                return pushSubscription;
-                });
-        }
         
         function sendSubscriptionToBackEnd(subscription,username) {
             var token = "{{app.session.get('cyclos_token')}}";
