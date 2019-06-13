@@ -100,8 +100,18 @@ class ApiController extends Controller
         }
 
         //validate POST content
-        if( (! is_float($postParameters['amount'])) || (floatval($postParameters['amount']) < 0.01)  ){
-            $response = new Response('Invalid payment amount');
+        if( (! is_numeric($postParameters['amount']))   ){
+            $response = new Response(' { "message"=>"No numeric amount"} ');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        }
+
+        $numericalAmount = floatval($postParameters['amount']);
+        $numericalAmount = round($numericalAmount,2); 
+
+        if( $numericalAmount < 0.01  ){
+            $response = new Response(' { "message"=>"Amount too low"} ');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             return $response;
@@ -121,10 +131,17 @@ class ApiController extends Controller
             return $response;
         }
 
+        if( strlen($postParameters['reason']) > 35){                                  
+            $response = new Response(' { "Reason too long : 35 characters allowed" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        } 
+
         //finally register new onlinePayment data
         $onlinePayment->setUrlSuccess($postParameters['return_url_success']);
         $onlinePayment->setUrlFailure($postParameters['return_url_failure']);
-        $onlinePayment->setAmount($postParameters['amount']);
+        $onlinePayment->setAmount($numericalAmount);
         $onlinePayment->setAccountNumber($postParameters['account_number']);
         $onlinePayment->setReason($postParameters['reason']);
 
