@@ -73,7 +73,7 @@ class UserController extends Controller
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
         $qb = $userRepo->createQueryBuilder('u')
-            ->orderBy('u.creationDate','DESC')
+            ->orderBy('u.creationDate','ASC')
             ->andWhere('u.enabled = true')
             ->setMaxResults(5);
         $userRepo->whereRole($qb,'ROLE_PRO');
@@ -113,7 +113,7 @@ class UserController extends Controller
                 return $response;
                 return $this->json($response);
             }
-            return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastUsers'=>$users));
+            return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastPros'=>$users));
         }
 
     }
