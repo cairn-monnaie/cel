@@ -114,9 +114,6 @@ form .error {
   background-color: #ffe253 !important;
 }
 
-#network {
-  margin-top: 10px;
-}
 
 h1 {
   font-size: 3rem;
@@ -219,6 +216,18 @@ div.online_payment_pro_logo > img {
 #toast-container {
     top: auto !important;
     right: auto !important;
+}
+
+.slider .slides li img {
+  opacity: 0.5 !important;
+}
+
+.slider .slides li h3{
+  font-weight: bolder !important;
+}
+
+.slider .slides li p{
+  font-weight: bold !important;
 }
 
 /*# sourceMappingURL=ecairn.css.map */
