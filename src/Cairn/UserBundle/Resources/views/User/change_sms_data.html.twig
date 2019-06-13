@@ -222,6 +222,20 @@
         var isPro = containerRole.dataset.isPro;
 
         if( isPro ){
+            if (! ('serviceWorker' in navigator)) {
+                // Service Worker isn't supported on this browser, disable or hide UI.
+    
+                onIncompatibleBrowser();
+                throw new Error('Service Worker not supported');
+            }
+    
+            if (!('PushManager' in window)) {
+                // Push isn't supported on this browser, disable or hide UI.
+    
+                onIncompatibleBrowser();
+                throw new Error('push manager not supported');
+            }            
+
             var containerNotifBox = document.querySelector('#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
             if(Notification.permission !== 'granted'){
                 containerNotifBox.checked = false;
@@ -240,19 +254,6 @@
             }
         }
 
-        if (! ('serviceWorker' in navigator)) {
-            // Service Worker isn't supported on this browser, disable or hide UI.
-
-            onIncompatibleBrowser();
-            throw new Error('Service Worker not supported');
-        }
-
-        if (!('PushManager' in window)) {
-            // Push isn't supported on this browser, disable or hide UI.
-
-            onIncompatibleBrowser();
-            throw new Error('push manager not supported');
-        }            
 
 
         </script>
