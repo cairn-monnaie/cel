@@ -48,29 +48,33 @@
                 </table>
             </div>
         </div>
-        <div id="network" >
-            <div class="card">
-                <a href="{{path('cairn_user_pros_list')}}">
-                <div class="card-image">
+        <div class="row">
+            <div class="slider">
+              <ul class="slides">
+                  {% for pro in lastPros %}
+                  
+                  <li>
+                    <a href="{{path('cairn_user_pros_list')}}">
+                      {% if pro.image is not null %}
+                          {% if pro.image.url is not null %}
+                              <img src="{{asset('uploads/img/' ~ pro.image.id ~ '.' ~ pro.image.url)}}" alt="{{pro.image.alt}}" class="activator">
+                          {% else %}
+                              <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="activator">
+                          {% endif %}
+                      {% else %}
+                          <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="responsive-img activator">
+                      {% endif %}
 
-                    <img src="{{asset('bundles/cairnuser/img/reseau.png')}}">
-                    <span class="card-title black-text"><b>Ils ont rejoint le [e]-Cairn</b></span>
-                </div>
-                </a>
-                <ul class="collapsible">
-                    {% for user in lastUsers %}
-                        <li class="users_show">
-                            <div class="collapsible-header card-content">
-                                <span> {{user.name}} </span>
-                            </div>
-                            <div class="collapsible-body" style="display: none;">
-                                <blockquote>
-                                    {{ user.description}}
-                                </blockquote>
-                            </div>
-                        </li>
-                    {% endfor %}
-                </ul>
+                    <div class="caption center-align">
+                      <h3>{{pro.name}}</h3>
+                      <h5 class="light grey-text text-lighten-3">{{pro.description}}</h5>
+                    </div>
+                     </a>
+
+                  </li>
+
+                  {% endfor %}
+              </ul>
             </div>
         </div>
     </div>
@@ -105,4 +109,13 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+           var elems = document.querySelectorAll('.slider');
+           var instances = M.Slider.init(elems);
+         });
+    </script>
 {% endblock %}
