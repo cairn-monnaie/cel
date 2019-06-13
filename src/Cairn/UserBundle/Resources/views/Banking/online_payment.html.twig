@@ -67,8 +67,8 @@
             {{ form_start(form) }}
                 <div class="row valign-wrapper">
                     <div class="input-field col s4 offset-s4 center-align">
-                       {{ form_widget(form.field) }} 
                        {{ form_label(form.field) }} 
+                       {{ form_widget(form.field) }} 
                     </div>
                     <div class="valign-wrapper">
                         <i class="material-icons small class="col s2">help</i><a onclick="M.toast({html: 'Clé contenue dans votre carte de sécurité [e]-Cairn', displayLength: 10000})">Qu'est-ce donc ?</a>
@@ -87,7 +87,7 @@
             {{ form_end(form) }}
         </div>
         <div class="bottom_note">
-          <i class="material-icons medium class="valign-wrapper">info</i><span> Pour annuler votre paiement, cliquez sur le bouton "Abandonner"</span>
+          <i class="material-icons medium valign-wrapper">info</i><span> Pour annuler votre paiement, cliquez sur le bouton "Abandonner"</span>
         </div>
     </div>
 

@@ -76,7 +76,7 @@ class Phone
         }
 
         $this->setDailyNumberPaymentsThreshold(4);
-        $this->setDailyAmountThreshold(30);
+        $this->setDailyAmountThreshold(50);
     }
 
 

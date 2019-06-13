@@ -89,7 +89,7 @@
                     <tbody>
                     {% for transaction in lastTransactions %}
                         <tr>
-                            <td>{{transaction.executionDate|date('Y-m-d')}}</td>
+                            <td>{{transaction.executionDate|date('d-m-Y')}}</td>
                             <td>{{transaction.reason}}</td>
                             {% if transaction.debitorName == app.user.name %}
                                 <td class="deb-amount"> -{{transaction.amount}} cairns </td>
