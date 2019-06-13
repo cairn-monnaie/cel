@@ -1,0 +1,148 @@
+{# src/Cairn/UserBundle/Resources/views/Pro/howto_sms.html.twig #}         
+                                                                               
+
+<div class="row">
+    Pour utiliser le paiement par SMS, pas besoin de smartphone, un simple téléphone portable suffit !    
+    <ul class="collapsible">
+        <li>
+            <div class="collapsible-header"><i class="material-icons">add</i>
+                Payer par SMS
+            </div>
+            <div class="collapsible-body">
+                <p>
+                Pour réaliser un paiement par SMS, il faut créer un nouveau SMS contenant les informations suivantes (texte non sensible à la casse)
+                <ol>
+                    <li>PAYER (indique une demande de paiement) </li>
+                    <li>Un montant (incluant éventuellement les centimes) comme 12.34 </li>
+                    <li>L'identifiant SMS du professionnel que vous souhaitez payer (exemple 'LECAIRN') </li>
+                </ol>
+                Un SMS type aura donc la forme suivante : <b> PAYER 12.34 LECAIRN </b>
+                </p>
+                <p>
+                    Puis envoyer le SMS au numéro de téléphone de paiement du Cairn: <b>+336 44 63 17 77</b> <br>
+                    <b>Astuce</b>: Ajouter ce numéro à votre liste de contacts, ce sera plus simple à utiliser !
+                </p>
+                <p>
+                    Ensuite, deux cas se présentent selon les <b>plafonds</b> en vigueur :
+                    <ul class="browser-default">
+                        <li>Le paiement est automatiquement exécuté, sans demande de validation</li>
+                        <li>Une validation à l'aide de votre carte de sécurité est nécessaire <br>
+                            Vous recevez alors : Veuillez saisir votre code de sécurité en position A3 utilisable jusqu'à 16h58 <br>
+                            Vous répondez alors avec votre code (exemple '1111')  </b>
+                        </li>
+
+                    </ul>
+                </p>
+                <p>
+                    Enfin, vous recevez un SMS confirmant que le paiement a été exécuté avec succès. <br> 
+                    <b>Exemple</b> : Votre paiement de 12.34 à LECAIRN a été accepté. Votre nouveau solde: 27.66
+                </p>
+                <p>
+                    <b>Modèle type</b>
+                    <ul class="browser-default">
+                        <li>PAYER 12.34 LE CAIRN</li>
+                        <li>Veuillez saisir votre code de sécurité en position A3 utilisable jusqu'à 16h58 </li>
+                        <li>4321 </li>
+                        <li>Votre paiement de 12.34 à LECAIRN a été accepté. Votre nouveau solde: 27.66 </li>
+                    </ul>
+                </p>
+            </div>
+
+        </li>
+        {% if ( app.user and app.user.hasRole('ROLE_PRO')) %}
+        <li>
+            <div class="collapsible-header"><i class="material-icons">add</i>
+                Recevoir les paiements par SMS
+            </div>
+            <div class="collapsible-body">
+                En tant que professionnel, pour être notifié d'un paiement par SMS, il existe <b>trois canaux</b> possibles
+                <ol>
+                    <li>Notification sur votre navigateur (compatibilité requise)</li>
+                    <li>Par email </li>
+                    <li>Par SMS</li>
+                </ol>
+            </div>
+        </li>
+        {% endif %}
+        <li class="">
+            <div class="collapsible-header"><i class="material-icons">add</i>
+                Les plafonds &nbsp; <b>[ Mis à jour le 10 mai 2019 ]</b>
+            </div>
+            <div class="collapsible-body" style="display: none;">
+                Pour des raisons de sécurité, plusieurs plafonds ont été définis :
+                <p>
+                <h5> Plafonds sur les montants </h5>
+                <ul class="browser-default">
+                    <li> Paiement exécuté sans demande de validation: <b>montant inférieur à 30 cairns </b>
+                    <li> Validation du paiement par code de sécurité: 
+                        <ul class="browser-default">
+                            <li> Montant <b>cumulé sur la journée</b> supérieur à 50 cairns </li>
+                            <li> Montant du paiement en cours supérieur à 30 cairns </li>
+                        </ul>
+                    <li>Opposition automatique au paiement SMS : montant cumulé supérieur à 500 cairns par jour </li>
+
+                </ul>
+                </p>
+                <p>
+                <h5> Plafonds sur le nombre de paiements </h5>
+                <ul class="browser-default">
+                    <li> Paiement exécuté sans demande de validation: <b>Moins de 4 paiements par jour</b>
+                    <li> Validation du paiement par code de sécurité : <b>Entre 4 et 10 paiements par jour</b>
+                    <li> Opposition au paiement SMS : <b>Plus de 10 paiements par jour</b>
+                </ul>
+                </p>
+            </div>
+        </li>
+        <li class="">
+            <div class="collapsible-header"><i class="material-icons">add</i>
+                En cas de perte ou vol
+            </div>
+            <div class="collapsible-body" style="display: none;">
+                En cas de perte ou de vol de votre téléphone portable et/ou de votre carte SIM, vous devez bloquer les paiements SMS et contacter l'Association. Si vous n'avez pas de carte de sécurité, demandez à l'Association de bloquer votre compte à votre place. Pour bloquer les paiements SMS :
+                <ol class="sms">
+                    <li>Connectez-vous à votre compte [e]-Cairn </li>
+                    <li>Accédez à votre profil en haut à droite de la page (logo ou nom d'utilisateur) </li>
+                    <li>Cliquez sur <b>Mes données SMS</b> pour faire apparaître les options</li>
+                    <li>En dessous du numéro de téléphone concerné, cliquez sur <b>Editer mes données SMS</b></li>
+                    <li>Décochez la case <b>Payer par SMS</b></li>
+                    <li>Cliquez sur <b>Suivant</b></li>
+                </ol>
+            </div>
+
+        </li>
+         <li class="">
+            <div class="collapsible-header"><i class="material-icons">add</i>
+                Politique Anti-SPAM SMS
+            </div>
+            <div class="collapsible-body" style="display: none;">
+                <p>
+                Nous rappelons que, même si le [e]-Cairn est entièrement compris dans l'adhésion, celui-ci a un coût pour l'Association. L'un des frais de fonctionnement du [e]-Cairn est l'envoi de SMS aux adhérents afin : 
+                <ul class="browser-default">
+                    <li> De notifier en cas d'exécution d'un paiement </li>
+                    <li> De demander une clé de la carte de sécurité </li>
+                    <li> De notifier en cas d'échec du paiement, quelqu'en soit la cause</li>
+                </ul>
+                </p>
+                <p>
+                Ainsi, afin d'éviter toute utilisation abusive du SMS, un système ANTI-SPAM a été défini avec les règles suivantes <b>(par jour)</b>:
+                <ul class="browser-default">
+                    <li>1 demande de solde de son compte [e]-Cairn (Envoyer SOLDE au +336 44 63 17 77)</li>
+                    <li>4 demandes de paiements invalides (format incorrect, solde insuffisant, ...) </li>
+                    <li>2 demandes de paiements non autorisées (Compte bloqué, Paiement SMS non autorisé) </li>
+                    <li>2 demandes de paiement en cas de problème technique </li>
+                    <li>4 expirations de paiement</li>
+                    <li>3 paiements non validés</li>
+                </ul>
+                </p>
+                <p>
+                Si l'un des cas ci-dessus se produit, les opérations SMS seront bloquées pour la journée. Vous recevrez un SMS avec le contenu suivant : <br>
+                <em>Votre activité du jour a été identifiée comme du SPAM. Les opérations SMS vous sont interdites pour aujourd'hui. Merci de votre compréhension. </em>
+               </p>
+            </div>
+
+        </li>
+   
+    </ul>
+
+</div>
+

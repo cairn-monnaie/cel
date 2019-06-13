@@ -7,12 +7,22 @@
 {%block stylesheets %}
 {% endblock %}
 
+ {% if user.image is not null %}
+    {% if user.image.url is not null %}
+        {% set logoIsDefined = false %}
+    {% else %}
+        {% set logoIsDefined = true %}
+    {% endif %}
+{% else %}
+    {% set logoIsDefined = false %}
+{% endif %}
+
 {% block body %}
     <div class="section">
         <div class="row">
             <div class="col s6 m2 offset-s3 offset-m5">
                 <h5 class="center-align">
-                    {% if user.image.url is defined %}
+                    {% if logoIsDefined %}
                         <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="responsive-img">
                     {% else %}
                         <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle responsive-img">
@@ -21,6 +31,7 @@
                 </h5>
             </div>
         </div>
+        <div class="row">
         <ul class="collapsible">
             <li class="">
                 <div class="collapsible-header"><i class="material-icons">person</i>
@@ -42,7 +53,7 @@
                         </div>
                         <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
                             &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
-                            {% if user.hasRole('ROLE_PRO') %}
+                            {% if ( user.hasRole('ROLE_PRO') and logoIsDefined ) %}
                                 &nbsp;<a href="{{path('cairn_user_logo_download',{'id': user.image.id})}}"> Logo</a>
                             {% endif %}
                         </div>
@@ -130,8 +141,23 @@
 
                         {% if app.user.isAdherent() %}
                             <br> <br>
-                            <div class="smsdata_new">
-                                <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                            <div class="valign-wrapper">
+                                <div class="smsdata_new col s4">
+                                    <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                                </div>
+                                <div class="col s8 left-align">
+                                    <a class="waves-effect waves-light modal-trigger" href="#modal1"><i class="material-icons large purple-text text-darken-2">info</i><span> Règles d'utilisation</span></a>
+            
+                                    <div id="modal2" class="modal">
+                                      <div class="modal-content">
+                                        <h4 class="center-align">Le paiement par SMS</h4>
+                                        {{include("CairnUserBundle:Default:howto_sms.html.twig")}}
+                                      </div>
+                                      <div class="modal-footer">
+                                        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Compris !</a>
+                                      </div>
+                                    </div>
+                                </div>
                             </div>
                         {% endif %}
 
@@ -209,6 +235,7 @@
                 {% endif %}
             {% endif %}
         </ul>
+        </div>
     </div>
 
         {% if (app.user == user) and user.hasRole('ROLE_PRO') and user.smsData %}

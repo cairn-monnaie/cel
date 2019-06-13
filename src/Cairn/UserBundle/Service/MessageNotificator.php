@@ -430,7 +430,7 @@ class MessageNotificator
         //number of account balance requests a day
         if( strpos($sms->getContent(),'SOLDE') !== false){
             $nbSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_PROCESSED, 'SOLDE');
-            if($nbSms >= 1){return true;}
+            if($nbSms >= 2){return true;}
         }
 
         //number of SMS identifier requests a day

@@ -129,7 +129,20 @@
                         </ul>
                     </div>
                     <div class="col l4 m6 s12">
-                        <h5 class="white-text">A propos du Cairn</h5>
+                        <h5 class="white-text">Nouveautés</h5>
+<!-- Modal Trigger -->
+  <a class="modal-trigger" href="#modal1"><span class="white-text">PAIEMENT SMS DISPONIBLE</span></a>
+
+  <!-- Modal Structure -->
+  <div id="modal1" class="modal black-text">
+    <div class="modal-content">
+      <h4 class="center-align">Le paiement par SMS</h4>
+      {{include("CairnUserBundle:Default:howto_sms.html.twig")}}
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Compris !</a>
+    </div>
+  </div>
                     </div>
     
                 </div>
@@ -148,7 +161,6 @@
         <script src="{{ asset('bundles/cairnuser/materialize/js/materialize.min.js') }}"></script>
         <script src="{{ asset('bundles/cairnuser/dropify/js/dropify.min.js') }}"></script>
         <script src="{{ asset('bundles/cairnuser/js/app.js') }}"></script>
-
 
         {% block javascripts %}
         {% endblock %}
