@@ -96,37 +96,6 @@
 {% block javascripts %}
         <script type="text/javascript">
 
-
-        function onIncompatibleBrowser(){
-            var containerNotifInput = document.querySelector('input#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
-            containerNotifInput.disabled = true;
-
-            var containerNotifRow = document.querySelector('tr#webpush_option');
-
-            containerNotifRow.addEventListener('click', function() {
-               M.toast({html: 'Votre navigateur est incompatible avec cette fonctionnalité', displayLength: 5000});
-            });
-        }
-
-        if (! ('serviceWorker' in navigator)) {
-            // Service Worker isn't supported on this browser, disable or hide UI.
-
-            onIncompatibleBrowser();
-            throw new Error('Service Worker not supported');
-        }
-
-        if (!('PushManager' in window)) {
-            // Push isn't supported on this browser, disable or hide UI.
-
-            onIncompatibleBrowser();
-            throw new Error('push manager not supported');
-        }            
-
-        //if granted, subscribe user
-
-        var containerRole = document.querySelector('.js-user-role');
-        var isPro = containerRole.dataset.isPro;
-
         function checkNotification() {
             getNotificationPermissionState().then(function(permission) {
                 if(Notification.permission !== 'granted'){
@@ -168,24 +137,6 @@
             });
         }
 
-        if( isPro ){
-            var containerNotifBox = document.querySelector('#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
-            if(Notification.permission !== 'granted'){
-                containerNotifBox.checked = false;
-            }           
-
-            if(containerNotifBox){ 
-                if(containerNotifBox.checked){
-                    checkNotification();
-                }
-
-                containerNotifBox.addEventListener('change', function() {
-                    if(this.checked){
-                        checkNotification();
-                    }
-                });
-            }
-        }
 
         function urlBase64ToUint8Array(base64String) {
             var padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -223,12 +174,12 @@
         function getNotificationPermissionState() {
             if (navigator.permissions) {
                 return navigator.permissions.query({name: 'notifications'})
-                    .then((result) => {
+                    .then(function(result) {
                             return result.state;
                             });
             }
         
-            return new Promise((resolve) => {
+            return new Promise(function(resolve) {
                     resolve(Notification.permission);
                     });
         }
@@ -254,6 +205,56 @@
                 return response;
                 });
         }
+
+        function onIncompatibleBrowser(){
+            var containerNotifInput = document.querySelector('input#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
+            containerNotifInput.disabled = true;
+
+            var containerNotifRow = document.querySelector('tr#webpush_option');
+
+            containerNotifRow.addEventListener('click', function() {
+               M.toast({html: 'Votre navigateur est incompatible avec cette fonctionnalité', displayLength: 5000});
+            });
+        }
+
+        //all functions have been defined
+        var containerRole = document.querySelector('.js-user-role');
+        var isPro = containerRole.dataset.isPro;
+
+        if( isPro ){
+            var containerNotifBox = document.querySelector('#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
+            if(Notification.permission !== 'granted'){
+                containerNotifBox.checked = false;
+            }           
+
+            if(containerNotifBox){ 
+                if(containerNotifBox.checked){
+                    checkNotification();
+                }
+
+                containerNotifBox.addEventListener('change', function() {
+                    if(this.checked){
+                        checkNotification();
+                    }
+                });
+            }
+        }
+
+        if (! ('serviceWorker' in navigator)) {
+            // Service Worker isn't supported on this browser, disable or hide UI.
+
+            onIncompatibleBrowser();
+            throw new Error('Service Worker not supported');
+        }
+
+        if (!('PushManager' in window)) {
+            // Push isn't supported on this browser, disable or hide UI.
+
+            onIncompatibleBrowser();
+            throw new Error('push manager not supported');
+        }            
+
+
         </script>
 
 {% endblock %}
