@@ -177,6 +177,7 @@ class SecurityListener
     {
         $request = $event->getRequest();
 
+        //in case of authentication with API token
         if(! $this->container->get('cairn_user.api')->isApiCall()){
 
             $username = $request->request->all()['_username'];
@@ -216,12 +217,12 @@ class SecurityListener
         $networkName=$this->container->getParameter('cyclos_currency_cairn');          
         $securityService = $this->container->get('cairn_user.security');
 
-        if($this->container->get('cairn_user.api')->isApiCall()){
-            $cyclos_token = $securityService->vigenereDecode($event->getRequest()->request->get('cyclos_token'));
-        }else{
+//        if($this->container->get('cairn_user.api')->isApiCall()){
+//            $cyclos_token = $securityService->vigenereDecode($event->getRequest()->request->get('cyclos_token'));
+//        }else{
             $session = $event->getRequest()->getSession();
             $cyclos_token = $securityService->vigenereDecode($session->get('cyclos_token'));
-        }
+//        }
 
         $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
     }

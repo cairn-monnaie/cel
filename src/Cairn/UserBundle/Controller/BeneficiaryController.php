@@ -224,18 +224,14 @@ class BeneficiaryController extends Controller
      * Get the list of beneficiaries for current User
      *
      */
-    public function listBeneficiariesAction(Request $request)
+    public function listBeneficiariesAction(Request $request, $_format)
     {
         $beneficiaries = $this->getUser()->getBeneficiaries();
 
-        if($this->get('cairn_user.api')->isApiCall()){
-            $array_beneficiaries = array();
+        if($_format == 'json'){
+            $beneficiaries = $this->get('cairn_user.api')->serialize($beneficiaries->getValues());
 
-            foreach($beneficiaries as $beneficiary){
-                $array_beneficiaries[] = $this->get('cairn_user.api')->serialize($beneficiary);
-            }
-
-            $response = new Response(json_encode($array_beneficiaries));
+            $response = new Response($beneficiaries);
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
             return $response;

@@ -29,6 +29,19 @@ use Cairn\UserBundle\Entity\OnlinePayment;
 class ApiController extends Controller
 {
 
+    public function phonesAction(Request $request)
+    {
+        $user = $this->getUser();
+        $phones = $user->getPhones();
+
+        $res = $this->get('cairn_user.api')->serialize($phones->getValues());
+
+        $response = new Response($res);
+        $response->headers->set('Content-Type', 'application/json');
+        $response->setStatusCode(Response::HTTP_OK);
+        return $response;
+    }
+
     public function createOnlinePaymentAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();

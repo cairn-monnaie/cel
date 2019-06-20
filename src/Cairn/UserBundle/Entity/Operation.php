@@ -149,14 +149,56 @@ class Operation
 
     const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
 
+    /*
+     * All types which involve two adherents
+     */
+    const ARRAY_TRANSFER_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED, self::TYPE_ONLINE_PAYMENT);
+
+
     public function isSmsPayment()
     {
         return ($this->getType() == self::TYPE_SMS_PAYMENT) ;
     }
 
-    public static function getTypeName($type)
+    public static function getTypeIndex($typeName)
     {
-        switch ($type){
+        switch ($typeName){
+        case "TRANSACTION_EXECUTED":
+            return self::TYPE_TRANSACTION_EXECUTED;
+            break;
+        case "TRANSACTION_SCHEDULED":
+            return self::TYPE_TRANSACTION_SCHEDULED;
+            break;
+        case "CONVERSION_BDC":
+            return  self::TYPE_CONVERSION_BDC;
+            break;
+        case "CONVERSION_HELLOASSO":
+            return  self::TYPE_CONVERSION_HELLOASSO;
+            break;
+        case "DEPOSIT":
+            return self::TYPE_DEPOSIT;
+            break;
+        case "WITHDRAWAL":
+            return self::TYPE_WITHDRAWAL;
+            break;
+        case "SCHEDULED_FAILED":
+            return self::TYPE_SCHEDULED_FAILED ;
+            break;
+        case "SMS_PAYMENT":
+            return self::TYPE_SMS_PAYMENT;
+            break;
+        case "ONLINE_PAYMENT":
+            return self::TYPE_ONLINE_PAYMENT;
+            break;
+        default:
+            return NULL;
+        }
+
+    }
+
+    public static function getTypeName($typeIndex)
+    {
+        switch ($typeIndex){
         case "0":
             return 'transaction';
             break;
@@ -188,6 +230,8 @@ class Operation
             return NULL;
         }
     }
+
+
     public static function getFromOperationTypes()
     {
         return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_ONLINE_PAYMENT);//,self::TYPE_RECONVERSION);

@@ -15,10 +15,34 @@ use Doctrine\ORM\QueryBuilder;
 class OperationRepository extends \Doctrine\ORM\EntityRepository
 {
 
+    public function whereKeywords(QueryBuilder $ob, $keywords)
+    {
+        $keywords = preg_split('/\s+/',$keywords);         
+        //separate keywords into list of words                         
+        for($i = 0 ; $i < count($keywords) ; $i++){                    
+            $ob->andWhere($ob->expr()->orX(                            
+                $ob->expr()->like('o.reason', '?'.$i),                 
+                $ob->expr()->like('o.description', '?'.$i)             
+            ))                                                         
+            ->setParameter($i ,'%'.$keywords[$i].'%');                 
+        }
+
+        return $this;
+    }
+
     public function whereType(QueryBuilder $ob, $type)
     {
         $ob->andWhere('o.type = :type')                                           
             ->setParameter('type',$type);
+        return $this;
+    }
+
+    public function whereTypes(QueryBuilder $ob, $arrayTypes)
+    {
+        $ob->andWhere(
+            $ob->expr()->in('o.type',$arrayTypes)
+        );
+
         return $this;
     }
 
@@ -33,8 +57,8 @@ class OperationRepository extends \Doctrine\ORM\EntityRepository
 
     public function whereDebitorAccountNumber(QueryBuilder $ob, $accountNumber)
     {
-        $ob->andWhere('o.fromAccountNumber = :number')                                           
-            ->setParameter('number',$accountNumber);
+        $ob->andWhere('o.fromAccountNumber = :fromNumber')                                           
+            ->setParameter('fromNumber',$accountNumber);
         return $this;
     }
 
@@ -47,11 +71,22 @@ class OperationRepository extends \Doctrine\ORM\EntityRepository
 
     public function whereCreditorAccountNumber(QueryBuilder $ob, $accountNumber)
     {
-        $ob->andWhere('o.toAccountNumber = :number')                                           
-            ->setParameter('number',$accountNumber);
+        $ob->andWhere('o.toAccountNumber = :toNumber')                                           
+            ->setParameter('toNumber',$accountNumber);
         return $this;
     }
 
+    public function whereInvolvedAccountNumber(QueryBuilder $ob, $accountNumber)
+    {
+        $ob->andWhere(
+            $ob->expr()->orX(
+                'o.fromAccountNumber = :number',
+                'o.toAccountNumber = :number'
+        ))
+        ->setParameter('number', $accountNumber);
+
+        return $this;
+    }
 
     public function whereAmountComparedWith(QueryBuilder $ob, $amount, $operator)
     {
@@ -91,5 +126,18 @@ class OperationRepository extends \Doctrine\ORM\EntityRepository
 
     }
 
+    public function whereExecutedBefore(QueryBuilder $ob, $before){
+        $ob->andWhere('o.executionDate < :before')
+            ->setParameter('before',$before);
+
+        return $this;
+    }
+
+    public function whereExecutedAfter(QueryBuilder $ob, $after){
+        $ob->andWhere('o.executionDate > :after')
+            ->setParameter('after',$after);
+
+        return $this;
+    }
 
 }

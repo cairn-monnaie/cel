@@ -51,14 +51,15 @@ class Api
                          'id'=>$child->getID()
                      );
         }
-
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
     {
         $defaultIgnoredAttributes = array();
+
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('localGroupReferent','singleReferent','referents','beneficiaries','card');
+
+            $defaultIgnoredAttributes = array('phones','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card');
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
@@ -66,6 +67,7 @@ class Api
             ));
         }
         if($object instanceOf Operation){
+
             $defaultIgnoredAttributes = array('fromAccount','toAccount');
             $normalizer->setCallbacks(array(
                         'creditor'=> function ($child) {return $this->objectCallback($child);},
@@ -101,7 +103,15 @@ class Api
     public function serialize($object, $extraIgnoredAttributes=array())
     {
         $normalizer = new ObjectNormalizer();
-        $this->setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes);
+
+        if( is_array($object)){
+            foreach($object as $item){
+                $this->setCallbacksAndAttributes($normalizer, $item, $extraIgnoredAttributes);
+            }
+        }else{
+            $this->setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes);
+        }
+
         $encoder = new JsonEncoder();
         $serializer = new Serializer(array($normalizer), array($encoder));
        

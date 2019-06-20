@@ -37,9 +37,11 @@ class SecurityController extends Controller
 
     public function getTokensAction(Request $request)
     {
+        $session = $request->getSession();
+
         if($request->isMethod('POST')){
 
-            $params = $request->request->all();
+            $params = json_decode( htmlspecialchars($request->getContent(),ENT_NOQUOTES),true );
 
             $grantRequest = new Request(array(
                 'client_id'  => $params['client_id'],
@@ -67,7 +69,8 @@ class SecurityController extends Controller
 
             //effectively log in and get session token
             $loginResult = $loginManager->login($dto);                             
-            $array_oauth['cyclos_token'] =  $loginResult->sessionToken;
+//            $array_oauth['cyclos_token'] =  $loginResult->sessionToken;
+            $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken));
 
 
             $response =  new Response(json_encode($array_oauth));

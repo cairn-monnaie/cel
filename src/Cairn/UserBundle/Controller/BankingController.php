@@ -73,8 +73,10 @@ class BankingController extends Controller
      * @throws Cyclos\ServiceException
      * @Method("GET")
      */  
-    public function accountsOverviewAction(Request $request, User $user, $_format)
+    public function accountsOverviewAction(Request $request, $_format)
     {
+        $user = $this->getUser();
+
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
@@ -94,7 +96,10 @@ class BankingController extends Controller
         }
 
         if($_format == 'json'){
-            return $this->json(array('user'=>$user,'accounts'=> $accounts));
+            $response = new Response(json_encode($accounts) );
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            return $response;
         }
         return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts,'availableAmount'=>$debitAccount->status->balance));
     }
@@ -139,8 +144,8 @@ class BankingController extends Controller
         $accountTypeVO = $account->type; 
 
         //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
-        $begin = date_modify(new \Datetime(),'-2 months');
-        $end = date_modify(new \Datetime(),'+1 days');
+        $beginDefault = date_modify(new \Datetime(),'-2 months');
+        $endDefault = date_modify(new \Datetime(),'+1 days');
 
         if($account->type->nature == 'SYSTEM'){
             $id = $accountID;
@@ -148,60 +153,32 @@ class BankingController extends Controller
             $id = $account->number;
         }
 
-        //last operations
-        $ob = $operationRepo->createQueryBuilder('o');
-        $executedTransactions = $ob->where(
-             $ob->expr()->orX(
-                 $ob->expr()->andX(
-                     'o.fromAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
-                 ),
-                 $ob->expr()->andX(
-                     'o.toAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
-                 )
-             ))
-            ->andWhere('o.paymentID is not NULL')
-            ->andWhere('o.executionDate BETWEEN :begin AND :end')
-            ->orderBy('o.executionDate','ASC')
-            ->setParameter('number',$id)
-            ->setParameter('begin',$begin)
-            ->setParameter('end',$end)
-            ->getQuery()->getResult();
-
-        //amount of future transactions : next month total amount
-        $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
-        $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
-            ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
-            ->setParameter('number',$id);
-
-        $res = $query->getSingleScalarResult();
-        $totalAmount = ($res == NULL) ? 0 : $res ;
-
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
                 'label' => 'affiché par',
                 'choices' => array('dates décroissantes'=>'DESC',
-                                   'dates croissantes' => 'ASC')))
+                'dates croissantes' => 'ASC'),
+                'data'=>'DESC'
+            ))
                 ->add('types',    ChoiceType::class, array(
-                'label' => 'type d\'opération',
-                'required'=>false,
-                'choices' => Operation::getExecutedTypes(),
-                'choice_label'=> function($choice){
-                    return Operation::getTypeName($choice);
-                },
-                'multiple'=>true,
-                'expanded'=>false
+                    'label' => 'type d\'opération',
+                    'required'=>false,
+                    'choices' => Operation::getExecutedTypes(),
+                    'choice_label'=> function($choice){
+                        return Operation::getTypeName($choice);
+                    },
+                    'multiple'=>true,
+                    'expanded'=>false
                 ))
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
                     'widget' => 'single_text',
-                    'data' => $begin,
+                    'data' => $beginDefault,
                     'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                     ->add('end',       DateType::class, array(
                         'label' => 'jusqu\'à',
                         'widget' => 'single_text',
-                        'data'=> $end,
+                        'data'=> $endDefault,
                         'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
                         ->add('minAmount', NumberType::class,array(
                             'label'=>'Montant minimum',
@@ -215,81 +192,109 @@ class BankingController extends Controller
                                     ->add('save',      SubmitType::class, array('label' => 'Filtrer'))
                                     ->getForm();
 
-        if($request->isMethod('POST')){ //form filled and submitted
+        //amount of future transactions : next month total amount
+        $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
+        $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
+            ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
+            ->setParameter('number',$id);
 
-            $form->handleRequest($request);    
-            if($form->isValid()){
-                $dataForm = $form->getData();            
-                $orderBy = $dataForm['orderBy'];
-                $operationTypes = $dataForm['types'];
-                $begin = $dataForm['begin'];
-                $end = $dataForm['end'];
-                $minAmount = $dataForm['minAmount'];
-                $maxAmount = $dataForm['maxAmount'];
-                $keywords = $dataForm['keywords'];
+        $res = $query->getSingleScalarResult();
+        $totalAmount = ($res == NULL) ? 0 : $res ;
 
-                if(! $this->get('cairn_user.datetime_checker')->isValidInterval($begin, $end)){
-                    $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
-                    return new RedirectResponse($request->getRequestUri());
-                }
-
-                //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
-                $end = date_modify($end,'+1 days');
-
-                $arrayTypes = Operation::getExecutedTypes();
-                if($operationTypes){
-                    $arrayTypes = $operationTypes;
-                }
-
-                $ob = $operationRepo->createQueryBuilder('o');
-                $ob->where(
-                    $ob->expr()->orX(
-                        $ob->expr()->andX(
-                            'o.fromAccountNumber = :number',
-                            $ob->expr()->in('o.type',$arrayTypes)
-                        ),
-                        $ob->expr()->andX(
-                            'o.toAccountNumber = :number',
-                            $ob->expr()->in('o.type',$arrayTypes)
-                        )
-                    ))
-                    ->andWhere('o.paymentID is not NULL')
-                    ->andWhere('o.executionDate BETWEEN :begin AND :end');
-                if($minAmount){
-                    $ob->andWhere('o.amount >= :min')
-                        ->setParameter('min',$minAmount);
-                }
-                if($maxAmount){
-                    $ob->andWhere('o.amount <= :max')
-                        ->setParameter('max',$maxAmount);
-                }
-                if($dataForm['keywords']){
-                    $keywords = preg_split('/\s+/',$dataForm['keywords']);
-                    //separate keywords into list of words
-                    for($i = 0 ; $i < count($keywords) ; $i++){
-                        $ob->andWhere($ob->expr()->orX(
-                            $ob->expr()->like('o.reason', '?'.$i),
-                            $ob->expr()->like('o.description', '?'.$i)
-                        ))
-                        ->setParameter($i ,'%'.$keywords[$i].'%');
-
-                    }
-                }
-
-                $ob->orderBy('o.executionDate',$orderBy)
-                    ->setParameter('number',$id)
-                    ->setParameter('begin',$begin)
-                    ->setParameter('end',$end);
-                $executedTransactions =  $ob->getQuery()->getResult();
-
-            }
+        if($request->isMethod('GET')){
+            //last operations
+            $ob = $operationRepo->createQueryBuilder('o');
+            $operationRepo->whereInvolvedAccountNumber($ob, $id)
+                ->whereTypes($ob,Operation::getExecutedTypes())
+                ->whereExecutedBefore($ob,$endDefault)->whereExecutedAfter($ob,$beginDefault);
+            $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
+                ->orderBy('o.executionDate','DESC')
+                ->getQuery()->getResult();
         }
 
+
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);    
+
+            if($form->isSubmitted()){
+                if($form->isValid()){
+                    $dataForm = $form->getData();            
+                    $begin = $dataForm['begin'];
+                    $end = $dataForm['end'];
+                    $orderBy = $dataForm['orderBy'];
+                }else{
+                    return new RedirectResponse($request->getRequestUri());
+                }
+            }else{ // api call
+                $dataForm = json_decode( htmlspecialchars($request->getContent(),ENT_NOQUOTES),true);
+
+                if(! $dataForm['begin']){
+                    $begin = $beginDefault;
+                }else{
+                    $begin = new \Datetime($dataForm['begin']);
+                }
+
+                if(! $dataForm['end']){
+                    $end = $endDefault;
+                }else{
+                    $end = new \Datetime($dataForm['end']);
+                }
+
+                $orderBy = ($dataForm['orderBy']) ? $dataForm['orderBy'] : 'DESC';
+
+                //TODO : if data not valid : return
+            }
+
+            $operationTypes = $dataForm['types'];
+            $minAmount = $dataForm['minAmount'];
+            $maxAmount = $dataForm['maxAmount'];
+            $keywords = $dataForm['keywords'];
+
+
+            //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
+            $end = date_modify($end,'+1 days');
+
+            $arrayTypes = Operation::getExecutedTypes();
+            if($operationTypes){
+                foreach($operationTypes as $key=>$value){
+                    $operationTypes[$key] = Operation::getTypeIndex($value);
+                }
+                $arrayTypes = $operationTypes;
+            }
+
+            $ob = $operationRepo->createQueryBuilder('o');
+            $operationRepo->whereInvolvedAccountNumber($ob, $id)
+                ->whereTypes($ob,$arrayTypes)
+                ->whereExecutedBefore($ob,$end)->whereExecutedAfter($ob,$begin)
+                ->whereKeywords($ob,$dataForm['keywords']);
+
+            if($minAmount){
+                $ob->andWhere('o.amount >= :min')
+                    ->setParameter('min',$minAmount);
+            }
+            if($maxAmount){
+                $ob->andWhere('o.amount <= :max')
+                    ->setParameter('max',$maxAmount);
+            }
+
+            $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
+                ->orderBy('o.executionDate',$orderBy)
+                ->getQuery()->getResult();
+
+            if($_format == 'json'){
+                $res = $this->get('cairn_user.api')->serialize($executedTransactions);
+
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_OK);
+                return $response;
+            }
+
+        }
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
             array('form' => $form->createView(),
             'transactions'=>$executedTransactions,'futureAmount' => $totalAmount,'account'=>$account));
     }
-
 
 
     /*
@@ -663,7 +668,8 @@ class BankingController extends Controller
     {
         $em = $this->getDoctrine()->getManager();
         $session = $request->getSession();
-        $frequency = $request->get('frequency');
+
+        $frequency = 'unique';
 
         if(!$this->isValidFrequency($frequency)){
             return $this->redirectToRoute('cairn_user_banking_operations_view',array(
@@ -701,7 +707,7 @@ class BankingController extends Controller
                     ->andWhere('o.type = :type')
                     ->setParameter('type', Operation::TYPE_TRANSACTION_EXECUTED)
                     ->setParameter('date',new \Datetime())
-                    ->orderBy('o.executionDate','ASC')
+                    ->orderBy('o.executionDate','DESC')
                     ->getQuery()->getResult();
                 //                $processedTransactions = $bankingService->getTransactions(
                 //                    $userVO,$accountTypesVO,array('PAYMENT','SCHEDULED_PAYMENT'),array('PROCESSED',NULL,'CLOSED'),$description);
@@ -782,8 +788,6 @@ class BankingController extends Controller
      */
     public function viewTransferAction(Request $request, Operation $operation,$_format)
     {
-        $type = 'simple';
-        $bankingService = $this->get('cairn_user_cyclos_banking_info');
         $session = $request->getSession();
 
         $currentUser = $this->getUser();
@@ -797,28 +801,15 @@ class BankingController extends Controller
             throw new AccessDeniedException('Pas les droits nécessaires');
         }   
 
-        switch ($type){
-        case 'simple':
-            $transfer = $operation;
-            break;
-        default:
-            return $this->redirectToRoute('cairn_user_banking_operations_view',array(
-                '_format'=>$_format, 'type'=>'transaction','frequency'=>$session->get('frequency')));
-        }
+        if($_format == 'json'){
+            $serializedOperation = $this->get('cairn_user.api')->serialize($currentUser);
+            $response = new Response($serializedOperation);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
 
-        if($transfer){
-            if($_format == 'json'){
-                return $this->json(array('transfer'=>$transfer));
-            }
-            return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
-                'transfer'=>$transfer));
-        }else{
-            $session->getFlashBag()->add('error','Impossible de trouver le transfert recherché');
-            return $this->redirectToRoute('cairn_user_banking_operations_view',array(
-                '_format'=>$_format, 
-                'type'=>'transaction',
-                'frequency'=>$session->get('frequency')));
         }
+        return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
+            'operation'=>$operation));
     }
 
 
@@ -932,7 +923,7 @@ class BankingController extends Controller
      *
      * @param Operation $operation 
      */
-    public function downloadTransferNoticeAction(Request $request, Operation $operation)
+    public function downloadOperationNoticeAction(Request $request, Operation $operation)
     {
         $session = $request->getSession();
         $bankingService = $this->get('cairn_user_cyclos_banking_info');
@@ -949,7 +940,7 @@ class BankingController extends Controller
         }   
 
         $html = $this->renderView('CairnUserBundle:Pdf:operation_notice.html.twig',array(
-            'transfer'=>$operation));
+            'operation'=>$operation));
 
         $filename = sprintf('avis-operation-cairn-%s.pdf',date('Y-m-d'));
         return new Response(
