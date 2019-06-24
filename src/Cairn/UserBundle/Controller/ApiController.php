@@ -32,9 +32,10 @@ class ApiController extends Controller
     public function phonesAction(Request $request)
     {
         $user = $this->getUser();
-        $phones = $user->getPhones();
+        $phones = $user->getPhones(); 
+        $phones = is_array($phones) ? $phones : $phones->getValues();
 
-        $res = $this->get('cairn_user.api')->serialize($phones->getValues());
+        $res = $this->get('cairn_user.api')->serialize($phones);
 
         $response = new Response($res);
         $response->headers->set('Content-Type', 'application/json');
