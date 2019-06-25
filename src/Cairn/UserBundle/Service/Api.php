@@ -39,6 +39,13 @@ class Api
         return ($isCorrectUrl && $isCorrectRoute);
     }
 
+    public function isRemoteCall()
+    {
+        $request = $this->requestStack->getCurrentRequest();                     
+
+        return ($request->get('_format') != 'html');
+    }
+
     function objectCallback($child)
     {
         if($child instanceOf User){

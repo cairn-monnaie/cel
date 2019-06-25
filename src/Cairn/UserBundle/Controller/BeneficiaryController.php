@@ -251,7 +251,7 @@ class BeneficiaryController extends Controller
      * As the User and Beneficiary class have a ManyToMany bidirectional relationship, adding it the two directions must be done
      *
      */
-    public function addBeneficiaryAction(Request $request)
+    public function addBeneficiaryAction(Request $request,$_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -270,20 +270,25 @@ class BeneficiaryController extends Controller
             ->getForm();
 
         if($request->isMethod('POST')){
-            $form->handleRequest($request);
+            if($_format == 'json'){
+                $form->submit(json_decode($request->getContent(), true));
+            }else{
+                $form->handleRequest($request);
+            }
+
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-                if($dataForm['cairn_user'] == null){
-                    if( $this->get('cairn_user.api')->isApiCall()){
-                        $response = new Response('Votre recherche ne correspond à aucun compte');
-                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                        $response->headers->set('Content-Type', 'application/json');
-                        return $response;
-                    }
-                    $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
-                    return new RedirectResponse($request->getRequestUri());
-                }
+//                if($dataForm['cairn_user'] == null){
+//                    if( $this->get('cairn_user.api')->isApiCall()){
+//                        $response = new Response('Votre recherche ne correspond à aucun compte');
+//                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+//                        $response->headers->set('Content-Type', 'application/json');
+//                        return $response;
+//                    }
+//                    $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
+//                    return new RedirectResponse($request->getRequestUri());
+//                }
 
                 if ($dataForm['cairn_user']->id == $currentUser->getCyclosID()){
                     if( $this->get('cairn_user.api')->isApiCall()){
@@ -321,8 +326,10 @@ class BeneficiaryController extends Controller
                 $em->persist($currentUser);
                 $em->flush();
 
-                if( $this->get('cairn_user.api')->isApiCall()){
-                    $response = new Response('new beneficiary : success !');
+
+                if($_format == 'json'){
+                    $res = $this->get('cairn_user.api')->serialize($beneficiary);
+                    $response = new Response($res);
                     $response->setStatusCode(Response::HTTP_CREATED);
                     $response->headers->set('Content-Type', 'application/json');
                     return $response;
@@ -420,7 +427,7 @@ class BeneficiaryController extends Controller
      * @param Beneficiary $beneficiary Beneficiary to remove
      * @Method("GET")
      */
-    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary)
+    public function removeBeneficiaryAction(Request $request, Beneficiary $beneficiary, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -438,9 +445,13 @@ class BeneficiaryController extends Controller
             $session->getFlashBag()->add('error',' Donnée introuvable');
             return $this->redirectToRoute('cairn_user_beneficiaries_list');
         }
-        if($request->isMethod('POST')){ //form filled and submitted            
+        if($request->isMethod('DELETE') || $request->isMethod('POST')){ //form filled and submitted 
+            if($_format == 'json'){
+                $form->submit(json_decode($request->getContent(), true));
+            }else{
+                $form->handleRequest($request);
+            }
 
-            $form->handleRequest($request);                                    
             if($form->isValid()){                                              
                 if($form->get('save')->isClicked()){ 
                     $nbSources = count($beneficiary->getSources());
@@ -459,7 +470,7 @@ class BeneficiaryController extends Controller
                     $sessionKey = 'info';
                 }
 
-                if($this->get('cairn_user.api')->isApiCall()){
+                if($this->get('cairn_user.api')->isRemoteCall()){
                     $response = new Response($flashMessage);
                     $response->setStatusCode(Response::HTTP_OK);
                     $response->headers->set('Content-Type', 'application/json');

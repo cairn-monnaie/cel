@@ -40,16 +40,16 @@ cairn_user_api_get_tokens:
 #    methods: GET
 #    defaults: { _controller: CairnUserBundle:User:list, _format: json }
 #
-#cairn_user_api_users_post:
-#    path: api/users/post
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
-#
+cairn_user_api_users_post:
+    path: users
+    methods: POST
+    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
+
 #cairn_user_api_users_put:
-#    path: api/users/put
+#    path: mobile/users
 #    methods: POST
 #    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
-#
+
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}
 #    methods: DELETE
@@ -71,8 +71,10 @@ cairn_user_registration:
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
 
 cairn_user_registration_type:
-    path:     inscription/{type}
+    path:     inscription/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Default:registrationByType, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_zipcities_ajax:
     path:     zipcities
@@ -159,6 +161,11 @@ cairn_user_beneficiaries_add:
     path:     user/beneficiaries/add
     defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: html }
 
+cairn_user_api_beneficiaries_add:
+    path:     mobile/beneficiaries
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
+
 #cairn_user_api_beneficiaries_post:
 #    path:     api/beneficiaries/post
 #    methods: POST
@@ -174,6 +181,13 @@ cairn_user_beneficiaries_add:
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{ICC}.{_format}
     defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: html }
+    requirements:
+        ICC: \d+
+
+cairn_user_api_beneficiaries_delete:
+    path:     mobile/beneficiaries/{ICC}.{_format}
+    methods: DELETE
+    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
     requirements:
         ICC: \d+
 
@@ -375,13 +389,18 @@ cairn_user_banking_transaction_to:
         _format: html|json
 
 cairn_user_banking_transaction_request:
-    path:     banking/transaction/request/{to}-{frequency}.{_format}
+    path:     banking/transaction/request/{to}-{frequency}
     defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: html}
     requirements:
         frequency: unique #|recurring
         to: new|beneficiary|self
-        _format: html|json
 
+cairn_user_api_transaction_create:
+    path:     mobile/transaction/request/{to}-{frequency}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: json}
+    requirements:
+        frequency: unique #|recurring
+        to: new|beneficiary
 
 cairn_user_banking_sms_reception:
     path:     sms/reception
@@ -389,12 +408,15 @@ cairn_user_banking_sms_reception:
 
 
 cairn_user_banking_operation_confirm:
-    path:     banking/operation/confirm/{id}-{type}.{_format}
+    path:     banking/operation/confirm/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
         type: transaction
-        _format: html|json
 
+cairn_user_api_transaction_confirm:
+    path:     mobile/transaction/confirm/{id}.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: json }
 
 cairn_user_banking_transaction_scheduled_changestatus:
     path:     banking/transaction/scheduled/edit/{id}-{status}.{_format}

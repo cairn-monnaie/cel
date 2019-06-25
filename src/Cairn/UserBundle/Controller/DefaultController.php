@@ -76,7 +76,7 @@ class DefaultController extends Controller
         return $this->render('CairnUserBundle:Registration:index.html.twig');
     }
 
-    public function registrationByTypeAction(Request $request, string $type){
+    public function registrationByTypeAction(Request $request, string $type, $_format){
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
             $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
@@ -84,6 +84,14 @@ class DefaultController extends Controller
             }
             $session = $request->getSession();
             $session->set('registration_type',$type);
+
+            if($_format == 'json'){
+                $response = new Response(' { "message"=>"session OK" }');
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_OK);
+                return $response;
+            }
+
             return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
         }else{
             return $this->redirectToRoute('cairn_user_registration');

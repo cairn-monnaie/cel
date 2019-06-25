@@ -21,7 +21,7 @@ class DisableCSRFExtension extends AbstractTypeExtension
 
     public function configureOptions(OptionsResolver $resolver)
     {
-        if($this->apiService->isApiCall()){
+        if($this->apiService->isRemoteCall()){
             $resolver->setDefaults(array(
                 'csrf_protection'=>false,
             ));

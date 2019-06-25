@@ -214,82 +214,70 @@ class BankingController extends Controller
 
 
         if($request->isMethod('POST')){
-            $form->handleRequest($request);    
-
-            if($form->isSubmitted()){
-                if($form->isValid()){
-                    $dataForm = $form->getData();            
-                    $begin = $dataForm['begin'];
-                    $end = $dataForm['end'];
-                    $orderBy = $dataForm['orderBy'];
-                }else{
-                    return new RedirectResponse($request->getRequestUri());
-                }
-            }else{ // api call
-                $dataForm = json_decode( htmlspecialchars($request->getContent(),ENT_NOQUOTES),true);
-
-                if(! $dataForm['begin']){
-                    $begin = $beginDefault;
-                }else{
-                    $begin = new \Datetime($dataForm['begin']);
-                }
-
-                if(! $dataForm['end']){
-                    $end = $endDefault;
-                }else{
-                    $end = new \Datetime($dataForm['end']);
-                }
-
-                $orderBy = ($dataForm['orderBy']) ? $dataForm['orderBy'] : 'DESC';
-
-                //TODO : if data not valid : return
-            }
-
-            $operationTypes = $dataForm['types'];
-            $minAmount = $dataForm['minAmount'];
-            $maxAmount = $dataForm['maxAmount'];
-            $keywords = $dataForm['keywords'];
-
-
-            //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
-            $end = date_modify($end,'+1 days');
-
-            $arrayTypes = Operation::getExecutedTypes();
-            if($operationTypes){
-                foreach($operationTypes as $key=>$value){
-                    $operationTypes[$key] = Operation::getTypeIndex($value);
-                }
-                $arrayTypes = $operationTypes;
-            }
-
-            $ob = $operationRepo->createQueryBuilder('o');
-            $operationRepo->whereInvolvedAccountNumber($ob, $id)
-                ->whereTypes($ob,$arrayTypes)
-                ->whereExecutedBefore($ob,$end)->whereExecutedAfter($ob,$begin)
-                ->whereKeywords($ob,$dataForm['keywords']);
-
-            if($minAmount){
-                $ob->andWhere('o.amount >= :min')
-                    ->setParameter('min',$minAmount);
-            }
-            if($maxAmount){
-                $ob->andWhere('o.amount <= :max')
-                    ->setParameter('max',$maxAmount);
-            }
-
-            $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
-                ->orderBy('o.executionDate',$orderBy)
-                ->getQuery()->getResult();
 
             if($_format == 'json'){
-                $res = $this->get('cairn_user.api')->serialize($executedTransactions);
+                $data = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
 
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                return $response;
+                $operationTypes = $data['types'];
+                if($operationTypes){
+                    foreach($operationTypes as $key=>$value){
+                         $data['types'][$key] = Operation::getTypeIndex($value);
+                    }
+                }
+
+                $form->submit($data);
+            }else{
+                $form->handleRequest($request);
             }
 
+            if($form->isSubmitted()){
+                $dataForm = $form->getData();            
+                $begin = $dataForm['begin'];
+                $end = $dataForm['end'];
+                $orderBy = $dataForm['orderBy'];
+
+                $operationTypes = $dataForm['types'];
+                if(! $operationTypes){
+                    $operationTypes = Operation::getExecutedTypes();
+                }
+                $minAmount = $dataForm['minAmount'];
+                $maxAmount = $dataForm['maxAmount'];
+                $keywords = $dataForm['keywords'];
+
+
+                //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
+                $end = date_modify($end,'+1 days');
+
+
+                $ob = $operationRepo->createQueryBuilder('o');
+                $operationRepo->whereInvolvedAccountNumber($ob, $id)
+                    ->whereTypes($ob,$operationTypes)
+                    ->whereExecutedBefore($ob,$end)->whereExecutedAfter($ob,$begin)
+                    ->whereKeywords($ob,$dataForm['keywords']);
+
+                if($minAmount){
+                    $ob->andWhere('o.amount >= :min')
+                        ->setParameter('min',$minAmount);
+                }
+                if($maxAmount){
+                    $ob->andWhere('o.amount <= :max')
+                        ->setParameter('max',$maxAmount);
+                }
+
+                $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
+                    ->orderBy('o.executionDate',$orderBy)
+                    ->getQuery()->getResult();
+
+                if($_format == 'json'){
+                    $res = $this->get('cairn_user.api')->serialize($executedTransactions);
+
+                    $response = new Response($res);
+                    $response->headers->set('Content-Type', 'application/json');
+                    $response->setStatusCode(Response::HTTP_OK);
+                    return $response;
+                }
+
+            }
         }
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
             array('form' => $form->createView(),
@@ -456,7 +444,12 @@ class BankingController extends Controller
         //            $form = $this->createForm(RecurringTransactionType::class, $transaction);
         //        }
         if($request->isMethod('POST')){
-            $form->handleRequest($request);
+
+            if($_format == 'json'){
+                $form->submit(json_decode($request->getContent(), true));
+            }else{
+                $form->handleRequest($request);
+            }
             if($form->isValid()){
                 $operation->setReason($this->editDescription($type, $operation->getReason()));
                 //                if($frequency == 'recurring'){
@@ -527,7 +520,7 @@ class BankingController extends Controller
                 //                    }
                 //                    return $this->redirectToRoute('cairn_user_banking_operation_confirm',array('_format'=>$_format, 'type'=>$type));
                 //
-                //                }elseif($frequency == 'unique'){
+                //                }
 
 
                 $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$onlineTransferType,$dataTime);
@@ -540,20 +533,33 @@ class BankingController extends Controller
                 $operation->setDebitor($currentUser);
                 $em->persist($operation);
                 $em->flush();
+
+                if($_format == 'json'){
+                    $redirectUrl = $this->generateUrl(
+                        'cairn_user_api_transaction_confirm',
+                        array(
+                            'id'=>$operation->getID(),
+                        )
+                    );
+
+                    $redirectOperation = array('confirmation_url' => $redirectUrl,
+                                 'operation' => $operation);
+
+                    $res = $this->get('cairn_user.api')->serialize($redirectOperation);
+                    $response = new Response($res);
+                    $response->headers->set('Content-Type', 'application/json');
+                    $response->setStatusCode(Response::HTTP_CREATED);
+                    return $response;
+
+                }
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
                     array('_format'=>$_format,'id'=>$operation->getID(),'type'=>$type));
 
-                //                }
 
-
-            }else{
-                $session->getFlashBag()->add('error','L\'opération n\'a pas pu être effectuée');
             }
         }
 
-//        if($_format == 'json'){
-//            return $this->json(array('form'=>$form->createView(),'fromAccounts'=>$selfAccounts,'toAccounts'=>$toAccounts));
-//        }
+
         return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
             'form'=>$form->createView()));
 
@@ -566,10 +572,11 @@ class BankingController extends Controller
      * @param string $type type of operation occurring : transaction
      * @param Operation $operation transaction to be confirmed
      */
-    public function confirmOperationAction(Request $request, Operation $operation, $type, $_format)
+    public function confirmOperationAction(Request $request, Operation $operation, $_format)
     {
         $em = $this->getDoctrine()->getManager();
 
+        $type = 'transaction';
         $session = $request->getSession();
         $paymentReview = $session->get('paymentReview');
 
@@ -579,8 +586,12 @@ class BankingController extends Controller
             ->getForm();
 
         if($request->isMethod('POST')){ //form filled and submitted
+            if($_format == 'json'){
+                $form->submit(json_decode($request->getContent(), true));
+            }else{
+                $form->handleRequest($request);
+            }
 
-            $form->handleRequest($request);    
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
                     //according to the given type and amount, adapt the banking operation
@@ -598,8 +609,16 @@ class BankingController extends Controller
 
                     $em->flush();
 
+                    if($_format == 'json'){
+                        $res = $this->get('cairn_user.api')->serialize($operation);
+                        $response = new Response($res);
+                        $response->headers->set('Content-Type', 'application/json');
+                        $response->setStatusCode(Response::HTTP_CREATED);
+                        return $response;
+
+                    }
                     $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
-                    return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
+                    return $this->redirectToRoute('cairn_user_banking_transfer_view',array('paymentID'=>$operation->getPaymentID() )); 
                 }
                 else{//cancel button clicked
                     $em->remove($operation);
@@ -802,7 +821,7 @@ class BankingController extends Controller
         }   
 
         if($_format == 'json'){
-            $serializedOperation = $this->get('cairn_user.api')->serialize($currentUser);
+            $serializedOperation = $this->get('cairn_user.api')->serialize($operation);
             $response = new Response($serializedOperation);
             $response->headers->set('Content-Type', 'application/json');
             return $response;
