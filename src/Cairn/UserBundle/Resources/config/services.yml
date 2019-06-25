@@ -131,6 +131,7 @@ services:
             - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
             - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess, priority: -512 }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
+            - { name: kernel.event_listener, event: fos_user.registration.failure, method: onRegistrationFailure }
             - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEditSuccess, priority: -512 }
 
     cairn_user.security.input_listener:
