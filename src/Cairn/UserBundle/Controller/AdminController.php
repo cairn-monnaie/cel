@@ -566,46 +566,24 @@ class AdminController extends Controller
 
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
-                            //set latitude and longitude of new user
-                            $address = $user->getAddress();
-                            $arrayParams = array(
-                                'q' => $address->getStreet1(),
-                                //            'city' => $this->getUser()->getCity(),
-                                'postcode' => $address->getZipCity()->getZipCode(),
-                                'limit' => 2
-                                //            'country' => 'FR',
-                                //            'format' => 'json',
-                            );
+                            $coords = $this->get('cairn_user.geolocalization')->getCoordinates($this->getUser());
 
-                            $res = $this->get('cairn_user.api')->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
-
-                            if($res['code'] == 200){
-                                $features = $res['results']['features'];
-                                if( count($features) > 1){
-                                    if($features[0]['properties']['score'] > $features[1]['properties']['score'] ){
-                                        $location = $features[0];
-                                    }else{
-                                        $location = $features[1];
-                                    } 
-                                }else{
-                                    $location = $features[0];
-                                }
-
-                                if($location['properties']['score'] <= 0.5){
-                                    $session->getFlashBag()->add('error','La gélocalisation de l\'adresse indiquée a échoué');
-                                }else{
-                                    $address->setLongitude($location['geometry']['coordinates'][0]);
-                                    $address->setLatitude($location['geometry']['coordinates'][1]);
-                                }
-
-                                //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
-                                if($user->hasRole('ROLE_PRO')){
-                                }
-
-                                //then, if above filter not efficient enough, go through one by one distance calculation
-                                //finally, send notifications to all those people
-
+                            if(!$coords){
+                                $session->getFlashBag()->add('error','La gélocalisation de l\'adresse indiquée a échoué');
+                                $address->setLongitude(NULL);
+                                $address->setLatitude(NULL);
+                            }else{
+                                $address->setLongitude($coords['longitude']);
+                                $address->setLatitude($coords['latitude']);
                             }
+
+                            //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
+                            if($user->hasRole('ROLE_PRO')){
+                            }
+
+                            //then, if above filter not efficient enough, go through one by one distance calculation
+                            //finally, send notifications to all those people
+
 
                             //send email to local group referent if pro
                             if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){

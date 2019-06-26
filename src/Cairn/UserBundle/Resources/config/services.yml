@@ -41,6 +41,12 @@ services:
         arguments:
             - "@request_stack"
 
+    cairn_user.geolocalization:
+        public: true
+        class: Cairn\UserBundle\Service\Geolocalization
+        arguments:
+            - "@cairn_user.api"
+
     cairn_user.api_authenticator:
         public: true
         class: Cairn\UserBundle\Security\TokenAuthenticator
