@@ -56,6 +56,70 @@ class Commands
         $this->container = $container;
     }
 
+    public function generateLocalizationCoordinates($username = NULL)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+       
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+            if(! $user){
+                return 'username '.$username.' does not match any account';
+            }
+            if(! $user->isAdherent()){
+                return 'username '.$username.' does not match any adherent account';
+            }
+            $users = array($user);
+        }else{
+            $ub = $userRepo->createQueryBuilder('u');                 
+            $userRepo->whereAdherent($ub);
+
+            $users = $ub->getQuery()->getResult();
+        }
+
+        $returnMsg = '';
+
+        foreach($users as $user){
+            //set latitude and longitude of new user           
+            $address = $user->getAddress();                    
+            $arrayParams = array(                              
+                'q' => $address->getStreet1(),                 
+                'postcode' => $address->getZipCity()->getZipCode(),
+                'limit' => 2                                   
+            );                                                 
+
+            $res = $this->container->get('cairn_user.api')->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
+
+            if($res['code'] == 200){                           
+                $features = $res['results']['features'];       
+                if( count($features) > 1){                     
+                    if($features[0]['properties']['score'] > $features[1]['properties']['score'] ){
+                        $location = $features[0];              
+                    }else{                                     
+                        $location = $features[1];              
+                    }                                          
+                }else{                                         
+                    $location = $features[0];                  
+                }                                              
+
+                if($location['properties']['score'] <= 0.6){   
+                    $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n";
+                    $address->setLongitude(NULL);
+                    $address->setLatitude(NULL);
+
+                }else{                                         
+                    $address->setLongitude($location['geometry']['coordinates'][0]);
+                    $address->setLatitude($location['geometry']['coordinates'][1]);
+
+                    $returnMsg .= 'OK : '.$user->getUsername().' lat:'.$address->getLatitude().' lon:'.$address->getLongitude()."\n";
+                }
+            }
+        }
+
+        $this->em->flush();
+
+        return $returnMsg;
+    }
+
     /**
      * Removes all operations with no paymentID
      *
@@ -643,10 +707,11 @@ class Commands
         $this->em->remove($card);
         echo 'INFO: OK !'."\n";
 
-        //NaturaVie has NO card and admin not referent
+        //NaturaVie has NO card and admin not referent and never logged in
         $user = $userRepo->findOneByUsername('NaturaVie'); 
         echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
         $user->removeReferent($admin);
+        $user->setLastLogin(NULL);
         $card  = $user->getCard();
         $this->em->remove($card);
         echo 'INFO: OK !'."\n";

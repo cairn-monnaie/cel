@@ -37,6 +37,20 @@ class Address
     private $street2;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="latitude", type="float", length=255, nullable = true)
+     */
+    private $latitude;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="longitude", type="float", length=255, nullable = true)
+     */
+    private $longitude;
+
+    /**
      * @var Cairn\UserBundle\Entity\ZipCity
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\ZipCity" , cascade = {"persist"})
@@ -110,6 +124,54 @@ class Address
         return $this->street2;
     }
 
+
+    /**
+     * Set latitude
+     *
+     * @param float $street
+     *
+     * @return Address
+     */
+    public function setLatitude($latitude)
+    {
+        $this->latitude = $latitude;
+
+        return $this;
+    }
+
+    /**
+     * Get latitude
+     *
+     * @return float
+     */
+    public function getLatitude()
+    {
+        return $this->latitude;
+    }
+
+    /**
+     * Set longitude
+     *
+     * @param float $street
+     *
+     * @return Address
+     */
+    public function setLongitude($longitude)
+    {
+        $this->longitude = $longitude;
+
+        return $this;
+    }
+
+    /**
+     * Get longitude
+     *
+     * @return float
+     */
+    public function getLongitude()
+    {
+        return $this->longitude;
+    }
 
     /**
      * Set zipCity
