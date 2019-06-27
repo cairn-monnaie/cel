@@ -81,12 +81,10 @@ class Commands
         foreach($users as $user){
             $address = $user->getAddress();
 
-            $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($user);
+            $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
-            if(!$coords){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n";
-                $address->setLongitude(NULL);
-                $address->setLatitude(NULL);
+            if(!$coords['latitude']){                                  
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);

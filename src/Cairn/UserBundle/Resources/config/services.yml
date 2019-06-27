@@ -180,6 +180,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
 
+    cairn_user.address_validator:
+        class: Cairn\UserBundle\Validator\AddressValidator
+        arguments:
+            - "@cairn_user.geolocalization"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_address_validator }
+
     cairn_user.user_password_validator:
         class: Cairn\UserBundle\Validator\UserPasswordValidator
         arguments:

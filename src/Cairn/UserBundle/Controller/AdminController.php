@@ -566,17 +566,6 @@ class AdminController extends Controller
 
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
-                            $coords = $this->get('cairn_user.geolocalization')->getCoordinates($this->getUser());
-
-                            if(!$coords){
-                                $session->getFlashBag()->add('error','La gélocalisation de l\'adresse indiquée a échoué');
-                                $address->setLongitude(NULL);
-                                $address->setLatitude(NULL);
-                            }else{
-                                $address->setLongitude($coords['longitude']);
-                                $address->setLatitude($coords['latitude']);
-                            }
-
                             //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
                             if($user->hasRole('ROLE_PRO')){
                             }
