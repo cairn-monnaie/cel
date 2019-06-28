@@ -90,5 +90,26 @@ class Geolocalization
             return ($miles * 1.609344);
         }
     }
+
+    /**
+     * Calculates extrema coordinates around a point with given distance
+     *
+     *@param float $lat latitude of central point (degrees)
+     *@param float $lon longitude of central point (degrees)
+     *@param float $dist distance (km)
+     *@return float
+     */
+    function getExtremaCoords($lat, $lon, $dist){
+        if(!$lat || !$lon){
+            return NULL;
+        }
+
+        $dist = abs($dist);
+
+        $deltaLat = $dist / 111.1;
+        $deltaLon = $dist / (6371 * cos(deg2rad($lat) )) ;
+
+        return array('minLat'=>$lat - $deltaLat, 'maxLat'=>$lat + $deltaLat, 'minLon'=>$lon - $deltaLon, 'maxLon'=>$lon + $deltaLon);
+    }
 }
 
