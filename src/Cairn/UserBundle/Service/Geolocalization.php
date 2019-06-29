@@ -107,7 +107,7 @@ class Geolocalization
         $dist = abs($dist);
 
         $deltaLat = $dist / 111.1;
-        $deltaLon = $dist / (6371 * cos(deg2rad($lat) )) ;
+        $deltaLon = $dist / (deg2rad(1) * 6371 * cos(deg2rad($lat) )) ;
 
         return array('minLat'=>$lat - $deltaLat, 'maxLat'=>$lat + $deltaLat, 'minLon'=>$lon - $deltaLon, 'maxLon'=>$lon + $deltaLon);
     }
