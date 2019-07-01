@@ -94,6 +94,10 @@ class Geolocalization
     /**
      * Calculates extrema coordinates around a point with given distance
      *
+     * Those extrema define a rectangle of coordinates beyond which the distance to central point is necessarily bigger than 
+     * the given distance. This is used as an optimization hint to avoid computing distance from all users but only those whose address
+     * are inside this rectangle of coordinates
+     *
      *@param float $lat latitude of central point (degrees)
      *@param float $lon longitude of central point (degrees)
      *@param float $dist distance (km)
