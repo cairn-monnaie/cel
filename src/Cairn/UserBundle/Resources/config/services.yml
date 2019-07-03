@@ -159,6 +159,7 @@ services:
             - "@doctrine.orm.entity_manager"
             - "@router"
             - "@cairn_user.security"
+            - "@cairn_user.api"
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException}
     

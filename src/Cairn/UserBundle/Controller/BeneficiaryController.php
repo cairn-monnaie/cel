@@ -279,26 +279,11 @@ class BeneficiaryController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-//                if($dataForm['cairn_user'] == null){
-//                    if( $this->get('cairn_user.api')->isApiCall()){
-//                        $response = new Response('Votre recherche ne correspond à aucun compte');
-//                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-//                        $response->headers->set('Content-Type', 'application/json');
-//                        return $response;
-//                    }
-//                    $session->getFlashBag()->add('error','Votre recherche ne correspond à aucun compte');
-//                    return new RedirectResponse($request->getRequestUri());
-//                }
+                $errorMessages = NULL;
 
                 if ($dataForm['cairn_user']->id == $currentUser->getCyclosID()){
-                    if( $this->get('cairn_user.api')->isApiCall()){
-                        $response = new Response('Oups, vous ne pouvez pas vous ajouter vous-même...');
-                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                        $response->headers->set('Content-Type', 'application/json');
-                        return $response;
-                    }
-                    $session->getFlashBag()->add('error','Oups, vous ne pouvez pas vous ajouter vous-même...');
-                    return new RedirectResponse($request->getRequestUri());
+                    $errorMessages = array();
+                    $errorMessages[] = 'Oups, vous ne pouvez pas vous ajouter vous-même...';
                 }
 
                 $creditorUser = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($dataForm['cairn_user']->id);
@@ -307,8 +292,21 @@ class BeneficiaryController extends Controller
                 $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$creditorUser,'ICC'=>$dataForm['cairn_user']->accountNumber));
 
                 if($existingBeneficiary && $currentUser->hasBeneficiary($existingBeneficiary)){
-                    $session->getFlashBag()->add('info',$creditorUser->getName().' est déjà votre un bénéficiaire enregistré ');
-                    return new RedirectResponse($request->getRequestUri());
+                    $errorMessages[] = $creditorUser->getName().' est déjà votre un bénéficiaire enregistré ';
+                }
+
+                if($errorMessages){
+                    if( $this->get('cairn_user.api')->isRemoteCall()){
+                        $response = new Response('{ "message"=>"'.$errorMessages[0].'"}');
+                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                        $response->headers->set('Content-Type', 'application/json');
+                        return $response;
+                    }else{
+                        foreach($messages as $message){
+                            $session->getFlashBag()->add('error',$message);
+                        }
+                        return new RedirectResponse($request->getRequestUri());
+                    }
                 }
 
                 if(! $existingBeneficiary){
@@ -327,7 +325,7 @@ class BeneficiaryController extends Controller
                 $em->flush();
 
 
-                if($_format == 'json'){
+                if( $this->get('cairn_user.api')->isRemoteCall()){
                     $res = $this->get('cairn_user.api')->serialize($beneficiary);
                     $response = new Response($res);
                     $response->setStatusCode(Response::HTTP_CREATED);
@@ -337,6 +335,17 @@ class BeneficiaryController extends Controller
 
                 $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                 return $this->redirectToRoute('cairn_user_beneficiaries_list');
+            }else{
+                if( $this->get('cairn_user.api')->isRemoteCall()){
+                    $errors = [];
+                    foreach ($form->getErrors(true) as $error) {
+                        $errors[] = $error->getMessage();
+                    }
+                    $response = new Response(json_encode($errors));
+                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                    $response->headers->set('Content-Type', 'application/json');
+                    return $response;
+                }
             }
         }
 
@@ -435,14 +444,22 @@ class BeneficiaryController extends Controller
         $currentUser = $this->getUser();
 
         if(!$currentUser->hasBeneficiary($beneficiary)){
-            if($this->get('cairn_user.api')->isApiCall()){
-                $response = new Response('Donnée introuvable');
+            $errorMessage = 'Donnée introuvable';
+
+            if($this->get('cairn_user.api')->isRemoteCall()){
+                $error = array(                                                    
+                    'error'=>array(                                                
+                        'code'=>Response::HTTP_BAD_REQUEST,                        
+                        'message'=>$errorMessage 
+                    )                                                              
+                );                                                                 
+                $response = new Response(json_encode($error));
                 $response->setStatusCode(Response::HTTP_BAD_REQUEST);
                 $response->headers->set('Content-Type', 'application/json');
                 return $response;
             }
 
-            $session->getFlashBag()->add('error',' Donnée introuvable');
+            $session->getFlashBag()->add('error',$errorMessage);
             return $this->redirectToRoute('cairn_user_beneficiaries_list');
         }
         if($request->isMethod('DELETE') || $request->isMethod('POST')){ //form filled and submitted 
@@ -471,7 +488,7 @@ class BeneficiaryController extends Controller
                 }
 
                 if($this->get('cairn_user.api')->isRemoteCall()){
-                    $response = new Response($flashMessage);
+                    $response = new Response('{ "message"=>"'.$flashMessage.'"}');
                     $response->setStatusCode(Response::HTTP_OK);
                     $response->headers->set('Content-Type', 'application/json');
                     return $response;

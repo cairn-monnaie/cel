@@ -16,6 +16,7 @@ use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Service\AccessPlatform;
 use Cairn\UserBundle\Service\Security;
+use Cairn\UserBundle\Service\Api;
 
 use Doctrine\ORM\EntityManager;
 
@@ -33,14 +34,38 @@ class ExceptionListener
     protected $em;
     protected $router;
     protected $security;
+    protected $api;
 
-    public function __construct(MessageNotificator $messageNotificator, AccessPlatform $accessPlatform, EntityManager $em, Router $router, Security $security)
+    public function __construct(MessageNotificator $messageNotificator, AccessPlatform $accessPlatform, EntityManager $em, Router $router, Security $security, Api $api)
     {
         $this->messageNotificator = $messageNotificator;
         $this->accessPlatform = $accessPlatform;
         $this->em = $em;
         $this->router = $router;
         $this->security = $security;
+        $this->api = $api;
+
+    }
+
+    private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $redirectUrl)
+    {
+        if($this->api->isRemoteCall()){                  
+            $error = array(
+                'error'=>array(
+                    'code'=>Response::HTTP_BAD_REQUEST,
+                    'message'=>$errorMessage
+                )
+            );
+            $response = new Response(json_encode($error)); 
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST); 
+            $response->headers->set('Content-Type', 'application/json');   
+            $event->setResponse($response);           
+            return;
+        }
+
+        $session = $event->getRequest()->getSession();
+        $session->getFlashBag()->add('error',$errorMessage);
+        $event->setResponse(new RedirectResponse($redirectUrl));
     }
 
     /**
@@ -92,28 +117,31 @@ class ExceptionListener
             if($exception instanceof Cyclos\ServiceException){
                 $subject = 'Erreur Cyclos';
                 if($exception->errorCode == 'ENTITY_NOT_FOUND'){
-                    $session->getFlashBag()->add('error','Donnée introuvable');
-                    $event->setResponse(new RedirectResponse($welcomeUrl));
-
+                    $errorMessage = 'Donnée introuvable';
+                    $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
                 elseif($exception->errorCode == 'LOGIN'){
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.');
-                    $event->setResponse(new RedirectResponse($logoutUrl));
+
+                    $errorMessage = 'Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.';
+                    $this->sendException($event, $errorMessage, $logoutUrl);
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Vous n\'avez pas les droits nécessaires');
-                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                    $errorMessage = 'Vous n\'avez pas les droits nécessaires';
+                    $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
-                elseif($exception->errorCode == 'LOGGED_OUT'){
+                elseif($exception->errorCode == 'LOGGED_OUT'){//cyclos session token expired before Symfony
+
+                    $token = $loginManager->refreshSession();
+                    $session->set('cyclos_token',$this->security->vigenereEncode($token));
                     $session->getFlashBag()->add('info','Votre session a expiré. Veuillez vous reconnecter.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Donnée introuvable');
-                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                    $errorMessage = 'Donnée introuvable';
+                    $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
                 elseif($exception->errorCode == 'VALIDATION'){
                     $listErrors = '';
@@ -123,43 +151,28 @@ class ExceptionListener
                     $body = $listErrors . $body;
 
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Un problème technique est survenu pendant votre opération. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
-                    $event->setResponse(new RedirectResponse($welcomeUrl));
+                    $errorMessage = 'Un problème technique est survenu pendant votre opération. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
+                    $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
                 else{
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $session->getFlashBag()->add('error','Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
-                    $event->setResponse(new RedirectResponse($welcomeUrl));
+
+                    $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
+                    $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
             }
             elseif($exception instanceof Cyclos\ConnectionException){
                 $subject = 'Maintenance automatique : ConnectionException Cyclos';
 
+                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
                 //maintenance state : file written in web directory 
                file_put_contents("maintenance.txt", '');
 
-                $session->getFlashBag()->add('error','Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
-                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-                //will redirect to maintenance page
-                $event->setResponse(new RedirectResponse($logoutUrl));
+               $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
+               $this->sendException($event, $errorMessage, $logoutUrl);
             }
-//            else{//not cyclos error, instance of \Exception
-//                $subject = 'Erreur technique Symfony';
-            //    $codeMessage = 'Erreur code statut : ' .$exception->getCode();
-            //    $body = $codeMessage. "\n" . $body;
-
-//
-//                if($exception instanceof ContextErrorException){
-//                    $context = ' Contexte : ' . json_encode($exception->getContext());
-//                    $body = $body . "\n". $context;
-//                }
-//                $session->getFlashBag()->add('error','Une erreur technique est survenue. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.');
-//                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-//                $event->setResponse(new RedirectResponse($welcomeUrl));
-//            }
         }
-
 
     }
 

@@ -441,7 +441,7 @@ cairn_user_banking_account_operations:
         _format: html|json
 
 cairn_user_api_account_operations:
-    path:     /{remote}/accounts/{accountID}.{_format}
+    path:     /{remote}/account/operations/{accountID}.{_format}
     methods: POST
     defaults: { _controller: CairnUserBundle:Banking:accountOperations, _format: json }
     requirements:

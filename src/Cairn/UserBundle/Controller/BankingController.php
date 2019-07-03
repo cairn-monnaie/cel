@@ -215,8 +215,21 @@ class BankingController extends Controller
 
         if($request->isMethod('POST')){
 
-            if($_format == 'json'){
+            if($this->get('cairn_user.api')->isRemoteCall()){
                 $data = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
+
+                if(!$data){
+                    $error = array(                                                    
+                        'error'=>array(                                                
+                            'code'=>Response::HTTP_BAD_REQUEST,                        
+                            'message'=>"Invalid JSON"  
+                        )                                                              
+                    );                                                                 
+                    $response = new Response(json_encode($error));
+                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                    $response->headers->set('Content-Type', 'application/json');
+                    return $response;
+                }
 
                 $operationTypes = $data['types'];
                 if($operationTypes){
@@ -232,6 +245,7 @@ class BankingController extends Controller
 
             if($form->isSubmitted()){
                 $dataForm = $form->getData();            
+
                 $begin = $dataForm['begin'];
                 $end = $dataForm['end'];
                 $orderBy = $dataForm['orderBy'];
@@ -268,7 +282,7 @@ class BankingController extends Controller
                     ->orderBy('o.executionDate',$orderBy)
                     ->getQuery()->getResult();
 
-                if($_format == 'json'){
+                if($this->get('cairn_user.api')->isRemoteCall()){
                     $res = $this->get('cairn_user.api')->serialize($executedTransactions);
 
                     $response = new Response($res);
