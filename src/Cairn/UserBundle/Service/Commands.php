@@ -619,23 +619,16 @@ class Commands
             $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
         }
 
-        //instances of TransactionEntryVO
-        //in init_data.py script, trankilou makes a transaction in order to have a null account balance
-        $user = $userRepo->findOneByUsername('trankilou'); 
-        $processedTransactions1 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-        foreach($processedTransactions1 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereAdherent($ub);
+        $users = $ub->getQuery()->getResult();
 
-        //in init_data.py script, DrDBrew makes transactions
-        $user = $userRepo->findOneByUsername('DrDBrew'); 
-        $processedTransactions2 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-
-        //            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
-        foreach($processedTransactions2 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+        foreach($users as $user){
+            $processedTransactions1 = $bankingService->getTransactions(
+                $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
+            foreach($processedTransactions1 as $transaction){
+                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+            }
         }
 
         //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)

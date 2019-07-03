@@ -36,6 +36,7 @@ class Geolocalization
 
         $res = $this->api->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
 
+//        var_dump($res['results']['features']);
         if($res['code'] == 200){ 
             $features = $res['results']['features'];       
 

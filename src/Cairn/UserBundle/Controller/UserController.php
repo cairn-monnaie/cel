@@ -78,7 +78,7 @@ class UserController extends Controller
 
         $users = $userRepo->getUsersAround($address2->getLatitude(),$address2->getLongitude(), 10, $extrema);
         var_dump($users);
-        return new Response('ok');
+//        return new Response('ok');
         $checker = $this->get('security.authorization_checker');
 
         $em = $this->getDoctrine()->getManager();
