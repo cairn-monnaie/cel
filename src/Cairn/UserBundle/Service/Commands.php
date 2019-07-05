@@ -56,6 +56,47 @@ class Commands
         $this->container = $container;
     }
 
+    public function generateLocalizationCoordinates($username = NULL)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+       
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+            if(! $user){
+                return 'username '.$username.' does not match any account';
+            }
+            if(! $user->isAdherent()){
+                return 'username '.$username.' does not match any adherent account';
+            }
+            $users = array($user);
+        }else{
+            $ub = $userRepo->createQueryBuilder('u');                 
+            $userRepo->whereAdherent($ub);
+
+            $users = $ub->getQuery()->getResult();
+        }
+
+        $returnMsg = '';
+
+        foreach($users as $user){
+            $address = $user->getAddress();
+
+            $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+
+            if(!$coords['latitude']){                                  
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest'];
+            }else{                                         
+                $address->setLongitude($coords['longitude']);
+                $address->setLatitude($coords['latitude']);
+                $returnMsg .= 'OK : '.$user->getUsername().' lat:'.$address->getLatitude().' lon:'.$address->getLongitude()."\n";
+            }             
+        }
+
+        $this->em->flush();
+
+        return $returnMsg;
+    }
+
     /**
      * Removes all operations with no paymentID
      *
@@ -578,23 +619,16 @@ class Commands
             $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
         }
 
-        //instances of TransactionEntryVO
-        //in init_data.py script, trankilou makes a transaction in order to have a null account balance
-        $user = $userRepo->findOneByUsername('trankilou'); 
-        $processedTransactions1 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-        foreach($processedTransactions1 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
+        $ub = $userRepo->createQueryBuilder('u');
+        $userRepo->whereAdherent($ub);
+        $users = $ub->getQuery()->getResult();
 
-        //in init_data.py script, DrDBrew makes transactions
-        $user = $userRepo->findOneByUsername('DrDBrew'); 
-        $processedTransactions2 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-
-        //            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
-        foreach($processedTransactions2 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+        foreach($users as $user){
+            $processedTransactions1 = $bankingService->getTransactions(
+                $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
+            foreach($processedTransactions1 as $transaction){
+                $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
+            }
         }
 
         //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
@@ -643,10 +677,11 @@ class Commands
         $this->em->remove($card);
         echo 'INFO: OK !'."\n";
 
-        //NaturaVie has NO card and admin not referent
+        //NaturaVie has NO card and admin not referent and never logged in
         $user = $userRepo->findOneByUsername('NaturaVie'); 
         echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
         $user->removeReferent($admin);
+        $user->setLastLogin(NULL);
         $card  = $user->getCard();
         $this->em->remove($card);
         echo 'INFO: OK !'."\n";

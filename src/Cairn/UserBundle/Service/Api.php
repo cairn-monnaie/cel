@@ -28,6 +28,42 @@ class Api
         $this->requestStack = $requestStack;
     }
 
+    /**
+     * Make a request API
+     *
+     *@param string $baseUrl api base URL
+     *@param array $params request parameters
+     *@param string $resource uri matching a resource
+     *@return stdClass $results result of the api request 
+     */
+    public function get($baseUrl, $resource, $params = NULL, $format = NULL)
+    {
+        $url = $baseUrl.$resource.$format;
+
+        if($params){
+            $url = $url."?".http_build_query($params);
+        }
+
+		$ch = \curl_init($url);
+        
+        // Set the CURL options
+        $options = array(
+            CURLOPT_RETURNTRANSFER => true,
+        );
+
+        \curl_setopt_array ($ch, $options);
+
+		// Execute the request
+		$json = \curl_exec($ch);
+		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $results = \json_decode($json,true);
+
+        curl_close($ch);
+
+        return array('code'=> $code, 'results' => $results);
+
+    }
+
     public function isApiCall()
     {
         $request = $this->requestStack->getCurrentRequest();                     
@@ -43,7 +79,7 @@ class Api
     {
         $request = $this->requestStack->getCurrentRequest();                     
 
-        return ($request->get('_format') != 'html');
+        return ($request->getRequestFormat() != 'html');
     }
 
     function objectCallback($child)
