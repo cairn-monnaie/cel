@@ -74,10 +74,10 @@ class UserController extends Controller
         $address2 = $currentUser->getAddress();
 
         //set latitude and longitude of new user
-        $extrema = $this->get('cairn_user.geolocalization')->getExtremaCoords($address2->getLatitude(),$address2->getLongitude(), 3);
-
-        $users = $userRepo->getUsersAround($address2->getLatitude(),$address2->getLongitude(), 10, $extrema);
-        var_dump($users);
+//        $extrema = $this->get('cairn_user.geolocalization')->getExtremaCoords($address2->getLatitude(),$address2->getLongitude(), 3);
+//
+//        $users = $userRepo->getUsersAround($address2->getLatitude(),$address2->getLongitude(), 10, $extrema);
+//        var_dump($users);
 //        return new Response('ok');
         $checker = $this->get('security.authorization_checker');
 
