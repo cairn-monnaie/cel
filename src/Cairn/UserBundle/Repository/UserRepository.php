@@ -177,17 +177,21 @@ class UserRepository extends EntityRepository
      *@param float $lat latitude of central point (degrees)                    
      *@param float $lon longitude of central point (degrees)                   
      *@param float $dist distance (km)                                         
-     *@param array $extrema set of extrema coordinates to match given distance                                   
+     *@param array $extrema set of extrema coordinates to match given distance
+     *@param boolean $proOnly Return only users such that role is ROLE_PRO or not     
      *@return array of Users 
      */ 
-    public function getUsersAround($lat, $lon, $dist, $extrema)
+    public function getUsersAround($lat, $lon, $dist, $extrema, $proOnly = false)
     {
+        $subSql = 'roles LIKE "%ROLE_PRO%"';
+        $subSql = ($proOnly) ? $subSql : $subSql.' OR roles LIKE "%ROLE_PERSON%" ';
         $conn = $this->getEntityManager()->getConnection();                                          
         $sql = '                                                               
             SELECT name,email,description,address_id,a.longitude,a.latitude,st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 AS distance 
             FROM cairn_user u 
-            LEFT JOIN address a ON u.address_id = a.id                          
-            WHERE (a.longitude > :minLon AND a.longitude < :maxLon             
+            LEFT JOIN address a ON u.address_id = a.id
+            WHERE ('.$subSql.')
+            AND (a.longitude > :minLon AND a.longitude < :maxLon             
             AND a.latitude < :maxLat AND a.latitude > :minLat)                 
             HAVING distance < :dist                                            
             ORDER BY distance
