@@ -69,7 +69,13 @@ class SecurityController extends Controller
 
             //effectively log in and get session token
             $loginResult = $loginManager->login($dto);                             
-//            $array_oauth['cyclos_token'] =  $loginResult->sessionToken;
+
+            //send user id
+            $em = $this->getDoctrine()->getManager();
+            $userRepo = $em->getRepository('CairnUserBundle:User');
+            $currentUser = $userRepo->findOneByUsername($params['username']);
+
+            $array_oauth['user_id'] =  $currentUser->getID();
             $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken));
 
 
