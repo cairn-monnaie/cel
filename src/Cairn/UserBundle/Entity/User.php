@@ -99,7 +99,8 @@ class User extends BaseUser
     private $identityDocument;
 
     /**
-     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Card", inversedBy="user", cascade={"persist"})
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Card", inversedBy="users", cascade={"persist"})
+     *@ORM\JoinColumn(nullable=true)
      */
     private $card;
 
