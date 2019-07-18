@@ -3,6 +3,7 @@
 namespace Cairn\UserBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * Card
@@ -43,12 +44,11 @@ class Card
      */
     private $cols;
 
-
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="card")
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\User", mappedBy="card")
      *@ORM\JoinColumn(nullable=true)
      */
-    private $user;
+    private $users;
 
     /**
      * @ORM\Column(name="creation_date", type="datetime", unique=false, nullable=true)
@@ -75,9 +75,10 @@ class Card
     private $code;
 
 
-    public function __construct($user,$rows,$cols,$salt, $code, $expirationDelay)
+    public function __construct($rows,$cols,$salt, $code, $expirationDelay)
     {
-        $this->setUser($user);
+        $this->users = new ArrayCollection();
+
         $this->setRows($rows);
         $this->setCols($cols);
         $this->setSalt($salt);
@@ -185,28 +186,42 @@ class Card
         return unserialize($this->fields);
     }
 
+
     /**
-     * Set user
+     * Add user
      *
      * @param \Cairn\UserBundle\Entity\User $user
      *
-     * @return Card
+     * @return User
      */
-    public function setUser(\Cairn\UserBundle\Entity\User $user = null)
+    public function addUser(\Cairn\UserBundle\Entity\User $user = NULL)
     {
-        $this->user = $user;
+        $this->users[] = $user;
 
         return $this;
     }
 
     /**
-     * Get user
+     * Remove user
      *
-     * @return \Cairn\UserBundle\Entity\User
+     * @param \Cairn\UserBundle\Entity\User $user
      */
-    public function getUser()
+    public function removeUser(\Cairn\UserBundle\Entity\User $user)
     {
-        return $this->user;
+        $this->users->removeElement($user);
+        $user->setCard(NULL);
+
+        return count($this->users);
+    }
+
+    /**
+     * Get users
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getUsers()
+    {
+        return $this->users;
     }
 
     /**

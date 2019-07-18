@@ -16,8 +16,8 @@ class CardRepository extends \Doctrine\ORM\EntityRepository
     public function findAvailableCardWithCode($code)
     {
         $cb = $this->createQueryBuilder('c');                  
-        $cb->where('c.user is NULL')
-            ->andWhere('c.code = :code')
+        $this->whereAvailable($cb);
+        $cb->andWhere('c.code = :code')
             ->setParameter('code',$code)
             ->setMaxResults(1);
 
@@ -27,12 +27,18 @@ class CardRepository extends \Doctrine\ORM\EntityRepository
 
     public function findAvailableCards()
     {
-        return $this->findBy(array('user'=>NULL));
+        $cb = $this->createQueryBuilder('c');                  
+
+        $this->whereAvailable($cb);
+        $result = $cb->getQuery()->getResult();
+        return $result;
     }
 
     public function whereAvailable(QueryBuilder $cb)
     {
-        $cb->andWhere('c.user is NULL'); 
+        $cb->leftJoin('c.users','u')
+            ->andWhere('u.card is NULL');
+ 
         return $this;
     }
 

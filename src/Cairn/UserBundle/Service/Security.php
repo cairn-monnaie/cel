@@ -205,7 +205,8 @@ class Security
 
     public function encodeCard(Card $card)
     {
-        $encoder = $this->encoderFactory->getEncoder($card->getUser());  
+        //same encoder for all users
+        $encoder = $this->encoderFactory->getEncoder($card->getUsers()[0]);  
 
         $fields = $card->getFields();
         $nbRows = $card->getRows();                                            

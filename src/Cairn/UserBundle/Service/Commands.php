@@ -336,7 +336,8 @@ class Commands
 
 
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card->addUser($doctrineUser);
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             //encode user's card
@@ -550,7 +551,7 @@ class Commands
 
         for($i=0; $i < $nbPrintedCards; $i++){
             $uniqueCode = $securityService->findAvailableCode();
-            $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             $this->em->persist($card);
@@ -602,14 +603,14 @@ class Commands
         //in init_data_test.py script, future transactions are made by labonnepioche
         $user = $userRepo->findOneByUsername('labonnepioche'); 
 
-        //            $credentials = array('username'=>'labonnepioche','password'=>$password);
-        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-        //
+        $credentials = array('username'=>'labonnepioche','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
 
-        //            $credentials = array('username'=>'admin_network','password'=>$password);
-        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-        //
+        $credentials = array('username'=>'admin_network','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         var_dump(count($futureInstallments));
 
         foreach($futureInstallments as $installment){
@@ -621,7 +622,8 @@ class Commands
         //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
         $admin->setFirstLogin(false);
         $uniqueCode = $securityService->findAvailableCode();
-        $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+        $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+        $card->addUser($admin);
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
         //encode user's card
@@ -640,7 +642,7 @@ class Commands
         $user = $userRepo->findOneByUsername('episol'); 
         echo 'INFO: '.$user->getName(). ' has no associated card'."\n";
         $card  = $user->getCard();
-        $this->em->remove($card);
+        $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
         //NaturaVie has NO card and admin not referent
@@ -648,7 +650,7 @@ class Commands
         echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
         $user->removeReferent($admin);
         $card  = $user->getCard();
-        $this->em->remove($card);
+        $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
         //nico_faus_prod has beneficiary labonnepioche
