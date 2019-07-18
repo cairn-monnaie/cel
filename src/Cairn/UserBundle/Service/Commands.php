@@ -619,7 +619,7 @@ class Commands
 
         //********************** Fine-tune user data in order to have a diversified database ************************
 
-        //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
+        //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
         $admin->setFirstLogin(false);
         $uniqueCode = $securityService->findAvailableCode();
         $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
@@ -631,8 +631,17 @@ class Commands
         $admin->setCard($card);
 
         echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";
+        //nico_faus_perso && nico_faus_prod have same card
+        $pro = $userRepo->findOneByUsername('nico_faus_prod'); 
+        $proCard = $pro->getCard();
 
-        //vie_integrative has associated card + admin is not referent
+        $person = $userRepo->findOneByUsername('nico_faus_perso'); 
+        $personCard = $person->getCard();
+
+        $person->setCard($proCard);
+        $personCard->getUsers()->clear();
+        $this->em->remove($personCard);
+        //admin is not referent of vie_integrative
         $user = $userRepo->findOneByUsername('vie_integrative'); 
         echo 'INFO: '.$user->getName(). ' has no referent'."\n";
         $user->removeReferent($admin);
@@ -640,7 +649,14 @@ class Commands
 
         //episol has NO card
         $user = $userRepo->findOneByUsername('episol'); 
-        echo 'INFO: '.$user->getName(). ' has no associated card'."\n";
+        echo 'INFO: Pro '.$user->getName(). ' has no associated card'."\n";
+        $card  = $user->getCard();
+        $card->removeUser($user);                                  
+        echo 'INFO: OK !'."\n";
+
+        //speedy_andrew has NO card
+        $user = $userRepo->findOneByUsername('speedy_andrew'); 
+        echo 'INFO: Person '.$user->getName(). ' has no associated card'."\n";
         $card  = $user->getCard();
         $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";

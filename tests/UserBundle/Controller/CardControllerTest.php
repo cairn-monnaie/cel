@@ -174,7 +174,6 @@ class CardControllerTest extends BaseControllerTest
                 $this->assertSame(0,$currentUser->getCardAssociationTries());
                 $this->assertNotEquals($targetUser->getCard(), NULL);
                 $this->assertEquals($targetUser->getCard()->getExpirationDate(), NULL);
-
             }
         }
     }
@@ -183,17 +182,46 @@ class CardControllerTest extends BaseControllerTest
     {
         $adminUsername = $this->testAdmin;
 
-        $code = $this->em->getRepository('CairnUserBundle:Card')->findAvailableCards()[0]->getCode();
-        $code = $this->container->get('cairn_user.security')->vigenereEncode($code);
+        $cardRepo = $this->em->getRepository('CairnUserBundle:Card');
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $security = $this->container->get('cairn_user.security');
+
+        $availableCode = $cardRepo->findAvailableCards()[0]->getCode();
+        $availableCode = $security->vigenereEncode($availableCode);
+
+        $ub = $userRepo->createQueryBuilder('u'); 
+        $userRepo->whereRoles($ub, array('ROLE_PRO') );
+        $ub->join('u.card','c')                   
+                  ->andWhere('c.id is not NULL');
+                                                                                
+        $proCode =  $ub->getQuery()->getResult()[0]->getCard()->getCode(); 
+        $proCode = $security->vigenereEncode($proCode);
+
+        $ub = $userRepo->createQueryBuilder('u');                                  
+        $userRepo->whereRoles($ub, array('ROLE_PERSON') );
+        $ub->join('u.card','c')  
+                  ->andWhere('c.id is not NULL');
+                                                                                
+        $personCode =  $ub->getQuery()->getResult()[0]->getCard()->getCode(); 
+        $personCode = $security->vigenereEncode($personCode);
+
         return array(
             'valid user + invalid code'   => array('referent'=>$adminUsername,'target'=>'episol','code'=>'aaaaa',
-            'expectForm'=>true,'expectValidKey'=>false),
-            'referent + valid user + valid code'     => array('referent'=>$adminUsername,'target'=>'episol','code'=>$code,
-            'expectForm'=>true,'expectValidKey'=>true),
-            'valid user + valid code'     => array('referent'=>'NaturaVie','target'=>'NaturaVie','code'=>$code,
-            'expectForm'=>true,'expectValidKey'=>true),
-            'non referent + valid user' => array('referent'=>$adminUsername,'target'=>'NaturaVie','code'=>$code,
-            'expectForm'=>false,'expectValidKey'=>true),
+                                    'expectForm'=>true,'expectValidKey'=>false),
+            'referent + valid user + valid code'     => array('referent'=>$adminUsername,'target'=>'episol','code'=>$availableCode,
+                                    'expectForm'=>true,'expectValidKey'=>true),
+            'valid user + valid code'     => array('referent'=>'NaturaVie','target'=>'NaturaVie','code'=>$availableCode,
+                                    'expectForm'=>true,'expectValidKey'=>true),
+            'non referent + valid user' => array('referent'=>$adminUsername,'target'=>'NaturaVie','code'=>$availableCode,
+                                    'expectForm'=>false,'expectValidKey'=>true),
+            'invalid : card already assoc to pro' => array('referent'=>'episol','target'=>'episol','code'=>$proCode,
+                                    'expectForm'=>true,'expectValidKey'=>false),
+            'invalid : card already assoc to person' => array('referent'=>'speedy_andrew','target'=>'speedy_andrew','code'=>$personCode,
+                                    'expectForm'=>true,'expectValidKey'=>false),
+            'valid : pro card assoc to person' => array('referent'=>'speedy_andrew','target'=>'speedy_andrew','code'=>$proCode,
+                                    'expectForm'=>true,'expectValidKey'=>true),
+            'valid : person card assoc to pro' => array('referent'=>'episol','target'=>'episol','code'=>$personCode,
+                                    'expectForm'=>true,'expectValidKey'=>true),
         );
     }
 
@@ -330,12 +358,15 @@ class CardControllerTest extends BaseControllerTest
             $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
         }else{
             $targetCard = $targetUser->getCard();
+
             if(!$expectForm){
                 $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                 $crawler = $this->client->followRedirect();
                 $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
 
             }else{
+                $cardOwners = $targetCard->getUsers();
+
                 $this->client->enableProfiler();
 
                 $form = $crawler->selectButton('confirmation_save')->form();
@@ -343,9 +374,15 @@ class CardControllerTest extends BaseControllerTest
                 $crawler =  $this->client->submit($form);
                 $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
 
-                //assert no card
-                $this->em->refresh($targetUser);
-                $this->assertEquals($targetUser->getCard(),NULL);
+                //assert user has no card and card has been removed
+// remove if test pass                $this->em->refresh($targetUser);
+
+                $targetCard = $this->em->getRepository('CairnUserBundle:Card')->findOneById($targetCard->getID());
+
+                foreach($cardOwners as $owner){
+                    $this->assertEquals($owner->getCard(),NULL);
+                }
+                $this->assertEquals($targetCard, NULL);
 
                 //assert SMS operations disabled
 
@@ -385,6 +422,9 @@ class CardControllerTest extends BaseControllerTest
 
             'self revocation'=> array('current'=>'labonnepioche','target'=>'labonnepioche','expectForm'=>true,'expectMessage'=>'xxx',
             'emailSent'=>false),             
+
+            'card assoc to 2 accounts'=> array('current'=>'nico_faus_perso','target'=>'nico_faus_perso','expectForm'=>true,
+            'expectMessage'=>'xxx', 'emailSent'=>false),             
 
             'self revocation with phone number'=> array('current'=>'maltobar','target'=>'maltobar','expectForm'=>true,
                                                         'expectMessage'=>'xxx','emailSent'=>false),             
