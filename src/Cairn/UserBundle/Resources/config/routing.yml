@@ -91,6 +91,11 @@ cairn_accounts_ajax:
     methods: POST
     defaults: { _controller: CairnUserBundle:Default:accounts, _format: json }
 
+cairn_accounts_mobile_ajax:
+    path:    mobile/all-accounts
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Default:accounts, _format: json }
+
 cairn_user_card_security_layer:
     path:     security/card/
     defaults: { _controller: CairnUserBundle:Card:inputCardKey }
