@@ -101,8 +101,7 @@ class Api
         $defaultIgnoredAttributes = array();
 
         if($object instanceOf User){
-
-            $defaultIgnoredAttributes = array('phones','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card');
+            $defaultIgnoredAttributes = array('password','phones','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card');
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
@@ -119,7 +118,7 @@ class Api
         }
 
         if($object instanceOf SmsData){
-            $defaultIgnoredAttributes = array();
+            $defaultIgnoredAttributes = array('smsClient');
             $normalizer->setCallbacks(array(
                         'user'=> function ($child) {return $this->objectCallback($child);},
            ));

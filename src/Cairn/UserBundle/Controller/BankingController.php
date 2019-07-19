@@ -45,7 +45,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-
+use Symfony\Component\Security\Core\Exception\LogicException;
 
 /**
  * This class contains actions related to account operations 
@@ -588,6 +588,20 @@ class BankingController extends Controller
      */
     public function confirmOperationAction(Request $request, Operation $operation, $_format)
     {
+        if($operation->getPaymentID()){
+            throw new LogicException('Cette opération a déjà été traitée');
+        }
+
+        $currentUser = $this->getUser();
+        $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
+
+        $fromNumber = $operation->getFromAccountNumber();
+
+        if((! in_array($fromNumber,$accountNumbers))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
+
         $em = $this->getDoctrine()->getManager();
 
         $type = 'transaction';

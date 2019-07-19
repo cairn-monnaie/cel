@@ -377,11 +377,12 @@ class Commands
 
 
             $uniqueCode = $this->container->get('cairn_user.security')->findAvailableCode();
-            $card = new Card($doctrineUser,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card->addUser($doctrineUser);
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             //encode user's card
-            $this->container->get('cairn_user.security')->encodeCard($card);
+            $this->container->get('cairn_user.security')->encodeCard($card,$doctrineUser);
             $doctrineUser->setCard($card);
             $doctrineUser->addReferent($admin);
 
@@ -591,7 +592,7 @@ class Commands
 
         for($i=0; $i < $nbPrintedCards; $i++){
             $uniqueCode = $securityService->findAvailableCode();
-            $card = new Card(NULL,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             $this->em->persist($card);
@@ -636,14 +637,14 @@ class Commands
         //in init_data_test.py script, future transactions are made by labonnepioche
         $user = $userRepo->findOneByUsername('labonnepioche'); 
 
-        //            $credentials = array('username'=>'labonnepioche','password'=>$password);
-        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-        //
+        $credentials = array('username'=>'labonnepioche','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
 
-        //            $credentials = array('username'=>'admin_network','password'=>$password);
-        //            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-        //
+        $credentials = array('username'=>'admin_network','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         var_dump(count($futureInstallments));
 
         foreach($futureInstallments as $installment){
@@ -652,19 +653,29 @@ class Commands
 
         //********************** Fine-tune user data in order to have a diversified database ************************
 
-        //admin has a an associated card and has already login once (avoids the compulsary redirection to change password)
+        //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
         $admin->setFirstLogin(false);
         $uniqueCode = $securityService->findAvailableCode();
-        $card = new Card($admin,$this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+        $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+        $card->addUser($admin);
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
-        //encode user's card
-        $securityService->encodeCard($card);
+        //encode admin's card
+        $securityService->encodeCard($card,$admin);
         $admin->setCard($card);
 
         echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";
+        //nico_faus_perso && nico_faus_prod have same card
+        $pro = $userRepo->findOneByUsername('nico_faus_prod'); 
+        $proCard = $pro->getCard();
 
-        //vie_integrative has associated card + admin is not referent
+        $person = $userRepo->findOneByUsername('nico_faus_perso'); 
+        $personCard = $person->getCard();
+
+        $person->setCard($proCard);
+        $personCard->getUsers()->clear();
+        $this->em->remove($personCard);
+        //admin is not referent of vie_integrative
         $user = $userRepo->findOneByUsername('vie_integrative'); 
         echo 'INFO: '.$user->getName(). ' has no referent'."\n";
         $user->removeReferent($admin);
@@ -672,9 +683,16 @@ class Commands
 
         //episol has NO card
         $user = $userRepo->findOneByUsername('episol'); 
-        echo 'INFO: '.$user->getName(). ' has no associated card'."\n";
+        echo 'INFO: Pro '.$user->getName(). ' has no associated card'."\n";
         $card  = $user->getCard();
-        $this->em->remove($card);
+        $card->removeUser($user);                                  
+        echo 'INFO: OK !'."\n";
+
+        //speedy_andrew has NO card
+        $user = $userRepo->findOneByUsername('speedy_andrew'); 
+        echo 'INFO: Person '.$user->getName(). ' has no associated card'."\n";
+        $card  = $user->getCard();
+        $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
         //NaturaVie has NO card and admin not referent and never logged in
@@ -683,7 +701,7 @@ class Commands
         $user->removeReferent($admin);
         $user->setLastLogin(NULL);
         $card  = $user->getCard();
-        $this->em->remove($card);
+        $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
         //nico_faus_prod has beneficiary labonnepioche

@@ -407,6 +407,10 @@ cairn_user_api_transaction_create:
         frequency: unique #|recurring
         to: new|beneficiary
 
+cairn_user_sms_poster_download:
+    path:     sms-poster/download
+    defaults: { _controller: CairnUserBundle:Sms:downloadPoster, _format: html}
+
 cairn_user_banking_sms_reception:
     path:     sms/reception
     defaults: { _controller: CairnUserBundle:Sms:smsReception, _format: html}

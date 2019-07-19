@@ -221,7 +221,7 @@ class AdminController extends Controller
             ->add('identifier',  TextType::class,array(
                 'label'=>'ID SMS',
                 'required'=>false))
-            ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom','required'=>false)))
+            ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom'),'required'=>false))
             ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
                 ->getForm();
 

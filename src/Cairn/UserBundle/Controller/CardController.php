@@ -49,7 +49,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class CardController extends Controller
 {
 
-
     /**
      * The user must input a key of his card in order to keep browsing
      *
@@ -288,7 +287,7 @@ class CardController extends Controller
         $em = $this->getDoctrine()->getManager();
         $session = $request->getSession();
         //associated card
-        if($card->getUser()){
+        if($card->getUsers()->count() > 0){
             throw new AccessDeniedException('Cette carte est associée à un compte. Destruction impossible');
         }
 
@@ -354,13 +353,19 @@ class CardController extends Controller
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
                     $saveCode = $card->getCode();
+
+                    $users = $card->getUsers();
+                    foreach($users as $oneUser){
+                        $oneUser->setCard(NULL);    
+                    }
+                    $users->clear();
                     $em->remove($card);
 
                     $phones = $user->getPhones(); 
                     foreach($phones as $phone){
                         $phone->setPaymentEnabled(false);
                     }
-                    $session->getFlashBag()->add('info','Les paiements SMS sont désormais bloquées pour tous vos numéros de téléphone');
+                    $session->getFlashBag()->add('info','Les paiements SMS sont désormais bloqués pour tous les numéros de téléphone associés au compte');
 
                     $em->flush();
 
@@ -447,7 +452,7 @@ class CardController extends Controller
 
                     $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
-                    $card = new Card(NULL,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,$this->getParameter('card_association_delay'));
+                    $card = new Card($this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,$this->getParameter('card_association_delay'));
                     $card->generateCard($this->getParameter('kernel.environment'));
 
                     $em->persist($card);
@@ -526,39 +531,71 @@ class CardController extends Controller
                 $cardCode =  $form->get('code')->getData();
                 $newCard = $cardRepo->findAvailableCardWithCode($this->get('cairn_user.security')->vigenereDecode($cardCode));
 
+                $successMessage = 'La carte de sécurité a été associée avec succès.';
                 if(!$newCard){
-                    $currentUser->setCardAssociationTries($user->getCardAssociationTries() + 1);
-                    $remainingTries = 3 - $user->getCardAssociationTries();
 
-                    $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais. La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être votre carte a-t-elle expirée ?');
-                    $em->flush();
+                    $isError = false;
 
-//                    if($this->get('cairn_user.api')->isApiCall()){
-//                        $response =  new Response('card association : FAILED !');
-//                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
-//                        $response->headers->set('Content-Type', 'application/json');
-//                        return $response;
-//                    }
-                    return new RedirectResponse($request->getRequestUri());
-                }else{
-                    $newCard->setExpirationDate(NULL);
-                    $currentUser->setCardAssociationTries(0);
-                    $user->setCard($newCard);
-                    $newCard->setUser($user);
-                    $this->get('cairn_user.security')->encodeCard($newCard);
-                    $em->flush();
+                    if(! $user->isAdherent()){
+                        $isError = true;
+                    }else{
+                        $newCard = $cardRepo->findOneByCode($this->get('cairn_user.security')->vigenereDecode($cardCode));
+                        if(!$newCard){
+                            $isError = true;
+                        }else{
+                            if( $newCard->getUsers()->count() > 1 ){
+                                $isError = true;
+                            }else{
+                                $bothPros = $user->hasRole('ROLE_PRO') && $newCard->getUsers()[0]->hasRole('ROLE_PRO');
+                                $bothPersons = $user->hasRole('ROLE_PERSON') && $newCard->getUsers()[0]->hasRole('ROLE_PERSON');
 
-//                    if($this->get('cairn_user.api')->isApiCall()){
-//                        $response =  new Response('card association : OK !');
-//                        $response->setStatusCode(Response::HTTP_OK);
-//                        $response->headers->set('Content-Type', 'application/json');
-//                        return $response;
-//                    }
+                                if($bothPros || $bothPersons){
+                                    $isError = true;
+                                }
+                            }
+                        }
+                    }
 
-                    $session->getFlashBag()->add('success','La carte de sécurité a été associée avec succès.');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
+
+                    if($isError){
+                        $currentUser->setCardAssociationTries($user->getCardAssociationTries() + 1);
+                        $remainingTries = 3 - $user->getCardAssociationTries();
+                        $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais.');// La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être votre carte a-t-elle expirée ?
+                        $em->flush();
+
+                        //                    if($this->get('cairn_user.api')->isApiCall()){
+                        //                        $response =  new Response('card association : FAILED !');
+                        //                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                        //                        $response->headers->set('Content-Type', 'application/json');
+                        //                        return $response;
+                        //                    }
+
+                        return new RedirectResponse($request->getRequestUri());
+                    }
+
+                    $successMessage = "Votre carte de sécurité est désormais associée à un compte pro et un compte particulier :"."\n".$user->getName()." et ".$newCard->getUsers()[0]->getName();
                 }
 
+                $newCard->setExpirationDate(NULL);
+                $currentUser->setCardAssociationTries(0);
+                $user->setCard($newCard);
+                $newCard->addUser($user);
+
+                if( $newCard->getUsers()->count() == 1 ){
+                    $this->get('cairn_user.security')->encodeCard($newCard,$user);
+                }
+
+                $em->flush();
+
+                //                    if($this->get('cairn_user.api')->isApiCall()){
+                //                        $response =  new Response('card association : OK !');
+                //                        $response->setStatusCode(Response::HTTP_OK);
+                //                        $response->headers->set('Content-Type', 'application/json');
+                //                        return $response;
+                //                    }
+
+                $session->getFlashBag()->add('success', $successMessage);
+                return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }
         }
 
@@ -607,7 +644,8 @@ class CardController extends Controller
             $salt = $this->get('cairn_user.security')->generateToken();
             $uniqueCode = $this->get('cairn_user.security')->findAvailableCode();
 
-            $card = new Card($user,$this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);
+            $card = new Card($this->getParameter('cairn_card_rows'),$this->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);
+            $card->addUser($user);
 
             $card->generateCard($this->getParameter('kernel.environment'));
 
@@ -617,7 +655,7 @@ class CardController extends Controller
                 array('cards'=>array($card)));
     
     
-            $this->get('cairn_user.security')->encodeCard($card);
+            $this->get('cairn_user.security')->encodeCard($card, $user);
             $em->flush();
             $filename = sprintf('carte-sécurité-cairn-'.$card->getID().'-%s.pdf',$user->getUserName());
     
