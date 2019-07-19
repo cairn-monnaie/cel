@@ -341,7 +341,7 @@ class Commands
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             //encode user's card
-            $this->container->get('cairn_user.security')->encodeCard($card);
+            $this->container->get('cairn_user.security')->encodeCard($card,$doctrineUser);
             $doctrineUser->setCard($card);
             $doctrineUser->addReferent($admin);
 
@@ -626,8 +626,8 @@ class Commands
         $card->addUser($admin);
         $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
-        //encode user's card
-        $securityService->encodeCard($card);
+        //encode admin's card
+        $securityService->encodeCard($card,$admin);
         $admin->setCard($card);
 
         echo 'INFO: ------ Set up custom properties for some users ------- ' . "\n";

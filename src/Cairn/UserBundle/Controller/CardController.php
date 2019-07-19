@@ -365,7 +365,7 @@ class CardController extends Controller
                     foreach($phones as $phone){
                         $phone->setPaymentEnabled(false);
                     }
-                    $session->getFlashBag()->add('info','Les paiements SMS sont désormais bloqués pour tous vos numéros de téléphone');
+                    $session->getFlashBag()->add('info','Les paiements SMS sont désormais bloqués pour tous les numéros de téléphone associés au compte');
 
                     $em->flush();
 
@@ -531,6 +531,7 @@ class CardController extends Controller
                 $cardCode =  $form->get('code')->getData();
                 $newCard = $cardRepo->findAvailableCardWithCode($this->get('cairn_user.security')->vigenereDecode($cardCode));
 
+                $successMessage = 'La carte de sécurité a été associée avec succès.';
                 if(!$newCard){
 
                     $isError = false;
@@ -571,13 +572,19 @@ class CardController extends Controller
 
                         return new RedirectResponse($request->getRequestUri());
                     }
+
+                    $successMessage = "Votre carte de sécurité est désormais associée à un compte pro et un compte particulier :"."\n".$user->getName()." et ".$newCard->getUsers()[0]->getName();
                 }
 
                 $newCard->setExpirationDate(NULL);
                 $currentUser->setCardAssociationTries(0);
                 $user->setCard($newCard);
                 $newCard->addUser($user);
-                $this->get('cairn_user.security')->encodeCard($newCard);
+
+                if( $newCard->getUsers()->count() == 1 ){
+                    $this->get('cairn_user.security')->encodeCard($newCard,$user);
+                }
+
                 $em->flush();
 
                 //                    if($this->get('cairn_user.api')->isApiCall()){
@@ -587,7 +594,7 @@ class CardController extends Controller
                 //                        return $response;
                 //                    }
 
-                $session->getFlashBag()->add('success','La carte de sécurité a été associée avec succès.');
+                $session->getFlashBag()->add('success', $successMessage);
                 return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }
         }
@@ -648,7 +655,7 @@ class CardController extends Controller
                 array('cards'=>array($card)));
     
     
-            $this->get('cairn_user.security')->encodeCard($card);
+            $this->get('cairn_user.security')->encodeCard($card, $user);
             $em->flush();
             $filename = sprintf('carte-sécurité-cairn-'.$card->getID().'-%s.pdf',$user->getUserName());
     
