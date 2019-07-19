@@ -25,6 +25,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * This class contains actions related to sms operations 
@@ -45,6 +46,13 @@ class SmsController extends Controller
         $this->userManager = new UserManager();
         $this->bankingManager = new BankingManager();
     }   
+
+    public function downloadPosterAction(Request $request)
+    {
+        $dir = $this->getParameter('kernel.project_dir').'/web/';
+        $filename = 'poster_sms.pdf';
+        return new BinaryFileResponse($dir.$filename);
+    }
 
     public function smsReceptionAction(Request $request)
     {
