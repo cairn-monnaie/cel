@@ -132,6 +132,9 @@ fos_oauth_server:
     auth_code_class:     Cairn\UserBundle\Entity\AuthCode
     service:
         user_provider: fos_user.user_provider.username
+        options:
+            access_token_lifetime: '%session_timeout%'
+
 
 #assetic:
 #    debug:          '%kernel.debug%'

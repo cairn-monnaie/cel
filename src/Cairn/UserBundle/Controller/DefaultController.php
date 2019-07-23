@@ -7,7 +7,6 @@ use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\ZipCity;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
-use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
@@ -144,7 +143,7 @@ class DefaultController extends Controller
             $returnArray = array();
             foreach ($users as $user){
                 $image = $user->getImage();
-                $returnArray[] = array('username'=> $user->getUsername(), 'name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
+                $returnArray[] = array('id'=>$user->getID(),'username'=> $user->getUsername(), 'name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
             }
             return new JsonResponse($returnArray);
         }
