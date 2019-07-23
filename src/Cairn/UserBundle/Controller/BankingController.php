@@ -570,7 +570,13 @@ class BankingController extends Controller
                     array('_format'=>$_format,'id'=>$operation->getID(),'type'=>$type));
 
 
+            }else{
+                $apiService = $this->get('cairn_user.api');
+                if( $apiService->isRemoteCall()){
+                    return $apiService->getErrorResponse($form);
+                }
             }
+
         }
 
 
@@ -603,6 +609,16 @@ class BankingController extends Controller
         }   
 
         $em = $this->getDoctrine()->getManager();
+
+        //if date interval > 3min => timeout
+        $today = new \Datetime();
+        if( $operation->getSubmissionDate()->diff($today)->i > 5 ){
+            $em->remove($operation);
+            $em->flush();
+
+            throw new \Exception('Operation timeout');
+        }
+
 
         $type = 'transaction';
         $session = $request->getSession();

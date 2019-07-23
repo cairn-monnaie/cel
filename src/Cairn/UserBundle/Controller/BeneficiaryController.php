@@ -336,15 +336,18 @@ class BeneficiaryController extends Controller
                 $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                 return $this->redirectToRoute('cairn_user_beneficiaries_list');
             }else{
-                if( $this->get('cairn_user.api')->isRemoteCall()){
-                    $errors = [];
-                    foreach ($form->getErrors(true) as $error) {
-                        $errors[] = $error->getMessage();
-                    }
-                    $response = new Response(json_encode($errors));
-                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                    $response->headers->set('Content-Type', 'application/json');
-                    return $response;
+                $apiService = $this->get('cairn_user.api');
+                if( $apiService->isRemoteCall()){
+
+                    return $apiService->getErrorResponse($form);
+//                    $errors = [];
+//                    foreach ($form->getErrors(true) as $error) {
+//                        $errors[] = $error->getMessage();
+//                    }
+//                    $response = new Response(json_encode($errors));
+//                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+//                    $response->headers->set('Content-Type', 'application/json');
+//                    return $response;
                 }
             }
         }
