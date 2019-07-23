@@ -14,6 +14,8 @@ use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Phone;
 
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\FormInterface;
 
 /**
  * This class contains all useful services to build an API
@@ -82,6 +84,19 @@ class Api
         return ($request->getRequestFormat() != 'html');
     }
 
+    public function getErrorResponse(FormInterface $form)
+    {
+        $errors = [];                                              
+        foreach ($form->getErrors(true) as $error) {               
+            $errors[$error->getOrigin()->getName()] = $error->getMessage(); 
+        }                                                          
+        $response = new Response(json_encode($errors));            
+        $response->setStatusCode(Response::HTTP_BAD_REQUEST);      
+        $response->headers->set('Content-Type', 'application/json');
+
+        return $response;
+    }
+
     function objectCallback($child)
     {
         if($child instanceOf User){
@@ -144,18 +159,18 @@ class Api
      */
     public function serialize($object, $extraIgnoredAttributes=array())
     {
-        $normalizer = new ObjectNormalizer();
+        $normalizer = array(new DateTimeNormalizer(),new ObjectNormalizer());
 
         if( is_array($object)){
             foreach($object as $item){
-                $this->setCallbacksAndAttributes($normalizer, $item, $extraIgnoredAttributes);
+                $this->setCallbacksAndAttributes($normalizer[1], $item, $extraIgnoredAttributes);
             }
         }else{
-            $this->setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes);
+            $this->setCallbacksAndAttributes($normalizer[1], $object, $extraIgnoredAttributes);
         }
 
         $encoder = new JsonEncoder();
-        $serializer = new Serializer(array($normalizer), array($encoder));
+        $serializer = new Serializer($normalizer, array($encoder));
        
         return $serializer->serialize($object, 'json');
     }
