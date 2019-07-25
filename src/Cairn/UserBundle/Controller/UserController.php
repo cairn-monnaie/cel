@@ -249,7 +249,8 @@ class UserController extends Controller
                     $this->sendActivationCode(true,$session, $phone);
 
                     if($_format == 'json'){
-                        $res = $this->get('cairn_user.api')->serialize($phone);
+                        $validationUrl = $this->generateUrl('cairn_user_api_phone_add',array('remote'=>'mobile'));
+                        $res = $this->get('cairn_user.api')->serialize(array('validation_url'=>$validationUrl,'phone'=>$phone));
 
                         $response = new Response($res);
                         $response->headers->set('Content-Type', 'application/json');
@@ -497,7 +498,8 @@ class UserController extends Controller
                     }
                     $this->sendActivationCode(false,$session, $phone);
                     if($_format == 'json'){
-                        $res = $this->get('cairn_user.api')->serialize($phone);
+                        $validationUrl = $this->generateUrl('cairn_user_api_phone_edit',array('remote'=>'mobile','id'=>$phone->getID()));
+                        $res = $this->get('cairn_user.api')->serialize(array('validation_url'=>$validationUrl,'phone'=>$phone));
 
                         $response = new Response($res);
                         $response->headers->set('Content-Type', 'application/json');
