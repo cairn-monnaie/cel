@@ -105,6 +105,7 @@ class Api
                          'address'=>$child->getAddress(),
                          'image'=>$child->getImage(),
                          'email'=>$child->getEmail(),
+                         'description'=>$child->getDescription(),
                          'id'=>$child->getID()
                      );
         }
