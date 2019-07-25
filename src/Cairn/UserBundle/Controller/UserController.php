@@ -573,7 +573,14 @@ class UserController extends Controller
         $em->remove($phone);
         $em->flush();
 
-        $session->getFlashBag()->add('success','Numéro de téléphone '.$phoneNumber.' supprimé');
+        $flashMessage = 'Numéro de téléphone '.$phoneNumber.' supprimé';
+        if($this->get('cairn_user.api')->isRemoteCall()){
+            $response = new Response('{ "message"=>"'.$flashMessage.'"}');
+            $response->setStatusCode(Response::HTTP_OK);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
+        }
+        $session->getFlashBag()->add('success',$flashMessage);
         return $this->redirectToRoute('cairn_user_profile_view', array('username'=>$user->getUsername()));
     }
 
