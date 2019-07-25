@@ -102,8 +102,8 @@ class Api
     {
         if($child instanceOf User){
             return array('name'=>$child->getName(),
-                         'adresse'=>$child->getAddress(),
-                         'image'=>$child=>getImage(),
+                         'address'=>$child->getAddress(),
+                         'image'=>$child->getImage(),
                          'email'=>$child->getEmail(),
                          'id'=>$child->getID()
                      );
