@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Entity\User;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\BankingManager;

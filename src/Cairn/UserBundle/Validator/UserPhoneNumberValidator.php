@@ -65,7 +65,7 @@ class UserPhoneNumberValidator extends ConstraintValidator
                 return;
             }else{// 1 occurence
                 $route = $constraint->getRequest()->get('_route');
-                if(strpos($route,'smsdata_add') !== false){
+                if(strpos($route,'phone_add') !== false){
                     $this->context->buildViolation("Ce numéro vous appartient déjà.")
                         ->atPath('phoneNumber')
                         ->addViolation();

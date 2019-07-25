@@ -133,8 +133,8 @@ class ExceptionListener
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){//cyclos session token expired before Symfony
 
-                    $token = $loginManager->refreshSession();
-                    $session->set('cyclos_token',$this->security->vigenereEncode($token));
+//                    $token = $loginManager->refreshSession();
+//                    $session->set('cyclos_token',$this->security->vigenereEncode($token));
                     $session->getFlashBag()->add('info','Votre session a expiré. Veuillez vous reconnecter.');
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }

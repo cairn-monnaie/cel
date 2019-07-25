@@ -151,17 +151,36 @@ class UserController extends Controller
 
         $formSmsData = $this->createForm(SmsDataType::class, $smsData);
 
-        $formSmsData->handleRequest($request);
-        if($formSmsData->isSubmitted() && $formSmsData->isValid()){
-            $em->flush();
-            $session->getFlashBag()->add('success','Vos systèmes de notification de paiement ont été mis à jour avec succès');
-
-            $nP = $smsData->getNotificationPermission();
-            if(! ($nP->isEmailEnabled() || $nP->isSmsEnabled() || $nP->isWebPushEnabled()) ){
-                $session->getFlashBag()->add('error','Attention ! Vous n\'avez séléctionné aucun système de notification. En cas de réception de paiement par SMS, vous ne pourrez pas vérifier l\'exécution du paiement en dehors de votre compte [e]-Cairn ');
+        if($request->isMethod('POST')){
+            if($_format == 'json'){
+                $formSmsData->submit(json_decode($request->getContent(), true));
+            }else{
+                $formSmsData->handleRequest($request);
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            if($form->isValid()){
+                $em->flush();
+
+                $apiService = $this->get('cairn_user.api');
+                if( $apiService->isRemoteCall()){
+                    $res = $apiService->serialize($currentUser->getSmsData());
+                    $response = new Response($res);
+                    $response->setStatusCode(Response::HTTP_CREATED);
+                    $response->headers->set('Content-Type', 'application/json');
+                    return $response;
+
+                }
+
+
+                $session->getFlashBag()->add('success','Vos systèmes de notification de paiement ont été mis à jour avec succès');
+
+                $nP = $smsData->getNotificationPermission();
+                if(! ($nP->isEmailEnabled() || $nP->isSmsEnabled() || $nP->isWebPushEnabled()) ){
+                    $session->getFlashBag()->add('error','Attention ! Vous n\'avez séléctionné aucun système de notification. En cas de réception de paiement par SMS, vous ne pourrez pas vérifier l\'exécution du paiement en dehors de votre compte [e]-Cairn');
+                }
+
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            }
 
         }
 
@@ -176,7 +195,7 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function addPhoneAction(Request $request)
+    public function addPhoneAction(Request $request, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -209,21 +228,45 @@ class UserController extends Controller
 
         $formPhone = $this->createForm(PhoneType::class, $phone);
 
-        $formPhone->handleRequest($request);
-        if($formPhone->isSubmitted() && $formPhone->isValid()){
-            $dataForm = $formPhone->getData();
-
-            // POST request is an activation code to validate a new phone number
-            if($formPhone->has('activationCode')){
-                return $this->checkActivationCode($formPhone,$request);
+        if($request->isMethod('POST')){
+            if($_format == 'json'){
+                $formPhone->submit(json_decode($request->getContent(), true));
+            }else{
+                $formPhone->handleRequest($request);
             }
 
-            // POST request is a new phone number for an existing entity smsData
-            if($previousPhoneNumber != $phone->getPhoneNumber()){
-                $this->sendActivationCode(true,$session, $phone);
-                return $this->redirectToRoute('cairn_user_users_phone_add');
+            if($formPhone->isValid()){
+
+                $dataForm = $formPhone->getData();
+
+                // POST request is an activation code to validate a new phone number
+                if($formPhone->has('activationCode')){
+                    return $this->checkActivationCode($formPhone,$request);
+                }
+
+                // POST request is a new phone number for an existing entity smsData
+                if($previousPhoneNumber != $phone->getPhoneNumber()){
+                    $this->sendActivationCode(true,$session, $phone);
+
+                    if($_format == 'json'){
+                        $res = $this->get('cairn_user.api')->serialize($phone);
+
+                        $response = new Response($res);
+                        $response->headers->set('Content-Type', 'application/json');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        return $response;
+                    }
+
+                    return $this->redirectToRoute('cairn_user_users_phone_add');
+                }
+            }else{
+                $apiService = $this->get('cairn_user.api');
+                if( $apiService->isRemoteCall()){
+                    return $apiService->getErrorResponse($formPhone);
+                }
             }
-         }
+
+        }
 
         return $this->render('CairnUserBundle:User:phone.html.twig',
             array('formPhone'=>$formPhone->createView())
@@ -294,6 +337,7 @@ class UserController extends Controller
         $smsData = $currentUser->getSmsData();
         $em = $this->getDoctrine()->getManager();
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+        $apiService = $this->get('cairn_user.api');
 
         $providedCode = $formPhone->get('activationCode')->getData();
         $session_code = $session->get('activationCode');
@@ -350,6 +394,15 @@ class UserController extends Controller
             $session->remove('activationCode');
             $session->remove('phone');
 
+            if( $apiService->isRemoteCall()){
+                $res = $this->get('cairn_user.api')->serialize($phone);
+
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_OK);
+                return $response;
+            }
+
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
 
         //invalid code
@@ -357,13 +410,23 @@ class UserController extends Controller
             $currentUser->setPhoneNumberActivationTries($currentUser->getPhoneNumberActivationTries() + 1);
             $remainingTries = 3 - $currentUser->getPhoneNumberActivationTries();
             if($remainingTries > 0){
-                $session->getFlashBag()->add('error','Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte');
+                $errorMessage = 'Code invalide : Veuillez réessayer. Il vous reste '.$remainingTries.' essais avant le blocage du compte';
             }else{
+                $errorMessage = 'Trop d\'échecs : votre compte a été bloqué.';
                 $this->get('cairn_user.access_platform')->disable(array($currentUser),'phone_tries_exceeded');
-                $session->getFlashBag()->add('error','Trop d\'échecs : votre compte a été bloqué.');
             }
 
+            $session->getFlashBag()->add('error',$errorMessage);
             $em->flush();
+
+            if( $apiService->isRemoteCall()){
+                $res = $this->get('cairn_user.api')->serialize(array('message'=>$errorMessage));
+
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                return $response;
+            }
 
             return new RedirectResponse($request->getRequestUri());
         }
@@ -374,7 +437,7 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function editPhoneAction(Request $request, Phone $phone)
+    public function editPhoneAction(Request $request, Phone $phone, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -411,38 +474,71 @@ class UserController extends Controller
 
         $formPhone = $this->createForm(PhoneType::class, $phone);
 
-        $formPhone->handleRequest($request);
-        if($formPhone->isSubmitted() && $formPhone->isValid()){
-            $dataForm = $formPhone->getData();
-
-            // POST request is an activation code to validate a new phone number
-            if($formPhone->has('activationCode')){
-                return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
+        if($request->isMethod('POST')){
+            if($_format == 'json'){
+                $formPhone->submit(json_decode($request->getContent(), true));
+            }else{
+                $formPhone->handleRequest($request);
             }
 
-            // POST request is a new phone number for an existing entity smsData
-            if($previousPhoneNumber != $phone->getPhoneNumber()){
-                if($user !== $currentUser ){
-                    throw new AccessDeniedException('Action réservée à '.$user->getName());
-                }
-                $this->sendActivationCode(false,$session, $phone);
-                return $this->redirectToRoute('cairn_user_users_phone_edit',array('id'=>$phone->getID()));
+            if($formPhone->isValid()){
 
-            }else{// POST request does not concern a new phone number
+                $dataForm = $formPhone->getData();
 
-                if($phone->isPaymentEnabled() ){
-                    $session->getFlashBag()->add('info','Les opérations SMS sont autorisées pour le numéro '.$phone->getPhoneNumber());
-                }else{
-                    $session->getFlashBag()->add('info','Les opérations SMS n\'ont pas été autorisées pour le numéro '.$phone->getPhoneNumber());
+                // POST request is an activation code to validate a new phone number
+                if($formPhone->has('activationCode')){
+                    return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
                 }
 
-                $em->flush();
+                // POST request is a new phone number for an existing entity smsData
+                if($previousPhoneNumber != $phone->getPhoneNumber()){
+                    if($user !== $currentUser ){
+                        throw new AccessDeniedException('Action réservée à '.$user->getName());
+                    }
+                    $this->sendActivationCode(false,$session, $phone);
+                    if($_format == 'json'){
+                        $res = $this->get('cairn_user.api')->serialize($phone);
 
-                $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
-                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+                        $response = new Response($res);
+                        $response->headers->set('Content-Type', 'application/json');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        return $response;
+                    }
+
+                    return $this->redirectToRoute('cairn_user_users_phone_edit',array('id'=>$phone->getID()));
+
+                }else{// POST request does not concern a new phone number
+
+                    if($phone->isPaymentEnabled() ){
+                        $message = 'Les opérations SMS sont autorisées pour le numéro '.$phone->getPhoneNumber();
+                    }else{
+                        $message = 'Les opérations SMS ne sont plus autorisées pour le numéro '.$phone->getPhoneNumber();
+                    }
+
+                    if($_format == 'json'){
+                        $res = $this->get('cairn_user.api')->serialize(array('message'=>$message,'phone'=>$phone));
+
+                        $response = new Response($res);
+                        $response->headers->set('Content-Type', 'application/json');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        return $response;
+                    }
+
+                    $session->getFlashBag()->add('info',$message);
+                    $em->flush();
+
+                    $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
+                    return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+                }
+
+            }else{
+                $apiService = $this->get('cairn_user.api');
+                if( $apiService->isRemoteCall()){
+                    return $apiService->getErrorResponse($formPhone);
+                }
             }
 
-         }
+        }
 
         return $this->render('CairnUserBundle:User:phone.html.twig',
             array('formPhone'=>$formPhone->createView())

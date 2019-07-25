@@ -261,6 +261,7 @@ cairn_user_users_smsdata:
 
 cairn_user_api_smsdata:
     path:     /{remote}/phones
+    methods: GET
     defaults: { _controller: CairnUserBundle:Api:phones, _format: json}
     requirements: 
         remote: mobile|api
@@ -271,15 +272,30 @@ cairn_user_phones_dashboard:
     requirements:
         _format: html|json
 
-cairn_user_users_phone_add:
+cairn_user_users_phone_add: #finishing the route name with phone_add is important for validation process
     path:     user/phone/add
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: html}
+
+cairn_user_api_phone_add: #finishing the route name with phone_add is important for validation process
+    path:     /{remote}/phones.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:User:addPhone, _format: json}
+    requirements: 
+        remote: mobile|api
 
 cairn_user_users_phone_edit:
     path:     user/phone/{id}
     defaults: { _controller: CairnUserBundle:User:editPhone, _format: html}
     requirements:
         id: \d+
+
+cairn_user_api_phone_edit: #finishing the route name with phone_add is important for validation process
+    path:     /{remote}/phones/{id}.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:User:editPhone, _format: json}
+    requirements: 
+        id: \d+
+        remote: mobile|api
 
 cairn_user_users_phone_delete:
     path:     user/phone/delete/{id}
