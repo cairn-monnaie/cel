@@ -45,10 +45,14 @@ cairn_user_api_users_post:
     methods: POST
     defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
 
-#cairn_user_api_users_put:
-#    path: mobile/users
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
+cairn_user_api_users_put:
+    path: mobile/users/profile
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Profile:edit, _format: json }
+
+cairn_user_profile_edit:
+    path: profile/edit
+    defaults: { _controller: CairnUserBundle:Profile:edit, _format: html }
 
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}

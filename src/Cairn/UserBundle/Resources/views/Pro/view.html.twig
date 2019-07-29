@@ -62,7 +62,7 @@
                         {{ user.description}}
                     </blockquote>
                     {% if user.id == app.user.id %}
-                        <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
+                        <a href="{{path('cairn_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
                         <a href="{{path('fos_user_change_password')}}" class="btn waves-effect waves-light">Modifier mon mot de passe</a>
                     {% else %}
                         {% if app.user.hasRole('ROLE_SUPER_ADMIN') %}
