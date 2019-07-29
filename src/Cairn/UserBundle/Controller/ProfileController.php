@@ -34,16 +34,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  */
 class ProfileController extends Controller
 {
-//    private $eventDispatcher;
-//    private $formFactory;
-//    private $userManager;
-//
-//    public function __construct(EventDispatcherInterface $eventDispatcher, FactoryInterface $formFactory, UserManagerInterface $userManager)
-//    {
-//        $this->eventDispatcher = $eventDispatcher;
-//        $this->formFactory = $formFactory;
-//        $this->userManager = $userManager;
-//    }
 
     /**
      * Edit the user.
@@ -77,11 +67,7 @@ class ProfileController extends Controller
         $apiService = $this->get('cairn_user.api');
 
         if($request->isMethod('POST')){
-            if( $apiService->isRemoteCall()){
-                $form->submit(json_decode($request->getContent(), true));
-            }else{
                 $form->handleRequest($request);
-            }
 
             if($form->isValid()){
 
