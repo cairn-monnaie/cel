@@ -229,19 +229,9 @@ class RegistrationListener
     public function onRegistrationFailure(FormEvent $event)
     {
         $apiService = $this->container->get('cairn_user.api');
-        $arrayErrors = array();
-        foreach($event->getForm()->getErrors(true) as $error){
-            $arrayErrors[$error->getOrigin()->getName()] = array(
-                'message'=>$error->getMessage(),
-                'messageTemplate'=> $error->getMessageTemplate()
-            );
-        }
 
         if($apiService->isRemoteCall()){
-            $serializedErrors = $apiService->serialize($arrayErrors);
-            $response = new Response($serializedErrors);
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            $response = $apiService->getErrorResponse($event->getForm());
             $event->setResponse($response);
         }
     }

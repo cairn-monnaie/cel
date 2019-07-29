@@ -41,14 +41,14 @@ cairn_user_api_get_tokens:
 #    defaults: { _controller: CairnUserBundle:User:list, _format: json }
 #
 cairn_user_api_users_post:
-    path: users
+    path: /mobile/users/registration
     methods: POST
     defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
 
-#cairn_user_api_users_put:
-#    path: mobile/users
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
+cairn_user_api_users_put:
+    path: mobile/users1
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Profile:edit, _format: json }
 
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}
@@ -289,7 +289,7 @@ cairn_user_users_phone_edit:
     requirements:
         id: \d+
 
-cairn_user_api_phone_edit: #finishing the route name with phone_add is important for validation process
+cairn_user_api_phone_edit:
     path:     /{remote}/phones/{id}.{_format}
     methods: POST
     defaults: { _controller: CairnUserBundle:User:editPhone, _format: json}
@@ -302,6 +302,14 @@ cairn_user_users_phone_delete:
     defaults: { _controller: CairnUserBundle:User:deletePhone, _format: html}
     requirements:
         id: \d+
+
+cairn_user_api_phone_delete:
+    path:     /{remote}/phones/{id}.{_format}
+    methods: DELETE
+    defaults: { _controller: CairnUserBundle:User:deletePhone, _format: json}
+    requirements: 
+        id: \d+
+        remote: mobile|api
 
 cairn_user_card_home:
     path:     card/home/{username}.{_format}

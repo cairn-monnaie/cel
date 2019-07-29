@@ -270,11 +270,14 @@ class BeneficiaryController extends Controller
             ->getForm();
 
         if($request->isMethod('POST')){
+
             if($_format == 'json'){
                 $form->submit(json_decode($request->getContent(), true));
             }else{
                 $form->handleRequest($request);
             }
+
+            $apiService = $this->get('cairn_user.api');
 
             if($form->isValid()){
                 $dataForm = $form->getData();
@@ -292,12 +295,13 @@ class BeneficiaryController extends Controller
                 $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$creditorUser,'ICC'=>$dataForm['cairn_user']->accountNumber));
 
                 if($existingBeneficiary && $currentUser->hasBeneficiary($existingBeneficiary)){
-                    $errorMessages[] = $creditorUser->getName().' est déjà votre un bénéficiaire enregistré ';
+                    $errorMessages[] = $creditorUser->getName().' est déjà un bénéficiaire enregistré ';
                 }
 
                 if($errorMessages){
                     if( $this->get('cairn_user.api')->isRemoteCall()){
-                        $response = new Response('{ "message"=>"'.$errorMessages[0].'"}');
+//                        $response = new Response('{ "message"=>"'.$errorMessages[0].'"}');
+                        $response = new Response(json_encode(array('message'=>$errorMessages[0])));
                         $response->setStatusCode(Response::HTTP_BAD_REQUEST);
                         $response->headers->set('Content-Type', 'application/json');
                         return $response;
@@ -325,7 +329,7 @@ class BeneficiaryController extends Controller
                 $em->flush();
 
 
-                if( $this->get('cairn_user.api')->isRemoteCall()){
+                if( $apiService->isRemoteCall()){
                     $res = $this->get('cairn_user.api')->serialize($beneficiary);
                     $response = new Response($res);
                     $response->setStatusCode(Response::HTTP_CREATED);
@@ -336,7 +340,7 @@ class BeneficiaryController extends Controller
                 $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
                 return $this->redirectToRoute('cairn_user_beneficiaries_list');
             }else{
-                $apiService = $this->get('cairn_user.api');
+
                 if( $apiService->isRemoteCall()){
 
                     return $apiService->getErrorResponse($form);
