@@ -89,7 +89,7 @@ class Api
     {
         $errors = [];                                              
         foreach ($form->getErrors(true) as $error) {               
-            $errors[$error->getOrigin()->getName()] = $error->getMessage(); 
+            $errors[] = array('key'=>$error->getOrigin()->getName(),'error'=>$error->getMessage()); 
         }                                                          
         $response = new Response(json_encode($errors));            
         $response->setStatusCode(Response::HTTP_BAD_REQUEST);      
@@ -109,6 +109,13 @@ class Api
                          'id'=>$child->getID()
                      );
         }
+
+        if($child instanceOf File){
+            return array('url'=>$child->getUrl(),
+                         'alt'=>$child->getAlt(),
+                     );
+        }
+
         if($child instanceOf SmsData){
             return array('user'=>$this->objectCallback($child->getUser()),
                          'id'=>$child->getID()
@@ -122,6 +129,11 @@ class Api
 
         if($object instanceOf User){
             $defaultIgnoredAttributes = array('password','phones','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card');
+            $normalizer->setCallbacks(array(
+                        'identityDocument'=> function ($child) {return $this->objectCallback($child);},
+                        'image'=> function ($child) {return $this->objectCallback($child);},
+            ));
+
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
