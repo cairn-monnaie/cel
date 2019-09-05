@@ -86,17 +86,17 @@ class UserValidator extends ConstraintValidator
         // ------------ Validate Password ---------------
         //Cyclos 4.11.2 bug reported : character '<' provoks validation error. For this reason, we disable it here
         if($user->getPlainPassword()){
-            if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
-                $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
-                    ->atPath('plainPassword')
-                    ->addViolation();
-            }else{
-                if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>', $user->getPlainPassword()) ){
+//            if(preg_match('#[<>\\\\]#',$user->getPlainPassword())){
+//                $this->context->buildViolation('Les caractères spéciaux <> et \ ne sont pas autorisés.')
+//                    ->atPath('plainPassword')
+//                    ->addViolation();
+//            }else{
+                if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]\>\<^_{}~]>', $user->getPlainPassword()) ){
                     $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
-                if( preg_match('<[^a-zA-Z0-9`@!"#$%&\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
+                if( preg_match('<[^a-zA-Z0-9`@!"#$%&\>\<\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
                     $list = '';
                     foreach($matches as $match){
                         $list .= $match;
@@ -105,7 +105,7 @@ class UserValidator extends ConstraintValidator
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
-            }
+            //}
 
             if($username = $user->getUsername()){
                 if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){

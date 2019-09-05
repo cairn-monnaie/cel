@@ -62,16 +62,16 @@ class SecurityListener
             return;
         }
 
-        if(!$user->getLastLogin() ){
-            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
-            $logoutUrl = $router->generate('fos_user_security_logout');
-            $event->setResponse(new RedirectResponse($logoutUrl));
+        //if(!$user->getLastLogin() ){
+        //    $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
+        //    $logoutUrl = $router->generate('fos_user_security_logout');
+        //    $event->setResponse(new RedirectResponse($logoutUrl));
 
-            $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
-            $this->container->get('doctrine.orm.entity_manager')->flush();
+        //    $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
+        //    $this->container->get('doctrine.orm.entity_manager')->flush();
 
-            return;
-        }
+        //    return;
+        //}
     }
 
     public function changeCyclosPassword($old, $new, $user)

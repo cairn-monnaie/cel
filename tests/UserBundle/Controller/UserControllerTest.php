@@ -623,8 +623,7 @@ class UserControllerTest extends BaseControllerTest
 
             'new = current'               => array_replace($baseData, array('expectValid'=>false, 'expectedMessage'=>'déjà utilisé')),          
             //we make it invalid because of cyclos bug
-            'invalid <'                  => array_replace($baseData, array('new'=>'i<3cairn','confirm'=>'i<3cairn',
-                                                                  'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
+            'valid <'                  => array_replace($baseData, array('new'=>'i<3cairn','confirm'=>'i<3cairn')),          
 
             'valid \\ at begin'             => array_replace($baseData, array('new'=>'\bcdefgh','confirm'=>'\bcdefgh', 
                                                                   'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
@@ -632,8 +631,7 @@ class UserControllerTest extends BaseControllerTest
             'valid \\ at end '              => array_replace($baseData, array('new'=>'bcdefgh\\','confirm'=>'bcdefgh\\', 
                                                                   'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
 
-            'invalid >'                  => array_replace($baseData, array('new'=>'i>3cairn','confirm'=>'i>3cairn',
-                                                                  'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
+            'valid >'                  => array_replace($baseData, array('new'=>'i>3cairn','confirm'=>'i>3cairn')),          
 
             'invalid §'                  => array_replace($baseData, array('new'=>'§bcdefgh','confirm'=>'§bcdefgh',
                                                                    'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
