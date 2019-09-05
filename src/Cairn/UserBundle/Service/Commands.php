@@ -315,7 +315,7 @@ class Commands
             $address->setStreet1($cyclosAddress->addressLine1);
 
             $doctrineUser->setAddress($address);                                  
-            $doctrineUser->setDescription('Test user blablablabla');             
+            $doctrineUser->setDescription('Je suis un compte de test !');             
 
             //create fake id doc
             $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
@@ -353,6 +353,14 @@ class Commands
 
             }
 
+
+            //each user can activate his access client after his status has changed from DISABLED to ACTIVE
+            $credentials = array('username'=>$doctrineUser->getUsername(),'password'=>'@@bbccdd');
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
+            $cyclosClient = $this->getClientToken($doctrineUser,'main');
+            $doctrineUser->setCyclosToken($cyclosClient);
+
             $this->em->persist($doctrineUser);
 
             //in the end of the process, admin user will be up, as before, to request cyclos
@@ -364,11 +372,22 @@ class Commands
 
     }
 
+    protected function getClientToken($user,$type)
+    {
+            $securityService = $this->container->get('cairn_user.security');      
+            $securityService->createAccessClient($user,$type);  
+
+            $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),$type,'UNASSIGNED');
+            $tokenClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+
+            return $securityService->vigenereEncode($tokenClient);
+    }
+
     /**
      * Here, we setup Cyclos access clients for users with phone number
      * Then, we create aborted and EXPIRED SMS with these same phone numbers
      */
-    public function setUpAccessClient($user, $em)
+    public function setUpSmsAccessClient($user, $em)
     {
         echo 'Setting up access client for '.$user->getName()."\n";
 
@@ -379,18 +398,11 @@ class Commands
         $smsData = $user->getSmsData();
 
         if($smsData){
-
-            $securityService = $this->container->get('cairn_user.security');      
-            $securityService->createAccessClient($user,'client_sms');  
-
-            $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
-            $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
-
-            $smsClient = $securityService->vigenereEncode($smsClient);
+            $smsClient = $this->getClientToken($user,'client_sms');
             $smsData->setSmsClient($smsClient);
-
-            $em->persist($user);
         }
+
+        $em->persist($user);
 
         $sms = new Sms($smsData->getPhones()[0]->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
 
@@ -403,6 +415,7 @@ class Commands
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
     }
+
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
      *@param const int $type Operation type
@@ -621,6 +634,10 @@ class Commands
 
         //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
         $admin->setFirstLogin(false);
+
+        $cyclosClient = $this->getClientToken($admin,'main');
+        $admin->setCyclosToken($cyclosClient);
+
         $uniqueCode = $securityService->findAvailableCode();
         $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
         $card->addUser($admin);
@@ -833,21 +850,35 @@ class Commands
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
 
-        echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
+        echo 'INFO: ------ Set up Cyclos sms access clients for users with phone number ------- ' . "\n";
         foreach($usersWithSmsInfo as $user){
-            $this->setUpAccessClient($user, $this->em);
+            $this->setUpSmsAccessClient($user, $this->em);
         }
 
 
         //Forced to set user status after creation of users, access clients... Otherwise, user can't access Cyclos and do any operation
         echo 'INFO: ------ Set up Cyclos user status ------- ' . "\n";
-        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
         $user = $userRepo->findOneByUsername('la_mandragore'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
         $accessPlatformService->changeUserStatus($user, 'DISABLED');
         echo 'INFO: OK !'."\n";
 
-        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
         $user = $userRepo->findOneByUsername('tout_1_fromage'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('Biocoop'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
         $accessPlatformService->changeUserStatus($user, 'DISABLED');
         echo 'INFO: OK !'."\n";
 

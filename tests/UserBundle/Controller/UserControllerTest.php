@@ -105,7 +105,7 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
-                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'ACTIVE');
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),'client_sms','ACTIVE');
                 $this->assertTrue($accessClientVO != NULL);
 
                 //if this is first phone number association, an access client is created for the current user on Cyclos side.
@@ -170,55 +170,55 @@ class UserControllerTest extends BaseControllerTest
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
-//            'user in admin' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false)),
-//
-//            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold',
-//                                                                    'isExpectedForm'=>false,
-//                                                                    'expectedMessages'=>'3 demandes de nouveau')),
-//
-//           'current number'=>array_replace_recursive($baseData, array(
-//                                                              'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
-//                                                              'expectedMessages'=>$usedMsg
-//                                                          )),
-//
-//         'current number, disable sms'=>array_replace_recursive($baseData, array('newPhone'=>array('phoneNumber'=>'+33743434343'),
-//                                                            'isValidData'=>false,'isPaymentEnabled'=>false,
-//                                                            'expectedMessages'=>$usedMsg
-//                                                        )),
-//
-//          'used by pro & person'=>array_replace_recursive($baseData, array(
-//                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-//                                            'expectedMessages'=>$usedMsg)),
-//
-//            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar',
-//                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-//                                            'expectedMessages'=>$usedMsg)),
-//
-//            'person request : used by person'=>array_replace_recursive($baseData, array(
-//                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-//                                            'expectedMessages'=>$usedMsg)),
-//
-//            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar',
-//                                            'newPhone'=>array('phoneNumber'=>'+33644332211'),
-//                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-//                                                            )),
-//
-//            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso',
-//                                            'newPhone'=>array('phoneNumber'=>'+33611223344'),
-//                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-//                                                            )),
-//
+            'user in admin' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false)),
+
+            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold',
+                                                                    'isExpectedForm'=>false,
+                                                                    'expectedMessages'=>'3 demandes de nouveau')),
+
+           'current number'=>array_replace_recursive($baseData, array(
+                                                              'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
+                                                              'expectedMessages'=>$usedMsg
+                                                          )),
+
+         'current number, disable sms'=>array_replace_recursive($baseData, array('newPhone'=>array('phoneNumber'=>'+33743434343'),
+                                                            'isValidData'=>false,'isPaymentEnabled'=>false,
+                                                            'expectedMessages'=>$usedMsg
+                                                        )),
+
+          'used by pro & person'=>array_replace_recursive($baseData, array(
+                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                                            'expectedMessages'=>$usedMsg)),
+
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar',
+                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                                            'expectedMessages'=>$usedMsg)),
+
+            'person request : used by person'=>array_replace_recursive($baseData, array(
+                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                                            'expectedMessages'=>$usedMsg)),
+
+            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar',
+                                            'newPhone'=>array('phoneNumber'=>'+33644332211'),
+                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
+
+            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso',
+                                            'newPhone'=>array('phoneNumber'=>'+33611223344'),
+                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
+
         'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi',
-                                                                'isValidCode'=>false, 'code'=>'2222',
-                                                                'expectedMessages'=>'compte a été bloqué')),
-//
-//            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi',
-//                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-//                                                            )),
-//
-//            'user with no phone number'=>array_replace($baseData, array('login'=>'noire_aliss',
-//                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-//                                                          )),
+                                                              'isValidCode'=>false, 'code'=>'2222',
+                                                              'expectedMessages'=>'compte a été bloqué')),
+
+            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi',
+                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
+
+            'user with no phone number'=>array_replace($baseData, array('login'=>'noire_aliss',
+                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                          )),
 
         );
 
@@ -327,7 +327,7 @@ class UserControllerTest extends BaseControllerTest
                         $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
                         //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
-                        $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(), 'ACTIVE');
+                        $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms', 'ACTIVE');
                         $this->assertTrue($accessClientVO != NULL);
 
                         //if this is first phone number association, an access client is created for the current user on Cyclos side.
@@ -479,13 +479,13 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'isValidCode'=>false, 'code'=>'2222',
-                                                                'expectedMessages'=>'compte a été bloqué')),
+        //'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+        //                                                        'isValidCode'=>false, 'code'=>'2222',
+        //                                                        'expectedMessages'=>'compte a été bloqué')),
 
-            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+        //    'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+        //                                                        'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+        //                                                    )),
 
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
@@ -581,17 +581,6 @@ class UserControllerTest extends BaseControllerTest
             //then test login with new password
             $crawler = $this->login($login, $newPwd);
             $this->assertSame(1,$crawler->filter('html:contains("Espace Professionnel")')->count());
-
-            //as password is not rolled-back on Cyclos side,we would have different passwords between our application BDD and
-            //Cyclos BDD.
-            //Workaround : call the password change again to have, in the end of the test, the same password than at the beginning
-            $crawler = $this->changePassword($newPwd, $currentPwd, $currentPwd);
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
-            $crawler = $this->client->followRedirect();
-
-            //then test login with initial password
-            $crawler = $this->login($login, $currentPwd);
-
         }else{
             $this->assertSame(1, $crawler->filter('input#fos_user_change_password_form_current_password')->count());    
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
@@ -601,11 +590,6 @@ class UserControllerTest extends BaseControllerTest
 
     public function providePasswordData()
     {
-        //WARNING : put here the login of an user who will be used ONLY for this specific test and anywhere else
-        //because the password is also changed on Cyclos-side. The password will be rolledback on Symfony-side but not on Cyclos-side
-        //It will provok an exception "LOGIN" and no other test will work as we need user to login and expect password to be 
-        //@@bbccdd// In order to be able to chain data provided, we must commit changes at the end of the test before the rollback 
-        //is called
         $login = 'denis_ketels';
 
         $new = '@@bbccdd';

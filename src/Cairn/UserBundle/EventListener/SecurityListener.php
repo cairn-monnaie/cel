@@ -111,31 +111,17 @@ class SecurityListener
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        $newPassword = $user->getPlainPassword();
 
-        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName= $this->container->getParameter('cyclos_currency_cairn');          
-        $anonymous = $this->container->getParameter('cyclos_anonymous_user');
-
-        //get username and password from login request
-        $credentials = array('username'=>$anonymous,'password'=>$anonymous);
-        $networkInfo->switchToNetwork($networkName,'login',$credentials);
-
-        $changed = $this->changeCyclosPassword(NULL, $newPassword, $user);
-
-        if($changed){
-            $this->loginPaymentApp($user->getUsername(),$newPassword,$event->getRequest()->getSession());
-
-            if($this->container->get('cairn_user.api')->isApiCall()){
-                $response = new Response('Change password : ok !');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                $event->setResponse($response);
-            }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-            }
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
         }
     }
+
     /**
      * Changes user password on Cyclos side after it has been changed in our app
      *
@@ -148,63 +134,60 @@ class SecurityListener
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        $currentPassword = $form->get('current_password')->getData(); 
-        $newPassword = $form->get('plainPassword')->getData();//$user->getPlainPassword();
 
-        $changed = $this->changeCyclosPassword($currentPassword, $newPassword, $user);
+        if($user->isFirstLogin()){
+            $user->setFirstLogin(false);
+        }
 
-        if($changed){
-            if($user->isFirstLogin()){
-                $user->setFirstLogin(false);
-            }
-
-            if($this->container->get('cairn_user.api')->isApiCall()){
-                $response = new Response('Change password : ok !');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                $event->setResponse($response);
-            }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-            }
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
         }
     }
 
-    /**
-     * On login event, we keep the cyclos session token (encoded) in session to connect to cyclos later on
-     *
-     */
     public function onLogin(InteractiveLoginEvent $event)
     {
         $request = $event->getRequest();
+        $securityService = $this->container->get('cairn_user.security');
+        $currentUser = $securityService->getCurrentUser();
 
         if(! $this->container->get('cairn_user.api')->isApiCall()){
 
             $username = $request->request->all()['_username'];
             $password = $request->request->all()['_password'];
-    
+
             $session = $request->getSession();
-    
-            $this->loginPaymentApp($username,$password,$session);
+
+            //if there is an access client, connect with it. Otherwise create one
+            if(! $currentUser->getCyclosToken()){
+                $cyclosClientName = 'main';
+                $securityService = $this->container->get('cairn_user.security');
+                $currentUser = $securityService->getCurrentUser();
+
+                $this->loginPaymentApp('login',array('username'=>$username,'password'=>$password));
+
+                $securityService->createAccessClient($currentUser,$cyclosClientName);
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),$cyclosClientName, 'UNASSIGNED');
+
+                $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                $mainClient = $securityService->vigenereEncode($mainClient);
+                $currentUser->setCyclosToken($mainClient);
+            }
+            
+            $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
     }
 
-    protected function loginPaymentApp($username, $password, $session)
+    protected function loginPaymentApp($type,$credentials)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName= $this->container->getParameter('cyclos_currency_cairn');          
 
-        $loginManager = new LoginManager();
-
-        $credentials = array('username'=>$username,'password'=>$password);
-        $networkInfo->switchToNetwork($networkName,'login',$credentials);
-
-        $dto = new \stdClass();
-        $dto->amount = $this->container->getParameter('session_timeout');
-        $dto->field = 'SECONDS';
-        //get cyclos token and set in session
-        $loginResult = $loginManager->login($dto);
-        $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken)); 
-
+        $networkInfo->switchToNetwork($networkName,$type,$credentials);
     }
 
     /**
@@ -212,18 +195,12 @@ class SecurityListener
      */
     public function onKernelController(FilterControllerEvent $event)
     {
-        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
         $securityService = $this->container->get('cairn_user.security');
+        $currentUser = $securityService->getCurrentUser();
 
-        if($this->container->get('cairn_user.api')->isApiCall()){
-            $cyclos_token = $securityService->vigenereDecode($event->getRequest()->request->get('cyclos_token'));
-        }else{
-            $session = $event->getRequest()->getSession();
-            $cyclos_token = $securityService->vigenereDecode($session->get('cyclos_token'));
+        if($currentUser){
+            $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
-
-        $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
     }
 
     /**

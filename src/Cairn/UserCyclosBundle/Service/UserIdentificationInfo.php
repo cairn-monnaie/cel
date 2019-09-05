@@ -50,12 +50,12 @@ class UserIdentificationInfo
         return $this->accessClientService->locate($acLocatorVO);
     }
 
-    public function getAccessClientByUser($userID, $status = NULL)
+    public function getAccessClientByUser($userID, $type, $status = NULL)
     {
         $query = new \stdClass();
         $query->user = $userID;
         $query->status = $status;
-        $query->type = 'client_sms';
+        $query->type = $type;
 
         $accessClientsVO = $this->accessClientService->search($query)->pageItems;
         foreach ($accessClientsVO as $accessClientVO){

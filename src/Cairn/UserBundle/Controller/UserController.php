@@ -298,11 +298,11 @@ class UserController extends Controller
             $currentUser->setPhoneNumberActivationTries(0);
 
 
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),array('BLOCKED','ACTIVE'));
+            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
             if(! $accessClientVO){
                 $securityService = $this->get('cairn_user.security');
                 $securityService->createAccessClient($currentUser,'client_sms');
-                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),'UNASSIGNED');
+                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,'UNASSIGNED');
 
                 $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
                 $smsClient = $securityService->vigenereEncode($smsClient);

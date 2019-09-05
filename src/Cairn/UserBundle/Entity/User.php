@@ -46,6 +46,10 @@ class User extends BaseUser
      */
     private $cyclosID;
 
+    /**
+     * @ORM\Column(name="cyclos_token", type="string", length=255,unique=true,nullable=true)
+     */
+    private $cyclosToken;
 
     /**
      * @ORM\Column(name="main_icc", type="bigint", unique=true, nullable=true)
@@ -271,6 +275,30 @@ class User extends BaseUser
     public function getCyclosID()
     {
         return $this->cyclosID;
+    }
+
+    /**
+     * Set cyclosToken
+     *
+     * @param string $cyclosToken
+     *
+     * @return User
+     */
+    public function setCyclosToken($cyclosToken)
+    {
+        $this->cyclosToken = $cyclosToken;
+
+        return $this;
+    }
+
+    /**
+     * Get cyclosToken
+     *
+     * @return string
+     */
+    public function getCyclosToken()
+    {
+        return $this->cyclosToken;
     }
 
 
