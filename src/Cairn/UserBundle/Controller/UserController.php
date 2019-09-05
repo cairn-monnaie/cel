@@ -73,7 +73,7 @@ class UserController extends Controller
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
         $qb = $userRepo->createQueryBuilder('u')
-            ->orderBy('u.creationDate','ASC')
+            ->orderBy('u.creationDate','DESC')
             ->andWhere('u.enabled = true')
             ->setMaxResults(5);
         $userRepo->whereRole($qb,'ROLE_PRO');
@@ -100,7 +100,7 @@ class UserController extends Controller
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
-            ->orderBy('o.executionDate','ASC')
+            ->orderBy('o.executionDate','DESC')
             ->setMaxResults(15)
             ->getQuery()->getResult();
 
