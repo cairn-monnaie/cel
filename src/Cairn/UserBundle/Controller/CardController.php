@@ -248,8 +248,8 @@ class CardController extends Controller
                 $code = $dataForm['code'];
 
                 $cb = $cardRepo->createQueryBuilder('c');
-                $cb->where('c.user is NULL')
-                    ->orderBy('c.creationDate',$orderBy);
+                $cardRepo->whereAvailable($cb);
+                $cb->orderBy('c.creationDate',$orderBy);
 
                 if($before){
                     $cb->andWhere('c.creationDate <= :beforeDate')
