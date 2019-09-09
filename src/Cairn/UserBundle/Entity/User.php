@@ -151,7 +151,7 @@ class User extends BaseUser
     public function __construct()
     {
         parent::__construct();
-        self::$_counter ++;
+
         $this->creationDate = new \Datetime();
         $this->beneficiaries = new ArrayCollection();
         $this->referents = new ArrayCollection();
@@ -582,9 +582,6 @@ class User extends BaseUser
     public function setPasswordTries($passwordTries)
     {
         $this->passwordTries = $passwordTries;
-        if($this->passwordTries >= 3){
-            $this->setEnabled(false);
-        }
         return $this;
     }
 
@@ -656,9 +653,6 @@ class User extends BaseUser
     public function setCardAssociationTries($cardAssociationTries)
     {
         $this->cardAssociationTries = $cardAssociationTries;
-        if($this->cardAssociationTries >= 3){
-            $this->setEnabled(false);
-        }
 
         return $this;
     }

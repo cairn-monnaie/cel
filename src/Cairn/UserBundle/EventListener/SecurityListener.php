@@ -223,7 +223,7 @@ class SecurityListener
      * If user never logged in, he is automatically redirected to change password page
      *
      */
-    public function onFirstLogin(FilterResponseEvent $event)
+    public function onFirstLogin(GetResponseEvent  $event)
     {
         $security = $this->container->get('cairn_user.security');          
         $router = $this->container->get('router');          
@@ -242,7 +242,7 @@ class SecurityListener
      *A disabled user is redirected to logout page
      *
      */
-    public function onDisabledUser(GetResponseEvent $event)
+    public function onDisabledUser(FilterResponseEvent $event)
     {
         $security = $this->container->get('cairn_user.security');          
         $router = $this->container->get('router');          
@@ -252,9 +252,13 @@ class SecurityListener
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if(!$currentUser->isEnabled()){
                 $logoutUrl = $router->generate('fos_user_security_logout');
+
+                $session = $event->getRequest()->getSession();
+                $session->getFlashBag()->add('error','Le compte est bloqué');
                 $event->setResponse(new RedirectResponse($logoutUrl));
             }
         }
+
 
     }
 
