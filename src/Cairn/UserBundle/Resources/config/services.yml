@@ -202,6 +202,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
 
+    cairn_user.mandate_validator:
+        class: Cairn\UserBundle\Validator\MandateValidator
+        arguments:
+            - "@cairn_user.repository_mandate"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_mandate_validator }
+
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"
