@@ -216,6 +216,10 @@ cairn_user_electronic_mlc_edit:
     path:     admin/electronic-mlc/edit
     defaults: { _controller: CairnUserBundle:Admin:moneySafeEdit, _format: html }
 
+cairn_user_remuneration:
+    path:     admin/remuneration
+    defaults: { _controller: CairnUserBundle:Admin:remuneration, _format: html }
+
 cairn_user_users_remove:
     path:     user/remove/{username}.{_format}
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser, _format: html }
@@ -251,6 +255,34 @@ cairn_user_users_phone_edit:
 cairn_user_users_phone_delete:
     path:     user/phone/delete/{id}
     defaults: { _controller: CairnUserBundle:User:deletePhone, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_dashboard:
+    path:     admin/mandates/dashboard
+    defaults: { _controller: CairnUserBundle:Mandate:mandatesDashboard, _format: html }
+    requirements:
+        _format: html|json
+
+cairn_user_mandates_add:
+    path:     admin/mandates/add
+    defaults: { _controller: CairnUserBundle:Mandate:declareMandate, _format: html}
+
+cairn_user_mandates_honour:
+    path:     admin/mandates/honour/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:honourMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_edit:
+    path:     admin/mandates/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_delete:
+    path:     admin/mandates/delete/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:deleteMandate, _format: html}
     requirements:
         id: \d+
 

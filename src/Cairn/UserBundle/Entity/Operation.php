@@ -126,6 +126,12 @@ class Operation
     private $debitorName;
 
     /**
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Mandate", inversedBy="operations" )
+     *@ORM\JoinColumn(nullable=true)
+     */
+    private $mandate;
+
+    /**
      * @var array
      */
     private $fromAccount;
@@ -145,9 +151,10 @@ class Operation
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
     const TYPE_SMS_PAYMENT = 8;
-    const TYPE_ONLINE_PAYMENT = 9;
+    const TYPE_MANDATE = 9;
+    const TYPE_ONLINE_PAYMENT = 10;
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT, self::TYPE_MANDATE);
 
     public function isSmsPayment()
     {
@@ -182,6 +189,9 @@ class Operation
             return 'sms payment';
             break;
         case "9":
+            return 'payment order';
+            break;
+        case "10":
             return 'online payment';
             break;
         default:
@@ -613,6 +623,29 @@ class Operation
     public function getDebitorName()
     {
         return $this->debitorName;
+    }
+
+    /**
+     * Set mandate if any
+     *
+     *
+     * @return Mandate
+     */
+    public function setMandate($mandate)
+    {
+        $this->mandate = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get mandate
+     *
+     * @return Mandate
+     */
+    public function getMandate()
+    {
+        return $this->mandate;
     }
 
     /**

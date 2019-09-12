@@ -15,4 +15,9 @@ class Mandate extends Constraint
         return 'cairn_mandate_validator';
     }       
 
+    public function getTargets()
+    {
+        return self::CLASS_CONSTRAINT;
+    }
+
 }

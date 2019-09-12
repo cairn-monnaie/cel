@@ -18,6 +18,7 @@ use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\NotificationPermission;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
+use Cairn\UserBundle\Entity\Mandate;
 
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
@@ -94,6 +95,38 @@ class Commands
         $this->em->flush();
     }
 
+    /**
+     * Each month, Updates status of ongoing and scheduled mandates
+     *
+     * If a mandate is ongoing, this command must check if there is an operation to operate or if everything is up to date
+     */
+    public function updateMandates($username)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $mandateRepo = $this->em->getRepository('CairnUserBundle:Mandate');
+
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+
+            if(! $user){
+                return 'User not found';
+            }
+
+            if(! $user->isAdherent()){
+                return 'User must be an adherent';
+            }
+
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE,Mandate::OVERDUE, Mandate::SCHEDULED));
+            $mandate = $mb->getQuery()->getResult();
+
+            if(! $mandate){
+                return 'Aucun mandat à mettre à jour';
+            }
+
+        }
+
+    }
 
     /**
      *Returns true and creates admin if he does not exist yet, returns false otherwise

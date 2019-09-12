@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Doctrine\ORM\QueryBuilder;                                                 
+
 /**
  * MandateRepository
  *
@@ -10,9 +12,9 @@ namespace Cairn\UserBundle\Repository;
  */
 class MandateRepository extends \Doctrine\ORM\EntityRepository
 {
-    public function whereStatus(QueryBuilder $mb, $status)
+    public function whereStatus(QueryBuilder $mb, array $status)
     {
-        $mb->andWhere('m.status = :status')
+        $mb->andWhere( $mb->expr()->in('m.status', ':status'))
             ->setParameter('status',$status);
         return $this;
     }

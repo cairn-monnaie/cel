@@ -35,6 +35,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Card]
 
+    cairn_user.repository_mandate: 
+        class: MandateRepository
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Mandate]
+
     cairn_user.api:
         public: true
         class: Cairn\UserBundle\Service\Api
@@ -59,6 +64,16 @@ services:
             - "@router"
             - "@service_container"
 
+    cairn_user.account_manager:
+        class: Cairn\UserBundle\Service\AccountManager
+        arguments:
+            - "@cairn_user_cyclos_banking_info"
+            - "@cairn_user_cyclos_network_info"
+            - "@cairn_user_cyclos_user_info"
+            - "@cairn_user_cyclos_account_info"
+            - "%cyclos_anonymous_user%"
+            - "%cyclos_currency_cairn%"
+            
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
 

@@ -1,0 +1,102 @@
+{# src/Cairn/UserBundle/Resources/views/Mandate/dashboard.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row">
+    <h2> Les mandats </h2>
+    <ul class="collapsible">
+        <li>
+            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres</div>
+            <div class="collapsible-body">
+                {{ form_start(form) }}
+                <div class="row">
+                    <div class="col s12 m6 l3">
+                        {{ form_label(form.status) }}
+                        {{ form_widget(form.status) }}
+                    </div>
+                    <div class="col s12 l6">
+                        {{form_row(form.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
+                    </div>
+
+                    {{ form_rest(form) }}
+                </div>
+
+                {{form_end(form) }}
+            </div>
+        </li>
+    </ul>
+
+    {% for mandate in mandates %}
+
+      <div class="col s12 m6 l4">
+        <div class="card blue-grey darken-1">
+            <div class="card-content white-text">
+                <span class="card-title">{{mandate.contractor.name}}</span>
+                <p>
+                    début : {{mandate.beginAt|date('d-m-Y')}} 
+                    <br>
+                    fin : {{mandate.endAt|date('d-m-Y')}} 
+                    <br>
+                    montant : {{mandate.amount}}
+                    <br>
+                    statut :
+                    {% set status = mandate.getStatusName(mandate.status) %}
+                    {% if status == 'canceled'%}
+                        <i class="material-icons">cancel</i>
+                    {% elseif status == 'up-to-date'%}
+                        <i class="material-icons">uptodate</i>
+                    {% elseif status == 'honoured'%}
+                        <i class="material-icons">success</i>
+                    {% elseif status == 'scheduled'%}
+                        <i class="material-icons">chrono</i>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-action center">
+                <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+            </div>
+
+        </div>
+      </div>
+    {% else %}  
+        Aucun mandat ne correspond à votre recherche !
+    {% endfor %}
+
+</div>
+{% endblock %}              
+
+{% block javascripts %}
+    <script>
+        $(function (){
+            jQuery.ajax({
+                type: 'POST',
+                url: "{{ path('cairn_accounts_ajax') }}",
+                dataType: 'json',
+                success: function (response) {
+                    var accounts = response;
+                    var data = {};
+                    for (var i = 0; i < accounts.length; i++) {
+                        data[accounts[i].name] = null;
+                    }
+                    console.log();
+
+                    $("#form_cairn_user").autocomplete({
+                        data: data,
+                        limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
+                    });
+                }, 
+            });
+        });
+
+    </script>
+
+{% endblock %}
+
+

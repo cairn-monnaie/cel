@@ -3,6 +3,7 @@
 namespace Cairn\UserBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * Mandate
@@ -23,9 +24,10 @@ class Mandate
     private $id;
 
     /**
-     * @var \stdClass
+     * @var \Cairn\UserBundle\Entity\User
      *
-     * @ORM\Column(name="contractor", type="object")
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
+     *@ORM\JoinColumn(nullable=true)
      */
     private $contractor;
 
@@ -64,20 +66,51 @@ class Mandate
      */
     private $status;
 
+    /**
+     * @var ArrayCollection
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\Operation", mappedBy="mandate" , cascade={"persist"})
+     *@ORM\JoinColumn(nullable=true)
+     */
+    private $operations;
 
     const CANCELED = 0;
     const UP_TO_DATE = 1;
     const OVERDUE = 2;
     const COMPLETE = 3;
+    const SCHEDULED = 4;
 
-    public function __construct(User $contractor)
+    const ARRAY_ALL_STATUS = array(Mandate::CANCELED,Mandate::UP_TO_DATE,Mandate::OVERDUE,Mandate::COMPLETE,Mandate::SCHEDULED);
+
+    public function __construct()
     {
         $today = new \Datetime();
         $this->setCreatedAt($today);
-        $this->setStatus(self::UP_TO_DATE);
-        $this->contractor = $contractor;
+        $this->setStatus(self::SCHEDULED);
+        $this->operations = new ArrayCollection();
     }
 
+    public static function getStatusName($status)
+    {
+        switch ($status){
+        case "0":
+            return 'revoked';
+            break;
+        case "1":
+            return 'up-to-date';
+            break;
+        case "2":
+            return 'overdue';
+            break;
+        case "3":
+            return 'honoured';
+            break;
+        case "4":
+            return 'scheduled';
+            break;
+        default:
+            return NULL;
+        }
+    }
     /**
      * Get id.
      *
@@ -229,5 +262,32 @@ class Mandate
     public function getStatus()
     {
         return $this->status;
+    }
+
+
+
+    /**
+     * Add operation
+     *
+     * @param \Cairn\UserBundle\Entity\Operation $operation
+     *
+     * @return User
+     */
+    public function addOperation(\Cairn\UserBundle\Entity\Operation $operation)
+    {
+        $this->operations[] = $operation;
+
+        return $this;
+    }
+
+    
+    /**
+     * Get operations.
+     *
+     * @return \Cairn\UserBundle\Entity\Operation|null
+     */
+    public function getOperations()
+    {
+        return $this->operations;
     }
 }
