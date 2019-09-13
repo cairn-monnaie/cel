@@ -275,6 +275,10 @@ class Mandate
      */
     public function addOperation(\Cairn\UserBundle\Entity\Operation $operation)
     {
+        if($operation->getType() != Operation::TYPE_MANDATE){
+            throw new \Exception('Operation should be of type TYPE_MANDATE');
+        }
+
         $this->operations[] = $operation;
 
         return $this;

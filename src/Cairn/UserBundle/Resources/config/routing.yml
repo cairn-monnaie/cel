@@ -280,9 +280,9 @@ cairn_user_mandates_edit:
     requirements:
         id: \d+
 
-cairn_user_mandates_delete:
-    path:     admin/mandates/delete/{id}
-    defaults: { _controller: CairnUserBundle:Mandate:deleteMandate, _format: html}
+cairn_user_mandates_cancel:
+    path:     admin/mandates/cancel/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:cancelMandate, _format: html}
     requirements:
         id: \d+
 

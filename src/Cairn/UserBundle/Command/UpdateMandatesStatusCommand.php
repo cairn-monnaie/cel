@@ -1,6 +1,6 @@
 <?php
 
-// src/Cairn/UserBundle/Command/UpdateMandatesCommand.php
+// src/Cairn/UserBundle/Command/UpdateMandatesStatusCommand.php
 namespace Cairn\UserBundle\Command;
 
 use Symfony\Component\Console\Command\Command;
@@ -11,13 +11,13 @@ use Symfony\Component\Console\Input\InputArgument;
 
 use Cairn\UserBundle\Service\Commands;
 
-class UpdateMandatesCommand extends ContainerAwareCommand
+class UpdateMandatesStatusCommand extends ContainerAwareCommand
 {
 
 
     protected function configure()
     {
-        $this->setName('cairn.user:update-mandates')
+        $this->setName('cairn.user:update-mandates-status')
             ->setDescription('Updates status of ongoing and scheduled mandates')
             ->setHelp('This command can contain one optional argument : an username to specify one user')
             ->addArgument('username', InputArgument::OPTIONAL, 'Username of the user whom you want the mandate updated')
@@ -30,7 +30,7 @@ class UpdateMandatesCommand extends ContainerAwareCommand
 
         $username = $input->getArgument('username');
 
-        $message = $commandsService->updateMandates($username);
+        $message = $commandsService->updateMandatesStatusCommand($username);
         $output->writeln($message);
     }
 }

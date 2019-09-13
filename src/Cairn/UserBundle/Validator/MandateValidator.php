@@ -56,13 +56,13 @@ class MandateValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if($mandate->getBeginAt()->format('d') > 15){
+        if($mandate->getBeginAt()->format('d') > 25){
             $this->context->buildViolation("Pour éviter toute confusion, la date doit être comprise du 1 au 15")
                 ->atPath('beginAt')
                 ->addViolation();
         }
 
-        if($mandate->getEndAt()->format('d') > 15){
+        if($mandate->getEndAt()->format('d') > 25){
             $this->context->buildViolation("Pour éviter toute confusion, la date doit être comprise du 1 au 15")
                 ->atPath('endAt')
                 ->addViolation();

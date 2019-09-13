@@ -95,15 +95,40 @@ class Commands
         $this->em->flush();
     }
 
+    private function updateMandate(Mandate $mandate)
+    {
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $status = $mandate->getStatus();
+        if($status != Mandate::SCHEDULED && $status != Mandate::UP_TO_DATE){
+            return;
+        }
+
+        $today = new \Datetime();
+
+        if($status == Mandate::SCHEDULED){
+            if($mandate->getBeginAt()->diff($today)->invert == 0){
+                $mandate->setStatus(Mandate::OVERDUE);
+            }
+
+        }else{
+            if(! $accountManager->isUpToDateMandate($mandate)){
+                $mandate->setStatus(Mandate::OVERDUE);
+            }
+        }
+    }
+
     /**
      * Each month, Updates status of ongoing and scheduled mandates
      *
      * If a mandate is ongoing, this command must check if there is an operation to operate or if everything is up to date
      */
-    public function updateMandates($username)
+    public function updateMandatesStatusCommand($username)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
         $mandateRepo = $this->em->getRepository('CairnUserBundle:Mandate');
+
+        $accountManager = $this->container->get('cairn_user.account_manager');
 
         if($username){
             $user = $userRepo->findOneByUsername($username);
@@ -117,15 +142,30 @@ class Commands
             }
 
             $mb = $mandateRepo->createQueryBuilder('m');
-            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE,Mandate::OVERDUE, Mandate::SCHEDULED));
-            $mandate = $mb->getQuery()->getResult();
+            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandates = $mb->getQuery()->getResult();
 
-            if(! $mandate){
-                return 'Aucun mandat à mettre à jour';
+            if(! $mandates){
+                return 'Aucun statut de mandat à mettre à jour';
             }
 
+            foreach($mandates as $mandate){
+                $this->updateMandate($mandate);
+            }
+                    
+        }else{
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandates = $mb->getQuery()->getResult();
+
+            foreach($mandates as $mandate){
+                $this->updateMandate($mandate);
+            }
         }
 
+        $this->em->flush();
+
+        return 'Mandates status updated';
     }
 
     /**

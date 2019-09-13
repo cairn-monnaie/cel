@@ -144,10 +144,13 @@ class MandateController extends Controller
     {
         $session = $request->getSession();
 
-        if(! $mandate->getStatus() == Mandate::OVERDUE){
-            $session->getFlashBag()->add('error','Ce mandat est déjà à jour');
+        $today = new \Datetime();
+        $dayToday = $today->format('d');
+
+        if(! ( ($dayToday > 28 || $dayToday < 5) || ($mandate->getStatus() == Mandate::OVERDUE ))){
+            $session->getFlashBag()->add('info','Les honorations de mandat ont lieu du 28 au 05 du mois suivant, sauf en cas de retard');
             return $this->redirectToRoute('cairn_user_mandates_dashboard');
-        }
+        } 
 
         $em = $this->getDoctrine()->getManager();
         $accountManager = $this->get('cairn_user.account_manager');
@@ -161,9 +164,17 @@ class MandateController extends Controller
         if($form->isSubmitted() && $form->isValid()){
 
             $operation = $accountManager->creditUserAccount($mandate->getContractor(), $mandate->getAmount(), Operation::TYPE_MANDATE, 'Règlement de mandat' );
+
+            if(! $operation){
+                $session->getFlashBag()->add('error','Coffre [e]-Cairns insuffisant');
+                return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            }
             $mandate->addOperation($operation);
 
-            if($accountManager->isUpToDateMandate($mandate)){
+            if($accountManager->getConsistentOperationsCount($mandate, $mandate->getEndAt()) == $mandate->getOperations()->count()){
+                $mandate->setStatus(Mandate::COMPLETE);
+                $session->getFlashBag()->add('success','Le mandat est complet');
+            }elseif($accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::UP_TO_DATE);
                 $session->getFlashBag()->add('success','Mandat à jour');
             }else{ // in case if there are several operations overdued
@@ -180,17 +191,50 @@ class MandateController extends Controller
         return $this->render('CairnUserBundle:Mandate:honour.html.twig',
             array('form'=>$form->createView(),'mandate'=>$mandate)
             );
-
     }
 
 
-    public function editMandate(Request $request, Mandate $mandate)
+    public function editMandateAction(Request $request, Mandate $mandate)
     {
 
     }
 
-    public function deleteMandate(Request $request, Mandate $mandate)
+    public function cancelMandateAction(Request $request, Mandate $mandate)
     {
+        $session = $request->getSession();
+
+        if($mandate->getStatus() == Mandate::COMPLETE ){
+            $session->getFlashBag()->add('info','Le mandat est complet et ne peut donc être annulé');
+            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+        }elseif($mandate->getStatus() == Mandate::CANCELED ){
+            $session->getFlashBag()->add('info','Le mandat a déjà été révoqué');
+            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+        }elseif($mandate->getStatus() == Mandate::OVERDUE ){
+            $session->getFlashBag()->add('info','Le mandat a un retard de paiement, et ne peut donc être révoqué');
+            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+        } 
+
+
+        $em = $this->getDoctrine()->getManager();
+
+        $form = $this->createFormBuilder()
+            ->add('execute', SubmitType::class, array('label' => 'Révoquer'))
+            ->getForm();
+
+
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+            $mandate->setStatus(Mandate::CANCELED);
+            $session->getFlashBag()->add('success','Mandat révoqué avec succès');
+
+            $em->flush();
+            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+
+        }
+
+        return $this->render('CairnUserBundle:Mandate:cancel.html.twig',
+            array('form'=>$form->createView(),'mandate'=>$mandate)
+            );
 
     }
 }
