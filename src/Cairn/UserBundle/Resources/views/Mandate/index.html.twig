@@ -1,0 +1,25 @@
+{# src/Cairn/UserBundle/Resources/views/Mandate/index.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row">
+    <div class="card-panel z-depth-1">
+        <a href="{{path('cairn_user_mandates_dashboard')}}"> <h2>Les mandats </h2></a>
+    </div>
+    <div class="card-panel z-depth-1">
+       <a  href="{{path('cairn_user_electronic_mlc_dashboard')}}"><h2>Coffre [e]-cairns </h2> </a>
+    </div>
+    <div class="card-panel z-depth-1">
+       <a  href="#"><h2>Conversions Helloasso </h2> </a>
+    </div>
+
+</div>
+
+{% endblock %}

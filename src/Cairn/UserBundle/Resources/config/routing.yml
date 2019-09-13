@@ -258,6 +258,10 @@ cairn_user_users_phone_delete:
     requirements:
         id: \d+
 
+cairn_user_mandates_index:
+    path:     admin/mandates/index
+    defaults: { _controller: CairnUserBundle:Mandate:index, _format: html}
+
 cairn_user_mandates_dashboard:
     path:     admin/mandates/dashboard
     defaults: { _controller: CairnUserBundle:Mandate:mandatesDashboard, _format: html }
@@ -274,11 +278,11 @@ cairn_user_mandates_honour:
     requirements:
         id: \d+
 
-cairn_user_mandates_edit:
-    path:     admin/mandates/{id}
-    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
-    requirements:
-        id: \d+
+        #cairn_user_mandates_edit:
+        #    path:     admin/mandates/{id}
+        #    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
+        #    requirements:
+        #        id: \d+
 
 cairn_user_mandates_cancel:
     path:     admin/mandates/cancel/{id}

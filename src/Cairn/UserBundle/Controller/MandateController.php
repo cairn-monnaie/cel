@@ -40,6 +40,11 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 class MandateController extends Controller
 {
 
+    public function indexAction(Request $request)
+    {
+        return $this->render('CairnUserBundle:Mandate:index.html.twig');
+    }
+
     public function mandatesDashboardAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
@@ -144,11 +149,8 @@ class MandateController extends Controller
     {
         $session = $request->getSession();
 
-        $today = new \Datetime();
-        $dayToday = $today->format('d');
-
-        if(! ( ($dayToday > 28 || $dayToday < 5) || ($mandate->getStatus() == Mandate::OVERDUE ))){
-            $session->getFlashBag()->add('info','Les honorations de mandat ont lieu du 28 au 05 du mois suivant, sauf en cas de retard');
+        if(! $mandate->getStatus() == Mandate::OVERDUE ){
+            $session->getFlashBag()->add('info','Ce mandat est à jour');
             return $this->redirectToRoute('cairn_user_mandates_dashboard');
         } 
 
@@ -194,10 +196,11 @@ class MandateController extends Controller
     }
 
 
-    public function editMandateAction(Request $request, Mandate $mandate)
-    {
-
-    }
+//    public function editMandateAction(Request $request, Mandate $mandate)
+//    {
+//
+//    }
+//
 
     public function cancelMandateAction(Request $request, Mandate $mandate)
     {
