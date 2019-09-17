@@ -141,7 +141,7 @@ class Operation
      */
     private $toAccount;
 
-    //WARNING : VALUES SHOULD NOT CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
+    //WARNING : CURRENT VALUES SHOULD NOT BE CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
     const TYPE_TRANSACTION_EXECUTED = 0;
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
@@ -154,7 +154,7 @@ class Operation
     const TYPE_MANDATE = 9;
     const TYPE_ONLINE_PAYMENT = 10;
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT, self::TYPE_MANDATE);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
 
     public function isSmsPayment()
     {
@@ -174,7 +174,7 @@ class Operation
             return 'conversion en bureau de change';
             break;
         case "4":
-            return 'conversion par virement bancaire';
+            return 'conversion par virement Helloasso';
             break;
         case "5":
             return 'deposit';
@@ -213,9 +213,17 @@ class Operation
         return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
     }
 
-    public static function getExecutedTypes()
+    /**
+     * Propose TYPE_MANDATE in the list or not
+     */
+    public static function getExecutedTypes($withMandate = NULL)
     {
-        return self::ARRAY_EXECUTED_TYPES;
+        $types =  self::ARRAY_EXECUTED_TYPES;
+
+        if($withMandate){
+            $types[] = self::TYPE_MANDATE;
+        }
+        return $types;
     }
 
     public static function getScheduledTypes()
@@ -633,7 +641,7 @@ class Operation
      */
     public function setMandate($mandate)
     {
-        $this->mandate = $name;
+        $this->mandate = $mandate;
 
         return $this;
     }

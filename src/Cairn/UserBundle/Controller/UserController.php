@@ -92,11 +92,11 @@ class UserController extends Controller
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes(true))
                  ),
                  $ob->expr()->andX(
                      $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',Operation::getExecutedTypes(true))
                  )
              ))
             ->andWhere('o.paymentID is not NULL')

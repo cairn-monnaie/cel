@@ -117,6 +117,7 @@ class BankingController extends Controller
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+        $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
 
         $currentUser = $this->getUser();
         $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -148,17 +149,22 @@ class BankingController extends Controller
             $id = $account->number;
         }
 
+        //get, once for all, the list of executed types
+        $hasMandate = ( $mandateRepo->findOneByContractor($user) == NULL ) ? false : true;  
+        $executedTypes = Operation::getExecutedTypes($hasMandate);
+
         //last operations
-        $ob = $operationRepo->createQueryBuilder('o');
+
+                $ob = $operationRepo->createQueryBuilder('o');
         $executedTransactions = $ob->where(
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      'o.fromAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',$executedTypes)
                  ),
                  $ob->expr()->andX(
                      'o.toAccountNumber = :number',
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',$executedTypes)
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
@@ -186,7 +192,7 @@ class BankingController extends Controller
                 ->add('types',    ChoiceType::class, array(
                 'label' => 'type d\'opération',
                 'required'=>false,
-                'choices' => Operation::getExecutedTypes(),
+                'choices' => $executedTypes,
                 'choice_label'=> function($choice){
                     return Operation::getTypeName($choice);
                 },
@@ -236,7 +242,7 @@ class BankingController extends Controller
                 //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
                 $end = date_modify($end,'+1 days');
 
-                $arrayTypes = Operation::getExecutedTypes();
+                $arrayTypes = $executedTypes;
                 if($operationTypes){
                     $arrayTypes = $operationTypes;
                 }
