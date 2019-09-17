@@ -73,11 +73,13 @@ class Mandate
      */
     private $operations;
 
+
     const CANCELED = 0;
     const UP_TO_DATE = 1;
     const OVERDUE = 2;
     const COMPLETE = 3;
     const SCHEDULED = 4;
+
 
     const ARRAY_ALL_STATUS = array(Mandate::CANCELED,Mandate::UP_TO_DATE,Mandate::OVERDUE,Mandate::COMPLETE,Mandate::SCHEDULED);
 
@@ -111,6 +113,8 @@ class Mandate
             return NULL;
         }
     }
+
+
     /**
      * Get id.
      *

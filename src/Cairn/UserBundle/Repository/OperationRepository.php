@@ -91,5 +91,16 @@ class OperationRepository extends \Doctrine\ORM\EntityRepository
 
     }
 
+    public function whereSubmissionDateBetween(QueryBuilder $ob, \Datetime $begin, \Datetime $end)
+    {
+        $ob->andWhere('o.submissionDate BETWEEN :start AND :end')
+            ->setParameter('start', $begin)
+            ->setParameter('end', $end) 
+            ;
+        return $this;
+
+
+    }
+
 
 }

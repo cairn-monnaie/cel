@@ -272,6 +272,12 @@ cairn_user_mandates_add:
     path:     admin/mandates/add
     defaults: { _controller: CairnUserBundle:Mandate:declareMandate, _format: html}
 
+cairn_user_mandates_view:
+    path:     admin/mandates/view/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:viewMandate, _format: html}
+    requirements:
+        id: \d+
+
 cairn_user_mandates_honour:
     path:     admin/mandates/honour/{id}
     defaults: { _controller: CairnUserBundle:Mandate:honourMandate, _format: html}

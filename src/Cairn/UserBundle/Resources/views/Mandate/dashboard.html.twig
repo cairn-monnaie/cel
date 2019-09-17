@@ -11,74 +11,130 @@
 
 <div class="row">
     <h2> Les mandats </h2>
-    <ul class="collapsible">
+    <a href="{{path('cairn_user_mandates_add') }}" class="btn green" ><i class="material-icons left">add</i>Créer un nouveau mandat</a>
+
+        <ul class="collapsible">
         <li>
-            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres</div>
+            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres pour mandats</div>
             <div class="collapsible-body">
-                {{ form_start(form) }}
+                {{ form_start(formMandate) }}
                 <div class="row">
                     <div class="col s12 m6 l3">
-                        {{ form_label(form.status) }}
-                        {{ form_widget(form.status) }}
+                        {{ form_label(formMandate.status) }}
+                        {{ form_widget(formMandate.status) }}
                     </div>
                     <div class="col s12 l6">
-                        {{form_row(form.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
+                        {{form_row(formMandate.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
                     </div>
 
-                    {{ form_rest(form) }}
+                    {{ form_rest(formMandate) }}
                 </div>
 
-                {{form_end(form) }}
+                {{form_end(formMandate) }}
             </div>
         </li>
     </ul>
 
-    {% for mandate in mandates %}
-        {% set status = mandate.status %}
+    <ul class="collapsible">
+        <li>
+            <div class="collapsible-header"><i class="material-icons">sort</i>Filtres pour opérations</div>
+            <div class="collapsible-body">
+                {{ form_start(formOperations) }}
+                <div class="row">
+                    <div class="col s12 m6 l3">
+                        {{ form_label(formOperations.date) }}
+                        {{ form_widget(formOperations.date) }}
+                    </div>
+                    <div class="col s12 l6">
+                        {{form_row(formOperations.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
+                    </div>
 
+                    {{ form_rest(formOperations) }}
+                </div>
 
-      <div class="col s12 m6 l4">
-        <div class="card blue-grey darken-1">
-            <div class="card-content white-text">
-                <span class="card-title center">{{mandate.contractor.name}}</span>
-                <p>
-                    début : {{mandate.beginAt|date('d-m-Y')}} 
-                    <br>
-                    fin : {{mandate.endAt|date('d-m-Y')}} 
-                    <br>
-                    montant : {{mandate.amount}}
-                    <br>
-                    statut :
-                    {% if status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::CANCELED')%}
-                        <i class="material-icons">clear</i>
-                    {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')%}
-                        <i class="material-icons">done</i>
-                    {% elseif status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::COMPLETE')%}
-                        <i class="material-icons">done_all</i>
-                    {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED') %}
-                        <i class="material-icons">schedule</i>
-                    {% endif %}
-                </p>
+                {{form_end(formOperations) }}
             </div>
-            {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
+        </li>
+    </ul>
 
+    Total amount : {{totalAmount}} cairns
+
+    {% if mandates is defined %}
+        {% for mandate in mandates %}
+            {% set status = mandate.status %}
+
+
+          <div class="col s12 m6 l4">
+            <div class="card blue-grey darken-1">
+                <div class="card-content white-text">
+                    <span class="card-title center">{{mandate.contractor.name}}</span>
+                    <p>
+                        début : {{mandate.beginAt|date('d-m-Y')}} 
+                        <br>
+                        fin : {{mandate.endAt|date('d-m-Y')}} 
+                        <br>
+                        montant : {{mandate.amount}}
+                        <br>
+                        statut :
+                        {% if status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::CANCELED')%}
+                            <i class="material-icons">clear</i>
+                        {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')%}
+                            <i class="material-icons">done</i>
+                        {% elseif status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::COMPLETE')%}
+                            <i class="material-icons">done_all</i>
+                        {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED') %}
+                            <i class="material-icons">schedule</i>
+                        {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
+                            <i class="material-icons">warning</i>
+
+                        {% endif %}
+                    </p>
+                </div>
                 <div class="card-action center">
-                    <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+                     <a href="{{path('cairn_user_mandates_view', {'id': mandate.id})}}"> Détail</a>
+
+                    {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
+                        <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+
+                    {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
+                        <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"> Révoquer</a>
+                    
+                    {% endif %}
                 </div>
 
-            {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
-                <div class="card-action center">
-                    <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"> Révoquer</a>
-                </div>
-
-            {% endif %}
-
+                
+            </div>
+          </div>
+        {% else %}  
+            Aucun mandat ne correspond à votre recherche !
+        {% endfor %}
+    {% elseif operations is defined %}
+            <div>
+                <table>
+                <thead>
+                    <tr>
+                        <th> Mandataire</th>
+                        <th> Date de demande</th>
+                        <th> Date d'exécution </th> 
+                        <th> Montant </th>
+                    </tr>
+                </thead>
             
-        </div>
-      </div>
-    {% else %}  
-        Aucun mandat ne correspond à votre recherche !
-    {% endfor %}
+                <tbody>
+                {% for transaction in operations %}
+                    <tr>
+                        <td>{{ transaction.creditor.name}}</td>
+                        <td>{{ transaction.submissionDate|date('d-m-Y')}}</td>
+                        <td>{{ transaction.executionDate|date('d-m-Y')}}</td>
+                        <td class="cred-amount"> +{{transaction.amount}} cairns </td>
+                    </tr>
+                {% else %}
+                    Aucune opération ne correspond à votre recherche !
+                {% endfor %}
+                </tbody>
+                </table>
+            </div>
+    {% endif %}
 
 </div>
 {% endblock %}              
@@ -98,7 +154,7 @@
                     }
                     console.log();
 
-                    $("#form_cairn_user").autocomplete({
+                    $(".form_search_user").autocomplete({
                         data: data,
                         limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
                     });

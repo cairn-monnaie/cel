@@ -75,7 +75,7 @@ class AccountManager
         $today = new \Datetime();
 
         $status = $mandate->getStatus();
-         if($status != Mandate::UP_TO_DATE && $status != Mandate::OVERDUE){
+         if( ($status != Mandate::UP_TO_DATE) && ($status != Mandate::OVERDUE)) {
              return true;
          }
         

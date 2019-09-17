@@ -45,6 +45,17 @@ class MandateController extends Controller
         return $this->render('CairnUserBundle:Mandate:index.html.twig');
     }
 
+    /**
+     * View specific mandate together with its executed operations
+     *
+     */
+    public function viewMandateAction(Request $request, Mandate $mandate)
+    {
+
+        return $this->render('CairnUserBundle:Mandate:view.html.twig',array('mandate'=>$mandate));
+
+    }
+
     public function mandatesDashboardAction(Request $request)
     {
         $em = $this->getDoctrine()->getManager();
@@ -54,13 +65,34 @@ class MandateController extends Controller
 
 
         //by default, return overdued mandates
-        $mandates =$mandateRepo->findByStatus(Mandate::OVERDUE);
+        $mandates = $mandateRepo->findByStatus(Mandate::OVERDUE);
 
         if(! $mandates){
-            $mandates =$mandateRepo->findByStatus(Mandate::UP_TO_DATE);
+            $mandates = $mandateRepo->findByStatus(Mandate::UP_TO_DATE);
         }
 
-        $form = $this->createFormBuilder()
+        //get amount of mandates honored this month, based on their operation's submission dates
+
+        $today = new \Datetime();
+        $month = $today->format('m');
+        $todayDay = $today->format('d');
+
+        if(! $todayDay >= 27){
+            $month -= $todayMonth;
+        }
+
+        $begin = new \Datetime(date('Y-'.$month.'-01'));
+        $end = new \Datetime(date('Y-'.$month.'-t'));
+
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+
+        $ob = $operationRepo->createQueryBuilder('o');
+        $operationRepo->whereType($ob, Operation::TYPE_MANDATE)->whereSubmissionDateBetween($ob, $begin,$end);
+
+        $totalAmount = $operationRepo->countTotalAmount($ob);
+
+
+        $formMandate = $this->createFormBuilder()
             ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom'),'required'=>false))
             ->add('status',    ChoiceType::class, array(
                  'label' => 'Statut des mandats',
@@ -72,24 +104,34 @@ class MandateController extends Controller
                  'multiple'=>true,
                  'expanded'=>false
                  ))
-
-            //->add('beginAt', DateType::class, array('label'=> 'Début','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
-            //->add('endAt', DateType::class, array('label'=> 'Fin','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
-            ->add('forward', SubmitType::class, array('label' => 'Accéder au(x) mandat(s)'))
+            ->add('forward', SubmitType::class, array('label' => 'Rechercher le(s) mandat(s)'))
             ->getForm();
 
-        $form->handleRequest($request);    
+        $formOperations = $this->createFormBuilder()
+            ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom'),'required'=>false))
+            ->add('date',    DateType::class, array(
+                 'label' => 'Mois à honorer',
+                 'required'=>false,
+                 'widget'=> 'choice',
+                 'days'=>array(1),
+                 'years'=> range(date('Y'), date('Y') + 4)
+                 ))
+            ->add('forward', SubmitType::class, array('label' => 'Rechercher le(s) opération(s)'))
+            ->getForm();
 
-        if($form->isSubmitted() && $form->isValid()){
+        $formMandate->handleRequest($request);    
+        $formOperations->handleRequest($request);    
+
+        if($formMandate->isSubmitted() && $formMandate->isValid()){
             
-            $dataForm = $form->getData();            
+            $dataForm = $formMandate->getData();            
             $status = $dataForm['status'];
-            $formAutocompleteName = $dataForm['cairn_user'];
+            $formMandateAutocompleteName = $dataForm['cairn_user'];
 
             $mb = $mandateRepo->createQueryBuilder('m');
 
-            if($formAutocompleteName){
-                preg_match('#\((.*)\)$#',$formAutocompleteName,$matches_email);
+            if($formMandateAutocompleteName){
+                preg_match('#\((.*)\)$#',$formMandateAutocompleteName,$matches_email);
 
                 if (! $matches_email){
                     $session->getFlashBag()->add('error','Votre recherche ne contient aucun email');
@@ -109,14 +151,61 @@ class MandateController extends Controller
             $mandates = $mb->getQuery()->getResult();
 
             return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
-                array('form'=>$form->createView(),'mandates'=>$mandates)
-            );
+                array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
+                'mandates'=>$mandates,
+                'totalAmount'=>$totalAmount
+            )
+        );
 
+
+        }elseif($formOperations->isSubmitted() && $formOperations->isValid()){
+            
+            $dataForm = $formOperations->getData();            
+            $date = $dataForm['date'];
+            $formOperationsAutocompleteName = $dataForm['cairn_user'];
+
+            $ob = $operationRepo->createQueryBuilder('o');
+            $operationRepo->whereType($ob,Operation::TYPE_MANDATE);
+
+            if($formOperationsAutocompleteName){
+                preg_match('#\((.*)\)$#',$formOperationsAutocompleteName,$matches_email);
+
+                if (! $matches_email){
+                    $session->getFlashBag()->add('error','Votre recherche ne contient aucun email');
+                    return new RedirectResponse($request->getRequestUri());
+                }
+
+                $contractor = $userRepo->findOneByEmail($matches_email[1]);
+                $operationRepo->whereCreditor($ob, $contractor);
+
+            }
+
+            if($date){
+                $begin = new \Datetime($date->modify('first day of this month')->format('Y-m-d'));
+                $end = new \Datetime($date->modify('last day of this month')->format('Y-m-d'));
+
+                $operationRepo->whereSubmissionDateBetween($ob, $begin, $end);
+            }
+            
+            $ob->orderBy('o.submissionDate','ASC');
+            $operations = $ob->getQuery()->getResult();
+
+            $totalAmount = 0;
+            foreach($operations as $operation){
+                $totalAmount += $operation->getAmount();
+            }
+
+            return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
+                array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
+                'totalAmount'=>$totalAmount,
+                'operations'=> $operations)
+            );
 
         }
 
+
         return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
-            array('form'=>$form->createView(),'mandates'=>$mandates)
+            array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),'mandates'=>$mandates,'totalAmount'=>$totalAmount)
             );
 
 
@@ -149,7 +238,7 @@ class MandateController extends Controller
     {
         $session = $request->getSession();
 
-        if(! $mandate->getStatus() == Mandate::OVERDUE ){
+        if(! ($mandate->getStatus() == Mandate::OVERDUE) ){
             $session->getFlashBag()->add('info','Ce mandat est à jour');
             return $this->redirectToRoute('cairn_user_mandates_dashboard');
         } 
@@ -171,17 +260,35 @@ class MandateController extends Controller
                 $session->getFlashBag()->add('error','Coffre [e]-Cairns insuffisant');
                 return $this->redirectToRoute('cairn_user_mandates_dashboard');
             }
-            $mandate->addOperation($operation);
 
-            if($accountManager->getConsistentOperationsCount($mandate, $mandate->getEndAt()) == $mandate->getOperations()->count()){
+            //deal with submission date (date which operation is supposed to be executed)
+            //submission date allows to know for which month the operation is done
+            //TODO : tester 28-02-2020
+            $count =  $mandate->getOperations()->count();
+            if($count == 0){
+                $month = $mandate->getBeginAt()->format('m');
+                $operation->setSubmissionDate(new \Datetime( date('Y-'.$month.'-28')  ));
+            }else{
+                $lastExecutionDate = $mandate->getOperations()[$count -1]->getSubmissionDate();
+                $nextDate = date_modify($lastExecutionDate, '+1 month');
+                $operation->setSubmissionDate($nextDate);
+            }
+
+            
+            $mandate->addOperation($operation);
+            $operation->setMandate($mandate);
+
+            if($accountManager->getConsistentOperationsCount($mandate, $mandate->getEndAt()) <= $mandate->getOperations()->count()){
                 $mandate->setStatus(Mandate::COMPLETE);
                 $session->getFlashBag()->add('success','Le mandat est complet');
-            }elseif($accountManager->isUpToDateMandate($mandate)){
-                $mandate->setStatus(Mandate::UP_TO_DATE);
-                $session->getFlashBag()->add('success','Mandat à jour');
-            }else{ // in case if there are several operations overdued
-                $session->getFlashBag()->add('success','Mandat honoré');
-                $session->getFlashBag()->add('info','Mandat toujours pas à jour');
+            }else{
+                if($accountManager->isUpToDateMandate($mandate)){
+                    $mandate->setStatus(Mandate::UP_TO_DATE);
+                    $session->getFlashBag()->add('success','Mandat à jour');
+                }else{ // in case if there are several operations overdued
+                    $session->getFlashBag()->add('success','Mandat honoré');
+                    $session->getFlashBag()->add('info','Mandat toujours pas à jour');
+                }
             }
 
             $em->persist($operation);
