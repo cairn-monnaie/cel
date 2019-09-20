@@ -12,6 +12,9 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+
 
 class MandateType extends AbstractType
 {
@@ -29,6 +32,12 @@ class MandateType extends AbstractType
             ->add('amount', NumberType::class, array('label'=>'Montant','scale'=>2,'attr'=>array()))
             ->add('beginAt', DateType::class, array('label'=> 'Début','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
             ->add('endAt', DateType::class, array('label'=> 'Fin','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
+            ->add('mandateDocuments', CollectionType::class, array(
+                'entry_type'   => MandateDocumentType::class,
+                'allow_add'    => true,
+                'allow_delete' => true,
+                'by_reference' => false
+            ))
             ->add('forward', SubmitType::class, array('label' => 'Déclarer'));
     }/**
      * {@inheritdoc}

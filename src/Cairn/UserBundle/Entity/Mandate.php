@@ -60,6 +60,13 @@ class Mandate
     private $createdAt;
 
     /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="updatedAt", type="datetime",nullable=true)
+     */
+    private $updatedAt;
+
+    /**
      * @var int
      *
      * @ORM\Column(name="status", type="smallint")
@@ -72,6 +79,13 @@ class Mandate
      *@ORM\JoinColumn(nullable=true)
      */
     private $operations;
+
+    /**
+     * @var ArrayCollection
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\File", mappedBy="mandate" , cascade={"persist"})
+     *@ORM\JoinColumn(nullable=false)
+     */
+    private $mandateDocuments;
 
 
     const CANCELED = 0;
@@ -89,6 +103,20 @@ class Mandate
         $this->setCreatedAt($today);
         $this->setStatus(self::SCHEDULED);
         $this->operations = new ArrayCollection();
+        $this->mandateDocuments = new ArrayCollection();
+    }
+
+    public function updateLastOperationSubmissionDate(Operation $operation)
+    {
+        $count =  $this->getOperations()->count();
+        if($count == 0){
+            $month = $this->getBeginAt()->format('m');
+            $operation->setSubmissionDate(new \Datetime( date('Y-'.$month.'-28')  ));
+        }else{
+            $lastExecutionDate = $this->getOperations()[$count -1]->getSubmissionDate();
+            $nextDate = date_modify($lastExecutionDate, '+1 month');
+            $operation->setSubmissionDate($nextDate);
+        }
     }
 
     public static function getStatusName($status)
@@ -170,6 +198,30 @@ class Mandate
     public function getAmount()
     {
         return $this->amount;
+    }
+
+    /**
+     * Set updatedAt.
+     *
+     * @param \DateTime $updatedAt
+     *
+     * @return Mandate
+     */
+    public function setUpdatedAt($updatedAt)
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /**
+     * Get updatedAt.
+     *
+     * @return \DateTime
+     */
+    public function getUpdatedAt()
+    {
+        return $this->updatedAt;
     }
 
     /**
@@ -283,6 +335,7 @@ class Mandate
             throw new \Exception('Operation should be of type TYPE_MANDATE');
         }
 
+        $this->updateLastOperationSubmissionDate($operation);
         $this->operations[] = $operation;
 
         return $this;
@@ -298,4 +351,49 @@ class Mandate
     {
         return $this->operations;
     }
+
+
+    /**
+     * Add document
+     *
+     * @param \Cairn\UserBundle\Entity\File $document
+     *
+     * @return Mandate
+     */
+    public function addMandateDocument(\Cairn\UserBundle\Entity\File $document)
+    {
+        $this->mandateDocuments[] = $document;
+
+        $document->setMandate($this);
+
+        return $this;
+    }
+
+    /**
+     * Remove document
+     *
+     * @param \Cairn\UserBundle\Entity\File $document
+     *
+     * @return Mandate
+     */
+    public function removeMandateDocument(\Cairn\UserBundle\Entity\File $document)
+    {
+        $this->mandateDocuments->removeElement($document);
+
+        $document->setMandate($this);
+
+        return $this;
+    }
+
+    
+    /**
+     * Get documents.
+     *
+     * @return \Cairn\UserBundle\Entity\File
+     */
+    public function getMandateDocuments()
+    {
+        return $this->mandateDocuments;
+    }
+
 }
