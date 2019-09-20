@@ -225,7 +225,7 @@ class MandateController extends Controller
             $em->persist($mandate);
             $em->flush();
 
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
         }
 
         return $this->render('CairnUserBundle:Mandate:add.html.twig',
@@ -233,6 +233,7 @@ class MandateController extends Controller
             );
 
     }
+
 
     public function honourMandateAction(Request $request, Mandate $mandate)
     {
@@ -261,20 +262,6 @@ class MandateController extends Controller
                 return $this->redirectToRoute('cairn_user_mandates_dashboard');
             }
 
-            //deal with submission date (date which operation is supposed to be executed)
-            //submission date allows to know for which month the operation is done
-            //TODO : tester 28-02-2020
-            $count =  $mandate->getOperations()->count();
-            if($count == 0){
-                $month = $mandate->getBeginAt()->format('m');
-                $operation->setSubmissionDate(new \Datetime( date('Y-'.$month.'-28')  ));
-            }else{
-                $lastExecutionDate = $mandate->getOperations()[$count -1]->getSubmissionDate();
-                $nextDate = date_modify($lastExecutionDate, '+1 month');
-                $operation->setSubmissionDate($nextDate);
-            }
-
-            
             $mandate->addOperation($operation);
             $operation->setMandate($mandate);
 
@@ -293,7 +280,7 @@ class MandateController extends Controller
 
             $em->persist($operation);
             $em->flush();
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
 
         }
 
@@ -315,13 +302,15 @@ class MandateController extends Controller
 
         if($mandate->getStatus() == Mandate::COMPLETE ){
             $session->getFlashBag()->add('info','Le mandat est complet et ne peut donc être annulé');
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
+
         }elseif($mandate->getStatus() == Mandate::CANCELED ){
             $session->getFlashBag()->add('info','Le mandat a déjà été révoqué');
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
+
         }elseif($mandate->getStatus() == Mandate::OVERDUE ){
             $session->getFlashBag()->add('info','Le mandat a un retard de paiement, et ne peut donc être révoqué');
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
         } 
 
 
@@ -338,8 +327,7 @@ class MandateController extends Controller
             $session->getFlashBag()->add('success','Mandat révoqué avec succès');
 
             $em->flush();
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
-
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
         }
 
         return $this->render('CairnUserBundle:Mandate:cancel.html.twig',

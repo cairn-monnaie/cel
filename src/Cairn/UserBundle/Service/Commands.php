@@ -955,10 +955,81 @@ class Commands
         $accessPlatformService->changeUserStatus($user, 'DISABLED');
         echo 'INFO: OK !'."\n";
 
+
+        //generate mandates for users as persons
+        echo 'INFO: ------ Set up mandates ------- ' . "\n";
+
+        
+        $contractor = $userRepo->findOneByUsername('lacreuse_desiderata'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::COMPLETE,'-7 months','-6 months','-1 month');
+        $this->em->persist($mandate);
+       
+        $contractor = $userRepo->findOneByUsername('barbare_cohen'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::CANCELED,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('crabe_arnold'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::UP_TO_DATE,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('tous_andre'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::OVERDUE,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('gjanssens'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 month','+1 month','+7 months');
+        $this->em->persist($mandate);
+
         $this->em->flush();
         echo 'INFO: OK !'."\n";
 
         return 'Database successfully generated !';
+
+    }
+
+    private function createMandate(User $contractor, $amount,$status,$createdAt,$beforeToday,$afterToday)
+    {
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $mandate = new Mandate();
+        $mandate->setStatus($status);
+
+        echo 'INFO: '. $contractor->getName(). ' has a mandate '.$mandate->getStatusName($status)."\n";
+
+        $mandate->setContractor($contractor);
+        $mandate->setAmount($amount);
+
+        $today = new \Datetime();
+
+        $clone = clone $today;
+        $before = new \Datetime(date_modify($clone, $beforeToday)->format('d-m-Y'));
+
+        $clone = clone $today;
+        $after = new \Datetime(date_modify($clone,$afterToday)->format('d-m-Y'));
+
+        $clone = clone $before;
+
+        $mandate->setBeginAt($before);
+        $mandate->setEndAt($after);
+        $mandate->setCreatedAt(date_modify($clone,$createdAt));
+        $mandate->setStatus($status);
+
+        $count = $accountManager->getConsistentOperationsCount($mandate,$today);
+
+        if($status == Mandate::OVERDUE){ $count -= 1; }
+
+        for($i = 0; $i < $count; $i++){
+            $operation = $accountManager->creditUserAccount($contractor, $amount, Operation::TYPE_MANDATE, 'Règlement de mandat');
+
+            $mandate->addOperation($operation);
+
+            $this->em->persist($operation);
+            $operation->setMandate($mandate);
+        }
+
+        echo 'INFO: OK !'."\n";
+
+        return $mandate;
 
     }
 }

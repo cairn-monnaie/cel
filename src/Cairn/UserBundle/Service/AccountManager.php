@@ -51,6 +51,10 @@ class AccountManager
             return -1;
         }
 
+        if($end->diff($mandate->getEndAt())->invert == 1){
+            $end = $mandate->getEndAt();
+        }
+
         $dayBegin = $mandate->getBeginAt()->format('d');
         $dayEnd = $end->format('d');
 
@@ -67,7 +71,6 @@ class AccountManager
         }
 
         return $nbOperations;
-
     }
 
     public function isUpToDateMandate(Mandate $mandate)

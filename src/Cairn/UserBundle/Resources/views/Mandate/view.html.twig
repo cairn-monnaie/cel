@@ -14,7 +14,7 @@
     {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
         <a href="{{path('cairn_user_mandates_add') }}" class="btn green" ><i class="material-icons left">add</i>Créer un nouveau mandat</a>
 
-        <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+        <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}" class="btn blue" > Honorer le mandat</a>
     {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
         <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"  class="btn red" > Révoquer</a>
     {% endif %}
