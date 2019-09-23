@@ -284,11 +284,11 @@ cairn_user_mandates_honour:
     requirements:
         id: \d+
 
-        #cairn_user_mandates_edit:
-        #    path:     admin/mandates/{id}
-        #    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
-        #    requirements:
-        #        id: \d+
+cairn_user_mandates_edit:
+    path:     admin/mandates/edit/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
+    requirements:
+        id: \d+
 
 cairn_user_mandates_cancel:
     path:     admin/mandates/cancel/{id}

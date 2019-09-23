@@ -88,7 +88,8 @@ class MandateValidator extends ConstraintValidator
         $this->mandateRepo->whereContractor($mb, $contractor)->whereStatus($mb, array(Mandate::SCHEDULED));
         $futureMandate = $mb->getQuery()->getOneOrNullResult();
 
-        if($ongoingMandate){
+
+        if($ongoingMandate && ($ongoingMandate !== $mandate)){
             //if there is an ongoing mandate, you can only declare a future mandate 
             $diff = $mandate->getBeginAt()->diff($ongoingMandate->getEndAt());
 
@@ -100,9 +101,16 @@ class MandateValidator extends ConstraintValidator
             }
         }
 
-        if($futureMandate){
+        if($futureMandate && ($futureMandate !== $mandate)){
             $this->context->buildViolation("Un futur mandat commençant le ".$futureMandate->getBeginAt()->format('d-m-Y') ." est déjà prévu")
                 ->atPath('beginAt')
+                ->addViolation();
+            return;
+        }
+
+        if($mandate->getMandateDocuments()->count() == 0){
+            $this->context->buildViolation("Aucun document fourni")
+                ->atPath('mandateDocuments')
                 ->addViolation();
             return;
         }

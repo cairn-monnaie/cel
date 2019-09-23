@@ -234,6 +234,31 @@ class MandateController extends Controller
 
     }
 
+    public function editMandateAction(Request $request, Mandate $mandate)
+    {
+        $em = $this->getDoctrine()->getManager();
+        $session = $request->getSession();
+
+        if( $mandate->getStatus() == Mandate::OVERDUE ){
+            $session->getFlashBag()->add('info','Ce mandat est en retard');
+            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+        } 
+
+        $form = $this->createForm(MandateType::class, $mandate);
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+
+            $session->getFlashBag()->add('success','Le nouveau mandat a bien été édité');    
+            $em->flush();
+
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
+        }
+
+        return $this->render('CairnUserBundle:Mandate:edit.html.twig',
+            array('form'=>$form->createView())
+            );
+
+    }
 
     public function honourMandateAction(Request $request, Mandate $mandate)
     {

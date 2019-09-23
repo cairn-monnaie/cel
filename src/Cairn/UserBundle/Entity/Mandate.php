@@ -82,7 +82,7 @@ class Mandate
 
     /**
      * @var ArrayCollection
-     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\File", mappedBy="mandate" , cascade={"persist"})
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\File", mappedBy="mandate" , cascade={"persist","remove"},orphanRemoval=true)
      *@ORM\JoinColumn(nullable=false)
      */
     private $mandateDocuments;
@@ -380,8 +380,7 @@ class Mandate
     {
         $this->mandateDocuments->removeElement($document);
 
-        $document->setMandate($this);
-
+        $document->setMandate(NULL);
         return $this;
     }
 
