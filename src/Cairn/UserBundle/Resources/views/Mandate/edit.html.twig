@@ -19,7 +19,7 @@
         var $deleteLink = $('<a href="#" class="js-document-remove pull-right"><i class="material-icons">close</i></a>');
         var $removeLinks = $('.js-document-remove');
     
-        var $addLink = $('.js-document-add');
+        var $addLink = $('.js-document-add').parent();
  
  
          $addLink.on('click', function(e) {
@@ -30,6 +30,7 @@
              var prototypeID = '#cairn_userbundle_mandate_mandateDocuments___name__';
              var newFormID = prototypeID.replace(/__name__/g, index - 1);
              $newFormField = $(newFormID); 
+             $newFormField.find(':input').attr('required',true);
 
             $newFormField.find('div:first-child').first().append($deleteLink);
 
@@ -39,6 +40,10 @@
                 $(this).closest(newFormID)
                 .fadeOut()
                 .remove();
+
+                $wrapper.data('index', index - 1);
+
+                $addLink.show();
             });
         });
 

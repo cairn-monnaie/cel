@@ -13,7 +13,7 @@
             data-index="{{ form.mandateDocuments|length }}"
         >
             {% for documentField in form.mandateDocuments %}
-             <div class="col s12 m6  js-document-item">
+             <div class="col s12 m6 js-document-item">
                 <div class="row ">
                     <div class="col s12">
                         {{ form_errors(documentField) }}
@@ -45,7 +45,7 @@
     jQuery(document).ready(function() {
         var $wrapper = $('.js-document-wrapper');
 
-        var $addLink = $('.js-document-add');
+        var $addLink = $('.js-document-add').parent();
 
         $addLink.on('click', function(e) {
             e.preventDefault();
@@ -59,7 +59,7 @@
             $(this).before(newFormField);
 
 
-            $(this).fadeOut().remove();
+            $(this).hide();
         });
       });
     
