@@ -16,16 +16,30 @@
         jQuery(document).ready(function() {
         var $wrapper = $('.js-document-wrapper');
 
+        var $deleteLink = $('<a href="#" class="js-document-remove pull-right"><i class="material-icons">close</i></a>');
         var $removeLinks = $('.js-document-remove');
     
-        $removeLinks.each(function( link ) {
-            $(this).on('click', function(e) {
+        var $addLink = $('.js-document-add');
+ 
+ 
+         $addLink.on('click', function(e) {
+             e.preventDefault();
+
+             var index = $wrapper.data('index');
+
+             var prototypeID = '#cairn_userbundle_mandate_mandateDocuments___name__';
+             var newFormID = prototypeID.replace(/__name__/g, index - 1);
+             $newFormField = $(newFormID); 
+
+            $newFormField.find('div:first-child').first().append($deleteLink);
+
+            $deleteLink.on('click', function(e) {
             
                 e.preventDefault();
-                $(this).closest('.js-document-item')
+                $(this).closest(newFormID)
                 .fadeOut()
                 .remove();
-            })
+            });
         });
 
       });

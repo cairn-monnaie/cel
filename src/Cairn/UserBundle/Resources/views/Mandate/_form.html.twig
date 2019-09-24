@@ -21,12 +21,9 @@
                     </div>
                     <div class="col s12">
                         {{ form_widget(documentField) }}
-                        <a href="#" class="js-document-remove pull-right">
-                            <i class="material-icons">close</i>
-                        </a>
                     </div>
                 </div>
-            </div>
+             </div>
             {% endfor %}
         </div>
          <div class="col s12">
@@ -49,8 +46,7 @@
         var $wrapper = $('.js-document-wrapper');
 
         var $addLink = $('.js-document-add');
-    
-    
+
         $addLink.on('click', function(e) {
             e.preventDefault();
 
@@ -62,6 +58,8 @@
             $wrapper.data('index', index + 1);
             $(this).before(newFormField);
 
+
+            $(this).fadeOut().remove();
         });
       });
     
