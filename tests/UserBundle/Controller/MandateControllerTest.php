@@ -26,7 +26,7 @@ class MandateControllerTest extends BaseControllerTest
      *
      * To deal with mandate dates (begin & end) validation, we are forced to use a workaround in the test : if today's date > 25, we start from first day of next month
      */
-    public function testDeclareMandate($current,$contractor,$amount,$begin,$end,$isValid,$expectedMessage)
+    public function testDeclareMandate($current,$contractor,$amount,$begin,$end,$isValid,$expectedMessage, $addDocument)
     {
         $crawler = $this->login($current, '@@bbccdd');
 
@@ -70,19 +70,24 @@ class MandateControllerTest extends BaseControllerTest
         $form['cairn_userbundle_mandate[beginAt]']->setValue($beginAt_format);
         $form['cairn_userbundle_mandate[endAt]']->setValue($endAt_format);
 
+        if($addDocument){
         
-        //select pdf file
-        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'affiche.pdf';                                 
-        $absolutePath = $absoluteWebDir.$originalName;
+            //select pdf file
+            $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+            $originalName = 'affiche.pdf';                                 
+            $absolutePath = $absoluteWebDir.$originalName;
 
-        $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
-        $values = $form->getPhpValues();
-        $values['cairn_userbundle_mandate']['mandateDocuments']['0']['file'] = $absolutePath; 
+            $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+            $values = $form->getPhpValues();
+            $values['cairn_userbundle_mandate']['mandateDocuments']['0']['file'] = $absolutePath; 
 
-        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
+             $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
 
+        }else{
+            $crawler = $this->client->submit($form);
+        }
 
+       
         $nbMandatesAfter = count($mandateRepo->findByContractor($contractor));
 
         $scheduledMandate = $mandateRepo->findOneBy(array('status'=>Mandate::SCHEDULED,'contractor'=>$contractor));
@@ -104,26 +109,28 @@ class MandateControllerTest extends BaseControllerTest
     {
                 
         return array(
-            'valid first declaration : person'=>array('admin_network','comblant_michel', 30 , '+1 days', '+7 months',true,''),
-            'valid first declaration : pro'=>array('admin_network','jardins_epices', 30 , '+1 days', '+7 months',true,''),
-            'valid second declaration after complete'=>array('admin_network','lacreuse_desiderata', 30 , '+1 days', '+7 months',true,''),
-            'valid second declaration after uptodate'=>array('admin_network','crabe_arnold', 30 , '+4 months', '+11 months',true,''),
-            'valid second declaration after overdue'=>array('admin_network','tous_andre', 30 , '+4 months', '+11 months',true,''),
-            'invalid second declaration after scheduled'=>array('admin_network','gjanssens', 30 , '+8 months', '+14 months',false,'déjà prévu'),
-            'invalid : access disabled to adherents'=>array('comblant_michel','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6'),
-            'invalid : access disabled to GL'=>array('gl_grenoble','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6'),
-            'invalid : period too short'=>array('admin_network','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6'),
-            'invalid : amount too low'=>array('admin_network','comblant_michel', 0.001 , '+1 days', '+6 months',false,'trop faible'),
-            'invalid : contractor not an adherent'=>array('admin_network','gl_grenoble', 20 , '+1 days', '+6 months',false,'adhérent'),
-            'invalid : future mandate already exists '=>array('admin_network','gjanssens', 20 , '+1 days', '+6 months',false,'déjà prévu'),
-            'invalid : intermingle overdued & future mandates '=>array('admin_network','tous_andre', 20 , '+2 months', '+6 months',false,'déjà en cours'),
-            'invalid : intermingle uptodate & future mandates '=>array('admin_network','crabe_arnold', 20 , '+2 months', '+6 months',false,'déjà en cours'),
+            'valid first declaration : person'=>array('admin_network','comblant_michel', 30 , '+1 days', '+7 months',true,'',true),
+            'valid first declaration : pro'=>array('admin_network','jardins_epices', 30 , '+1 days', '+7 months',true,'',true),
+            'valid second declaration after complete'=>array('admin_network','lacreuse_desiderata', 30 , '+1 days', '+7 months',true,'',true),
+            'valid second declaration after uptodate'=>array('admin_network','crabe_arnold', 30 , '+4 months', '+11 months',true,'',true),
+            'valid second declaration after overdue'=>array('admin_network','tous_andre', 30 , '+4 months', '+11 months',true,'',true),
+            'invalid second declaration after scheduled'=>array('admin_network','gjanssens', 30 , '+8 months', '+14 months',false,'déjà prévu',true),
+            'invalid : access disabled to adherents'=>array('comblant_michel','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6',true),
+            'invalid : access disabled to GL'=>array('gl_grenoble','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6',true),
+            'invalid : period too short'=>array('admin_network','comblant_michel', 30 , '+1 days', '+3 months',false,'au moins 6',true),
+            'invalid : amount too low'=>array('admin_network','comblant_michel', 0.001 , '+1 days', '+6 months',false,'trop faible',true),
+            'invalid : contractor not an adherent'=>array('admin_network','gl_grenoble', 20 , '+1 days', '+6 months',false,'adhérent',true),
+            'invalid : future mandate already exists '=>array('admin_network','gjanssens', 20 , '+1 days', '+6 months',false,'déjà prévu',true),
+            'invalid : intermingle overdued & future mandates '=>array('admin_network','tous_andre', 20 , '+2 months', '+6 months',false,'déjà en cours',true),
+            'invalid : intermingle uptodate & future mandates '=>array('admin_network','crabe_arnold', 20 , '+2 months', '+6 months',false,'déjà en cours',true),
+            'invalid : no document uploaded' => array('admin_network','comblant_michel', 30,'+1 month', '+8 months',false,'Aucun',false)
         );
     }
 
     /**
      *@dataProvider provideMandateToEdit
      *
+     * WARNING : adding a new document can be done using javascript code. Therefore, 
      */
     public function testEditMandate($current,$contractor,$amount,$end,$expectForm,$isValid,$expectedMessage,$addDocument)
     {
@@ -177,34 +184,30 @@ class MandateControllerTest extends BaseControllerTest
             $form['cairn_userbundle_mandate[endAt]']->setValue($mandate->getEndAt()->format('Y-m-d'));
         }
 
+        //select pdf file
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'affiche.pdf';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+        $values = $form->getPhpValues();
+
+        $countDocsBefore = $mandate->getMandateDocuments()->count();
+        $values['cairn_userbundle_mandate']['mandateDocuments'][0]['file'] = $absolutePath; 
+
         if($addDocument){
-            //select pdf file
-            $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-            $originalName = 'affiche.pdf';                                 
-            $absolutePath = $absoluteWebDir.$originalName;
-    
-            $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
-            $values = $form->getPhpValues();
-
-            $index = $mandate->getMandateDocuments()->count() + 1;
-            $values['cairn_userbundle_mandate']['mandateDocuments'][$index]['file'] = $absolutePath; 
-    
-            $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
-
-        }else{
-            $crawler = $this->client->submit($form);
+            $values['cairn_userbundle_mandate']['mandateDocuments'][1]['file'] = $absolutePath; 
         }
-
+        
+        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
                
-        $nbMandatesAfter = count($mandateRepo->findByContractor($contractor));
-
-        file_put_contents('test.txt',$this->client->getResponse()->getContent());
-
         if($isValid){
             $crawler = $this->client->followRedirect();
-            $this->assertSame(1,$crawler->filter('html:contains("édité")')->count());
 
-            $this->assertEquals($nbMandatesAfter, $nbMandatesBefore);
+
+            if($addDocument){
+                $this->assertEquals($countDocsBefore + 1, $mandate->getMandateDocuments()->count());
+            }
         }else{
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
         }
@@ -214,14 +217,17 @@ class MandateControllerTest extends BaseControllerTest
     {
                 
         return array(
-            //'invalid : access disabled to adherents'=>array('comblant_michel','crabe_arnold', 30 ,'+3 months',false,false,'',false),
-            //'invalid : access disabled to GL'=>array('gl_grenoble','crabe_arnold', 30 ,'+3 months',false,false,'',false),
+            'invalid : access disabled to adherents'=>array('comblant_michel','crabe_arnold', 30 ,'+3 months',false,false,'',false),
+            'invalid : access disabled to GL'=>array('gl_grenoble','crabe_arnold', 30 ,'+3 months',false,false,'',false),
 
-            'valid : edit uptodate mandate amount'=>array('admin_network','gjanssens', 40, NULL,true,true,'',false),
-            //'valid : edit uptodate mandate end date'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',true),
+            'valid : uptodate mandate amount + doc added' => array('admin_network','gjanssens', 40, '+7 months',true,true,'',true),
+            'valid : uptodate mandate amount + doc not added'=>array('admin_network','gjanssens', 40, '+7 months',true,true,'',false),
+            'valid : mandate end date + doc added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',true),
+            'valid : mandate end date + doc not added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',false),
 
-            //'invalid : mandate is complete'=>array('admin_network','lacreuse_desiderata', 30 , '+7 months',false,false,'achevé',false),
-            //'invalid : mandate is canceled'=>array('admin_network','barbare_cohen', 30 , '+7 months',false,false,'achevé',false),
+            
+            'invalid : mandate is complete'=>array('admin_network','lacreuse_desiderata', 30 , '+7 months',false,false,'achevé',false),
+            'invalid : mandate is canceled'=>array('admin_network','barbare_cohen', 30 , '+7 months',false,false,'achevé',false),
         );
     }
 

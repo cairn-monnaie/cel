@@ -19,7 +19,6 @@ class MandateDocumentType extends AbstractType
     {
         $builder
             ->add('file', FileType::class,array('label'=>'',
-                'error_bubbling' => true,
                 'constraints'=>array(
                     new Assert\File(array(
                         'mimeTypesMessage'=>'Format valide : pdf',

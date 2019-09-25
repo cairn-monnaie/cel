@@ -36,6 +36,7 @@ class MandateType extends AbstractType
             ->add('endAt', DateType::class, array('label'=> 'Fin','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
             ->add('mandateDocuments', CollectionType::class, array(
                 'entry_type'   => MandateDocumentType::class,
+                'error_bubbling' => false,
                 'prototype' => true,
                 'allow_add'    => true,
                 'allow_delete' => true,
