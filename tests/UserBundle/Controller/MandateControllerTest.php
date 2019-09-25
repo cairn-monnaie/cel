@@ -9,6 +9,8 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Mandate;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
 
 class MandateControllerTest extends BaseControllerTest
 {
@@ -21,6 +23,8 @@ class MandateControllerTest extends BaseControllerTest
 
     /**
      *@dataProvider provideMandateToAdd
+     *
+     * To deal with mandate dates (begin & end) validation, we are forced to use a workaround in the test : if today's date > 25, we start from first day of next month
      */
     public function testDeclareMandate($current,$contractor,$amount,$begin,$end,$isValid,$expectedMessage)
     {
@@ -37,9 +41,14 @@ class MandateControllerTest extends BaseControllerTest
         $label = $contractor->getAutocompleteLabel() ;
 
         $beginAt = date_modify(new \Datetime(),$begin);
+
+        if($beginAt->format('d') >= 25){
+            $beginAt->modify('first day of next month');
+        }
+
         $beginAt_format = $beginAt->format('Y-m-d');
 
-        $endAt = date_modify(new \Datetime(),$end);
+        $endAt = date_modify($beginAt,$end);
         $endAt_format = $endAt->format('Y-m-d');
 
 
@@ -54,13 +63,25 @@ class MandateControllerTest extends BaseControllerTest
             return;
         }
 
+
         $form = $crawler->selectButton('cairn_userbundle_mandate_forward')->form();
         $form['cairn_userbundle_mandate[contractor]']->setValue($contractor->getID());
         $form['cairn_userbundle_mandate[amount]']->setValue($amount);
         $form['cairn_userbundle_mandate[beginAt]']->setValue($beginAt_format);
         $form['cairn_userbundle_mandate[endAt]']->setValue($endAt_format);
 
-        $crawler = $this->client->submit($form);
+        
+        //select pdf file
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'affiche.pdf';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+        $values = $form->getPhpValues();
+        $values['cairn_userbundle_mandate']['mandateDocuments']['0']['file'] = $absolutePath; 
+
+        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
+
 
         $nbMandatesAfter = count($mandateRepo->findByContractor($contractor));
 
@@ -81,10 +102,7 @@ class MandateControllerTest extends BaseControllerTest
 
     public function provideMandateToAdd()
     {
-        $today = new \Datetime();
-        $today_format = $today->format('Y-m-d');
-
-        
+                
         return array(
             'valid first declaration : person'=>array('admin_network','comblant_michel', 30 , '+1 days', '+7 months',true,''),
             'valid first declaration : pro'=>array('admin_network','jardins_epices', 30 , '+1 days', '+7 months',true,''),
@@ -103,6 +121,111 @@ class MandateControllerTest extends BaseControllerTest
         );
     }
 
+    /**
+     *@dataProvider provideMandateToEdit
+     *
+     */
+    public function testEditMandate($current,$contractor,$amount,$end,$expectForm,$isValid,$expectedMessage,$addDocument)
+    {
+        $crawler = $this->login($current, '@@bbccdd');
+
+        $mandateRepo = $this->em->getRepository('CairnUserBundle:Mandate');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$current));
+        $contractor = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$contractor));
+
+        $mandate = $mandateRepo->findOneByContractor($contractor);
+
+        $nbMandatesBefore = count($mandateRepo->findByContractor($contractor));
+
+
+        $crawler = $this->client->request('GET','/admin/mandates/edit/'.$mandate->getID());
+
+        //$crawler = $this->client->followRedirect();
+        //$crawler = $this->inputCardKey($crawler,'1111');
+        //$crawler = $this->client->followRedirect();
+
+        if(!$expectForm){
+            if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            }else{
+                $crawler = $this->client->followRedirect();
+                $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
+            }
+
+            return;
+        }
+
+        $form = $crawler->selectButton('cairn_userbundle_mandate_forward')->form();
+
+        $this->assertTrue($form['cairn_userbundle_mandate[contractor]']->isDisabled());
+        $this->assertTrue($form['cairn_userbundle_mandate[beginAt]']->isDisabled());
+        //$this->assertFalse($form['cairn_userbundle_mandate[mandateDocuments][0][file]']->isRequired());
+
+        if($amount){
+            $form['cairn_userbundle_mandate[amount]']->setValue($amount);
+        }else{
+            $form['cairn_userbundle_mandate[amount]']->setValue($mandate->getAmount());
+        }
+
+        if($end){
+            $endAt = date_modify($mandate->getBeginAt(),$end);
+            $endAt_format = $endAt->format('Y-m-d');
+
+            $form['cairn_userbundle_mandate[endAt]']->setValue($endAt_format);
+        }else{
+            $form['cairn_userbundle_mandate[endAt]']->setValue($mandate->getEndAt()->format('Y-m-d'));
+        }
+
+        if($addDocument){
+            //select pdf file
+            $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+            $originalName = 'affiche.pdf';                                 
+            $absolutePath = $absoluteWebDir.$originalName;
+    
+            $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+            $values = $form->getPhpValues();
+
+            $index = $mandate->getMandateDocuments()->count() + 1;
+            $values['cairn_userbundle_mandate']['mandateDocuments'][$index]['file'] = $absolutePath; 
+    
+            $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
+
+        }else{
+            $crawler = $this->client->submit($form);
+        }
+
+               
+        $nbMandatesAfter = count($mandateRepo->findByContractor($contractor));
+
+        file_put_contents('test.txt',$this->client->getResponse()->getContent());
+
+        if($isValid){
+            $crawler = $this->client->followRedirect();
+            $this->assertSame(1,$crawler->filter('html:contains("édité")')->count());
+
+            $this->assertEquals($nbMandatesAfter, $nbMandatesBefore);
+        }else{
+            $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
+        }
+    }
+
+    public function provideMandateToEdit()
+    {
+                
+        return array(
+            //'invalid : access disabled to adherents'=>array('comblant_michel','crabe_arnold', 30 ,'+3 months',false,false,'',false),
+            //'invalid : access disabled to GL'=>array('gl_grenoble','crabe_arnold', 30 ,'+3 months',false,false,'',false),
+
+            'valid : edit uptodate mandate amount'=>array('admin_network','gjanssens', 40, NULL,true,true,'',false),
+            //'valid : edit uptodate mandate end date'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',true),
+
+            //'invalid : mandate is complete'=>array('admin_network','lacreuse_desiderata', 30 , '+7 months',false,false,'achevé',false),
+            //'invalid : mandate is canceled'=>array('admin_network','barbare_cohen', 30 , '+7 months',false,false,'achevé',false),
+        );
+    }
+
+    
     /**
      * In the current dataset, there is no adherent with several mandates
      * Therefore, fetching mandate id for a specific user can be done safely with a findByOne method

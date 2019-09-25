@@ -95,10 +95,12 @@
 
                     {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
                         <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+                        <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}"> Editer</a>
 
                     {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
                         <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"> Révoquer</a>
-                    
+                        <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}"> Editer</a>
+
                     {% endif %}
                 </div>
 
@@ -152,7 +154,6 @@
                     for (var i = 0; i < accounts.length; i++) {
                         data[accounts[i].name] = null;
                     }
-                    console.log();
 
                     $(".form_search_user").autocomplete({
                         data: data,

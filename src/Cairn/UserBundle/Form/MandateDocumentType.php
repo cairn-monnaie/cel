@@ -18,7 +18,7 @@ class MandateDocumentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('file', FileType::class,array('label'=>'Document',
+            ->add('file', FileType::class,array('label'=>'',
                 'error_bubbling' => true,
                 'constraints'=>array(
                     new Assert\File(array(

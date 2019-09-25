@@ -53,7 +53,7 @@
             var prototype = $wrapper.data('prototype');
             var index = $wrapper.data('index');
 
-            var newFormField = prototype.replace(/__name__/g, index);
+            var newFormField = prototype.replace(/__name__label__/g, 'Document n°' + (index+1)).replace(/__name__/g, index);
 
             $wrapper.data('index', index + 1);
             $(this).before(newFormField);

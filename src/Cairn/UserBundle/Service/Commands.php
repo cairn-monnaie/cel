@@ -111,7 +111,7 @@ class Commands
                 $mandate->setStatus(Mandate::OVERDUE);
             }
 
-        }else{
+        }else{ //UP_TO_DATE
             if(! $accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::OVERDUE);
             }
@@ -998,6 +998,20 @@ class Commands
 
         $mandate->setContractor($contractor);
         $mandate->setAmount($amount);
+
+        //create fake mandate document doc
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'affiche.pdf';
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+
+        $document = new File();
+        $document->setUrl($file->guessExtension());
+        $document->setAlt($file->getClientOriginalName());
+
+        $mandate->addMandateDocument($document);
+        $document->setMandate($mandate);
 
         $today = new \Datetime();
 

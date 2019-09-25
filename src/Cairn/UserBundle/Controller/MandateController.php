@@ -239,9 +239,9 @@ class MandateController extends Controller
         $em = $this->getDoctrine()->getManager();
         $session = $request->getSession();
 
-        if( $mandate->getStatus() == Mandate::OVERDUE ){
-            $session->getFlashBag()->add('info','Ce mandat est en retard');
-            return $this->redirectToRoute('cairn_user_mandates_dashboard');
+        if( $mandate->getStatus() == Mandate::CANCELED ||  $mandate->getStatus() == Mandate::COMPLETE ){
+            $session->getFlashBag()->add('info','Ce mandat est achevé');
+            return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
         } 
 
         $form = $this->createForm(MandateType::class, $mandate);

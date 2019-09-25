@@ -34,10 +34,12 @@ class MandateValidator extends ConstraintValidator
 
         $today = new \Datetime();
 
-        if($today->diff($mandate->getBeginAt())->invert == 1){
-            $this->context->buildViolation("La date de début du mandat doit être ultérieure à la date du jour")
-                ->atPath('beginAt')
-                ->addViolation();
+        if(! $mandate->getID()){
+            if($today->diff($mandate->getBeginAt())->invert == 1){
+                $this->context->buildViolation("La date de début du mandat doit être ultérieure à la date du jour")
+                    ->atPath('beginAt')
+                    ->addViolation();
+            }
         }
 
          $interval = $mandate->getBeginAt()->diff($mandate->getEndAt());
