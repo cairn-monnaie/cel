@@ -43,7 +43,7 @@
                 <div class="row">
                     <div class="col s12 m6 l3">
                         {{ form_label(formOperations.date) }}
-                        {{ form_widget(formOperations.date) }}
+                        {{ form_widget(formOperations.date, {'date_pattern': '<span style="display: none;">{{ day }}</span> {{ month }}  {{ year }}'}) }}
                     </div>
                     <div class="col s12 l6">
                         {{form_row(formOperations.cairn_user, {'attr': {'class': 'form_search_user'}} ) }}
@@ -144,6 +144,8 @@
 {% block javascripts %}
     <script>
         $(function (){
+            $('select#form_date_day').val('1');
+
             jQuery.ajax({
                 type: 'POST',
                 url: "{{ path('cairn_accounts_ajax') }}",

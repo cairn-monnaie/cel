@@ -114,7 +114,7 @@ class MandateController extends Controller
                  'required'=>false,
                  'widget'=> 'choice',
                  'days'=>array(1),
-                 'years'=> range(date('Y'), date('Y') + 4)
+                 'years'=> range(date('Y') - 4, date('Y'))
                  ))
             ->add('forward', SubmitType::class, array('label' => 'Rechercher le(s) opération(s)'))
             ->getForm();
@@ -181,8 +181,9 @@ class MandateController extends Controller
             }
 
             if($date){
-                $begin = new \Datetime($date->modify('first day of this month')->format('Y-m-d'));
-                $end = new \Datetime($date->modify('last day of this month')->format('Y-m-d'));
+                //$date is modified but not a big deal as the two modifications involve the same month
+                $begin = $date->modify('first day of this month');
+                $end = $date->modify('last day of this month');
 
                 $operationRepo->whereSubmissionDateBetween($ob, $begin, $end);
             }
@@ -220,6 +221,8 @@ class MandateController extends Controller
         $form = $this->createForm(MandateType::class, $mandate);
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
+
+            $data = $form->getData();
 
             $session->getFlashBag()->add('success','Le nouveau mandat a bien été déclaré');    
             $em->persist($mandate);
