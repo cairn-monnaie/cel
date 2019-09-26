@@ -1018,10 +1018,16 @@ class Commands
         $clone = clone $today;
         $before = new \Datetime(date_modify($clone, $beforeToday)->format('d-m-Y'));
 
+        if($before->format('d') >= 25){
+            $before->modify('first day of next month');
+        }
+
         $clone = clone $today;
         $after = new \Datetime(date_modify($clone,$afterToday)->format('d-m-Y'));
 
-        $clone = clone $before;
+        if($after->format('d') >= 25){
+            $after->modify('first day of next month');
+        }
 
         $mandate->setBeginAt($before);
         $mandate->setEndAt($after);

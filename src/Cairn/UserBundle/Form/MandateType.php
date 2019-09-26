@@ -18,19 +18,24 @@ use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
+use Cairn\UserBundle\Repository\UserRepository;
+
 class MandateType extends AbstractType
 {
+    private $userRepo;
+
+    public function __construct(UserRepository $userRepo)
+    {
+        $this->userRepo = $userRepo;
+    }
+
     /**
      * {@inheritdoc}
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('contractor',  EntityType::class, array(
-                'class'        => 'CairnUserBundle:User',
-                'choice_label' => 'autocompleteLabel',
-                'multiple'     => false,
-            ))
+            ->add('contractor', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom'),'mapped'=>false))
             ->add('amount', NumberType::class, array('label'=>'Montant','scale'=>2,'attr'=>array()))
             ->add('beginAt', DateType::class, array('label'=> 'Début','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
             ->add('endAt', DateType::class, array('label'=> 'Fin','widget' => 'single_text','format' => 'yyyy-MM-dd',"attr"=>array('class'=>'datepicker_cairn')))
@@ -54,6 +59,13 @@ class MandateType extends AbstractType
                     return;
                 }
                 if($mandate->getID()){
+
+                    $form->add('contractor',  EntityType::class, array(
+                        'class'        => 'CairnUserBundle:User',
+                        'choice_label' => 'autocompleteLabel',
+                        'multiple'     => false,
+                    ));
+
                     $disabledFields = array('contractor','beginAt');
 
                     foreach($disabledFields as $fieldName){
@@ -78,6 +90,29 @@ class MandateType extends AbstractType
 
                 }
 
+            }
+        );
+
+        $builder->addEventListener(
+            FormEvents::SUBMIT,
+            function (FormEvent $event) {
+                $mandate = $event->getData();
+                $form = $event->getForm();
+                if(null === $mandate){
+                    return;
+                }
+                if(! $mandate->getID()){
+                    $autocompleteName = $form['contractor']->getData();
+                    preg_match('#\((.*)\)$#',$autocompleteName,$matches_email);
+
+                    if(! $matches_email){
+                        $contractor = NULL;
+                    }else{
+                        $contractor = $this->userRepo->findOneByEmail($matches_email[1]);
+                    }
+
+                    $mandate->setContractor($contractor);
+                }
             }
         );
 

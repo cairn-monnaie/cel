@@ -221,6 +221,7 @@ services:
         class: Cairn\UserBundle\Validator\MandateValidator
         arguments:
             - "@cairn_user.repository_mandate"
+            - "@cairn_user.repository_user"
         tags:
             - { name: validator.constraint_validator, alias: cairn_mandate_validator }
 
@@ -240,6 +241,10 @@ services:
 
     Cairn\UserBundle\Form\ProfileType:
         arguments: ['@security.authorization_checker']
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\MandateType:
+        arguments: ['@cairn_user.repository_user']
         tags: [form.type]
 
     Cairn\UserBundle\Form\PhoneType:

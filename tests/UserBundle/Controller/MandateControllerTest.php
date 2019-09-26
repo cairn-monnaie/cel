@@ -65,7 +65,7 @@ class MandateControllerTest extends BaseControllerTest
 
 
         $form = $crawler->selectButton('cairn_userbundle_mandate_forward')->form();
-        $form['cairn_userbundle_mandate[contractor]']->setValue($contractor->getID());
+        $form['cairn_userbundle_mandate[contractor]']->setValue($contractor->getAutocompleteLabel());
         $form['cairn_userbundle_mandate[amount]']->setValue($amount);
         $form['cairn_userbundle_mandate[beginAt]']->setValue($beginAt_format);
         $form['cairn_userbundle_mandate[endAt]']->setValue($endAt_format);
@@ -167,7 +167,6 @@ class MandateControllerTest extends BaseControllerTest
 
         $this->assertTrue($form['cairn_userbundle_mandate[contractor]']->isDisabled());
         $this->assertTrue($form['cairn_userbundle_mandate[beginAt]']->isDisabled());
-        //$this->assertFalse($form['cairn_userbundle_mandate[mandateDocuments][0][file]']->isRequired());
 
         if($amount){
             $form['cairn_userbundle_mandate[amount]']->setValue($amount);

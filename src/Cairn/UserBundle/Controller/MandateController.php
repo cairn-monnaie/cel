@@ -231,7 +231,6 @@ class MandateController extends Controller
         return $this->render('CairnUserBundle:Mandate:add.html.twig',
             array('form'=>$form->createView())
             );
-
     }
 
     public function editMandateAction(Request $request, Mandate $mandate)

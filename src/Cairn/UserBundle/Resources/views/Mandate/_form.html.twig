@@ -41,6 +41,7 @@
                 <i class="material-icons">add</i>
             </a>
          </div>
+        {{form_row(form.contractor, {'attr': {'class': 'form_search_user'}} ) }}
 
     {{ form_rest(form) }}
     {{ form_end(form) }}
@@ -53,6 +54,26 @@
 <script>
 
     jQuery(document).ready(function() {
+
+        jQuery.ajax({
+                type: 'POST',
+                url: "{{ path('cairn_accounts_ajax') }}",
+                dataType: 'json',
+                success: function (response) {
+                    var accounts = response;
+                    var data = {};
+                    for (var i = 0; i < accounts.length; i++) {
+                        data[accounts[i].name] = null;
+                    }
+
+                    $("#cairn_userbundle_mandate_contractor").autocomplete({
+                        minLength : 4,
+                        data: data,
+                        limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
+                    });
+                }, 
+            });
+
         var $wrapper = $('.js-document-wrapper');
 
         var $addLink = $('.js-document-add').parent();

@@ -7,6 +7,7 @@ use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
 use Cairn\UserBundle\Repository\MandateRepository;
+use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Entity\Mandate;
 
 use Doctrine\ORM\EntityManager;
@@ -15,9 +16,13 @@ use Doctrine\ORM\EntityManager;
 class MandateValidator extends ConstraintValidator
 {
 
-    public function __construct(MandateRepository $mandateRepo)
+    private $mandateRepo;
+    private $userRepo;
+
+    public function __construct(MandateRepository $mandateRepo, UserRepository $userRepo)
     {
         $this->mandateRepo = $mandateRepo;
+        $this->userRepo = $userRepo;
     }
 
     /**
@@ -34,7 +39,7 @@ class MandateValidator extends ConstraintValidator
 
         $today = new \Datetime();
 
-        if(! $mandate->getID()){
+        if(! $mandate->getID()){ //new entity, not an edit
             if($today->diff($mandate->getBeginAt())->invert == 1){
                 $this->context->buildViolation("La date de début du mandat doit être ultérieure à la date du jour")
                     ->atPath('beginAt')
@@ -60,18 +65,25 @@ class MandateValidator extends ConstraintValidator
 
         $limit = 25;
         if($mandate->getBeginAt()->format('d') > $limit){
-            $this->context->buildViolation("Pour éviter toute confusion, la date doit être comprise du 1 au ".$limit)
+            $this->context->buildViolation("Pour éviter toute confusion, la date de début doit être comprise du 1 au ".$limit)
                 ->atPath('beginAt')
                 ->addViolation();
         }
 
         if($mandate->getEndAt()->format('d') > $limit){
-            $this->context->buildViolation("Pour éviter toute confusion, la date doit être comprise du 1 au ".$limit)
+            $this->context->buildViolation("Pour éviter toute confusion, la date de fin doit être comprise du 1 au ".$limit)
                 ->atPath('endAt')
                 ->addViolation();
         }
 
         $contractor = $mandate->getContractor();
+
+        if(! $contractor){
+            $this->context->buildViolation("Aucun utilisateur trouvé")
+                ->atPath('contractor')
+                ->addViolation();
+            return;
+        }
 
         if(! $contractor->isAdherent()){
             $this->context->buildViolation("Le mandataire doit être un adhérent")
