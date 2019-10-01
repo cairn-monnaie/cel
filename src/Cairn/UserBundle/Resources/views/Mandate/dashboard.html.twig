@@ -57,8 +57,7 @@
         </li>
     </ul>
 
-    Total amount : {{totalAmount}} cairns
-
+    
     {% if mandates is defined %}
         {% for mandate in mandates %}
             {% set status = mandate.status %}
@@ -111,6 +110,8 @@
             Aucun mandat ne correspond à votre recherche !
         {% endfor %}
     {% elseif operations is defined %}
+        <h3> Montant total : <span id="total_amount_operations_mandates"> {{totalAmount}}</span> cairns </h3>
+
             <div>
                 <table>
                 <thead>
@@ -144,8 +145,10 @@
 {% block javascripts %}
     <script>
         $(function (){
-            $('select#form_date_day').val('1');
-
+            $('select#form_date_year').on('change', function(e){
+                $('select#form_date_day').val('1');
+            });
+            
             jQuery.ajax({
                 type: 'POST',
                 url: "{{ path('cairn_accounts_ajax') }}",
