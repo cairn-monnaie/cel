@@ -57,7 +57,7 @@ class MandateValidator extends ConstraintValidator
 
         $interval = $mandate->getBeginAt()->diff($mandate->getEndAt());
 
-        if($interval->m < 6){
+        if( ($interval->m) < 6 && ($interval->y == 0)){
             $this->context->buildViolation("Période invalide : l'engagement doit être d'au moins 6 mois")
                 ->atPath('endAt')
                 ->addViolation();
