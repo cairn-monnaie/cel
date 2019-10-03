@@ -8,7 +8,7 @@
 <div class="row">
     <div>
         <h1> Détail de votre {{transfer.getTypeName(transfer.type)|trans}} </h1>
-        {% if transfer.id is defined %}
+        {% if transfer.paymentID is defined %}
             <a href="{{path('cairn_user_banking_transfer_notice_download',{'paymentID':transfer.paymentID})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
         {% endif %}
     </div>

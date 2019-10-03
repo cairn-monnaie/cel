@@ -86,17 +86,18 @@ class UserController extends Controller
 
         $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
+        $executedTypes = Operation::getExecutedTypes(true,$currentUser->hasRole('ROLE_PRO'));
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
         $processedTransactions = $ob->where(
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes(true))
+                     $ob->expr()->in('o.type',$executedTypes)
                  ),
                  $ob->expr()->andX(
                      $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes(true))
+                     $ob->expr()->in('o.type',$executedTypes)
                  )
              ))
             ->andWhere('o.paymentID is not NULL')

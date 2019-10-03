@@ -40,20 +40,13 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 class MandateController extends Controller
 {
 
-    public function indexAction(Request $request)
-    {
-        return $this->render('CairnUserBundle:Mandate:index.html.twig');
-    }
-
     /**
      * View specific mandate together with its executed operations
      *
      */
     public function viewMandateAction(Request $request, Mandate $mandate)
     {
-
         return $this->render('CairnUserBundle:Mandate:view.html.twig',array('mandate'=>$mandate));
-
     }
 
     public function mandatesDashboardAction(Request $request)

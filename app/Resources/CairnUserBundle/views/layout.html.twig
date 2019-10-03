@@ -26,12 +26,12 @@
         </li>
         {% if app.user.isAdherent() %}
             <li>
-                <a class="menu-subitem" href="{{path('cairn_user_banking_operations',{'type':'transaction'})}}"><i class="material-icons left">format_list_bulleted</i>Virements</a>
+                <a class="menu-subitem" href="{{path('cairn_user_banking_operations')}}"><i class="material-icons left">format_list_bulleted</i>Opérations</a>
             </li>
 
         {% elseif is_granted("ROLE_ADMIN") %}
             {% if is_granted("ROLE_SUPER_ADMIN")%}
-                    <li><a class="menu-subitem" href="{{path('cairn_user_mandates_index')}}"><i class="material-icons left">format_list_bulleted</i>Opérations</a></li>
+                    <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations')}}"><i class="material-icons left">format_list_bulleted</i>Opérations</a></li>
 
             {% endif %}
             <li>
@@ -54,7 +54,7 @@
                 <a class="menu-item" href="{{path('cairn_user_users_dashboard')}}"><i class="material-icons">people</i>Membres</a>
             </li>
             {% if is_granted('ROLE_SUPER_ADMIN') %}
-                <li><a class="menu-subitem" href="{{path('cairn_user_mandates_dashboard')}}"><i class="material-icons left">format_list_bulleted</i>Opérations</a></li>
+                <li><a class="menu-subitem" href="{{path('cairn_user_banking_operations')}}"><i class="material-icons left">format_list_bulleted</i>Opérations</a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_electronic_mlc_dashboard')}}"><i class="material-icons">account_balance</i>Coffre [e]-cairns </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_cards_dashboard')}}"><i class="material-icons">grid_on</i>Cartes de sécurité </a></li>
                 <li><a class="menu-subitem" href="{{path('cairn_user_phones_dashboard')}}"><i class="material-icons">phone</i>Données SMS </a></li>

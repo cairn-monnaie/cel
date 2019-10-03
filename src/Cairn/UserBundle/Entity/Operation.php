@@ -153,6 +153,7 @@ class Operation
     const TYPE_SMS_PAYMENT = 8;
     const TYPE_MANDATE = 9;
     const TYPE_ONLINE_PAYMENT = 10;
+    const TYPE_RECONVERSION = 11;
 
     const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
 
@@ -194,18 +195,17 @@ class Operation
         case "10":
             return 'online payment';
             break;
+        case "11":
+            return 'reconversion';
+            break;
         default:
             return NULL;
         }
     }
-    public static function getFromOperationTypes()
-    {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_ONLINE_PAYMENT);//,self::TYPE_RECONVERSION);
-    }
 
     public static function getDebitOperationTypes()
     {
-        return array(self::TYPE_WITHDRAWAL);//,self::TYPE_RECONVERSION);
+        return array(self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getToOperationTypes()
@@ -215,10 +215,16 @@ class Operation
 
     /**
      * Propose TYPE_MANDATE in the list or not
+     * 
+     * If user is PRO, do propose reconversion field
      */
-    public static function getExecutedTypes($withMandate = NULL)
+    public static function getExecutedTypes($withMandate = NULL, $asPro = false)
     {
         $types =  self::ARRAY_EXECUTED_TYPES;
+
+        if($asPro){
+            $types[] = self::TYPE_RECONVERSION;
+        }
 
         if($withMandate){
             $types[] = self::TYPE_MANDATE;

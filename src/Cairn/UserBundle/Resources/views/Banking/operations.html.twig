@@ -1,0 +1,38 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/transaction_operations.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{parent()}}
+    {% if app.user.isAdherent() %}
+    <h1>Virements</h1>
+    <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}" class="btn"><i class="material-icons left">add</i>Nouveau virement unique</a>
+    {#trending_flat#}
+    {#<a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a>#}
+    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Tous mes virements</a>
+    {# <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a>#}
+    <br>
+    <br>
+    <a href="{{path('cairn_user_beneficiaries_list')}}" class="btn cyan"><i class="material-icons left">favorite</i>Mes bénéficiaires enregistrés</a>
+    <a href="{{path('cairn_user_beneficiaries_add')}}" class="btn blue"><i class="material-icons left">person_add</i>ajouter un bénéficiaire</a>
+
+        {% if app.user.hasRole('ROLE_PRO')%}
+            <h1>Reconversion</h1>
+            <a href="{{path('cairn_user_banking_reconversion')}}" class="btn"><i class="material-icons left">add</i>Effectuer une reconversion</a>
+        {% endif %}
+    {% elseif app.user.hasRole('ROLE_SUPER_ADMIN') %}
+        <div class="row">
+            <div class="card-panel z-depth-1">
+                <a href="{{path('cairn_user_mandates_dashboard')}}"> <h2>Les mandats </h2></a>
+            </div>
+            <div class="card-panel z-depth-1">
+               <a  href="{{path('cairn_user_electronic_mlc_dashboard')}}"><h2>Coffre [e]-cairns </h2> </a>
+            </div>
+            <div class="card-panel z-depth-1">
+               <a  href="#"><h2>Conversions Helloasso </h2> </a>
+            </div>
+        </div>
+
+    {% endif %}
+
+{% endblock %}

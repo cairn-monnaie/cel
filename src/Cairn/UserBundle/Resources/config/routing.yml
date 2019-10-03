@@ -258,10 +258,6 @@ cairn_user_users_phone_delete:
     requirements:
         id: \d+
 
-cairn_user_mandates_index:
-    path:     admin/mandates/index
-    defaults: { _controller: CairnUserBundle:Mandate:index, _format: html}
-
 cairn_user_mandates_dashboard:
     path:     admin/mandates/dashboard
     defaults: { _controller: CairnUserBundle:Mandate:mandatesDashboard, _format: html }
@@ -376,11 +372,8 @@ cairn_user_banking_accounts_overview_download:
     defaults: { _controller: CairnUserBundle:Banking:downloadAccountsOverview }
 
 cairn_user_banking_operations:
-    path:     banking/operations/{type}.{_format}
+    path:     banking/operations
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
-    requirements:
-        type: transaction
-        _format: html|json
 
 cairn_user_banking_post:
     path:     operations/{type}
@@ -403,6 +396,10 @@ cairn_user_banking_transaction_to:
         frequency: unique #|recurring
         _format: html|json
 
+cairn_user_banking_reconversion:
+    path:     banking/reconversion.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:reconversion, _format: html}
+
 cairn_user_banking_transaction_request:
     path:     banking/transaction/request/{to}-{frequency}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: html}
@@ -411,6 +408,9 @@ cairn_user_banking_transaction_request:
         to: new|beneficiary|self
         _format: html|json
 
+cairn_user_banking_reconversion:
+    path:     banking/reconversion.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:reconversion, _format: html}
 
 cairn_user_sms_poster_download:
     path:     sms-poster/download
