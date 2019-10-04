@@ -940,6 +940,7 @@ class UserController extends Controller
             if( $e->errorCode == 'ENTITY_NOT_FOUND'){ //user has registered but never activated
 
                 $emailTo = $user->getEmail();
+                $em->remove($user->getIdentityDocument());
                 $em->remove($user);
                 $em->flush();
 
