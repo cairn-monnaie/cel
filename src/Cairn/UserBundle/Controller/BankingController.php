@@ -67,16 +67,14 @@ class BankingController extends Controller
     }
 
 
-    /**
-     * A pro can ask for a reconversion from mlc to euros 
-     * 
-     *
-     * @Security("has_role('ROLE_PRO')")
-     */
     public function reconversionAction(Request $request)
     {
         $session = $request->getSession();
         $currentUser = $this->getUser();
+
+        if(! $currentUser->hasRole('ROLE_PRO')){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');

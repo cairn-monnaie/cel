@@ -209,6 +209,69 @@ class BankingControllerTest extends BaseControllerTest
 //        );
 //    }
 
+
+    /**
+     *@dataProvider provideDataForReconversion
+     */
+    public function testReconversion($current,$amount,$expectForm, $isValid,$expectedMessage)
+    {
+        $crawler = $this->login($current, '@@bbccdd');
+
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $debitorUser = $userRepo->findOneBy(array('username'=>$current));
+        $debitorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
+
+        $debitorICC = $debitorAccount->number;
+        $accountBalanceBefore = $debitorAccount->status->balance;
+
+        $url = '/banking/reconversion';
+        $crawler = $this->client->request('GET',$url);
+
+        
+        if(!$expectForm){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+            return;
+        }else{
+            $form = $crawler->selectButton('cairn_userbundle_reconversion_save')->form();
+            $form['cairn_userbundle_reconversion[amount]']->setValue($amount);
+            $form['cairn_userbundle_reconversion[fromAccount]']->setValue($debitorICC);
+            $form['cairn_userbundle_reconversion[reason]']->setValue('Test reconversion');
+            $form['cairn_userbundle_reconversion[description]']->setValue('Test reconversion description');
+
+            $crawler =  $this->client->submit($form);
+
+            $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($debitorUser->getCyclosID())[0];
+            $accountBalanceAfter = $ownerAccount->status->balance;
+
+            if($isValid){
+                $crawler = $this->client->followRedirect();
+                $this->assertSame(1,$crawler->filter('html:contains("Détail de votre reconversion")')->count());
+
+                $this->assertTrue($accountBalanceAfter == ($accountBalanceBefore - $amount));
+
+            }else{
+                $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
+                $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
+            }
+        }
+    }
+
+
+    public function provideDataForReconversion()
+    {
+        $adminUsername = $this->testAdmin;
+
+        return array(
+            'invalid : access disabled to persons'=> array('comblant_michel',40,false,false,''),
+            'invalid : access disabled to admins'=> array($adminUsername,40,false,false,''),
+            'valid : pro with non null account'=> array('nico_faus_prod',100,true,true,''),
+            'invalid : amount too high'=> array('nico_faus_prod',1000000,true,false,'Montant trop élevé'),
+        );
+
+    }
+
+
     /**
      *
      *@todo : change traversing methods when css added. Putting raw values for selectLink method is more prone to errors than a div.class
