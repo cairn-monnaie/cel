@@ -134,15 +134,21 @@ class BankingController extends Controller
                 $em->persist($operation);
                 $em->flush();
 
-                //send email to eCairn email
+                //send emails to eCairn email and to user
                 $messageNotificator = $this->get('cairn_user.message_notificator');
 
-                $body = $this->get('templating')->render('CairnUserBundle:Emails:reconversion.html.twig',array('user'=>$currentUser,'operation'=>$operation));
-                $messageNotificator->notifyByEmail('Reconversion [e]-Cairn',$messageNotificator->getNoReplyEmail(),$messageNotificator->getMaintenanceEmail(),$body);
+                //first email to user
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:reconversion.html.twig',array('toAdmin'=>false,'user'=>$currentUser,'operation'=>$operation));
+                $messageNotificator->notifyByEmail('Reconversion [e]-Cairn',$messageNotificator->getNoReplyEmail(),$currentUser->getEmail(),$body);
+
+                //second email to admin
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:reconversion.html.twig',array('toAdmin'=>true,'user'=>$currentUser,'operation'=>$operation));
+                $messageNotificator->notifyByEmail('Reconversion [e]-Cairn',$messageNotificator->getNoReplyEmail(),$this->getParameter('cairn_email_management'),$body);
 
                 $session->getFlashBag()->add('success','La reconversion a été effectuée avec succès.');
                 $session->getFlashBag()->add('info','Votre remboursement sera effectué dans les plus brefs délais');
                 return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
+
             }
         }
 

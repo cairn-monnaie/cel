@@ -233,6 +233,8 @@ class BankingControllerTest extends BaseControllerTest
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
             return;
         }else{
+            $this->client->enableProfiler();
+
             $form = $crawler->selectButton('cairn_userbundle_reconversion_save')->form();
             $form['cairn_userbundle_reconversion[amount]']->setValue($amount);
             $form['cairn_userbundle_reconversion[fromAccount]']->setValue($debitorICC);
@@ -245,11 +247,36 @@ class BankingControllerTest extends BaseControllerTest
             $accountBalanceAfter = $ownerAccount->status->balance;
 
             if($isValid){
+                $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
+
+                //assert email
+                $this->assertSame(2, $mailCollector->getMessageCount());
+
+                $message = $mailCollector->getMessages()[0];
+
+                $this->assertInstanceOf('Swift_Message', $message);
+                $this->assertContains('Reconversion', $message->getSubject());
+                $this->assertContains($amount, $message->getBody());
+                $this->assertContains($debitorUser->getName(), $message->getBody());
+                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                $this->assertSame($debitorUser->getEmail(), key($message->getTo()));
+
+                $$message = $mailCollector->getMessages()[1];
+
+                $this->assertInstanceOf('Swift_Message', $message);
+                $this->assertContains('Reconversion', $message->getSubject());
+                $this->assertContains($amount, $message->getBody());
+                $this->assertContains($debitorUser->getName(), $message->getBody());
+                $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
+                $this->assertSame($this->container->getParameter('cairn_email_management'), key($message->getTo()));
+
+
                 $crawler = $this->client->followRedirect();
                 $this->assertSame(1,$crawler->filter('html:contains("Détail de votre reconversion")')->count());
 
                 $this->assertTrue($accountBalanceAfter == ($accountBalanceBefore - $amount));
 
+                
             }else{
                 $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
                 $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
@@ -263,10 +290,10 @@ class BankingControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            'invalid : access disabled to persons'=> array('comblant_michel',40,false,false,''),
-            'invalid : access disabled to admins'=> array($adminUsername,40,false,false,''),
-            'valid : pro with non null account'=> array('nico_faus_prod',100,true,true,''),
-            'invalid : amount too high'=> array('nico_faus_prod',1000000,true,false,'Montant trop élevé'),
+            'invalid : access disabled to persons'=> array('comblant_michel','40',false,false,''),
+            'invalid : access disabled to admins'=> array($adminUsername,'40',false,false,''),
+            'valid : pro with non null account'=> array('nico_faus_prod','100',true,true,''),
+            'invalid : amount too high'=> array('nico_faus_prod','1000000',true,false,'Montant trop élevé'),
         );
 
     }
