@@ -13,6 +13,7 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\Mandate;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Repository\UserRepository;
 
 
 class AccountManager
@@ -24,8 +25,9 @@ class AccountManager
     protected $anonymous;
     protected $network;
     protected $bankingManager;
+    protected $userRepo;
 
-    public function __construct(BankingInfo $bankingService, NetworkInfo $networkService, UserInfo $userService, AccountInfo $accountService, $anonymous, $currency)
+    public function __construct(BankingInfo $bankingService, NetworkInfo $networkService, UserInfo $userService, AccountInfo $accountService, $anonymous, $currency,UserRepository $userRepo)
     {
         $this->bankingService = $bankingService;        
         $this->networkService = $networkService;
@@ -33,6 +35,7 @@ class AccountManager
         $this->accountService = $accountService;
         $this->anonymous = $anonymous;
         $this->network = $currency;
+        $this->userRepo = $userRepo;
 
         $this->bankingManager = new BankingManager();
     }
@@ -83,6 +86,69 @@ class AccountManager
          }
         
         return ($this->getConsistentOperationsCount($mandate, $today) == $mandate->getOperations()->count());
+    }
+
+
+    /**
+     * Hydrates operation stakeholder (creditor / debitor) 
+     *
+     * Cyclos returns an object of type OwnerVO which can be either a string 'SYSTEM' if the stakeholder is a system account or a stdClass if the owner is a member. 
+     * For this reason, we must check this before hydrating Operation entity
+     *
+     * @param Operation $operation  : operation to hydrate 
+     * @param stdClass/ string $ownerVO : user basic information on Cyclos side
+     * @param string $stakeholder : allows 'from' or 'to' as a value to know which attribute to hydrate in the Operation Entity
+     * @see https://documentation.cyclos.org/4.11.2/ws-api-docs/org/cyclos/model/banking/accounts/InternalAccountOwner.html
+     */
+    public function hydrateStakeholder(Operation $operation, $ownerVO, string $stakeholder)
+    {
+        if( $ownerVO != 'SYSTEM'){
+            $user = $this->userRepo->findOneByUsername($ownerVO->shortDisplay);
+
+            if($stakeholder == 'from'){
+                $operation->setDebitor($user);
+            }else{
+                $operation->setCreditor($user);
+            }
+        }else{
+            $name = $this->userService->getOwnerName($ownerVO);
+
+            if($stakeholder == 'from'){
+                $operation->setDebitorName($name);
+            }else{
+                $operation->setCreditorName($name);
+            }
+        }
+
+    }
+
+    /**
+     * Hydrates operation according to corresponding cyclos transfer 
+     *
+     * Cyclos returns an object of type TransferVO for each money movement 
+     * For this reason, we must check this before hydrating Operation entity
+     *
+     * @param stdClass $transferVO : informations about the transfer
+     * @param const int $type : type of the operation (see Operation macros)
+     * @param text $reason : reason of the operation. A transferVO type has no attribute 'description'
+     * @see https://documentation.cyclos.org/4.11.2/ws-api-docs/org/cyclos/model/banking/transfers/TransferVO.html
+     */
+    public function hydrateOperation($transferVO, int $type,$reason)
+    {
+        $operation = new Operation();
+
+        $operation->setType($type);
+        $operation->setReason($reason);
+        $operation->setPaymentID($transferVO->id);
+        $operation->setFromAccountNumber($transferVO->from->number);
+        $operation->setToAccountNumber($transferVO->to->number);
+        $operation->setAmount($transferVO->currencyAmount->amount);
+        $operation->setExecutionDate(new \Datetime($transferVO->date));
+
+        $this->hydrateStakeholder($operation, $transferVO->from->owner, 'from');
+        $this->hydrateStakeholder($operation, $transferVO->to->owner, 'to');
+
+        return $operation;
     }
 
     public function creditUserAccount(User $creditor, $amount, $type, $reason)
@@ -137,4 +203,5 @@ class AccountManager
 
         return $operation;
     }
+
 }

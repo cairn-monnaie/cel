@@ -16,6 +16,7 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\NotificationPermission;
+use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\Mandate;
@@ -980,6 +981,24 @@ class Commands
         $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 month','+1 month','+7 months');
         $this->em->persist($mandate);
 
+
+        //need a pro with a mandate and a null account
+        $contractor = $userRepo->findOneByUsername('montagne_arts'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 day','+1 month','+7 months');
+        $this->em->persist($mandate);
+
+        //generate an helloasso payment
+        echo 'INFO: ------ Set up helloasso payments ------- ' . "\n";
+        $creditor = $userRepo->findOneByUsername('mazmax'); 
+
+        $helloasso = new HelloassoConversion();
+
+        $helloasso->setPaymentID('000043036883');
+        $helloasso->setDate(new \Datetime());
+        $helloasso->setAmount(40);
+        $helloasso->setEmail($creditor->getEmail());
+        $helloasso->setCreditorName($creditor->getName());
+
         $this->em->flush();
         echo 'INFO: OK !'."\n";
 
@@ -1001,7 +1020,7 @@ class Commands
 
         //create fake mandate document doc
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'affiche.pdf';
+        $originalName = 'poster_sms.pdf';
         $absolutePath = $absoluteWebDir.$originalName;
 
         $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
