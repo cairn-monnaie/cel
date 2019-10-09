@@ -125,7 +125,7 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
 
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("votre adresse électronique")')->count());
         }
 
         $this->em->refresh($newUser);

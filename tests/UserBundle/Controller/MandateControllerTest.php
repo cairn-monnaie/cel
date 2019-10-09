@@ -74,7 +74,7 @@ class MandateControllerTest extends BaseControllerTest
         
             //select pdf file
             $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-            $originalName = 'affiche.pdf';                                 
+            $originalName = 'poster_sms.pdf';                                 
             $absolutePath = $absoluteWebDir.$originalName;
 
             $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
@@ -185,7 +185,7 @@ class MandateControllerTest extends BaseControllerTest
 
         //select pdf file
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'affiche.pdf';                                 
+        $originalName = 'poster_sms.pdf';                                 
         $absolutePath = $absoluteWebDir.$originalName;
 
         $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');

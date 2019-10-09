@@ -155,10 +155,11 @@ class SmsControllerTest extends BaseControllerTest
         $wrongCodeMsg = 'Échec du code';
         $validDebMsg = 'été accepté';
         $validCredMsg = 'avez reçu';
+        $accessDeniedMsg = 'SMS NON AUTORISÉ';
 
         return array(
             'balance : phone number not registered'=>array('+33612121212','SOLDE',false,'1111',true,NULL),
-            'balance : user opposed'=>array('+33744444444','SOLDE',false,'1111',true,array('opposition de compte')),
+            'balance : user opposed'=>array('+33744444444','SOLDE',false,'1111',true,array($accessDeniedMsg)),
             'balance : valid code + sms for pro & person'=>array('+33612345678','SOLDE',true,'1111',true,
                                                                   array($askCodeMsg,'Votre solde compte')),
 
@@ -181,11 +182,11 @@ class SmsControllerTest extends BaseControllerTest
                                                                                                 array($validDebMsg,$validCredMsg),2),
 
             'payment : debitor has sms disabled'=>array('+33733333333','PAYER100MALTOBAR',false,'1111',true,
-                                                                                array('opposition aux SMS depuis')),
+                                                                                array($accessDeniedMsg)),
 
-            'payment : debitor is disabled'=>array('+33744444444','PAYER100MALTOBAR',false,'1111',true,array('opposition de compte')),
+            'payment : debitor is disabled'=>array('+33744444444','PAYER100MALTOBAR',false,'1111',true,array($accessDeniedMsg)),
 
-            'payment : debitor has payments disabled'=>array('+33655667788','PAYER100MALT',false,'1111',true,array('opposition aux SMS')),
+            'payment : debitor has payments disabled'=>array('+33655667788','PAYER100MALT',false,'1111',true,array($accessDeniedMsg)),
 
             'payment : creditor=debitor'=>array('+33611223344','PAYER100MALTOBAR',false,'1111',true,
                                                         array('identiques')),
