@@ -94,9 +94,9 @@ class UserControllerTest extends BaseControllerTest
             $nbPhonesAfter = count($currentUser->getPhones());
 
             if($isValidCode){
-                $this->assertEquals($currentUser->getPhoneNumberActivationTries(),0);
-                $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
-                $this->assertEquals($nbPhonesAfter, $nbPhonesBefore + 1);
+                $this->assertEquals(0,$currentUser->getPhoneNumberActivationTries());
+                $this->assertEquals(0,$currentUser->getNbPhoneNumberRequests());
+                $this->assertEquals($nbPhonesBefore + 1, $nbPhonesAfter);
 
                 $newPhone = $currentUser->getPhones()[$nbPhonesAfter - 1];
                 $this->assertEquals($newPhone->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
@@ -751,7 +751,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getUsername().'"]')->count());
 //            $this->assertTrue($crawler->filter('a[href*="user/sms-data/edit/')->count() >= 1);
 //            $this->assertTrue($crawler->filter('a[href*="user/sms-data/delete/')->count() >= 1);
-            $this->assertSame(1,$crawler->filter('a[href*="user/id-document/download/'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/iddoc/download'.$targetUser->getID().'"]')->count());
 
             if($currentUser === $targetUser){//adherent watching his own profile --> is enabled if so
                 $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getUsername().'"]')->count());
@@ -930,13 +930,11 @@ class UserControllerTest extends BaseControllerTest
                     $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
 
                     $operations = $operationRepo->findBy(array('creditorName'=>$saveName));
-                    $this->assertTrue( count($operations) != 0);
                     foreach($operations as $operation){
                         $this->assertEquals($operation->getCreditor(),NULL);
                     }
 
                     $operations = $operationRepo->findBy(array('debitorName'=>$saveName));
-                    $this->assertTrue( count($operations) != 0);
                     foreach($operations as $operation){
                         $this->assertEquals($operation->getDebitor(),NULL);
                     }
@@ -976,6 +974,7 @@ class UserControllerTest extends BaseControllerTest
         return array(
             'non null account' => array($adminUsername,'atelier_eltilo',true,false,false),
             'valid admin removal, user involved in operations' => array($adminUsername,'trankilou',true,true,false),
+            'valid admin removal, user has a mandate assigned' => array($adminUsername,'montagne_arts',true,true,false),
             'not referent' => array($adminUsername,'NaturaVie',false,true,false),
             'user auto-removal' => array('lib_colibri','lib_colibri',true,true,true),
         );
