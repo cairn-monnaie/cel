@@ -21,9 +21,19 @@ class HelloassoControllerTest extends BaseControllerTest
      */
     public function testHelloassoNotification($helloassoID, $isValidID, $isAlreadyHandled, $isValidEmail)
     {
-        $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'speedy_andrew'));
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
-        $user->setEmail('maxime.mazouth-laurol@cairn-monnaie.com');
+        $username = 'mazmax';
+
+        //login to be able to access cyclos data (account balance before & after ) 
+        $crawler = $this->login($username, '@@bbccdd');
+
+        $creditorUser = $userRepo->findOneBy(array('username'=>$username));
+        $creditorAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
+
+        $creditorICC = $creditorAccount->number;
+        $accountBalanceBefore = $creditorAccount->status->balance;
+
         $this->client->request(
             'POST',
             '/helloasso/notification',
@@ -41,19 +51,33 @@ class HelloassoControllerTest extends BaseControllerTest
             )
         );
 
+        //WARNING : you must get the status code before login otherwise POST response data is lost
+        $statusCode =  $this->client->getResponse()->getStatusCode();
+
+        //login to be able to access cyclos data (account balance before & after ) 
+        $crawler = $this->login($username, '@@bbccdd');
+
+        $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
+        $accountBalanceAfter = $ownerAccount->status->balance;
+
         if($isValidID){
             if($isAlreadyHandled){
-                $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
-                return;
-            }elseif($isValidEmail){
-                $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
-                return;
-            }else{
-                $this->assertEquals(404, $this->client->getResponse()->getStatusCode());
+                $this->assertEquals(403,$statusCode);
+                $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
                 return;
             }
+            if($isValidEmail){
+                $this->assertEquals(200, $statusCode);
+                $this->assertTrue($accountBalanceAfter > $accountBalanceBefore);
+                return;
+            }
+
+            $this->assertEquals(404, $statusCode);
+            $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
+            return;
         }else{
-            $this->assertEquals(404, $this->client->getResponse()->getStatusCode());
+            $this->assertEquals(404, $statusCode);
+            $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
         }
     }
 
@@ -61,9 +85,9 @@ class HelloassoControllerTest extends BaseControllerTest
     {
         return array(
             'valid notification ' => array('helloassoID'=>'000040780773', true, false,true),
-            'invalid notification : user not found' => array('helloassoID'=>'000043036883', false, true, false),
             'invalid notification : invalid ID' => array('helloassoID'=>'1', false, false, false),
-            'invalid notification : already handled' => array('helloassoID'=>'000040877783', true, false, true),
+            'invalid notification : user not found' => array('helloassoID'=>'000043036883', true, false, false),
+            'invalid notification : already handled' => array('helloassoID'=>'000040877783', true, true, true),
         );
 
     }
