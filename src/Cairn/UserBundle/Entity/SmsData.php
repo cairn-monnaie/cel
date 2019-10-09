@@ -34,7 +34,7 @@ class SmsData
     private $smsClient;
 
     /**
-     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\Phone", mappedBy="smsData", cascade={"persist","remove"})
+     *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\Phone", mappedBy="smsData", cascade={"persist"})
      */
     private $phones;
 
@@ -53,7 +53,7 @@ class SmsData
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(name="user_id", nullable=false,referencedColumnName="id")
      */
     private $user;
 

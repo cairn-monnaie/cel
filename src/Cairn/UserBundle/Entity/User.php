@@ -83,7 +83,6 @@ class User extends BaseUser
      * @var ArrayCollection
      *@ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
      *@ORM\JoinColumn(referencedColumnName="id")
-     *
      */
     private $referents;
 
@@ -94,17 +93,19 @@ class User extends BaseUser
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
+     *@ORM\JoinColumn(name="image_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $image;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\File", cascade={"persist","remove"})
+     *@ORM\JoinColumn(name="identity_document_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $identityDocument;
 
     /**
-     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Card", inversedBy="users", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Card", inversedBy="users", cascade={"persist","remove"})
+     *@ORM\JoinColumn(name="card_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $card;
 
@@ -114,7 +115,7 @@ class User extends BaseUser
     private $smsData;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist"})
      */
     private $apiClient;
 

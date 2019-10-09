@@ -46,7 +46,7 @@ class File
     /**
      * @var ArrayCollection
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Mandate", inversedBy="mandateDocuments" , cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="mandate_id", nullable=true,referencedColumnName="id", onDelete="CASCADE")
      */
     private $mandate;
 

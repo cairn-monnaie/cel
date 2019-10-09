@@ -940,7 +940,6 @@ class UserController extends Controller
             if( $e->errorCode == 'ENTITY_NOT_FOUND'){ //user has registered but never activated
 
                 $emailTo = $user->getEmail();
-                $em->remove($user->getIdentityDocument());
                 $em->remove($user);
                 $em->flush();
 
@@ -1022,8 +1021,6 @@ class UserController extends Controller
     public function removeUser(User $user, User $currentUser)
     {
         $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
         $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
@@ -1040,23 +1037,6 @@ class UserController extends Controller
         try{
             $emailTo = $user->getEmail();
 
-//            //remove beneficiaries associated to the user to remove
-//            $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
-//            foreach($beneficiaries as $beneficiary){
-//                $em->remove($beneficiary);
-//            }
-            
-            //TODO : ONE single SQL insert request instead of the two here
-            //set Operations with user to remove as creditor/debitor to NULL
-            $operations = $operationRepo->findBy(array('creditor'=>$user));
-            foreach($operations as $operation){
-                $operation->setCreditor(NULL);
-            }
-
-            $operations = $operationRepo->findBy(array('debitor'=>$user));
-            foreach($operations as $operation){
-                $operation->setDebitor(NULL);
-            }
 
             //if deposit scheduled, cancel removal
             $scheduledDeposits = $depositRepo->findBy(array('creditor'=>$user,'status'=> Deposit::STATE_SCHEDULED));

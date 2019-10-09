@@ -99,7 +99,7 @@ class Operation
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="creditor_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $creditor;
 
@@ -114,7 +114,7 @@ class Operation
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="debitor_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $debitor;
 

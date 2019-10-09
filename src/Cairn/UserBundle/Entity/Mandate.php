@@ -27,7 +27,7 @@ class Mandate
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="contractor_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $contractor;
 

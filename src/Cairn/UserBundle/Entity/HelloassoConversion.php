@@ -42,12 +42,6 @@ class HelloassoConversion
      */
     private $email;
 
-//    /**
-//     * @var string
-//     *
-//     * @ORM\Column(name="accountNumber", type="string", length=10)
-//     */
-//    private $accountNumber;
 
     /**
      * @var \DateTime
@@ -145,30 +139,6 @@ class HelloassoConversion
     {
         return $this->email;
     }
-
-//    /**
-//     * Set accountNumber.
-//     *
-//     * @param string $accountNumber
-//     *
-//     * @return HelloassoConversion
-//     */
-//    public function setAccountNumber($accountNumber)
-//    {
-//        $this->accountNumber = $accountNumber;
-//
-//        return $this;
-//    }
-//
-//    /**
-//     * Get accountNumber.
-//     *
-//     * @return string
-//     */
-//    public function getAccountNumber()
-//    {
-//        return $this->accountNumber;
-//    }
 
     /**
      * Set date.

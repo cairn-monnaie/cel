@@ -354,11 +354,6 @@ class CardController extends Controller
                 if($form->get('save')->isClicked()){
                     $saveCode = $card->getCode();
 
-                    $users = $card->getUsers();
-                    foreach($users as $oneUser){
-                        $oneUser->setCard(NULL);    
-                    }
-                    $users->clear();
                     $em->remove($card);
 
                     $phones = $user->getPhones(); 
