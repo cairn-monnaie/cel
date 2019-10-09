@@ -20,6 +20,8 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Deposit;
+use Cairn\UserBundle\Entity\Mandate;
+
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 //manage HTTP format
@@ -983,7 +985,7 @@ class UserController extends Controller
                         if($isRemoved){
                             $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                         }else{
-                            $session->getFlashBag()->add('error','La fermeture de compte a échoué. '.$user->getName(). ' a un compte non soldé');
+                            $session->getFlashBag()->add('error','La fermeture de compte a échoué. ');
                             return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
                         }
                     }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
@@ -1022,6 +1024,7 @@ class UserController extends Controller
     {
         $em = $this->getDoctrine()->getManager();
         $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
+        $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
@@ -1049,6 +1052,16 @@ class UserController extends Controller
                 $em->remove($deposit);
             }
 
+            //if mandate ongoing, cancel removal
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereContractor($mb, $user);
+
+            $status = array(Mandate::UP_TO_DATE, Mandate::OVERDUE, Mandate::SCHEDULED);
+            $mandateRepo->whereStatus($mb, $status);
+
+            $mandates = $mb->getQuery()->getResult();
+
+            if($mandates){ return false; }
 
             $subject = 'Compte [e]-Cairn clôturé';
             $from = $messageNotificator->getNoReplyEmail();
