@@ -993,11 +993,13 @@ class Commands
 
         $helloasso = new HelloassoConversion();
 
-        $helloasso->setPaymentID('000043036883');
+        $helloasso->setPaymentID('000040877783');
         $helloasso->setDate(new \Datetime());
         $helloasso->setAmount(40);
         $helloasso->setEmail($creditor->getEmail());
         $helloasso->setCreditorName($creditor->getName());
+
+        $this->em->persist($helloasso);
 
         $this->em->flush();
         echo 'INFO: OK !'."\n";

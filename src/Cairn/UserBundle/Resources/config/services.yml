@@ -175,7 +175,7 @@ services:
             - "@router"
             - "@cairn_user.security"
         tags:  
-            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException}
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
     
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator

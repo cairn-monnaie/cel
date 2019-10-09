@@ -214,6 +214,19 @@ class Operation
     }
 
     /**
+     * Types which can lead to desynchronization because of other information system services
+     *
+     * There are several services (docker meaning) connected to each other. A broken connection between two services can lead to desynchronized data.
+     * For instance, if a deposit is done on BDC application and the connection to CEL app is broken, the user account balance will change, but the operation won't appear on
+     * user CEL dashboard
+     *
+     */
+    public static function getPotentiallyDesynchronizedTypes()
+    {
+        return array(self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC);
+    }
+
+    /**
      * Propose TYPE_MANDATE in the list or not
      * 
      * If user is PRO, do propose reconversion field

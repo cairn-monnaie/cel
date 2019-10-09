@@ -30,6 +30,7 @@ use Cairn\UserBundle\Form\ConfirmationType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -688,5 +689,75 @@ class AdminController extends Controller
         return $this->render('CairnUserBundle:User:add_referent.html.twig',array('form'=>$form->createView(),'user'=>$user));
     }   
 
+    /**
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function cyclosSyncAction(Request $request)
+    {
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $accountManager =  $this->get('cairn_user.account_manager');
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+
+        $possibleTypes = Operation::getPotentiallyDesynchronizedTypes();
+
+        $form = $this->createFormBuilder()
+            ->add('payment_id', TextType::class, array('label' => 'ID de l opération'))
+            ->add('reason', TextType::class, array('label' => 'Motif'))
+            ->add('type',    ChoiceType::class, array(
+                'label' => 'type d\'opération',
+                'required'=>true,
+                'choices' => $possibleTypes,
+                'choice_label'=> function($choice){
+                    return Operation::getTypeName($choice);
+                },
+                'multiple'=>false,
+                'expanded'=>false
+                ))
+
+            ->add('save',      SubmitType::class, array('label' => 'Synchroniser'))
+            ->getForm();
+
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+            $dataForm = $form->getData();
+
+            $paymentID = $dataForm['payment_id'];
+            $type = $dataForm['type'];
+            $reason = $dataForm['reason'];
+
+            $operation = $operationRepo->findOneByPaymentID($paymentID);
+
+            if($operation){
+                $session->getFlashBag()->add('error','Le paiement d\'identifiant '.$paymentID.' existe déjà');
+                return new RedirectResponse($request->getRequestUri());
+            }
+
+            try{
+                $transferVO = $this->get('cairn_user_cyclos_banking_info')->getTransferByID($paymentID);
+            }catch(\Exception $e){
+                if( ($e->errorCode == 'ENTITY_NOT_FOUND') || ($e->errorCode == 'NULL_POINTER')){
+                    $session->getFlashBag()->add('error','Donnée introuvable');
+                    return new RedirectResponse($request->getRequestUri());
+                }else{
+                    throw $e;
+                }
+            }
+
+            $operation = $accountManager->hydrateOperation($transferVO,$type,$reason);
+
+            $em->persist($operation);
+            $em->flush();
+
+            $session->getFlashBag()->add('success','Synchronisation effectuée avec succès !');
+            return new RedirectResponse($request->getRequestUri());
+
+        }
+
+        return $this->render('CairnUserBundle:Admin:operation_sync.html.twig',array('form' => $form->createView() ));
+    }
 
 }

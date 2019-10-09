@@ -350,6 +350,10 @@ cairn_user_helloasso_sync:
     path:     admin/helloasso/sync
     defaults: { _controller: CairnUserBundle:Helloasso:helloassoSync}
 
+cairn_user_operation_sync:
+    path:     admin/operation/sync
+    defaults: { _controller: CairnUserBundle:Admin:cyclosSync}
+
 cairn_user_helloasso_notification:
     path:     helloasso/notification
     defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification}
