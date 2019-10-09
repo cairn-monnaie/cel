@@ -45,6 +45,21 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
         fi
 
         if [ -f ./etc/cyclos/cyclos_constants_$ENV.yml ] || [ ! -f ./etc/cyclos/cyclos_constants_$OTHER_ENV.yml ]; then
+            read -p "You are about to regenerate all the docker services. Are you sure? (y/n)" response
+
+            if [ -z $response ]; then
+                response="n"
+                echo "To regenerate dataset only, use -d option"
+            fi
+
+            while [ $response != "y" ] && [ $response != "n" ]; do
+                read -p "You are about to regenerate all the docker services. Are you sure? (y/n)" response
+            done
+
+            if [ $response = "n" ]; then
+                exit 0
+            fi
+
             rm -rf data/cyclos
             rm etc/cyclos/cyclos_constants_$ENV.yml
             rm etc/cyclos/cyclos_constants_$OTHER_ENV.yml
@@ -65,13 +80,15 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
             docker-compose exec -T  -e ENV=$ENV api python /cyclos/init_test_data.py http://cyclos-app:8080/ YWRtaW46YWRtaW4=
         else
             echo "Cyclos constants file not found for $ENV mode. The cyclos containers and configuration have not been settled. \n Remove -d option from the command"
-            return;
+            exit 0
         fi
     fi
 
     cd $ROOT_DIR/cel
     docker-compose exec engine ./build-setup.sh $ENV
     docker-compose exec engine php bin/console cairn.user:generate-database --env=$ENV admin_network @@bbccdd
+    exit 0
 else
     echo "choose dev / test as a script variable"
+    exit 1
 fi
