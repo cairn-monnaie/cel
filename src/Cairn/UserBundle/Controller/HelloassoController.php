@@ -206,12 +206,13 @@ class HelloassoController extends Controller
             $dataForm = $form->getData();
 
             $api_payment = $this->getApiPayment($dataForm['payment_id']);
-            $api_payment->payer_email = $dataForm['email'];
-
+            
              if(! $api_payment){
                  $session->getFlashBag()->add('error','Aucun paiement trouvé avec l\'identifiant '.$dataForm['payment_id']);
                  return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
              }
+
+            $api_payment->payer_email = $dataForm['email'];
 
              //get a new helloassoConversion entity if it is does not exist yet
              $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);

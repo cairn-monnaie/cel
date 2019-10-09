@@ -5,6 +5,7 @@ namespace Tests\UserBundle\Controller;
 use Tests\UserBundle\Controller\BaseControllerTest;
 
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\HelloassoConversion;
 
 
 class HelloassoControllerTest extends BaseControllerTest
@@ -96,19 +97,93 @@ class HelloassoControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForHelloassoSync
      */
-    public function testHelloassoSync()
+    public function testHelloassoSync($current, $isExpectedForm, $symfonyPersistedID, $helloassoPersistedID, $isValidEmail)
     {
+        $crawler = $this->login($current, '@@bbccdd');
+
+        $helloassoRepo = $this->em->getRepository('CairnUserBundle:HelloassoConversion');
+
+        $conversion = $helloassoRepo->findAll()[0];
+        $helloassoID = $conversion->getPaymentID();
+
+        if($isValidEmail){
+            $email = $conversion->getEmail();
+        }else{
+            $email = 'xyz@xy.com';
+        }
         
+        if(! $symfonyPersistedID){
+            $this->em->remove($conversion);
+            $this->em->flush();
+        }
+
+        if(! $helloassoPersistedID){
+            $helloassoID = '1';
+        }
+
+        $crawler = $this->client->request('GET','/admin/helloasso/sync');
+
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler, '1111');
+        $crawler = $this->client->followRedirect();
+
+        if(! $isExpectedForm){
+            $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+        }else{
+
+            $form = $crawler->selectButton('form_save')->form();
+            $form['form[payment_id]']->setValue($helloassoID);
+            $form['form[email]']->setValue($email);
+
+            $crawler = $this->client->submit($form);
+
+            $crawler = $this->client->followRedirect();
+
+            if( (! $symfonyPersistedID) && ($helloassoPersistedID)) { //valid case
+                if($isValidEmail){
+                    $this->assertSame(1,$crawler->filter('html:contains("succès")')->count());
+                    $newConversion = $helloassoRepo->findOneByPaymentID($helloassoID);
+
+                    $this->assertNotNull($newConversion);
+                    $this->assertEquals($newConversion->getEmail(), $email);
+                    return;
+                }else{
+                    $newConversion = $helloassoRepo->findOneByPaymentID($helloassoID);
+
+                    $this->assertNull($newConversion);
+                    $this->assertSame(1,$crawler->filter('html:contains("ne correspond à aucun compte")')->count());
+                    return;
+                }
+            }elseif($symfonyPersistedID){ //synchronization has been done correctly, nothing to sync  
+                $this->assertSame(1,$crawler->filter('html:contains("déjà été traité")')->count());
+                return;
+            } elseif(! $helloassoPersistedID){ //no helloasso data  
+                $newConversion = $helloassoRepo->findOneByPaymentID($helloassoID);
+
+                $this->assertNull($newConversion);
+                $this->assertSame(1,$crawler->filter('html:contains("Aucun paiement trouvé")')->count());
+                return;
+            }
+
+        }
     }
 
     public function provideDataForHelloassoSync()
     {
-        return array(
+        $admin = $this->testAdmin;
 
+        return array(
+            'invalid : no access for adherent' => array('mazmax',false,false,false,false),
+            'invalid : no access for simple admins' => array('gl_grenoble',false,false,false,false),
+            'invalid : paymentID already exists on Symfony side' => array($admin,true, true, true, true),
+            'invalid : paymentID does not exist on Helloasso side' => array($admin, true, false, false, false),
+            'invalid : paymentID valid but email invalid' => array($admin, true, false, false, false),
+            'valid synchronization' => array($admin, true, false, true, true)
         );
 
     }
 
+    
 
 }
 

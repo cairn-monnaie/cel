@@ -268,6 +268,9 @@ class AdminControllerTest extends BaseControllerTest
                 $this->assertSame(1,$crawler->filter('html:contains("existe déjà")')->count());
                 return;
             } elseif(! $cyclosPersistedID){ //no cyclos data  
+                $newOperation = $operationRepo->findOneByPaymentID($cyclosID);
+
+                $this->assertNull($newOperation);
                 $this->assertSame(1,$crawler->filter('html:contains("introuvable")')->count());
                 return;
             }
