@@ -62,7 +62,7 @@
         {% for mandate in mandates %}
             {% set status = mandate.status %}
 
-            {% if mandate.contractor is not NULL %}
+            {% if mandate.contractor is not null %}
                 {% set contractorName = mandate.contractor.name %}
             {% else %}
                 {% set contractorName = 'Undefined' %}
