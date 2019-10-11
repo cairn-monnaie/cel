@@ -216,10 +216,6 @@ cairn_user_electronic_mlc_edit:
     path:     admin/electronic-mlc/edit
     defaults: { _controller: CairnUserBundle:Admin:moneySafeEdit, _format: html }
 
-cairn_user_remuneration:
-    path:     admin/remuneration
-    defaults: { _controller: CairnUserBundle:Admin:remuneration, _format: html }
-
 cairn_user_users_remove:
     path:     user/remove/{username}.{_format}
     defaults: { _controller: CairnUserBundle:User:confirmRemoveUser, _format: html }
@@ -483,6 +479,13 @@ cairn_user_banking_accounts_overview:
         #        id: \d+
         _format: html|json
 
+cairn_user_accountscore_add:
+    path:     banking/account-score/add
+    defaults: { _controller: CairnUserBundle:Banking:createAccountScore, _format: html  }
+
+cairn_user_accountscore_view:
+    path:     banking/account-score/view/{id}
+    defaults: { _controller: CairnUserBundle:Banking:viewAccountScore, _format: html  }
 
 #cairn_user_bankconnection_deposit_index:
 #    path:     deposit/index

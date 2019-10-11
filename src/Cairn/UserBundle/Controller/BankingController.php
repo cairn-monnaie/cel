@@ -12,6 +12,7 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\AccountScore;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -31,6 +32,7 @@ use Cairn\UserBundle\Form\OperationType;
 use Cairn\UserBundle\Form\ReconversionType;
 use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\SimpleOperationType;
+use Cairn\UserBundle\Form\AccountScoreType;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -67,6 +69,11 @@ class BankingController extends Controller
     }
 
 
+    /**
+     * A pro can reconvert mlc 
+     *
+     * @Security("has_role('ROLE_PRO')")
+     */
     public function reconversionAction(Request $request)
     {
         $session = $request->getSession();
@@ -1296,6 +1303,48 @@ class BankingController extends Controller
             }
         }
         return $this->render('CairnUserBundle:Banking:accounts_download.html.twig',array('form'=>$form->createView(),'accounts'=>$accounts));
+    }
+
+    /**
+     * A pro can download a daily account score 
+     *
+     * @Security("has_role('ROLE_PRO')")
+     */
+    public function createAccountScoreAction(Request $request)
+    {
+        $session = $request->getSession();
+
+        $em = $this->getDoctrine()->getManager();
+        $currentUser = $this->getUser();
+
+        $accountScore = new AccountScore();
+        $accountScore->getUser($currentUser);
+        
+        $form = $this->createForm(AccountScoreType::class);
+
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+            $em->persist($accountScore);
+            $em->flush();
+
+            $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
+           return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
+
+        }
+
+        return $this->render('CairnUserBundle:Banking:add_account_score.html.twig',
+            array('form'=>$form->createView()));
+    }
+
+    /**
+     * A pro can view his account score configuration 
+     *
+     * @Security("has_role('ROLE_PRO')")
+     */
+    public function viewAccountScoreAction(Request $request, AccountScore $accountScore)
+    {
+        return $this->render('CairnUserBundle:Banking:view_account_score.html.twig',
+            array('accountScore'=>$accountScore));
     }
 
     public function confirmOnlinePaymentAction(Request $request, $suffix)

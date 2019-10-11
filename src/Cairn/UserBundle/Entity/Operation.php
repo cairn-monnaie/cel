@@ -203,6 +203,11 @@ class Operation
         }
     }
 
+    public static function getB2CTypes()
+    {
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);
+    }
+
     public static function getDebitOperationTypes()
     {
         return array(self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
