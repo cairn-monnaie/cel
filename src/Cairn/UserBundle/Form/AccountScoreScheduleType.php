@@ -42,7 +42,7 @@ class AccountScoreScheduleType extends AbstractType
                 foreach($days as $day){
                     $form->add($day, CollectionType::class, array(
                         'data'=> $schedule[$day],
-                        'mapped'=>false,
+//                        'mapped'=>false,
                         'entry_type'   => TextType::class,
                         'entry_options' => array(
                             'attr'=> array('class'=>'timepicker time-input'),

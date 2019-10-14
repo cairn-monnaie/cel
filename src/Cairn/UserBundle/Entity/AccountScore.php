@@ -61,7 +61,7 @@ class AccountScore
 
     public function __construct()
     {
-        $this->schedule = array('Monday'=>array('00:00'),'Tuesday'=>array(),'Wednesday'=>array(), 'Thursday'=>array(), 'Friday'=>array(), 'Saturday'=>array(), 'Sunday'=>array());
+        $this->schedule = array('Monday'=>array(),'Tuesday'=>array(),'Wednesday'=>array(), 'Thursday'=>array(), 'Friday'=>array(), 'Saturday'=>array(), 'Sunday'=>array());
     }
 
     public static function getPossibleTypes()

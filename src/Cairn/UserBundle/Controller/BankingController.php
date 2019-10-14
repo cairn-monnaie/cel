@@ -1337,11 +1337,6 @@ class BankingController extends Controller
 
             $schedule = $accountScore->getSchedule();
 
-            foreach($days as $day){
-                $schedule[$day] = $form->get('schedule_'.$day)->getData();
-            }
-            $accountScore->setSchedule($schedule);
-
             $em->persist($accountScore);
             $em->flush();
 
@@ -1379,13 +1374,6 @@ class BankingController extends Controller
                 'Friday',
                 'Saturday'
             ];
-
-            $schedule = $accountScore->getSchedule();
-
-            foreach($days as $day){
-                $schedule[$day] = $form->get('schedule_'.$day)->getData();
-            }
-            $accountScore->setSchedule($schedule);
 
             $em->persist($accountScore);
             $em->flush();

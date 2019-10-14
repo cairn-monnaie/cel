@@ -14,7 +14,7 @@
         {{ form_row(form.email) }}
 
         <div class="row js-day-wrapper"
-            data-prototype="{{ form_widget(form.schedule.Monday.vars.prototype)|e('html_attr') }}"
+            data-prototype="{{ form_widget(form.schedule.Monday.vars.prototype)|e }}"
             data-index="{{ form.schedule.Monday|length }}"
         >
         {{ form_row(form.schedule.Monday) }}
@@ -82,7 +82,7 @@
 
                 $('.js-day-wrapper').data('index', index + 1);
 
-                $wrapper.children('div').children('div').append($newTimeField);
+                $wrapper.append($newTimeField);
 
                 addDeleteLink($newTimeField);
                 
