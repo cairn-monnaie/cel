@@ -46,9 +46,9 @@ class AccountScore
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="lastEmailSentAt", type="datetime",nullable=true)
+     * @ORM\Column(name="nb_sent_today", type="smallint")
      */
-    private $lastEmailSentAt;
+    private $nbSentToday;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User",  cascade={"persist"})
@@ -61,7 +61,8 @@ class AccountScore
 
     public function __construct()
     {
-        $this->schedule = array('Monday'=>array(),'Tuesday'=>array(),'Wednesday'=>array(), 'Thursday'=>array(), 'Friday'=>array(), 'Saturday'=>array(), 'Sunday'=>array());
+        $this->schedule = array('Mon'=>array(),'Tue'=>array(),'Wed'=>array(), 'Thu'=>array(), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
+        $this->nbSentToday = 0;
     }
 
     public static function getPossibleTypes()
@@ -152,27 +153,27 @@ class AccountScore
     }
 
     /**
-     * Set lastEmailSentAt.
+     * Set nbSentToday.
      *
-     * @param \DateTime $lastEmailSentAt
+     * @param \DateTime $nbSentToday
      *
      * @return AccountScore
      */
-    public function setLastEmailSentAt($lastEmailSentAt)
+    public function setNbSentToday($nbSentToday)
     {
-        $this->lastEmailSentAt = $lastEmailSentAt;
+        $this->nbSentToday = $nbSentToday;
 
         return $this;
     }
 
     /**
-     * Get lastEmailSentAt.
+     * Get nbSentToday.
      *
      * @return \DateTime
      */
-    public function getLastEmailSentAt()
+    public function getNbSentToday()
     {
-        return $this->lastEmailSentAt;
+        return $this->nbSentToday;
     }
 
     /**

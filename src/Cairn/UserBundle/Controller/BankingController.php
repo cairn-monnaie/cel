@@ -1310,71 +1310,29 @@ class BankingController extends Controller
      *
      * @Security("has_role('ROLE_PRO')")
      */
-    public function createAccountScoreAction(Request $request)
+    public function configureAccountScoreAction(Request $request, User $user)
     {
-        $session = $request->getSession();
-
-        $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
 
-        $accountScore = new AccountScore();
-        $accountScore->setUser($currentUser);
-        
-        $form = $this->createForm(AccountScoreType::class, $accountScore);
-
-        $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()){
-
-            $days = [
-                'Sunday',
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday'
-            ];
-
-            $schedule = $accountScore->getSchedule();
-
-            $em->persist($accountScore);
-            $em->flush();
-
-            $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
-           return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
-
+        //to see the content, check that currentUser is owner or currentUser is referent
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }
 
-        return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
-            array('form'=>$form->createView()));
-    }
-
-    /**
-     * A pro can edit his daily account score 
-     *
-     * @Security("has_role('ROLE_PRO')")
-     */
-    public function editAccountScoreAction(Request $request, AccountScore $accountScore)
-    {
         $session = $request->getSession();
 
         $em = $this->getDoctrine()->getManager();
         
+        $accountScore = $em->getRepository('CairnUserBundle:AccountScore')->findOneByUser($user);
+        if(! $accountScore){
+            $accountScore = new AccountScore();
+            $accountScore->setUser($currentUser);
+        }
+
         $form = $this->createForm(AccountScoreType::class, $accountScore);
 
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
-
-            $days = [
-                'Sunday',
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday'
-            ];
-
             $em->persist($accountScore);
             $em->flush();
 

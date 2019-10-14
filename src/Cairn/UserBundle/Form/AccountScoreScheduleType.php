@@ -21,13 +21,13 @@ class AccountScoreScheduleType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $days = [
-            'Sunday',
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday'
+            'Sun',
+            'Mon',
+            'Tue',
+            'Wed',
+            'Thu',
+            'Fri',
+            'Sat'
         ];
 
         $builder->addEventListener( // change options depending on if mandate is created or edited
@@ -42,7 +42,6 @@ class AccountScoreScheduleType extends AbstractType
                 foreach($days as $day){
                     $form->add($day, CollectionType::class, array(
                         'data'=> $schedule[$day],
-//                        'mapped'=>false,
                         'entry_type'   => TextType::class,
                         'entry_options' => array(
                             'attr'=> array('class'=>'timepicker time-input'),
