@@ -13,32 +13,23 @@
         {{ form_row(form.format) }}
         {{ form_row(form.email) }}
 
-        <div class="row js-day-wrapper"
-            data-prototype="{{ form_widget(form.schedule.Monday.vars.prototype)|e }}"
-            data-index="{{ form.schedule.Monday|length }}"
-        >
-        {{ form_row(form.schedule.Monday) }}
-        {#   <div class="row">
-                {{ form_label(form.schedule.Monday) }}
-            </div>
+        {% for formDay in form.schedule %}
+            <div class="row js-day-wrapper"
+                data-prototype="{{ form_widget(formDay.vars.prototype)|e }}"
+                data-index="{{ formDay|length }}"
+            >
+                {{ form_row(formDay) }}
 
-            {% for time in form.schedule.Monday %}
-                <div class="row js-time-item">
-                    <div class="input-field col s12">
-                        {{ form_label(time) }}
-                        {{ form_widget(time) }}
-                    </div>
+                <div class="col s12">
+                    <a href="#" class="js-time-add">
+                        <i class="material-icons">add</i>
+                    </a>
                 </div>
-            {% endfor %}
-        #}
-        </div>
-        <div class="col s12">
-            <a href="#" class="js-time-add">
-                <i class="material-icons">add</i>
-            </a>
-        </div>
-        
-        {{ form_rest(form) }}
+
+            </div>
+            
+        {% endfor %}
+    {{ form_rest(form) }}
     {{ form_end(form) }}
     </div>
 
@@ -51,38 +42,41 @@
                 twelveHour: false
             });
 
-            //var $wrapper = $('.js-day-wrapper');
-            var $wrapper = $('.js-day-wrapper').find('div[id*=cairn_userbundle_accountscore_schedule]');
-            //var index = $wrapper.data('index');
-            var index = $('.js-day-wrapper').data('index');
+            $('.js-day-wrapper').each(function() {
+                var index = $(this).data('index');
 
-            if(index != 0){
-                $wrapper.find('input.time-input').each(function() {
-                    addDeleteLink($(this));
+                console.log(index)
+                if(index != 0){
+                    $(this).find('input.time-input').each(function() {
+                        addDeleteLink($(this));
+                    });
+                }
+
+                var $addLink = $(this).find('.js-time-add').parent();
+
+                $addLink.on('click', function(e) {
+                    addDayTime($(this).closest('.js-day-wrapper'));
+
+                    e.preventDefault();
                 });
-            }
 
-            var $addLink = $('.js-time-add').parent();
 
-            $addLink.on('click', function(e) {
-                addDayTime($wrapper);
-
-                e.preventDefault();
-                return false;
             });
-
+            
+           
             function addDayTime($wrapper){
-                var prototype = $('.js-day-wrapper').data('prototype');
-
-                var index = $('.js-day-wrapper').data('index');
+                var prototype = $wrapper.data('prototype');
+                var index = $wrapper.data('index');
 
                 var template = prototype.replace(/__name__label__/g, 'Time n°' + (index+1)).replace(/__name__/g, index);
 
                 var $newTimeField = $(template);
 
-                $('.js-day-wrapper').data('index', index + 1);
+                $wrapper.data('index', index + 1);
 
-                $wrapper.append($newTimeField);
+                
+                $container = $wrapper.find('div[id*=cairn_userbundle_accountscore_schedule]');
+                $container.append($newTimeField);
 
                 addDeleteLink($newTimeField);
                 
@@ -106,9 +100,6 @@
                     return false;
                 });
             }
-
-
-                            
                 
         });
     </script>
