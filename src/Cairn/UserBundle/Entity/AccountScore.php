@@ -21,13 +21,7 @@ class AccountScore
      */
     private $id;
 
-    /**
-     * @var array
-     *
-     * @ORM\Column(name="types", type="array")
-     */
-    private $types;
-
+    
     /**
      * @var string
      *
@@ -52,7 +46,7 @@ class AccountScore
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="lastEmailSentAt", type="datetime")
+     * @ORM\Column(name="lastEmailSentAt", type="datetime",nullable=true)
      */
     private $lastEmailSentAt;
 
@@ -67,7 +61,7 @@ class AccountScore
 
     public function __construct()
     {
-        $this->schedule = array('monday'=>'','tuesday'=>'','wednesday'=>'', 'thursday'=>'', 'friday'=>'', 'saturday'=>'', 'sunday'=>'');
+        $this->schedule = array('Monday'=>array('00:00'),'Tuesday'=>array(),'Wednesday'=>array(), 'Thursday'=>array(), 'Friday'=>array(), 'Saturday'=>array(), 'Sunday'=>array());
     }
 
     public static function getPossibleTypes()
@@ -83,30 +77,6 @@ class AccountScore
     public function getId()
     {
         return $this->id;
-    }
-
-    /**
-     * Set types.
-     *
-     * @param array $types
-     *
-     * @return AccountScore
-     */
-    public function setTypes($types)
-    {
-        $this->types = $types;
-
-        return $this;
-    }
-
-    /**
-     * Get types.
-     *
-     * @return array
-     */
-    public function getTypes()
-    {
-        return $this->types;
     }
 
     /**

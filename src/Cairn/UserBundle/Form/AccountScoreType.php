@@ -4,14 +4,18 @@ namespace Cairn\UserBundle\Form;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\TimeType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\AccountScore;
+
+use Cairn\UserBundle\Form\AccountScoreScheduleType;
+
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 
 class AccountScoreType extends AbstractType
 {
@@ -20,31 +24,35 @@ class AccountScoreType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        
         $builder
-            ->add('types', ChoiceType::class, array(
-                        'choices' => Operation::getB2CTypes(),
-                        'choice_label'=> function($choice){
-                            return Operation::getTypeName($choice);
-                        },
-                        'multiple'=>true,
-                        'expanded'=>false,
-                        'label' => 'Types'
-            ))
             ->add('format', ChoiceType::class, array(
-                        'choices' => AccountScore::getPossibleTypes(),
-                        'choice_label' => function ($choice, $key, $value) {
-                            return $value;
-                        },
-                         'multiple'=>false,
-                        'expanded'=>false,
-                        'label' => 'Format'
-            ))
-            ->add('email' , TextType::class ,array('label' => 'Adresse email'))
-            ->add('schedule', TextType::class, array(
-                'attr'=> array('class'=>'timepicker'),
-                'label' => 'heure de réception'
-            )
-        )
+            'choices' => AccountScore::getPossibleTypes(),
+            'choice_label' => function ($choice, $key, $value) {
+                return $value;
+            },
+             'multiple'=>false,
+            'expanded'=>false,
+            'label' => 'Format'
+        ));
+
+        $builder->addEventListener( // change options depending on if mandate is created or edited
+            FormEvents::POST_SET_DATA,
+            function (FormEvent $event){
+                $accountScore = $event->getData();
+                $form = $event->getForm();
+                if(null === $accountScore){
+                    return;
+                }
+
+                $form->add('email' , TextType::class ,array('label' => 'Adresse email','data'=>$accountScore->getUser()->getEmail() ));
+                $form->add('schedule' , AccountScoreScheduleType::class ,array('mapped'=>false,'label' => 'Programme','data'=>$accountScore->getSchedule()));
+
+            }
+        );
+
+        $builder->add('save'   , SubmitType::class,         array('label' => 'Enregistrer','attr'=>array('class'=>'right')));
+
         ;
     }/**
      * {@inheritdoc}

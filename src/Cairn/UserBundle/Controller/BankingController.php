@@ -1318,12 +1318,30 @@ class BankingController extends Controller
         $currentUser = $this->getUser();
 
         $accountScore = new AccountScore();
-        $accountScore->getUser($currentUser);
+        $accountScore->setUser($currentUser);
         
-        $form = $this->createForm(AccountScoreType::class);
+        $form = $this->createForm(AccountScoreType::class, $accountScore);
 
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
+
+            $days = [
+                'Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday'
+            ];
+
+            $schedule = $accountScore->getSchedule();
+
+            foreach($days as $day){
+                $schedule[$day] = $form->get('schedule_'.$day)->getData();
+            }
+            $accountScore->setSchedule($schedule);
+
             $em->persist($accountScore);
             $em->flush();
 
@@ -1332,7 +1350,52 @@ class BankingController extends Controller
 
         }
 
-        return $this->render('CairnUserBundle:Banking:add_account_score.html.twig',
+        return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
+            array('form'=>$form->createView()));
+    }
+
+    /**
+     * A pro can edit his daily account score 
+     *
+     * @Security("has_role('ROLE_PRO')")
+     */
+    public function editAccountScoreAction(Request $request, AccountScore $accountScore)
+    {
+        $session = $request->getSession();
+
+        $em = $this->getDoctrine()->getManager();
+        
+        $form = $this->createForm(AccountScoreType::class, $accountScore);
+
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+
+            $days = [
+                'Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday'
+            ];
+
+            $schedule = $accountScore->getSchedule();
+
+            foreach($days as $day){
+                $schedule[$day] = $form->get('schedule_'.$day)->getData();
+            }
+            $accountScore->setSchedule($schedule);
+
+            $em->persist($accountScore);
+            $em->flush();
+
+            $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
+           return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
+
+        }
+
+        return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
             array('form'=>$form->createView()));
     }
 

@@ -487,6 +487,10 @@ cairn_user_accountscore_view:
     path:     banking/account-score/view/{id}
     defaults: { _controller: CairnUserBundle:Banking:viewAccountScore, _format: html  }
 
+cairn_user_accountscore_edit:
+    path:     banking/account-score/edit/{id}
+    defaults: { _controller: CairnUserBundle:Banking:editAccountScore, _format: html  }
+
 #cairn_user_bankconnection_deposit_index:
 #    path:     deposit/index
 #    defaults: { _controller: CairnUserBundle:BankConnection:index }

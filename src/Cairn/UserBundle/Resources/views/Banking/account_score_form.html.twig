@@ -1,0 +1,116 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/account_score_form.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    <div class="section">
+      {{ form_start(form) }}
+        {{ form_row(form.format) }}
+        {{ form_row(form.email) }}
+
+        <div class="row js-day-wrapper"
+            data-prototype="{{ form_widget(form.schedule.Monday.vars.prototype)|e('html_attr') }}"
+            data-index="{{ form.schedule.Monday|length }}"
+        >
+        {{ form_row(form.schedule.Monday) }}
+        {#   <div class="row">
+                {{ form_label(form.schedule.Monday) }}
+            </div>
+
+            {% for time in form.schedule.Monday %}
+                <div class="row js-time-item">
+                    <div class="input-field col s12">
+                        {{ form_label(time) }}
+                        {{ form_widget(time) }}
+                    </div>
+                </div>
+            {% endfor %}
+        #}
+        </div>
+        <div class="col s12">
+            <a href="#" class="js-time-add">
+                <i class="material-icons">add</i>
+            </a>
+        </div>
+        
+        {{ form_rest(form) }}
+    {{ form_end(form) }}
+    </div>
+
+{% endblock %}
+
+{% block javascripts %}
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('.timepicker').timepicker({
+                twelveHour: false
+            });
+
+            //var $wrapper = $('.js-day-wrapper');
+            var $wrapper = $('.js-day-wrapper').find('div[id*=cairn_userbundle_accountscore_schedule]');
+            //var index = $wrapper.data('index');
+            var index = $('.js-day-wrapper').data('index');
+
+            if(index != 0){
+                $wrapper.find('input.time-input').each(function() {
+                    addDeleteLink($(this));
+                });
+            }
+
+            var $addLink = $('.js-time-add').parent();
+
+            $addLink.on('click', function(e) {
+                addDayTime($wrapper);
+
+                e.preventDefault();
+                return false;
+            });
+
+            function addDayTime($wrapper){
+                var prototype = $('.js-day-wrapper').data('prototype');
+
+                var index = $('.js-day-wrapper').data('index');
+
+                var template = prototype.replace(/__name__label__/g, 'Time n°' + (index+1)).replace(/__name__/g, index);
+
+                var $newTimeField = $(template);
+
+                $('.js-day-wrapper').data('index', index + 1);
+
+                $wrapper.children('div').children('div').append($newTimeField);
+
+                addDeleteLink($newTimeField);
+                
+                                
+                $newTimeField.timepicker({
+                    twelveHour: false
+                });
+
+            }
+
+            function addDeleteLink($prototype){
+                var $deleteLink = $('<a href="#" class="js-time-remove btn"><i class="material-icons">close</i>button </a>');
+
+                $prototype.after($deleteLink);
+
+                $deleteLink.on('click', function(e) {
+                    $prototype.fadeOut().remove();
+                    $(this).fadeOut().remove();
+
+                    e.preventDefault();
+                    return false;
+                });
+            }
+
+
+                            
+                
+        });
+    </script>
+
+{% endblock %}
