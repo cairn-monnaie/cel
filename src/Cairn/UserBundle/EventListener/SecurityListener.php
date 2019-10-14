@@ -15,6 +15,8 @@ use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\LoginManager;
 use Cairn\UserCyclosBundle\Entity\PasswordManager;
 
+use Cairn\UserBundle\Entity\User;
+
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
@@ -111,6 +113,20 @@ class SecurityListener
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
+        $anonymous = $this->container->getParameter('cyclos_anonymous_user');
+
+        //get username and password from form request
+        $credentials = array('username'=>$anonymous,'password'=>$anonymous);
+
+        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
+        $networkName= $this->container->getParameter('cyclos_currency_cairn');          
+        $networkInfo->switchToNetwork($networkName,'login',$credentials);
+
+        $newPassword = $form->get('plainPassword')->getData();
+
+        $changed = $this->changeCyclosPassword(NULL, $newPassword, $user);
+        $this->createAccessClient($user,$user->getUsername(),$newPassword);
+
 
         if($this->container->get('cairn_user.api')->isApiCall()){
             $response = new Response('Change password : ok !');
@@ -149,6 +165,25 @@ class SecurityListener
         }
     }
 
+    public function createAccessClient(User $currentUser,$username, $password)
+    {
+        $securityService = $this->container->get('cairn_user.security');
+
+        if(! $currentUser->getCyclosToken()){
+                $cyclosClientName = 'main';
+                $securityService = $this->container->get('cairn_user.security');
+
+                $this->loginPaymentApp('login',array('username'=>$username,'password'=>$password));
+
+                $securityService->createAccessClient($currentUser,$cyclosClientName);
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),$cyclosClientName, 'UNASSIGNED');
+
+                $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                $mainClient = $securityService->vigenereEncode($mainClient);
+                $currentUser->setCyclosToken($mainClient);
+        }
+    }
+
     public function onLogin(InteractiveLoginEvent $event)
     {
         $request = $event->getRequest();
@@ -160,23 +195,8 @@ class SecurityListener
             $username = $request->request->all()['_username'];
             $password = $request->request->all()['_password'];
 
-            $session = $request->getSession();
-
             //if there is an access client, connect with it. Otherwise create one
-            if(! $currentUser->getCyclosToken()){
-                $cyclosClientName = 'main';
-                $securityService = $this->container->get('cairn_user.security');
-                $currentUser = $securityService->getCurrentUser();
-
-                $this->loginPaymentApp('login',array('username'=>$username,'password'=>$password));
-
-                $securityService->createAccessClient($currentUser,$cyclosClientName);
-                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),$cyclosClientName, 'UNASSIGNED');
-
-                $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
-                $mainClient = $securityService->vigenereEncode($mainClient);
-                $currentUser->setCyclosToken($mainClient);
-            }
+            $this->createAccessClient($currentUser,$username,$password);
             
             $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
