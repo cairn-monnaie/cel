@@ -60,7 +60,7 @@ class SmsController extends Controller
         if($env == 'test'){
             $phoneNumber = '+'.trim($request->query->get('phone'));
             $res = $this->smsAction($phoneNumber,$request->query->get('content'));
-        }elseif($env == 'dev'){
+        }elseif($env == 'prod'){
 //
 //        $this->smsAction('+33788888888','LOGIN');
 //            $this->smsAction('+33611223344','2222');
@@ -74,7 +74,7 @@ class SmsController extends Controller
 //        $this->smsAction('+33655667788','SOLDE');
 //        $this->smsAction('+33655667788','2222');
 //        $this->smsAction('+33655667788','1111');
-        }elseif($env == 'prod'){
+        }elseif($env == 'dev'){
 
             parse_str( $request->getQueryString(), $query) ;
 
@@ -86,6 +86,7 @@ class SmsController extends Controller
             } 
 
             $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
+
             $res = $this->smsAction($sender_phoneNumber,$query['message']);
         }
 
@@ -326,8 +327,8 @@ class SmsController extends Controller
         //4) Parse SMS content
         $parsedSms = $this->parseSms($content);
 
-        if( $parsedSms->error){
 
+        if( $parsedSms->error){
             $smsFormat = new Sms($debitorPhoneNumber, $content, Sms::STATE_INVALID, NULL);
 
             $reason = 'SMS INVALIDE : '."\n".$parsedSms->error;
@@ -339,7 +340,6 @@ class SmsController extends Controller
             return;
         }
 
-        
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
             if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
                return;
