@@ -44,11 +44,11 @@
 
             $('.js-day-wrapper').each(function() {
                 var index = $(this).data('index');
+                var $wrapper = $(this);
 
-                console.log(index)
                 if(index != 0){
                     $(this).find('input.time-input').each(function() {
-                        addDeleteLink($(this));
+                        addDeleteLink($(this), $wrapper);
                     });
                 }
 
@@ -78,7 +78,7 @@
                 $container = $wrapper.find('div[id*=cairn_userbundle_accountscore_schedule]');
                 $container.append($newTimeField);
 
-                addDeleteLink($newTimeField);
+                addDeleteLink($newTimeField, $wrapper);
                 
                                 
                 $newTimeField.timepicker({
@@ -87,12 +87,15 @@
 
             }
 
-            function addDeleteLink($prototype){
+            function addDeleteLink($prototype, $wrapper){
                 var $deleteLink = $('<a href="#" class="js-time-remove"><i class="material-icons">close</i></a>');
 
                 $prototype.after($deleteLink);
 
                 $deleteLink.on('click', function(e) {
+
+                    $wrapper.data('index', $wrapper.data('index') - 1);
+
                     $prototype.fadeOut().remove();
                     $(this).fadeOut().remove();
 

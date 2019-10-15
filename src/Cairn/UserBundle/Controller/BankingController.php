@@ -1305,6 +1305,15 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:accounts_download.html.twig',array('form'=>$form->createView(),'accounts'=>$accounts));
     }
 
+    function compareDates($a, $b)
+    {
+        if($a == $b){
+            return 0;
+        }
+
+        return ($a < $b) ? -1 : 1;
+        
+    }
     /**
      * A pro can download a daily account score 
      *
@@ -1333,6 +1342,19 @@ class BankingController extends Controller
 
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
+
+            $schedule = $accountScore->getSchedule();
+
+            //reorder schedules ASC for each day 
+            foreach($schedule as $day => $daySchedule){
+                usort($daySchedule, array($this,'compareDates'));
+                $schedule[$day] = $daySchedule;
+            }
+            
+            $accountScore->setSchedule($schedule);
+            //change nbSentToday according to new schedule
+            //if a pro wants to receive account score tonight but changes the schedule for the same day and it does not match
+            //the number of emails sent today : problem
             $em->persist($accountScore);
             $em->flush();
 

@@ -21,6 +21,7 @@ use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\Mandate;
 
+use Knp\Snappy\Pdf;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -94,6 +95,149 @@ class Commands
 //        }
 
         $this->em->flush();
+    }
+
+    public function sendAccountScores()
+    {
+        $now = new \Datetime();
+        $dayNow = $now->format('D');
+        $timeNow =  $now->format('H:i');
+        $accountScoreRepo = $this->em->getRepository('CairnUserBundle:AccountScore');
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+
+        $messageNotificator = $this->container->get('cairn_user.message_notificator');
+
+        //how to get users based on their account score schedule
+        $accountScores = $accountScoreRepo->findAll();
+
+        foreach($accountScores as $accountScore){
+            $schedule = $accountScore->getSchedule()[$dayNow];
+
+            if( ! empty($schedule)){
+                $nbToSend = count($schedule);
+                $nbSent = $accountScore->getNbSentToday();
+
+                if($nbSent < $nbToSend){
+                    $filename = 'pointage-'.strtotime(date('Y-m-d H:i'));
+                    $date = date('d-M-Y').' '.$schedule[$nbSent];
+                    $dateToSend = new \Datetime($date);
+
+                    //here we look for the timestamp of the last sent mail
+                    if($nbSent != 0){ //if another account score was expected the same day
+                        $beginTime = $schedule[$nbSent - 1];
+                        $begin = new \Datetime($beginTime);
+                        $begin->modify('+1 hour');
+
+                    }else{ //otherwise, get the last timestamp of the previous day, if any
+                        $clone = clone $now;
+                        $dayBefore = $clone->modify('-1 day');
+
+                        if($dateToSend->format('H') < '6'){ // if  evening activity, must deal with day before
+                            if($endYesterday = end($accountScore->getSchedule()[$dayBefore->format('D')]) ){
+                                $begin = $dayBefore->modify($endYesterday)->modify('+1 hour');
+                            }else{
+                                $begin = $dayBefore->modify('15:00');
+                            }
+                        }else{ // daytime activity 
+                            $cloneNow = clone $now;
+                            $begin = $cloneNow->modify('00:00');
+                        }
+
+                                                
+                    }
+
+                    if( $now->diff($dateToSend)->invert == 1 ){
+                        $ob = $operationRepo->createQueryBuilder('o');
+
+                        $operationRepo
+                            ->whereCreditor($ob, $accountScore->getUser())
+                            ->whereSubmissionDateBetween($ob, $begin, $now);
+
+                        $ob->andWhere('o.paymentID is not NULL')
+                            ->andWhere( 
+                                $ob->expr()->orX(
+                                    'o.type = '.Operation::TYPE_SMS_PAYMENT
+                                    ,
+                                    'o.type = '.Operation::TYPE_MOBILE_APP
+                                )
+                            )
+                            ->orderBy('o.executionDate','ASC');
+                        $operations = $ob->getQuery()->getResult();
+
+                        //generate Document
+                        if($accountScore->getFormat() == 'csv'){ // CSV FORMAT
+                            $filename = $filename.'csv';
+                            $handle = fopen($filename, 'w');
+
+                            // Add the header of the CSV file
+                            fputcsv($handle,array('Compte : ' . $accountScore->getUser()->getName()),';');
+                            fputcsv($handle, array('Horodatage', 'Type','Montant'),';');
+
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+
+                                $totalAmount += $operation->getAmount();
+                                fputcsv(
+                                    $handle, // The file pointer
+                                    array(
+                                        $operation->getExecutionDate()->format('H:i'),
+                                        Operation::getTypeName($operation->getType()),
+                                        $operation->getAmount()
+                                    ), // The fields
+                                    ';' // The delimiter
+                                );
+                            }
+
+                            fputcsv($handle,array('Somme cumulée : '.$totalAmount.' cairns'),';');
+                            fputcsv($handle,array());
+
+                            fclose($handle);
+
+                            // You can alternatively use method chaining to build the attachment
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/force-download')
+                                ->setBody(file_get_contents($filename))
+                            ;
+
+                        }else{ // PDF FORMAT
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+                                $totalAmount += $operation->getAmount();
+                            }
+
+                            $projectDir = $this->container->getParameter('kernel.project_dir');
+ 
+                            $snappy = new Pdf($projectDir.'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
+                            $html =  $this->container->get('templating')->render('CairnUserBundle:Pdf:account_score.html.twig',
+                                array('operations'=>$operations,
+                                'totalAmount'=>$totalAmount,
+                                'beginDate'=>$begin,
+                                'endDate'=>$now,
+                                'accountScore'=>$accountScore
+                                ));
+
+                            $filename = $filename.'.pdf';
+                            $snappy->generateFromHtml($html,$filename);
+
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/pdf')
+                                ->setBody($this->container->get('knp_snappy.pdf')->getOutputFromHtml($html))
+                            ;
+                        }
+
+                        $accountScore->setNbSentToday($accountScore->getNbSentToday() + 1);
+                        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore));
+                        $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
+                    }
+                }
+            }
+        }
+
+        $this->em->flush();
+
+        return 'OK';
     }
 
     private function updateMandate(Mandate $mandate)
@@ -492,8 +636,13 @@ class Commands
 
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
+     *
+     * WARNING : The ID of the TransactionEntryVO object is not the same id than its corresponding transfer
+     * For this reason, $entryVO->id is not what we want 
+     *
      *@param const int $type Operation type
-     *@param stdClass $entryVO stdClass transaction
+     *@param stdClass $entryVO stdClass TransactionEntryVO
+     *@see https://documentation.cyclos.org/4.11.2/ws-api-docs/org/cyclos/model/banking/transactions/TransactionEntryVO.html
      */
     public function createOperation($entryVO, $type)
     {

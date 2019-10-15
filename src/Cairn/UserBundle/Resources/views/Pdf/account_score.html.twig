@@ -1,0 +1,68 @@
+{# src/Cairn/UserBundle/Resources/views/Pdf/accounts_statement.html.twig #}         
+
+{% extends 'CairnUserBundle::layout-pdf.html.twig' %}
+
+{% trans_default_domain 'messages' %}
+
+{% block stylesheets %}
+  {# pathToWeb is a config twig variable used to get absolute urls while generating pdf files using knp-snappy. KnpSnappy does not know anything about the context of the project, so absolute path must be provided. asset function not working #}
+  <link href="{{ pathToWeb }}/bundles/cairnuser/css/ecairn-pdf.css" rel="stylesheet" type="text/css">
+{% endblock %}                                  
+
+    {% block title %} Pointage [e]-Cairn{% endblock %}
+
+    {% block top_right_info %}
+
+    {{ parent() }}
+
+    <table class="account-overview">
+        <caption> Compte </caption>
+        <tbody>
+            <tr>
+                <td class="title">Propriétaire</td>
+                <td class="value">
+                    {{accountScore.user.name}}
+                </td>
+            </tr>
+            <tr> 
+                <td class="title"> Somme cumulée </td>
+                <td class="value"> {{totalAmount}} CRN </td>
+            </tr>
+            <tr> 
+                <td class="title"> Période </td>
+                <td class="value"> Du {{beginDate|date('d/m H:i')}} à {{endDate|date('d/m H:i')}} </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% endblock %}
+    
+{% block content %}
+
+<div class="account-operations">
+    <table>
+        <caption> Opérations </caption>
+        <thead>
+            <tr>
+                <th> Date de valeur </th>
+                <th> Type </th>
+                <th> Montant </th>
+            </tr>
+        </thead>
+    
+        <tbody>
+            {% for operation in operations %}
+                <tr>
+                    <td> {{operation.executionDate|date('d/m H:i')}} </td>
+                    <td> {{ operation.getTypeName(operation.type)|trans }} </td>
+                    <td> {{operation.amount}} CRN</td>
+                        
+                </tr>
+            {% endfor %}
+        </tbody>
+
+
+    </table>
+</div>
+{% endblock %}
+
