@@ -108,7 +108,10 @@ class Commands
         $messageNotificator = $this->container->get('cairn_user.message_notificator');
 
         //how to get users based on their account score schedule
-        $accountScores = $accountScoreRepo->findAll();
+        $ab = $accountScoreRepo->createQueryBuilder('a');
+
+        $ab->andWhere('a.confirmationToken is NULL');
+        $accountScores = $ab->getQuery()->getResult();
 
         foreach($accountScores as $accountScore){
             $schedule = $accountScore->getSchedule()[$dayNow];

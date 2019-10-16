@@ -10,4 +10,10 @@ namespace Cairn\UserBundle\Repository;
  */
 class AccountScoreRepository extends \Doctrine\ORM\EntityRepository
 {
+    public function whereConfirmed(QueryBuilder $ab)
+     {
+         $ab->andWhere('u.confirmationToken is NULL');
+         return $this;
+     }
+
 }

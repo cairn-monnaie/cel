@@ -37,6 +37,13 @@ class AccountScore
     private $email;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="confirmation_token", type="string", length=255,nullable=true, unique=true)
+     */
+    private $confirmationToken;
+
+    /**
      * @var array
      *
      * @ORM\Column(name="schedule", type="array")
@@ -126,6 +133,30 @@ class AccountScore
     public function getEmail()
     {
         return $this->email;
+    }
+
+    /**
+     * Set confirmationToken.
+     *
+     * @param string $confirmationToken
+     *
+     * @return AccountScore
+     */
+    public function setConfirmationToken($confirmationToken)
+    {
+        $this->confirmationToken = $confirmationToken;
+
+        return $this;
+    }
+
+    /**
+     * Get confirmationToken.
+     *
+     * @return string
+     */
+    public function getConfirmationToken()
+    {
+        return $this->confirmationToken;
     }
 
     /**

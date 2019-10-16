@@ -1,0 +1,10 @@
+{# src/Cairn/UserBundle/Resources/views/Banking/check_account_score_email.html.twig #}         
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+ {% block body %}
+     <h2>Demande enregistrée <i class="material-icons">check</i></h2>
+     <p> Un email a été envoyé à l'adresse {{accountScore.email}}. Il contient un lien d'activation sur lequel il vous faudra cliquer afin d'activer</p>
+     <br>
+     <a class="waves-effect waves-teal btn" href="{{ path('cairn_user_welcome') }}"><i class="material-icons left">arrow_back</i>retour accueil</a>
+ {% endblock %}

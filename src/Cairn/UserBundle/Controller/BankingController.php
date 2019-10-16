@@ -1358,13 +1358,35 @@ class BankingController extends Controller
             $em->persist($accountScore);
             $em->flush();
 
-            $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
-           return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
-
+            if($accountScore->getConfirmationToken()){
+                return $this->render('CairnUserBundle:Banking:check_account_score_email.html.twig',
+                    array('accountScore'=>$accountScore));
+            }else{
+                $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
+                return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
+            }
+            
         }
 
         return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
             array('form'=>$form->createView()));
+    }
+
+    public function confirmAccountScoreEmailAction(Request $request, string $token){
+
+        $session = $request->getSession();
+        $em = $this->getDoctrine()->getManager();
+        
+        $accountScore = $em->getRepository('CairnUserBundle:AccountScore')->findOneByConfirmationToken($token);
+
+        if($accountScore){
+            $accountScore->setConfirmationToken(null);
+            $em->flush();
+            $session->getFlashBag()->add('success','Email confirmé : OK !!');
+            return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
+        }else{
+            return $this->redirectToRoute('fos_user_security_login');
+        }
     }
 
     /**

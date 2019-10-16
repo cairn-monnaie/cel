@@ -139,6 +139,16 @@ services:
         tags:
             - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
 
+    cairn_user.accountscore_listener:
+        class: Cairn\UserBundle\EventListener\AccountScoreListener
+        arguments:
+            - "@cairn_user.security"
+            - "@cairn_user.message_notificator"
+            - "@router"
+            - "@templating"
+        tags:
+            - { name: doctrine.orm.entity_listener, event: preUpdate, method: preUpdate, entity: Cairn\UserBundle\Entity\AccountScore, lazy: true }
+
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener
         arguments: 
