@@ -214,6 +214,7 @@ class AccountScore
                 $cmpt++;
 
                 if($cmpt >= 7){
+                    $nextDayToConsider->modify('+1 day');
                     break;
                 }
             }

@@ -238,6 +238,8 @@ class Commands
                         $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
                     }
                 }
+            }else{//little bit of a hack to deal with side-effect but necessary
+                $accountScore->setNbSentToday(0);
             }
         }
 
