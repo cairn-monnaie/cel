@@ -171,7 +171,7 @@ class Commands
 
                         //generate Document
                         if($accountScore->getFormat() == 'csv'){ // CSV FORMAT
-                            $filename = $filename.'csv';
+                            $filename = $filename.'.csv';
                             $handle = fopen($filename, 'w');
 
                             // Add the header of the CSV file
@@ -205,6 +205,7 @@ class Commands
                                 ->setBody(file_get_contents($filename))
                             ;
 
+                            unlink($filename);
                         }else{ // PDF FORMAT
                             $totalAmount = 0;
                             foreach($operations as $operation ){
@@ -223,7 +224,6 @@ class Commands
                                 ));
 
                             $filename = $filename.'.pdf';
-                            $snappy->generateFromHtml($html,$filename);
 
                             $attachment = (new \Swift_Attachment())
                                 ->setFilename($filename)

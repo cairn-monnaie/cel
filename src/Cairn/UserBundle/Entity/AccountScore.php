@@ -206,7 +206,7 @@ class AccountScore
         $nextDayToConsider = new \Datetime();
 
         $cmpt = 0;
-        if( count($this->getSchedule()[$nextDayToConsider->format('D')]) == $this->getNbSentToday() ){
+        if( count($this->getSchedule()[$nextDayToConsider->format('D')]) <= $this->getNbSentToday() ){
             $nextDayToConsider->modify('+1 day');
             $cmpt++;
             while( empty($this->getSchedule()[$nextDayToConsider->format('D')]) ){
@@ -221,6 +221,8 @@ class AccountScore
 
             $this->setConsideredDay($nextDayToConsider->format('D'));
             $this->nbSentToday = 0;
+        }else{
+            $this->setConsideredDay($nextDayToConsider->format('D'));
         }
 
         return $this;
