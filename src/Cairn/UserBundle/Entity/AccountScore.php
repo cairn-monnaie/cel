@@ -58,6 +58,13 @@ class AccountScore
     private $nbSentToday;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="considered_day", type="string", length=4,nullable=false, unique=false)
+     */
+    private $consideredDay;
+
+    /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User",  cascade={"persist"})
      *@ORM\JoinColumn(name="user_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
@@ -70,6 +77,8 @@ class AccountScore
     {
         $this->schedule = array('Mon'=>array(),'Tue'=>array(),'Wed'=>array(), 'Thu'=>array(), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
         $this->nbSentToday = 0;
+
+        $this->consideredDay = date('D'); 
     }
 
     public static function getPossibleTypes()
@@ -194,6 +203,25 @@ class AccountScore
     {
         $this->nbSentToday = $nbSentToday;
 
+        $nextDayToConsider = new \Datetime();
+
+        $cmpt = 0;
+        if( count($this->getSchedule()[$nextDayToConsider->format('D')]) == $this->getNbSentToday() ){
+            $nextDayToConsider->modify('+1 day');
+            $cmpt++;
+            while( empty($this->getSchedule()[$nextDayToConsider->format('D')]) ){
+                $nextDayToConsider->modify('+1 day');
+                $cmpt++;
+
+                if($cmpt >= 7){
+                    break;
+                }
+            }
+
+            $this->setConsideredDay($nextDayToConsider->format('D'));
+            $this->nbSentToday = 0;
+        }
+
         return $this;
     }
 
@@ -205,6 +233,30 @@ class AccountScore
     public function getNbSentToday()
     {
         return $this->nbSentToday;
+    }
+
+    /**
+     * Set consideredDay.
+     *
+     * @param \DateTime $consideredDay
+     *
+     * @return AccountScore
+     */
+    public function setConsideredDay($consideredDay)
+    {
+        $this->consideredDay = $consideredDay;
+
+        return $this;
+    }
+
+    /**
+     * Get consideredDay.
+     *
+     * @return \DateTime
+     */
+    public function getConsideredDay()
+    {
+        return $this->consideredDay;
     }
 
     /**

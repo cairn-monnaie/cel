@@ -110,7 +110,9 @@ class Commands
         //how to get users based on their account score schedule
         $ab = $accountScoreRepo->createQueryBuilder('a');
 
-        $ab->andWhere('a.confirmationToken is NULL');
+        $ab->andWhere('a.confirmationToken is NULL')
+            ->andWhere('a.consideredDay = :day')
+            ->setParameter('day', $dayNow );
         $accountScores = $ab->getQuery()->getResult();
 
         foreach($accountScores as $accountScore){
@@ -231,6 +233,7 @@ class Commands
                         }
 
                         $accountScore->setNbSentToday($accountScore->getNbSentToday() + 1);
+
                         $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore));
                         $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
                     }

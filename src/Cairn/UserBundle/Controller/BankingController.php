@@ -1352,9 +1352,20 @@ class BankingController extends Controller
             }
             
             $accountScore->setSchedule($schedule);
-            //change nbSentToday according to new schedule
-            //if a pro wants to receive account score tonight but changes the schedule for the same day and it does not match
-            //the number of emails sent today : problem
+
+            // if today schedule has changed, we must simulate that previous emails requested today have been sent
+            // to keep consistent data
+            $cmpt = 0;
+            $now = new \Datetime();
+            $nowTime = $now->format('H:i');
+            $nowDay = $now->format('D');
+
+            $nbTotalTimes = count( $schedule[$nowDay] );
+            while ( ($cmpt < $nbTotalTimes) && ($schedule[$nowDay][$cmpt] < $nowTime) ){
+                $cmpt++;
+            }
+
+            $accountScore->setNbSentToday($cmpt);
             $em->persist($accountScore);
             $em->flush();
 
