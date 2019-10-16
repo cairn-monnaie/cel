@@ -480,15 +480,15 @@ cairn_user_banking_accounts_overview:
         _format: html|json
 
 cairn_user_accountscore_configure:
-    path:     banking/account-score/configure/{username}
+    path:     account-score/configure/{username}
     defaults: { _controller: CairnUserBundle:Banking:configureAccountScore, _format: html  }
 
 cairn_user_accountscore_view:
-    path:     banking/account-score/view/{id}
+    path:     account-score/view/{id}
     defaults: { _controller: CairnUserBundle:Banking:viewAccountScore, _format: html  }
 
 cairn_user_accountscore_confirm:
-    path:     banking/account-score/confirm/{token}
+    path:     account-score/confirm/{token}
     defaults: { _controller: CairnUserBundle:Banking:confirmAccountScoreEmail, _format: html  }
 
 #cairn_user_bankconnection_deposit_index:

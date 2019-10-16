@@ -1359,7 +1359,7 @@ class BankingController extends Controller
             $em->flush();
 
             if($accountScore->getConfirmationToken()){
-                return $this->render('CairnUserBundle:Banking:check_account_score_email.html.twig',
+                return $this->render('CairnUserBundle:AccountScore:check_email.html.twig',
                     array('accountScore'=>$accountScore));
             }else{
                 $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
@@ -1368,7 +1368,7 @@ class BankingController extends Controller
             
         }
 
-        return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
+        return $this->render('CairnUserBundle:AccountScore:_form.html.twig',
             array('form'=>$form->createView()));
     }
 
@@ -1396,7 +1396,7 @@ class BankingController extends Controller
      */
     public function viewAccountScoreAction(Request $request, AccountScore $accountScore)
     {
-        return $this->render('CairnUserBundle:Banking:view_account_score.html.twig',
+        return $this->render('CairnUserBundle:AccountScore:view.html.twig',
             array('accountScore'=>$accountScore));
     }
 

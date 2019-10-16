@@ -43,7 +43,6 @@ class AccountScoreListener
                 $confirmationToken = $this->securityService->generateUrlToken();
 
                 $accountScore->setConfirmationToken($confirmationToken);
-                //$eventArgs->setNewValue('confirmationToken', $confirmationToken);
 
                 $url = $this->router->generate('cairn_user_accountscore_confirm', array('token' => $accountScore->getConfirmationToken() ), UrlGeneratorInterface::ABSOLUTE_URL);
                 $body = $this->templating->render('CairnUserBundle:Emails:confirm_account_score.html.twig', array(
