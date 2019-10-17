@@ -18,6 +18,7 @@ use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\User;
 
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -195,15 +196,60 @@ class HelloassoController extends Controller
 
         $accountManager =  $this->get('cairn_user.account_manager');
         $messageNotificator = $this->get('cairn_user.message_notificator');
-
-        $form = $this->createFormBuilder()
-            ->add('payment_id', TextType::class, array('label' => 'ID du virement helloasso'))
-            ->add('email', TextType::class, array('label' => 'Email du compte créditeur'))
-            ->add('save',      SubmitType::class, array('label' => 'Synchroniser'))
+                    
+        $formSearch = $this->createFormBuilder()
+            ->add('from', DateType::class, array('label' => 'Date de début','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
+            ->add('to', DateType::class, array('label' => 'Date de fin','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
+            ->add('email', TextType::class, array('label' => 'Email helloasso'))
+            ->add('search',      SubmitType::class, array('label' => 'Rechercher'))
             ->getForm();
 
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
-            $dataForm = $form->getData();
+        $formSync = $this->createFormBuilder()
+            ->add('payment_id', TextType::class, array('label' => 'ID du virement helloasso'))
+            ->add('email', TextType::class, array('label' => 'Email du compte créditeur'))
+            ->add('sync',      SubmitType::class, array('label' => 'Synchroniser'))
+            ->getForm();
+
+        $formSearch->handleRequest($request);    
+        $formSync->handleRequest($request);    
+
+        if($formSearch->isSubmitted() && $formSearch->isValid()){
+            $dataForm = $formSearch->getData();
+
+            $campaignID = $this->getParameter('helloasso_campaign_id');
+
+            $from = $dataForm['from'] ;
+            $to = $dataForm['to'] ;
+
+            //look for helloassopayment with same id in helloasso data
+            $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c') ));
+
+            $nbPages = $payments_search->pagination->max_page;
+
+            $payments_filter = array();
+
+            for($i = $nbPages; $i >= 1; $i--){
+
+                if($nbPages > 1){
+                    $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c'),'page'=>$i ));
+                }
+                foreach($payments_search->resources as $payment){
+                    if($payment->payer_email == $dataForm['email']){
+                        $payments_filter[] = $payment;
+                    }
+                }
+            }
+
+            return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',
+                array(
+                    'formSearch' => $formSearch->createView(), 
+                    'formSync' => $formSync->createView(),
+                    'payments'=> $payments_filter
+            ));
+
+            
+        }elseif ($formSync->isSubmitted() && $formSync->isValid()) {
+            $dataForm = $formSync->getData();
 
             $api_payment = $this->getApiPayment($dataForm['payment_id']);
             
@@ -239,16 +285,17 @@ class HelloassoController extends Controller
              if(! $operation ){
                  $session->getFlashBag()->add('error','Le crédit de compte n\'a pas été exécuté. Le coffre [e]-Cairns est probablement vide !');
              }else{
+                 $operation->setSubmissionDate($newHelloassoPayment->getDate());
                  $em->persist($operation);
                  $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
              }
 
             $em->flush();
-            return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
+            return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
 
         }
 
-        return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',array('form' => $form->createView() ));
+        return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',array('formSearch' => $formSearch->createView(), 'formSync' => $formSync->createView()));
 
     }
 }

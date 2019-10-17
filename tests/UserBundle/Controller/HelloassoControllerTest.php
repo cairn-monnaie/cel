@@ -131,7 +131,7 @@ class HelloassoControllerTest extends BaseControllerTest
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }else{
 
-            $form = $crawler->selectButton('form_save')->form();
+            $form = $crawler->selectButton('form_sync')->form();
             $form['form[payment_id]']->setValue($helloassoID);
             $form['form[email]']->setValue($email);
 
