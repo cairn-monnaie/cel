@@ -338,7 +338,7 @@ class UserController extends Controller
             $session->remove('activationCode');
             $session->remove('phone');
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
 
         //invalid code
         }else{

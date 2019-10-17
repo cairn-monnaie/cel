@@ -1,0 +1,12 @@
+{# src/Cairn/UserBundle/Resources/views/Default/howto_sms_page.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{ parent()  }}
+
+    <h1> Règles d'utilisation </h1>
+
+    {{include("CairnUserBundle:Default:howto_sms.html.twig")}}
+{% endblock %}
+
