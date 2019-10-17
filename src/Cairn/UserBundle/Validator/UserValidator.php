@@ -96,7 +96,7 @@ class UserValidator extends ConstraintValidator
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
-                if( preg_match('<[^a-zA-Z0-9`@!"#$%&\>\<\'()*+,-./:;=?\[\]^_{}~]>',$user->getPlainPassword(),$matches)){
+                if( preg_match('<[^a-zA-Z0-9`@!"#$%&\>\<\'()*+,-./:;=?\[\]^_{}~]>u',$user->getPlainPassword(),$matches)){
                     $list = '';
                     foreach($matches as $match){
                         $list .= $match;
