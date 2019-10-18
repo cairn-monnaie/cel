@@ -21,13 +21,7 @@ class AccountScore
      */
     private $id;
 
-    /**
-     * @var array
-     *
-     * @ORM\Column(name="types", type="array")
-     */
-    private $types;
-
+    
     /**
      * @var string
      *
@@ -52,9 +46,9 @@ class AccountScore
     /**
      * @var \DateTime
      *
-     * @ORM\Column(name="lastEmailSentAt", type="datetime")
+     * @ORM\Column(name="nb_sent_today", type="smallint")
      */
-    private $lastEmailSentAt;
+    private $nbSentToday;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User",  cascade={"persist"})
@@ -67,7 +61,8 @@ class AccountScore
 
     public function __construct()
     {
-        $this->schedule = array('monday'=>'','tuesday'=>'','wednesday'=>'', 'thursday'=>'', 'friday'=>'', 'saturday'=>'', 'sunday'=>'');
+        $this->schedule = array('Mon'=>array(),'Tue'=>array(),'Wed'=>array(), 'Thu'=>array(), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
+        $this->nbSentToday = 0;
     }
 
     public static function getPossibleTypes()
@@ -83,30 +78,6 @@ class AccountScore
     public function getId()
     {
         return $this->id;
-    }
-
-    /**
-     * Set types.
-     *
-     * @param array $types
-     *
-     * @return AccountScore
-     */
-    public function setTypes($types)
-    {
-        $this->types = $types;
-
-        return $this;
-    }
-
-    /**
-     * Get types.
-     *
-     * @return array
-     */
-    public function getTypes()
-    {
-        return $this->types;
     }
 
     /**
@@ -182,27 +153,27 @@ class AccountScore
     }
 
     /**
-     * Set lastEmailSentAt.
+     * Set nbSentToday.
      *
-     * @param \DateTime $lastEmailSentAt
+     * @param \DateTime $nbSentToday
      *
      * @return AccountScore
      */
-    public function setLastEmailSentAt($lastEmailSentAt)
+    public function setNbSentToday($nbSentToday)
     {
-        $this->lastEmailSentAt = $lastEmailSentAt;
+        $this->nbSentToday = $nbSentToday;
 
         return $this;
     }
 
     /**
-     * Get lastEmailSentAt.
+     * Get nbSentToday.
      *
      * @return \DateTime
      */
-    public function getLastEmailSentAt()
+    public function getNbSentToday()
     {
-        return $this->lastEmailSentAt;
+        return $this->nbSentToday;
     }
 
     /**

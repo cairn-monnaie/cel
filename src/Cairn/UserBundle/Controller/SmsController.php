@@ -67,7 +67,7 @@ class SmsController extends Controller
 //        $this->smsAction('+33611223344','1111');
 //
             //+33744444444', 'SOLDE
-        $res =  $this->smsAction('+33612345678','PAYER 10 MALTOBAR');
+        $res =  $this->smsAction('+33612345678','PAYER 10 BONNEPIO');
 //
 //        $this->smsAction('+33612345678','2222');
         $res = $this->smsAction('+33612345678','1111');
@@ -91,13 +91,13 @@ class SmsController extends Controller
         }
 
         if(! $res){
-            $response = new Response(' { "message"=>"Payment aborted" }');
+            $response = new Response(' { "message":"Request aborted" }');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_BAD_REQUEST);
             return $response;
 
         }else{
-            $response = new Response(' { "message"=>"Payment OK !" }');
+            $response = new Response(' { "message":"Request OK !" }');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
             return $response;
@@ -408,6 +408,7 @@ class SmsController extends Controller
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
                 $res = $this->executePayment($debitorUser, $parsedInitialSms, false, $userPhone);    
+                $em->flush();
 
                 if($res){return true;}else{return NULL;}
 
@@ -416,6 +417,7 @@ class SmsController extends Controller
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
 
                 $this->persistSMS($smsBalance);
+                $em->flush();
                 return true;
             }
           

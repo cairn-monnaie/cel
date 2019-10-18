@@ -479,9 +479,9 @@ cairn_user_banking_accounts_overview:
         #        id: \d+
         _format: html|json
 
-cairn_user_accountscore_add:
-    path:     banking/account-score/add
-    defaults: { _controller: CairnUserBundle:Banking:createAccountScore, _format: html  }
+cairn_user_accountscore_configure:
+    path:     banking/account-score/configure/{username}
+    defaults: { _controller: CairnUserBundle:Banking:configureAccountScore, _format: html  }
 
 cairn_user_accountscore_view:
     path:     banking/account-score/view/{id}

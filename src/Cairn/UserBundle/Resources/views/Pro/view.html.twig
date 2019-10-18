@@ -9,9 +9,9 @@
 
  {% if user.image is not null %}
     {% if user.image.url is not null %}
-        {% set logoIsDefined = false %}
-    {% else %}
         {% set logoIsDefined = true %}
+    {% else %}
+        {% set logoIsDefined = false %}
     {% endif %}
 {% else %}
     {% set logoIsDefined = false %}
