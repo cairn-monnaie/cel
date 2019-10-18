@@ -1305,56 +1305,7 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:accounts_download.html.twig',array('form'=>$form->createView(),'accounts'=>$accounts));
     }
 
-    /**
-     * A pro can download a daily account score 
-     *
-     * @Security("has_role('ROLE_PRO')")
-     */
-    public function configureAccountScoreAction(Request $request, User $user)
-    {
-        $currentUser = $this->getUser();
-
-        //to see the content, check that currentUser is owner or currentUser is referent
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }
-
-        $session = $request->getSession();
-
-        $em = $this->getDoctrine()->getManager();
-        
-        $accountScore = $em->getRepository('CairnUserBundle:AccountScore')->findOneByUser($user);
-        if(! $accountScore){
-            $accountScore = new AccountScore();
-            $accountScore->setUser($currentUser);
-        }
-
-        $form = $this->createForm(AccountScoreType::class, $accountScore);
-
-        $form->handleRequest($request);
-        if($form->isSubmitted() && $form->isValid()){
-            $em->persist($accountScore);
-            $em->flush();
-
-            $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
-           return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
-
-        }
-
-        return $this->render('CairnUserBundle:Banking:account_score_form.html.twig',
-            array('form'=>$form->createView()));
-    }
-
-    /**
-     * A pro can view his account score configuration 
-     *
-     * @Security("has_role('ROLE_PRO')")
-     */
-    public function viewAccountScoreAction(Request $request, AccountScore $accountScore)
-    {
-        return $this->render('CairnUserBundle:Banking:view_account_score.html.twig',
-            array('accountScore'=>$accountScore));
-    }
+    
 
     public function confirmOnlinePaymentAction(Request $request, $suffix)
     {

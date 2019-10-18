@@ -11,3 +11,7 @@ Cairn\UserBundle\Entity\Operation:
 Cairn\UserBundle\Entity\Mandate:
     constraints:
             - Cairn\UserBundle\Validator\Mandate: ~
+
+Cairn\UserBundle\Entity\AccountScore:
+    constraints:
+            - Cairn\UserBundle\Validator\AccountScore: ~
