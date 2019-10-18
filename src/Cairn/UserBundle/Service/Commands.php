@@ -236,7 +236,7 @@ class Commands
 
                         $accountScore->setNbSentToday($accountScore->getNbSentToday() + 1);
 
-                        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore));
+                        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore,'begin'=>$begin));
                         $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
                     }
                 }

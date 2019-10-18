@@ -116,7 +116,7 @@ class AccountScoreController extends Controller
                 return $this->render('CairnUserBundle:AccountScore:check_email.html.twig',
                     array('accountScore'=>$accountScore));
             }else{
-                $session->getFlashBag()->add('success','Configuration du pointage : OK !!');
+                $session->getFlashBag()->add('success','Configuration mise à jour avec succès !');
                 return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
             }
             
@@ -150,7 +150,7 @@ class AccountScoreController extends Controller
         if($accountScore){
             $accountScore->setConfirmationToken(null);
             $em->flush();
-            $session->getFlashBag()->add('success','Email confirmé : OK !!');
+            $session->getFlashBag()->add('success','Votre adresse électronique a été confirmée avec succès !');
             return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 
         }else{
             return $this->redirectToRoute('fos_user_security_login');

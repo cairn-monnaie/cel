@@ -98,6 +98,7 @@ class AccountScoreControllerTest extends BaseControllerTest
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('pointage', $message->getSubject());
                 $this->assertContains($contractor->getName(), $message->getBody());
+                $this->assertContains($accountScore->getConfirmationToken(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($email, key($message->getTo()));
 
@@ -118,7 +119,7 @@ class AccountScoreControllerTest extends BaseControllerTest
                 $crawler = $this->client->followRedirect();
 
                 $this->assertNull($accountScore->getConfirmationToken());
-                $this->assertSame(1,$crawler->filter('html:contains("OK")')->count());
+                $this->assertSame(1,$crawler->filter('html:contains("succès")')->count());
             }
         }else{
             $this->assertSame(0, $mailCollector->getMessageCount());
