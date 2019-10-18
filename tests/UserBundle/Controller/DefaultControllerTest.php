@@ -130,6 +130,7 @@ class DefaultControllerTest extends BaseControllerTest
 
         $this->em->refresh($newUser);
         $this->assertFalse($newUser->isEnabled());
+        $this->assertNull($newUser->getConfirmationToken());
 
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));
