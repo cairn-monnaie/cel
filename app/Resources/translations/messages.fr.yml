@@ -9,6 +9,12 @@ sms payment: paiement SMS
 transaction: virement
 scheduled transaction: virement programmé
 online payment: paiement en ligne
+payment order: ordre de paiement
+up-to-date: à jour
+scheduled: programmé
+revoked: révoqué
+overdue: en retard
+honoured: honoré
 Feb: Fév
 Mar: Mar
 Apr: Avr

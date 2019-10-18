@@ -1,0 +1,136 @@
+{# src/Cairn/UserBundle/Resources/views/AccountScore/_form.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    <div class="section">
+      {{ form_start(form) }}
+        {{ form_row(form.format) }}
+        {{ form_row(form.email) }}
+
+        <div class="row">
+            <div class="col s12">
+                {{ form_errors(form.schedule) }}
+                {{ form_label(form.schedule) }}
+            </div>
+        </div>
+
+        {% for formDay in form.schedule %}
+            <div class="row js-day-wrapper"
+                data-prototype="{{ form_widget(formDay.vars.prototype)|e }}"
+                data-index="{{ formDay|length }}"
+            >
+                <div class="row">
+                    <div class="col s12">
+                        {{ form_errors(formDay) }}
+                        {{ form_label(formDay) }}
+                    </div>
+                </div>
+                <div class="col s12">
+                    {{ form_widget(formDay) }}
+                </div>
+                  
+
+                {% for timeField in formDay %}
+                    <div class="col s12 m6 js-time-item">
+                       <div class="row ">
+                           <div class="col s12">
+                               {{ form_errors(timeField) }}
+                               {{ form_label(timeField) }}
+                           </div>
+                           <div class="col s12">
+                               {{ form_widget(timeField) }}
+                           </div>
+                       </div>
+                    </div>
+                {% endfor %}
+                <div class="col s12">
+                    <a href="#" class="js-time-add">
+                        <i class="material-icons">add</i>
+                    </a>
+                </div>
+
+            </div>    
+        {% endfor %}
+    {{ form_rest(form) }}
+    {{ form_end(form) }}
+    </div>
+
+{% endblock %}
+
+{% block javascripts %}
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('.timepicker').timepicker({
+                twelveHour: false
+            });
+
+            $('.js-day-wrapper').each(function() {
+                var index = $(this).data('index');
+                var $wrapper = $(this);
+
+                if(index != 0){
+                    $(this).find('input.time-input').each(function() {
+                        addDeleteLink($(this), $wrapper);
+                    });
+                }
+
+                var $addLink = $(this).find('.js-time-add').parent();
+
+                $addLink.on('click', function(e) {
+                    addDayTime($(this).closest('.js-day-wrapper'));
+
+                    e.preventDefault();
+                });
+
+
+            });
+            
+           
+            function addDayTime($wrapper){
+                var prototype = $wrapper.data('prototype');
+                var index = $wrapper.data('index');
+
+                var template = prototype.replace(/__name__label__/g, 'Time n°' + (index+1)).replace(/__name__/g, index);
+
+                var $newTimeField = $(template);
+
+                $wrapper.data('index', index + 1);
+
+                
+                $container = $wrapper.find('div[id*=cairn_userbundle_accountscore_schedule]');
+                $container.append($newTimeField);
+
+                addDeleteLink($newTimeField, $wrapper);
+                
+                                
+                $newTimeField.timepicker({
+                    twelveHour: false
+                });
+
+            }
+
+            function addDeleteLink($prototype, $wrapper){
+                var $deleteLink = $('<a href="#" class="js-time-remove"><i class="material-icons">close</i></a>');
+
+                $prototype.after($deleteLink);
+
+                $deleteLink.on('click', function(e) {
+
+                    $prototype.fadeOut().remove();
+                    $(this).fadeOut().remove();
+
+                    e.preventDefault();
+                    return false;
+                });
+            }
+                
+        });
+    </script>
+
+{% endblock %}

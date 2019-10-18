@@ -105,6 +105,9 @@ class RegistrationListener
         $user = $event->getUser();
         $user->setEnabled(false);
 
+        //this should be unnecessary
+        $user->setConfirmationToken(null);
+
         //we set referent roles
         foreach($superAdmins as $superAdmin){
             $user->addReferent($superAdmin);
@@ -148,7 +151,6 @@ class RegistrationListener
         $router = $this->container->get('router');          
         $loginUrl = $router->generate('fos_user_security_login');
         $event->setResponse(new RedirectResponse($loginUrl));
-
     }
 
 

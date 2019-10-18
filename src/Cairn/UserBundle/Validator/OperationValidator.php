@@ -144,9 +144,9 @@ class OperationValidator extends ConstraintValidator
 
         //************ Specific validation, anything but SMS payment ************//
         if(! $operation->isSmsPayment()){
-            $array_debitor = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
-
-            if(in_array($operation->getType(),$array_debitor)){
+            $array_transaction_types = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
+ 
+            if(in_array($operation->getType(),Operation::getDebitOperationTypes()) || in_array($operation->getType(), $array_transaction_types)){
 
                 //the account to debit on cyclos-side is "fromAccount". Therefore, we must ensure that the debitor account exists and
                 //then, that the balance is sufficient to make the payment
@@ -155,8 +155,11 @@ class OperationValidator extends ConstraintValidator
                     $account = $this->accountInfo->getAccountByNumber($operation->getFromAccount()->number);
                     $this->validateBalance($operation->getType(), $account,$operation->getAmount());
                 }
-                $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
 
+
+                if(in_array($operation->getType(),$array_transaction_types)){
+                    $this->validatePassiveAccount($operation->getToAccount(),'toAccount');
+                }
             }else{
                 //we ensure that creditor account exists
                 $this->validateActiveAccount($operation->getToAccount(),'toAccount');

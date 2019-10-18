@@ -1,0 +1,99 @@
+{# src/Cairn/UserBundle/Resources/views/Mandate/_form.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% trans_default_domain 'FOSUserBundle' %}
+
+{% block body %}
+
+<div class="row">
+        {{ form_start(form) }}
+        <div class="row js-document-wrapper"
+            data-prototype="{{ form_widget(form.mandateDocuments.vars.prototype)|e('html_attr') }}"
+            data-index="{{ form.mandateDocuments|length }}"
+        >
+                <div class="row">
+                    <div class="col s12">
+                        {{ form_errors(form.mandateDocuments) }}
+                        {{ form_label(form.mandateDocuments) }}
+                    </div>
+                    <div class="col s12">
+                        {{ form_widget(form.mandateDocuments) }}
+                    </div>
+                </div>
+
+            {% for documentField in form.mandateDocuments %}
+             <div class="col s12 m6 js-document-item">
+                <div class="row ">
+                    <div class="col s12">
+                        {{ form_errors(documentField) }}
+                        {{ form_label(documentField) }}
+                    </div>
+                    <div class="col s12">
+                        {{ form_widget(documentField) }}
+                    </div>
+                </div>
+             </div>
+            {% endfor %}
+        </div>
+         <div class="col s12">
+            <a href="#" class="js-document-add">
+                <i class="material-icons">add</i>
+            </a>
+         </div>
+        {{form_row(form.contractor, {'attr': {'class': 'form_search_user'}} ) }}
+
+    {{ form_rest(form) }}
+    {{ form_end(form) }}
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+
+<script>
+
+    jQuery(document).ready(function() {
+
+        jQuery.ajax({
+                type: 'POST',
+                url: "{{ path('cairn_accounts_ajax') }}",
+                dataType: 'json',
+                success: function (response) {
+                    var accounts = response;
+                    var data = {};
+                    for (var i = 0; i < accounts.length; i++) {
+                        data[accounts[i].name] = null;
+                    }
+
+                    $("#cairn_userbundle_mandate_contractor").autocomplete({
+                        minLength : 4,
+                        data: data,
+                        limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
+                    });
+                }, 
+            });
+
+        var $wrapper = $('.js-document-wrapper');
+
+        var $addLink = $('.js-document-add').parent();
+
+        $addLink.on('click', function(e) {
+            e.preventDefault();
+
+            var prototype = $wrapper.data('prototype');
+            var index = $wrapper.data('index');
+
+            var newFormField = prototype.replace(/__name__label__/g, 'Document n°' + (index+1)).replace(/__name__/g, index);
+
+            $wrapper.data('index', index + 1);
+            $(this).before(newFormField);
+
+
+            $(this).hide();
+        });
+      });
+    
+</script>
+
+{% endblock %}

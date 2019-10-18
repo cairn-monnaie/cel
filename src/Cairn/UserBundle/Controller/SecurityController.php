@@ -97,12 +97,6 @@ class SecurityController extends Controller
 
             $params = json_decode($request->getContent(),true);
 
-            $networkInfo = $this->get('cairn_user_cyclos_network_info');
-            $networkName = $this->getParameter('cyclos_currency_cairn');
-
-            $token = $this->container->get('cairn_user.security')->vigenereDecode($params['token']);
-            $networkInfo->switchToNetwork($networkName,'session_token', $token);
-
             try{
                 $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
             }catch(\Exception $e){

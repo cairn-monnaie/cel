@@ -1,0 +1,53 @@
+{# src/Cairn/UserBundle/Resources/views/Mandate/honour.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row">
+    {% set status = mandate.status %}
+     <div>
+        <h1> Détail du mandat de {{mandate.contractor.name}} </h1>
+
+        <h2> Début : {{mandate.beginAt|date('d-m-Y')}} </h2>
+
+        <div class="center-align">
+            <ul>
+               <li><span class="black-text">Etat</span>:  
+                    <span class="grey-text text-darken-3"> 
+                    {% set status = mandate.status %}
+
+                    {% if status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::CANCELED')%}
+                        <i class="material-icons">clear</i>
+                    {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')%}
+                        <i class="material-icons">done</i>
+                    {% elseif status ==  constant('Cairn\\UserBundle\\Entity\\Mandate::COMPLETE')%}
+                        <i class="material-icons">done_all</i>
+                    {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED') %}
+                        <i class="material-icons">schedule</i>
+                    {% elseif status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
+                        <i class="material-icons">warning</i>
+                    {% endif %}
+                    </span>
+               </li>
+                <li><span class="black-text">Montant </span>: {{mandate.amount}} cairns  
+
+            </ul>
+        </div>
+
+        <h2> Fin : {{mandate.endAt|date('d-m-Y')}} </h2>
+
+    </div>
+    <div>
+        {{ form_start(form) }}
+        {{ form_rest(form) }}
+        {{form_end(form) }}   
+    </div>
+</div>
+
+{% endblock %}

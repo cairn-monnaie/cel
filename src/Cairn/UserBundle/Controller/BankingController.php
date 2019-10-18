@@ -12,6 +12,7 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\AccountScore;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -28,8 +29,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 //manage Forms
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\OperationType;
+use Cairn\UserBundle\Form\ReconversionType;
 use Cairn\UserBundle\Form\CardType;
 use Cairn\UserBundle\Form\SimpleOperationType;
+use Cairn\UserBundle\Form\AccountScoreType;
 
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
@@ -65,6 +68,100 @@ class BankingController extends Controller
         $this->bankingManager = new BankingManager();
     }
 
+
+    /**
+     * A pro can reconvert mlc 
+     *
+     * @Security("has_role('ROLE_PRO')")
+     */
+    public function reconversionAction(Request $request)
+    {
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+
+        if(! $currentUser->hasRole('ROLE_PRO')){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }   
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $accountService = $this->get('cairn_user_cyclos_account_info');
+
+
+        $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
+
+        $operation = new Operation();
+        $operation->setType(Operation::TYPE_RECONVERSION);
+        //$operation->setToAccountNumber($to); //todo: hack, make it cleaner
+
+        $form = $this->createForm(ReconversionType::class, $operation);
+        // create form
+        if($request->isMethod('POST')){
+            $form->handleRequest($request);
+            if($form->isValid()){
+                $operation->setReason($this->editDescription('reconversion', $operation->getReason()));
+
+                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()->number);
+
+
+                $fromUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($fromAccount->number);
+
+                $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+                $paymentData = $bankingService->getPaymentData($currentUser->getCyclosID(),'SYSTEM',NULL);
+
+                //filter the potential transfer types according to the debitor account type
+                $transferTypes = $paymentData->paymentTypes;
+                foreach($transferTypes as $transferType){
+                    if( strpos($transferType->internalName, 'reconversion_numerique') !== false){
+                        $reconvertTransferType = $transferType;
+                    }
+                }
+
+                $amount = $operation->getAmount();
+
+                //WARNING :  on Cyclos side, there is only one field for description, whereas on Symfony side there is
+                //both reason & description. For this reason, we transmit the reason as cyclos description
+                $cyclosDescription = $operation->getReason();
+                $dataTime = $operation->getExecutionDate();
+
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$reconvertTransferType,$dataTime);
+                $paymentVO = $this->bankingManager->makePayment($res->payment);
+
+
+                $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($paymentVO->fromOwner));
+                $operation->setCreditorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($paymentVO->toOwner));
+
+                $operation->setPaymentID($paymentVO->id);
+                $operation->setFromAccountNumber($res->fromAccount->number);
+                $operation->setToAccountNumber($res->toAccount->number);
+
+                $operation->setDebitor($currentUser);
+                $em->persist($operation);
+                $em->flush();
+
+                //send emails to eCairn email and to user
+                $messageNotificator = $this->get('cairn_user.message_notificator');
+
+                //first email to user
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:reconversion.html.twig',array('toAdmin'=>false,'user'=>$currentUser,'operation'=>$operation));
+                $messageNotificator->notifyByEmail('Reconversion [e]-Cairn',$messageNotificator->getNoReplyEmail(),$currentUser->getEmail(),$body);
+
+                //second email to admin
+                $body = $this->get('templating')->render('CairnUserBundle:Emails:reconversion.html.twig',array('toAdmin'=>true,'user'=>$currentUser,'operation'=>$operation));
+                $messageNotificator->notifyByEmail('Reconversion [e]-Cairn',$messageNotificator->getNoReplyEmail(),$this->getParameter('cairn_email_management'),$body);
+
+                $session->getFlashBag()->add('success','La reconversion a été effectuée avec succès.');
+                $session->getFlashBag()->add('info','Votre remboursement sera effectué dans les plus brefs délais');
+                return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
+
+            }
+        }
+
+        return $this->render('CairnUserBundle:Banking:reconversion.html.twig', array('form'=>$form->createView(),'operation'=>$operation));
+
+    }
 
     /*
      * Shows an overview of all @param accounts
@@ -122,6 +219,7 @@ class BankingController extends Controller
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+        $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
 
         $currentUser = $this->getUser();
         $currentUserVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -153,6 +251,41 @@ class BankingController extends Controller
             $id = $account->number;
         }
 
+        //get, once for all, the list of executed types
+        $hasMandate = ( $mandateRepo->findOneByContractor($user) == NULL ) ? false : true;  
+        $executedTypes = Operation::getExecutedTypes($hasMandate,$user->hasRole('ROLE_PRO'));
+
+        //last operations
+
+                $ob = $operationRepo->createQueryBuilder('o');
+        $executedTransactions = $ob->where(
+             $ob->expr()->orX(
+                 $ob->expr()->andX(
+                     'o.fromAccountNumber = :number',
+                     $ob->expr()->in('o.type',$executedTypes)
+                 ),
+                 $ob->expr()->andX(
+                     'o.toAccountNumber = :number',
+                     $ob->expr()->in('o.type',$executedTypes)
+                 )
+             ))
+            ->andWhere('o.paymentID is not NULL')
+            ->andWhere('o.executionDate BETWEEN :begin AND :end')
+            ->orderBy('o.executionDate','ASC')
+            ->setParameter('number',$id)
+            ->setParameter('begin',$begin)
+            ->setParameter('end',$end)
+            ->getQuery()->getResult();
+
+        //amount of future transactions : next month total amount
+        $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
+        $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
+            ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
+            ->setParameter('number',$id);
+
+        $res = $query->getSingleScalarResult();
+        $totalAmount = ($res == NULL) ? 0 : $res ;
+
         $form = $this->createFormBuilder()
             ->add('orderBy',   ChoiceType::class, array(
                 'label' => 'affiché par',
@@ -161,14 +294,14 @@ class BankingController extends Controller
                 'data'=>'DESC'
             ))
                 ->add('types',    ChoiceType::class, array(
-                    'label' => 'type d\'opération',
-                    'required'=>false,
-                    'choices' => Operation::getExecutedTypes(),
-                    'choice_label'=> function($choice){
-                        return Operation::getTypeName($choice);
-                    },
-                    'multiple'=>true,
-                    'expanded'=>false
+                'label' => 'type d\'opération',
+                'required'=>false,
+                'choices' => $executedTypes,
+                'choice_label'=> function($choice){
+                    return Operation::getTypeName($choice);
+                },
+                'multiple'=>true,
+                'expanded'=>false
                 ))
                 ->add('begin',     DateType::class, array(
                     'label' => 'depuis',
@@ -262,6 +395,10 @@ class BankingController extends Controller
                 //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
                 $end = date_modify($end,'+1 days');
 
+                $arrayTypes = $executedTypes;
+                if($operationTypes){
+                    $arrayTypes = $operationTypes;
+                }
 
                 $ob = $operationRepo->createQueryBuilder('o');
                 $operationRepo->whereInvolvedAccountNumber($ob, $id)
@@ -304,12 +441,9 @@ class BankingController extends Controller
      *
      * @param string $type Type of operation requested. Possible types restricted in routing.yml
      */  
-    public function bankingOperationsAction(Request $request, $type, $_format)
+    public function bankingOperationsAction(Request $request)
     {
-        if($_format == 'json'){
-            return $this->json(array('type'=>$type));
-        }
-        return $this->render('CairnUserBundle:Banking:'.$type.'_operations.html.twig');
+        return $this->render('CairnUserBundle:Banking:operations.html.twig');
     }
 
     /**
@@ -1244,6 +1378,8 @@ class BankingController extends Controller
         }
         return $this->render('CairnUserBundle:Banking:accounts_download.html.twig',array('form'=>$form->createView(),'accounts'=>$accounts));
     }
+
+    
 
     public function confirmOnlinePaymentAction(Request $request, $suffix)
     {

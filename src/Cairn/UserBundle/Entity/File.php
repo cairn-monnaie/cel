@@ -44,6 +44,13 @@ class File
     private $tempFilename;
 
     /**
+     * @var ArrayCollection
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Mandate", inversedBy="mandateDocuments" , cascade={"persist"})
+     *@ORM\JoinColumn(name="mandate_id", nullable=true,referencedColumnName="id", onDelete="CASCADE")
+     */
+    private $mandate;
+
+    /**
      * Get id
      *
      * @return int
@@ -198,6 +205,29 @@ class File
     public function getWebPath($env = NULL)
     {
         return $this->getUploadDir($env).'/'.$this->getId().'.'.$this->getUrl();
+    }
+
+    /**
+     * Set mandate if any
+     *
+     *
+     * @return Mandate
+     */
+    public function setMandate($mandate)
+    {
+        $this->mandate = $mandate;
+
+        return $this;
+    }
+
+    /**
+     * Get mandate
+     *
+     * @return Mandate
+     */
+    public function getMandate()
+    {
+        return $this->mandate;
     }
 
 }

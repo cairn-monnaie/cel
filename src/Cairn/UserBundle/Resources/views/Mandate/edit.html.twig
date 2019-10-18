@@ -1,0 +1,56 @@
+{# src/Cairn/UserBundle/Resources/views/Mandate/edit.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::Mandate/_form.html.twig" %}                        
+                                                                               
+
+{% block body %}
+    {{parent()}}
+{% endblock %}
+
+{% block javascripts %}
+
+{{parent()}}
+
+<script>
+
+        jQuery(document).ready(function() {
+        var $wrapper = $('.js-document-wrapper');
+
+        var $deleteLink = $('<a href="#" class="js-document-remove pull-right"><i class="material-icons">close</i></a>');
+        var $removeLinks = $('.js-document-remove');
+    
+        var $addLink = $('.js-document-add').parent();
+ 
+ 
+         $addLink.on('click', function(e) {
+             e.preventDefault();
+
+             var index = $wrapper.data('index');
+
+             var prototypeID = '#cairn_userbundle_mandate_mandateDocuments___name__';
+             var newFormID = prototypeID.replace(/__name__/g, index - 1);
+             $newFormField = $(newFormID); 
+             $newFormField.find(':input').attr('required',true);
+
+            $newFormField.find('div:first-child').first().append($deleteLink);
+
+            $deleteLink.on('click', function(e) {
+            
+                e.preventDefault();
+                $(this).closest(newFormID)
+                .fadeOut()
+                .remove();
+
+                $wrapper.data('index', index - 1);
+
+                $addLink.show();
+            });
+        });
+
+      });
+    
+
+        
+</script>
+
+{% endblock %}

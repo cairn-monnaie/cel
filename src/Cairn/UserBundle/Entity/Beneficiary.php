@@ -26,7 +26,7 @@ class Beneficiary
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(name="user_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
     private $user;
 

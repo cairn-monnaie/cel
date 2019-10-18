@@ -1,0 +1,38 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/reconversion.html.twig #}
+
+{% if toAdmin %}
+Bonjour <b>l'équipe administratrice</b>, <br>
+<br>
+
+Une reconversion de <b>{{operation.amount}} cairns</b> a été effectuée depuis le compte [e]-Cairn de <b>{{ user.name }}</b> le {{operation.executionDate|date('d-m-Y')}}.
+<br>
+<br>
+
+    La marche à suivre en deux temps : 
+    <ul>
+        <li> Vérifier que la reconversion a bien été effectuée (il pourrait s'agir d'un faux mail) </li>
+        <li> Effectuer le virement bancaire correspondant dans les plus brefs délais </li>
+    </ul>
+
+    <br> <br>
+    {{signature}},
+
+
+{% else %}
+
+Bonjour <b>{{ user.name }}</b>, <br>
+<br>
+
+Vous avez effectué une reconversion de <b>{{operation.amount}}</b> cairns depuis votre compte [e]-Cairn le {{operation.executionDate|date('d-m-Y')}}. <br>
+
+    S'il s'agit de votre première reconversion, veuillez transmettre une copie de votre RIB à <b>e-cairn@cairn-monnaie.com</b> afin que le virement bancaire correspondant soit effectué dans les plus brefs délais.
+    <br> <br>
+    <b>Information</b> : Les commissions sur les reconversions alimentent une cagnotte afin de réduire l'adhésion de vos fournisseurs / prestataires de 50% !! <br> 
+    Un argument de plus pour les faire adhérer au Cairn !
+    <br> <br>
+    {{signature}},
+
+{% endif %}
+
+
+

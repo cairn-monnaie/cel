@@ -7,7 +7,7 @@ services:
       - ".:/var/www/Symfony"
       - "./docker/logs:/var/www/Symfony/var/logs/:rw" #retrieve log files
       - "./docker/engine/php.ini:/usr/local/etc/php/php.ini"
-
+      - "./docker/engine/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini"
   front:
     volumes:
         - "./docker/logs:/var/log/nginx" #retrieve log files
@@ -32,7 +32,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      PMA_USER: '${DB_USER}'
+      PMA_USER: 'root'
       PMA_PASSWORD: '${DB_PASSWORD}'
     depends_on:
       - db

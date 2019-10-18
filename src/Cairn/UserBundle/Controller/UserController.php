@@ -20,6 +20,8 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Deposit;
+use Cairn\UserBundle\Entity\Mandate;
+
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 //manage HTTP format
@@ -101,17 +103,18 @@ class UserController extends Controller
 
         $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
+        $executedTypes = Operation::getExecutedTypes(true,$currentUser->hasRole('ROLE_PRO'));
         //last operations
         $ob = $operationRepo->createQueryBuilder('o');
         $processedTransactions = $ob->where(
              $ob->expr()->orX(
                  $ob->expr()->andX(
                      $ob->expr()->in('o.fromAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',$executedTypes)
                  ),
                  $ob->expr()->andX(
                      $ob->expr()->in('o.toAccountNumber', $accountNumbers),
-                     $ob->expr()->in('o.type',Operation::getExecutedTypes())
+                     $ob->expr()->in('o.type',$executedTypes)
                  )
              ))
             ->andWhere('o.paymentID is not NULL')
@@ -358,11 +361,11 @@ class UserController extends Controller
             $currentUser->setPhoneNumberActivationTries(0);
 
 
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),array('BLOCKED','ACTIVE'));
+            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
             if(! $accessClientVO){
                 $securityService = $this->get('cairn_user.security');
                 $securityService->createAccessClient($currentUser,'client_sms');
-                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),'UNASSIGNED');
+                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,'UNASSIGNED');
 
                 $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
                 $smsClient = $securityService->vigenereEncode($smsClient);
@@ -404,7 +407,7 @@ class UserController extends Controller
                 return $response;
             }
 
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
 
         //invalid code
         }else{
@@ -1090,7 +1093,7 @@ class UserController extends Controller
                         if($isRemoved){
                             $session->getFlashBag()->add('success','Espace membre supprimé avec succès');
                         }else{
-                            $session->getFlashBag()->add('error','La fermeture de compte a échoué. '.$user->getName(). ' a un compte non soldé');
+                            $session->getFlashBag()->add('error','La fermeture de compte a échoué. ');
                             return $this->redirectToRoute('cairn_user_profile_view',array('username'=> $user->getUsername()));
                         }
                     }else{//is ROLE_PRO or ROLE_PERSON : $user == $currentUser
@@ -1128,9 +1131,8 @@ class UserController extends Controller
     public function removeUser(User $user, User $currentUser)
     {
         $em = $this->getDoctrine()->getManager();
-        $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
-        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
         $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
+        $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
@@ -1146,23 +1148,6 @@ class UserController extends Controller
         try{
             $emailTo = $user->getEmail();
 
-//            //remove beneficiaries associated to the user to remove
-//            $beneficiaries = $beneficiaryRepo->findBy(array('user'=>$user));
-//            foreach($beneficiaries as $beneficiary){
-//                $em->remove($beneficiary);
-//            }
-            
-            //TODO : ONE single SQL insert request instead of the two here
-            //set Operations with user to remove as creditor/debitor to NULL
-            $operations = $operationRepo->findBy(array('creditor'=>$user));
-            foreach($operations as $operation){
-                $operation->setCreditor(NULL);
-            }
-
-            $operations = $operationRepo->findBy(array('debitor'=>$user));
-            foreach($operations as $operation){
-                $operation->setDebitor(NULL);
-            }
 
             //if deposit scheduled, cancel removal
             $scheduledDeposits = $depositRepo->findBy(array('creditor'=>$user,'status'=> Deposit::STATE_SCHEDULED));
@@ -1175,6 +1160,16 @@ class UserController extends Controller
                 $em->remove($deposit);
             }
 
+            //if mandate ongoing, cancel removal
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereContractor($mb, $user);
+
+            $status = array(Mandate::UP_TO_DATE, Mandate::OVERDUE, Mandate::SCHEDULED);
+            $mandateRepo->whereStatus($mb, $status);
+
+            $mandates = $mb->getQuery()->getResult();
+
+            if($mandates){ return false; }
 
             $subject = 'Compte [e]-Cairn clôturé';
             $from = $messageNotificator->getNoReplyEmail();

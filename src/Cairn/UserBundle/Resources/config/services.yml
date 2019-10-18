@@ -35,6 +35,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\Card]
 
+    cairn_user.repository_mandate: 
+        class: MandateRepository
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\Mandate]
+
     cairn_user.api:
         public: true
         class: Cairn\UserBundle\Service\Api
@@ -64,6 +69,17 @@ services:
             - "%cairn_email_activation_delay%"
             - "@router"
             - "@service_container"
+
+    cairn_user.account_manager:
+        class: Cairn\UserBundle\Service\AccountManager
+        arguments:
+            - "@cairn_user_cyclos_banking_info"
+            - "@cairn_user_cyclos_network_info"
+            - "@cairn_user_cyclos_user_info"
+            - "@cairn_user_cyclos_account_info"
+            - "%cyclos_anonymous_user%"
+            - "%cyclos_currency_cairn%"
+            - "@cairn_user.repository_user"
 
     cairn_user.counter:
         class: Cairn\UserBundle\Service\Counter
@@ -129,6 +145,16 @@ services:
         tags:
             - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
 
+    cairn_user.accountscore_listener:
+        class: Cairn\UserBundle\EventListener\AccountScoreListener
+        arguments:
+            - "@cairn_user.security"
+            - "@cairn_user.message_notificator"
+            - "@router"
+            - "@templating"
+        tags:
+            - { name: doctrine.orm.entity_listener, event: preUpdate, method: preUpdate, entity: Cairn\UserBundle\Entity\AccountScore, lazy: true }
+
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener
         arguments: 
@@ -145,12 +171,12 @@ services:
         arguments:
             - "@service_container"
         tags:
-            - { name: kernel.event_listener, event: kernel.request, method: onMaintenance, priority: -128 }
-            - { name: kernel.event_listener, event: kernel.response, method: onFirstLogin, priority: -64 }
-            - { name: kernel.event_listener, event: kernel.request, method: onDisabledUser, priority: -64 }
+            - { name: kernel.event_listener, event: kernel.request, method: onMaintenance, priority: 1024 }
+            - { name: kernel.event_listener, event: kernel.request, method: onFirstLogin, priority: -1024 }
+            - { name: kernel.event_listener, event: kernel.response, method: onDisabledUser, priority: 128 }
             - { name: kernel.event_listener, event: kernel.request, method: onSensibleOperations }
             - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
-            - { name: kernel.event_listener, event: security.interactive_login, method: onLogin }
+            - { name: kernel.event_listener, event: security.interactive_login, method: onLogin, priority: 128 }
             - { name: kernel.event_listener, event: kernel.controller, method: onKernelController }
 #            - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
@@ -167,7 +193,7 @@ services:
             - "@cairn_user.security"
             - "@cairn_user.api"
         tags:  
-            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException}
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
     
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
@@ -217,6 +243,19 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_operation_validator }
 
+    cairn_user.mandate_validator:
+        class: Cairn\UserBundle\Validator\MandateValidator
+        arguments:
+            - "@cairn_user.repository_mandate"
+            - "@cairn_user.repository_user"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_mandate_validator }
+
+    cairn_user.accountscore_validator:
+        class: Cairn\UserBundle\Validator\AccountScoreValidator
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_accountscore_validator }
+
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"
@@ -233,6 +272,10 @@ services:
 
     Cairn\UserBundle\Form\ProfileType:
         arguments: ['@security.authorization_checker']
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\MandateType:
+        arguments: ['@cairn_user.repository_user']
         tags: [form.type]
 
     Cairn\UserBundle\Form\PhoneType:
@@ -258,6 +301,10 @@ services:
 
     Cairn\UserBundle\Form\OperationType:
         arguments: ['@security.token_storage','@validator',"@cairn_user_cyclos_account_info","@cairn_user.bridge_symfony"]
+        tags: [form.type]
+
+    Cairn\UserBundle\Form\ReconversionType:
+        arguments: ['@security.token_storage',"@cairn_user_cyclos_account_info"]
         tags: [form.type]
 
     Cairn\UserBundle\Form\RegistrationType:

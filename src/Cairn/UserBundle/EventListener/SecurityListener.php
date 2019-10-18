@@ -15,6 +15,8 @@ use Cairn\UserCyclosBundle\Entity\UserManager;
 use Cairn\UserCyclosBundle\Entity\LoginManager;
 use Cairn\UserCyclosBundle\Entity\PasswordManager;
 
+use Cairn\UserBundle\Entity\User;
+
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
@@ -62,16 +64,16 @@ class SecurityListener
             return;
         }
 
-        if(!$user->getLastLogin() ){
-            $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
-            $logoutUrl = $router->generate('fos_user_security_logout');
-            $event->setResponse(new RedirectResponse($logoutUrl));
+        //if(!$user->getLastLogin() ){
+        //    $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
+        //    $logoutUrl = $router->generate('fos_user_security_logout');
+        //    $event->setResponse(new RedirectResponse($logoutUrl));
 
-            $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
-            $this->container->get('doctrine.orm.entity_manager')->flush();
+        //    $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
+        //    $this->container->get('doctrine.orm.entity_manager')->flush();
 
-            return;
-        }
+        //    return;
+        //}
     }
 
     public function changeCyclosPassword($old, $new, $user)
@@ -111,31 +113,31 @@ class SecurityListener
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        $newPassword = $user->getPlainPassword();
+        $anonymous = $this->container->getParameter('cyclos_anonymous_user');
+
+        //get username and password from form request
+        $credentials = array('username'=>$anonymous,'password'=>$anonymous);
 
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName= $this->container->getParameter('cyclos_currency_cairn');          
-        $anonymous = $this->container->getParameter('cyclos_anonymous_user');
-
-        //get username and password from login request
-        $credentials = array('username'=>$anonymous,'password'=>$anonymous);
         $networkInfo->switchToNetwork($networkName,'login',$credentials);
 
+        $newPassword = $form->get('plainPassword')->getData();
+
         $changed = $this->changeCyclosPassword(NULL, $newPassword, $user);
+        $this->createAccessClient($user,$user->getUsername(),$newPassword);
 
-        if($changed){
-            $this->loginPaymentApp($user->getUsername(),$newPassword,$event->getRequest()->getSession());
 
-            if($this->container->get('cairn_user.api')->isApiCall()){
-                $response = new Response('Change password : ok !');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                $event->setResponse($response);
-            }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-            }
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
         }
     }
+
     /**
      * Changes user password on Cyclos side after it has been changed in our app
      *
@@ -148,64 +150,65 @@ class SecurityListener
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        $currentPassword = $form->get('current_password')->getData(); 
-        $newPassword = $form->get('plainPassword')->getData();//$user->getPlainPassword();
 
-        $changed = $this->changeCyclosPassword($currentPassword, $newPassword, $user);
+        if($user->isFirstLogin()){
+            $user->setFirstLogin(false);
+        }
 
-        if($changed){
-            if($user->isFirstLogin()){
-                $user->setFirstLogin(false);
-            }
-
-            if($this->container->get('cairn_user.api')->isApiCall()){
-                $response = new Response('Change password : ok !');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                $event->setResponse($response);
-            }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-            }
+        if($this->container->get('cairn_user.api')->isApiCall()){
+            $response = new Response('Change password : ok !');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            $event->setResponse($response);
+        }else{
+            $event->setResponse(new RedirectResponse($profileUrl));
         }
     }
 
-    /**
-     * On login event, we keep the cyclos session token (encoded) in session to connect to cyclos later on
-     *
-     */
+    public function createAccessClient(User $currentUser,$username, $password)
+    {
+        $securityService = $this->container->get('cairn_user.security');
+
+        if(! $currentUser->getCyclosToken()){
+                $cyclosClientName = 'main';
+                $securityService = $this->container->get('cairn_user.security');
+
+                $this->loginPaymentApp('login',array('username'=>$username,'password'=>$password));
+
+                $securityService->createAccessClient($currentUser,$cyclosClientName);
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),$cyclosClientName, 'UNASSIGNED');
+
+                $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                $mainClient = $securityService->vigenereEncode($mainClient);
+                $currentUser->setCyclosToken($mainClient);
+        }
+    }
+
     public function onLogin(InteractiveLoginEvent $event)
     {
         $request = $event->getRequest();
+        $securityService = $this->container->get('cairn_user.security');
+        $currentUser = $securityService->getCurrentUser();
 
         //in case of authentication with API token
         if(! $this->container->get('cairn_user.api')->isApiCall()){
 
             $username = $request->request->all()['_username'];
             $password = $request->request->all()['_password'];
-    
-            $session = $request->getSession();
-    
-            $this->loginPaymentApp($username,$password,$session);
+
+            //if there is an access client, connect with it. Otherwise create one
+            $this->createAccessClient($currentUser,$username,$password);
+            
+            $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
     }
 
-    protected function loginPaymentApp($username, $password, $session)
+    protected function loginPaymentApp($type,$credentials)
     {
         $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
         $networkName= $this->container->getParameter('cyclos_currency_cairn');          
 
-        $loginManager = new LoginManager();
-
-        $credentials = array('username'=>$username,'password'=>$password);
-        $networkInfo->switchToNetwork($networkName,'login',$credentials);
-
-        $dto = new \stdClass();
-        $dto->amount = $this->container->getParameter('session_timeout');
-        $dto->field = 'SECONDS';
-        //get cyclos token and set in session
-        $loginResult = $loginManager->login($dto);
-        $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken)); 
-
+        $networkInfo->switchToNetwork($networkName,$type,$credentials);
     }
 
     /**
@@ -213,18 +216,12 @@ class SecurityListener
      */
     public function onKernelController(FilterControllerEvent $event)
     {
-        $networkInfo = $this->container->get('cairn_user_cyclos_network_info');          
-        $networkName=$this->container->getParameter('cyclos_currency_cairn');          
         $securityService = $this->container->get('cairn_user.security');
+        $currentUser = $securityService->getCurrentUser();
 
-//        if($this->container->get('cairn_user.api')->isApiCall()){
-//            $cyclos_token = $securityService->vigenereDecode($event->getRequest()->request->get('cyclos_token'));
-//        }else{
-            $session = $event->getRequest()->getSession();
-            $cyclos_token = $securityService->vigenereDecode($session->get('cyclos_token'));
-//        }
-
-        $networkInfo->switchToNetwork($networkName,'session_token',$cyclos_token);
+        if($currentUser){
+            $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
+        }
     }
 
     /**
@@ -247,7 +244,7 @@ class SecurityListener
      * If user never logged in, he is automatically redirected to change password page
      *
      */
-    public function onFirstLogin(FilterResponseEvent $event)
+    public function onFirstLogin(GetResponseEvent  $event)
     {
         $security = $this->container->get('cairn_user.security');          
         $router = $this->container->get('router');          
@@ -266,7 +263,7 @@ class SecurityListener
      *A disabled user is redirected to logout page
      *
      */
-    public function onDisabledUser(GetResponseEvent $event)
+    public function onDisabledUser(FilterResponseEvent $event)
     {
         $security = $this->container->get('cairn_user.security');          
         $router = $this->container->get('router');          
@@ -276,9 +273,13 @@ class SecurityListener
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if(!$currentUser->isEnabled()){
                 $logoutUrl = $router->generate('fos_user_security_logout');
+
+                $session = $event->getRequest()->getSession();
+                $session->getFlashBag()->add('error','Le compte est bloqué');
                 $event->setResponse(new RedirectResponse($logoutUrl));
             }
         }
+
 
     }
 

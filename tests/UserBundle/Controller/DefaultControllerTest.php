@@ -125,11 +125,12 @@ class DefaultControllerTest extends BaseControllerTest
 
             $crawler = $this->client->followRedirect();
 
-            $this->assertSame(1,$crawler->filter('html:contains("validé votre adresse mail")')->count());
+            $this->assertSame(1,$crawler->filter('html:contains("votre adresse électronique")')->count());
         }
 
         $this->em->refresh($newUser);
         $this->assertFalse($newUser->isEnabled());
+        $this->assertNull($newUser->getConfirmationToken());
 
         if($type == 'pro'){
             $this->assertTrue($newUser->hasRole('ROLE_PRO'));

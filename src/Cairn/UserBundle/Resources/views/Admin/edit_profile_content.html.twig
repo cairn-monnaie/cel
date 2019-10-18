@@ -102,6 +102,16 @@
                     {{ form_widget(form.image) }}
                 </div>
             {% endif %}
+            {% if form.identityDocument is defined %}
+                <div class="col s12">
+                    {{ form_errors(form.identityDocument) }}
+                    {{ form_label(form.identityDocument) }}
+                </div>
+                <div class="col s12">
+                    {{ form_widget(form.identityDocument) }}
+                </div>
+            {% endif %}
+
         </div>
 
         <div class="col s12 right-align">

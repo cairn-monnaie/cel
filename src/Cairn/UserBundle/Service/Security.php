@@ -202,6 +202,10 @@ class Security
         return $salt;
     }
 
+    public function generateUrlToken()
+    {
+        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+    }
 
     public function encodeCard(Card $card, User $user)
     {

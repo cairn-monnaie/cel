@@ -6,6 +6,7 @@ use Cairn\UserBundle\Validator\UserPassword;
 
 use FOS\UserBundle\Form\Type\ProfileFormType;
 use Cairn\UserBundle\Form\AddressType;
+use Cairn\UserBundle\Form\IdentityDocumentType;
 use Cairn\UserBundle\Form\ImageType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -80,6 +81,16 @@ class ProfileType extends AbstractType
                         // I can obviously put the name 'my_field' directly here
                         $form->add($myField->getName(), $fieldType, $fieldOptions);
                     }
+                }else{
+                    $label = ($user->hasRole('ROLE_PRO')) ? 'Justificatif d\'activité professionnelle' :'Pièce d\'identité';
+
+                    $form->add('identityDocument', IdentityDocumentType::class,
+                        array(
+                            'label'=>$label,
+                            'attr' => array('class'=>'identity-document')
+                        ));
+
+
                 }
 
             }

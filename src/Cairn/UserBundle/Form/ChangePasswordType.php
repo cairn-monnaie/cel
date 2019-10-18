@@ -38,7 +38,7 @@ class ChangePasswordType extends AbstractType
                         'autocomplete' => 'new-password',                  
                     ),                                                     
                 ),                                                         
-                'first_options' => array('label' => 'Nouveau mot de passe'),
+                'first_options' => array('label' => 'Nouveau mot de passe ( 8 - 25 caractères + 1 caractère spécial )'),
                 'second_options' => array('label' => 'Confirmation'),      
                 'invalid_message' => 'Les champs ne correspondent pas',    
             ));
@@ -51,11 +51,6 @@ class ChangePasswordType extends AbstractType
                     return;
                 }
                 $newPassword = $form->get('plainPassword')->getData();
-                if($this->passwordEncoder->isPasswordValid($user, $newPassword)){
-                    $error = new FormError('Ce mot de passe est déjà utilisé');
-                    $error->setOrigin($form->get('plainPassword'));
-                    $form->addError($error);
-                }
             }
         );
 

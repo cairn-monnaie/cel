@@ -60,7 +60,7 @@ class Phone
 
     /**
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\SmsData", inversedBy="phones", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(name="sms_data_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
     private $smsData;
 

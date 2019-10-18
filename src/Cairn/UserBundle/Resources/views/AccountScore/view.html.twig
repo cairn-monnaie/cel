@@ -1,0 +1,33 @@
+{# src/Cairn/UserBundle/Resources/views/AccountScore/view.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row">
+    <h1> Pointage paiements SMS </h1>
+
+    <ul>
+        <li>{{accountScore.format}}</li>
+        <li>{{accountScore.email}}</li>
+        <ul>
+            {% for day, times in accountScore.schedule %}
+                {{day}} : 
+                {% for time in times %}
+                    {{time}}
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </ul>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+
+{% endblock %}

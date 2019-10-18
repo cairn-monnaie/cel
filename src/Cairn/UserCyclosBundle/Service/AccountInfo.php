@@ -173,7 +173,7 @@ class AccountInfo
         $userAccounts = $this->getAccountsSummary($userID,NULL);
         foreach($userAccounts as $account){
             if($account->type->nature == 'SYSTEM'){
-                $numbers[] = $account->id;
+                $numbers[] = $account->number;
             }else{
                 $numbers[] = $account->number; 
             }

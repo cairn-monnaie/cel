@@ -9,9 +9,9 @@
 
  {% if user.image is not null %}
     {% if user.image.url is not null %}
-        {% set logoIsDefined = false %}
-    {% else %}
         {% set logoIsDefined = true %}
+    {% else %}
+        {% set logoIsDefined = false %}
     {% endif %}
 {% else %}
     {% set logoIsDefined = false %}
@@ -73,15 +73,13 @@
 
             <li class="">
                 <div class="collapsible-header"><i class="material-icons">phone_android</i>
-                    {% if user.id == app.user.id %}
-                        Mes accès SMS
-                    {% else %}
-                        Accès SMS
-                    {% endif %}
+                       Le paiement par SMS
                 </div>
 
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
+                        
+
                         {% if (user.hasRole('ROLE_PRO')) and (user.smsData) %}
                         <div class="container">
 
@@ -115,7 +113,8 @@
                                     <div class="col s12 truncate"><i class="material-icons tiny">phone</i>&nbsp;{{ phone.phoneNumber }}</div>
         
                                     {% if user.hasRole('ROLE_PRO') %}
-                                        <div class="col s12 truncate"><i class="material-icons tiny">perm_identity</i>&nbsp;{{phone.identifier}}</div>
+                                        <div class="col s12 truncate"><i class="material-icons tiny">perm_identity</i>&nbsp;{{phone.identifier}} &nbsp;<a href="{{path('cairn_user_sms_poster_download')}}" target="_blank">Affiche vitrine</a>
+</div>
                                     {% endif %}
                                     <div class="col s12 truncate"><i class="material-icons tiny"></i>Peut payer par SMS : {{ phone.paymentEnabled ? 'Oui' : 'Non'}}</td>
 
@@ -130,22 +129,16 @@
                                  <a href="{{path('cairn_user_users_phone_delete',{'id' : phone.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
                                  </div>
                             </div>
-                            {% else %}
-
-                                Aucune donnée SMS enregistrée !
-
                             {% endfor %}
-                        {% else %}
-                                Aucune donnée SMS enregistrée !
                         {% endif %}
 
                         {% if app.user.isAdherent() %}
                             <br> <br>
                             <div class="valign-wrapper">
-                                <div class="smsdata_new col s4">
-                                    <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un numéro</a>
+                                <div class="smsdata_new col s12 m4">
+                                    <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un n°</a>
                                 </div>
-                                <div class="col s8 left-align">
+                                <div class="col s12 m8 left-align">
                                     <a class="waves-effect waves-light modal-trigger" href="#modal1"><i class="material-icons large purple-text text-darken-2">info</i><span> Règles d'utilisation</span></a>
             
                                     <div id="modal2" class="modal">

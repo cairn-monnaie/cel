@@ -13,6 +13,7 @@ services:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: 'Europe/Paris'
     networks:
       - mlc_net
 
@@ -20,17 +21,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        xdebug_enabled: ${XDEBUG_ENABLED}
-        xdebug_remote_host: ${XDEBUG_REMOTE_HOST}
-        xdebug_remote_port: 9001
     ports:
       - '${ENGINE_PORT}:9000'
-      - '${XDEBUG_REMOTE_PORT}:9001' #XDEBUG
     volumes:
       - "./docker/logs:/var/www/Symfony/var/logs/:rw" #retrieve log files
-    environment:
-      - XDEBUG_CONFIG="remote_host=${XDEBUG_REMOTE_HOST}"
     networks:
       - mlc_net
 

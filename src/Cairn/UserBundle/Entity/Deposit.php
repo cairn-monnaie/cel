@@ -25,6 +25,7 @@ class Deposit
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
+     *@ORM\JoinColumn(name="creditor_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
     private $creditor;
 

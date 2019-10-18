@@ -18,6 +18,7 @@ use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\User;
 
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -88,110 +89,6 @@ class HelloassoController extends Controller
         return $helloasso;
     }
 
-    private function creditUserAccount(User $creditorUser, HelloassoConversion $helloasso)
-    {
-        $em = $this->getDoctrine()->getManager();
-        $messageNotificator = $this->get('cairn_user.message_notificator');
-
-        //cyclos part
-        try{
-            $bankingService = $this->get('cairn_user_cyclos_banking_info');
-
-            $username = $this->getParameter('cyclos_anonymous_user');                     
-            $credentials = array('username'=>$username,'password'=>$username); 
-            $network = $this->getParameter('cyclos_currency_cairn');                     
-
-            $this->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
-
-            $paymentData = $bankingService->getPaymentData('SYSTEM',$creditorUser->getCyclosID(),NULL);
-
-            foreach($paymentData->paymentTypes as $paymentType){
-                if(preg_match('#credit_du_compte#', $paymentType->internalName)){
-                    $creditTransferType = $paymentType;
-                }
-            }
-
-            //get account balance of e-cairns
-            $anonymousVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
-            $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($anonymousVO->id,NULL);
-
-            foreach($accounts as $account){
-                if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
-                    $debitAccount = $account;
-                }
-            }
-
-            $reason = 'Change numérique par virement Helloasso'; 
-
-            $availableAmount = $debitAccount->status->balance;
-
-            if($availableAmount >= 0){
-                $diff = $availableAmount - $helloasso->getAmount();
-            }else{
-                $diff = -$helloasso->getAmount();
-            }
-
-            if($diff <= 0 ){
-                $amountToCredit = $availableAmount;
-
-                //notify gestion that ecairns stock is empty
-                $subject = 'Coffre [e]-Cairn vide !';
-                $from = $messageNotificator->getNoReplyEmail();
-                $to = $this->getParameter('cairn_email_management');
-                $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$helloasso,'reason'=>'empty_safe'));
-
-                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-                if($diff < 0){
-                    $asynchronousDeposit = new Deposit($creditorUser);
-                    $asynchronousDeposit->setAmount(-$diff);
-                    //notify user that a deposit is created
-                    $subject = 'Acompte [e]-Cairn suite au virement Helloasso';
-                    $from = $messageNotificator->getNoReplyEmail();
-                    $to = $helloasso->getEmail();
-                    $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$helloasso,'reason'=>'asynchronous_deposit','diff'=> -$diff));
-
-                    $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-                    $em->persist($asynchronousDeposit);
-                }
-
-                if($amountToCredit > 0){
-                    $res = $this->bankingManager->makeSinglePreview($paymentData,$amountToCredit,$reason,$creditTransferType,new \Datetime());
-                }else{
-                    return;
-                }
-            }else{
-                $res = $this->bankingManager->makeSinglePreview($paymentData,$helloasso->getAmount(),$reason,$creditTransferType,new \Datetime());
-            }
-
-            //preview allows to make sure payment would be executed according to provided data
-            $paymentVO = $this->bankingManager->makePayment($res->payment);
-        }catch(\Exception $e){
-            $subject = 'ERREUR lors du virement Helloasso';
-            $from = $messageNotificator->getNoReplyEmail();
-            $to = $this->getParameter('cairn_email_management');
-            $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$helloasso,'reason'=>'cyclos_payment'));
-
-            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
-            throw $e;
-        }
-
-        //once payment is done, write symfony equivalent
-
-        $operation = new Operation();
-        $operation->setType(Operation::TYPE_CONVERSION_HELLOASSO);
-        $operation->setReason($reason);
-        $operation->setPaymentID($paymentVO->id);
-        $operation->setFromAccountNumber($res->fromAccount->number);
-        $operation->setToAccountNumber($res->toAccount->number);
-        $operation->setAmount($res->totalAmount->amount);
-        $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($res->fromAccount->owner));
-        $operation->setCreditor($creditorUser);
-
-        return $operation;
-    }
 
     /**
      * Helloasso webhook used to notify our app at each payment received by the association in order to credit adherent (electronic change)
@@ -217,6 +114,7 @@ class HelloassoController extends Controller
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
+        $accountManager =  $this->get('cairn_user.account_manager');
 
         if($request->isMethod('POST')){
              $data = htmlspecialchars($request->getContent(),ENT_NOQUOTES) ;
@@ -261,7 +159,8 @@ class HelloassoController extends Controller
              }
 
              //can be null
-             $operation = $this->creditUserAccount($creditorUser, $newHelloassoPayment);
+             $reason = 'Change numérique par virement Helloasso';
+             $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
 
              $em->persist($newHelloassoPayment);
 
@@ -280,6 +179,9 @@ class HelloassoController extends Controller
         }
     }
 
+
+    
+
     /**
      *
      * @Security("has_role('ROLE_SUPER_ADMIN')")
@@ -292,24 +194,71 @@ class HelloassoController extends Controller
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
+        $accountManager =  $this->get('cairn_user.account_manager');
         $messageNotificator = $this->get('cairn_user.message_notificator');
-
-        $form = $this->createFormBuilder()
-            ->add('payment_id', TextType::class, array('label' => 'ID du virement helloasso'))
-            ->add('email', TextType::class, array('label' => 'Email du compte créditeur'))
-            ->add('save',      SubmitType::class, array('label' => 'Synchroniser'))
+                    
+        $formSearch = $this->createFormBuilder()
+            ->add('from', DateType::class, array('label' => 'Date de début','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
+            ->add('to', DateType::class, array('label' => 'Date de fin','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
+            ->add('email', TextType::class, array('label' => 'Email helloasso'))
+            ->add('search',      SubmitType::class, array('label' => 'Rechercher'))
             ->getForm();
 
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
-            $dataForm = $form->getData();
+        $formSync = $this->createFormBuilder()
+            ->add('payment_id', TextType::class, array('label' => 'ID du virement helloasso'))
+            ->add('email', TextType::class, array('label' => 'Email du compte créditeur'))
+            ->add('sync',      SubmitType::class, array('label' => 'Synchroniser'))
+            ->getForm();
+
+        $formSearch->handleRequest($request);    
+        $formSync->handleRequest($request);    
+
+        if($formSearch->isSubmitted() && $formSearch->isValid()){
+            $dataForm = $formSearch->getData();
+
+            $campaignID = $this->getParameter('helloasso_campaign_id');
+
+            $from = $dataForm['from'] ;
+            $to = $dataForm['to'] ;
+
+            //look for helloassopayment with same id in helloasso data
+            $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c') ));
+
+            $nbPages = $payments_search->pagination->max_page;
+
+            $payments_filter = array();
+
+            for($i = $nbPages; $i >= 1; $i--){
+
+                if($nbPages > 1){
+                    $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c'),'page'=>$i ));
+                }
+                foreach($payments_search->resources as $payment){
+                    if($payment->payer_email == $dataForm['email']){
+                        $payments_filter[] = $payment;
+                    }
+                }
+            }
+
+            return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',
+                array(
+                    'formSearch' => $formSearch->createView(), 
+                    'formSync' => $formSync->createView(),
+                    'payments'=> $payments_filter
+            ));
+
+            
+        }elseif ($formSync->isSubmitted() && $formSync->isValid()) {
+            $dataForm = $formSync->getData();
 
             $api_payment = $this->getApiPayment($dataForm['payment_id']);
-            $api_payment->payer_email = $dataForm['email'];
-
+            
              if(! $api_payment){
                  $session->getFlashBag()->add('error','Aucun paiement trouvé avec l\'identifiant '.$dataForm['payment_id']);
                  return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
              }
+
+            $api_payment->payer_email = $dataForm['email'];
 
              //get a new helloassoConversion entity if it is does not exist yet
              $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
@@ -328,24 +277,25 @@ class HelloassoController extends Controller
                  return new RedirectResponse($request->getRequestUri());
              }
 
-             $operation = $this->creditUserAccount($creditorUser, $newHelloassoPayment);
+             $reason = 'Change numérique par virement Helloasso';
+             $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
 
              $em->persist($newHelloassoPayment);
-             $em->persist($operation);
-             $em->flush();
-
+             
              if(! $operation ){
                  $session->getFlashBag()->add('error','Le crédit de compte n\'a pas été exécuté. Le coffre [e]-Cairns est probablement vide !');
              }else{
+                 $operation->setSubmissionDate($newHelloassoPayment->getDate());
+                 $em->persist($operation);
                  $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
              }
 
-
-             return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
+            $em->flush();
+            return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
 
         }
 
-        return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',array('form' => $form->createView() ));
+        return $this->render('CairnUserBundle:Admin:helloasso_credit.html.twig',array('formSearch' => $formSearch->createView(), 'formSync' => $formSync->createView()));
 
     }
 }

@@ -56,40 +56,30 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        $env = $this->getParameter('kernel.environment');
-        if($env == 'test'){
-            $phoneNumber = '+'.trim($request->query->get('phone'));
-            $this->smsAction($phoneNumber,$request->query->get('content'));
-        }elseif($env == 'dev'){
-//
-//        $this->smsAction('+33788888888','LOGIN');
-//            $this->smsAction('+33611223344','2222');
-//        $this->smsAction('+33611223344','1111');
-//
-            //+33744444444', 'SOLDE
-          $this->smsAction('+33612345678','PAYER 10 MALTOBAR');
-//
-//        $this->smsAction('+33612345678','2222');
-        $this->smsAction('+33612345678','1111');
-//        $this->smsAction('+33655667788','SOLDE');
-//        $this->smsAction('+33655667788','2222');
-//        $this->smsAction('+33655667788','1111');
-        }elseif($env == 'prod'){
+        parse_str( $request->getQueryString(), $query) ;
 
-            parse_str( $request->getQueryString(), $query) ;
+        if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
+            $response = new Response(' { "message"=>"Invalid request" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_NOT_FOUND);
+            return $response;
+        } 
 
-            if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-                $response = new Response(' { "message"=>"Invalid request" }');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                return $response;
-            } 
+        $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
+        $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
-            $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
-            $this->smsAction($sender_phoneNumber,$query['message']);
+        if(! $res){
+            $response = new Response(' { "message":"Request aborted" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+
+        }else{
+            $response = new Response(' { "message":"Request OK !" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_OK);
+            return $response;
         }
-
-        return new Response('ok');
     }
 
 
@@ -392,28 +382,36 @@ class SmsController extends Controller
                 if($debitorUser->hasRole('ROLE_PRO')){
                     $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userPhone->getIdentifier(), $smsPending);
                     $this->persistSMS($smsSent);
+                    return true;
                 }
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
-                $this->executePayment($debitorUser, $parsedInitialSms, false, $userPhone);    
+                $res = $this->executePayment($debitorUser, $parsedInitialSms, false, $userPhone);    
+                $em->flush();
+
+                if($res){return true;}else{return NULL;}
+
             }else{//initial sms was about account balance
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
 
                 $this->persistSMS($smsBalance);
+                $em->flush();
+                return true;
             }
           
             //once pending request has been executed, the corresponding SMS can be set to PROCESSED
             $smsPending->setState(Sms::STATE_PROCESSED);
             $em->flush();
-            return;
+            return true;
         }
 
         //last option : sms request is a payment to be validated
-        $this->executePayment($debitorUser,$parsedSms, true, $userPhone);    
+        $res = $this->executePayment($debitorUser,$parsedSms, true, $userPhone);    
+       
         $em->flush();
-        return;
 
+         if($res){return true;}else{return NULL;}
     }
 
 
@@ -583,7 +581,7 @@ class SmsController extends Controller
             if($needsValidation){
                 $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content, $debitorPhone);
                 $em->flush();
-                return;
+                return true;
             }else{//payment is checked, but is neither suspicious or to be validated
                 $smsPaymentRequest = new Sms($debitorPhoneNumber, $parsedSms->content,Sms::STATE_PROCESSED,NULL );
                 $em->persist($smsPaymentRequest); 
@@ -623,7 +621,8 @@ class SmsController extends Controller
 
         $em->persist($operation);
         $this->persistSMS($smsSuccessDebitor);
-//        $em->flush();
+
+        return true;
 
     }
 

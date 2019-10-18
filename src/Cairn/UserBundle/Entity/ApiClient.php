@@ -47,7 +47,7 @@ class ApiClient
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="apiClient", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=false)
+     *@ORM\JoinColumn(name="user_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
     private $user;
 

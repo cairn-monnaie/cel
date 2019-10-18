@@ -315,6 +315,40 @@ cairn_user_api_phone_delete:
         id: \d+
         remote: mobile|api
 
+cairn_user_mandates_dashboard:
+    path:     admin/mandates/dashboard
+    defaults: { _controller: CairnUserBundle:Mandate:mandatesDashboard, _format: html }
+    requirements:
+        _format: html|json
+
+cairn_user_mandates_add:
+    path:     admin/mandates/add
+    defaults: { _controller: CairnUserBundle:Mandate:declareMandate, _format: html}
+
+cairn_user_mandates_view:
+    path:     admin/mandates/view/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:viewMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_honour:
+    path:     admin/mandates/honour/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:honourMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_edit:
+    path:     admin/mandates/edit/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:editMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_cancel:
+    path:     admin/mandates/cancel/{id}
+    defaults: { _controller: CairnUserBundle:Mandate:cancelMandate, _format: html}
+    requirements:
+        id: \d+
+
 cairn_user_card_home:
     path:     card/home/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:cardOperations, _format: html }
@@ -373,6 +407,10 @@ cairn_user_helloasso_sync:
     path:     admin/helloasso/sync
     defaults: { _controller: CairnUserBundle:Helloasso:helloassoSync}
 
+cairn_user_operation_sync:
+    path:     admin/operation/sync
+    defaults: { _controller: CairnUserBundle:Admin:cyclosSync}
+
 cairn_user_helloasso_notification:
     path:     helloasso/notification
     defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification}
@@ -395,11 +433,8 @@ cairn_user_banking_accounts_overview_download:
     defaults: { _controller: CairnUserBundle:Banking:downloadAccountsOverview }
 
 cairn_user_banking_operations:
-    path:     banking/operations/{type}.{_format}
+    path:     banking/operations
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
-    requirements:
-        type: transaction
-        _format: html|json
 
 cairn_user_banking_post:
     path:     operations/{type}
@@ -421,6 +456,10 @@ cairn_user_banking_transaction_to:
         frequency: unique #|recurring
         _format: html|json
 
+cairn_user_banking_reconversion:
+    path:     banking/reconversion.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:reconversion, _format: html}
+
 cairn_user_banking_transaction_request:
     path:     banking/transaction/request/{to}-{frequency}
     defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: html}
@@ -434,6 +473,10 @@ cairn_user_api_transaction_create:
     requirements:
         frequency: unique #|recurring
         to: new|beneficiary
+
+cairn_user_banking_reconversion:
+    path:     banking/reconversion.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:reconversion, _format: html}
 
 cairn_user_sms_poster_download:
     path:     sms-poster/download
@@ -520,6 +563,18 @@ cairn_user_api_accounts_overview:
     defaults: { _controller: CairnUserBundle:Banking:accountsOverview, _format: json  }
     requirements:
         remote: mobile|api
+
+cairn_user_accountscore_configure:
+    path:     account-score/configure/{username}
+    defaults: { _controller: CairnUserBundle:AccountScore:configureAccountScore, _format: html  }
+
+cairn_user_accountscore_view:
+    path:     account-score/view/{id}
+    defaults: { _controller: CairnUserBundle:AccountScore:viewAccountScore, _format: html  }
+
+cairn_user_accountscore_confirm:
+    path:     account-score/confirm/{token}
+    defaults: { _controller: CairnUserBundle:AccountScore:confirmAccountScoreEmail, _format: html  }
 
 #cairn_user_bankconnection_deposit_index:
 #    path:     deposit/index

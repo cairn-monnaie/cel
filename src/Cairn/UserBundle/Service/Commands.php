@@ -16,9 +16,14 @@ use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\NotificationPermission;
+use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
+use Cairn\UserBundle\Entity\Mandate;
+use Cairn\UserBundle\Entity\AccountScore;
 
+
+use Knp\Snappy\Pdf;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -135,6 +140,229 @@ class Commands
         $this->em->flush();
     }
 
+    public function sendAccountScores()
+    {
+        $now = new \Datetime();
+        $dayNow = $now->format('D');
+        $timeNow =  $now->format('H:i');
+        $accountScoreRepo = $this->em->getRepository('CairnUserBundle:AccountScore');
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+
+        $messageNotificator = $this->container->get('cairn_user.message_notificator');
+
+        //how to get users based on their account score schedule
+        $ab = $accountScoreRepo->createQueryBuilder('a');
+
+        $ab->andWhere('a.confirmationToken is NULL')
+            ->andWhere('a.consideredDay = :day')
+            ->setParameter('day', $dayNow );
+        $accountScores = $ab->getQuery()->getResult();
+
+        foreach($accountScores as $accountScore){
+            $schedule = $accountScore->getSchedule()[$dayNow];
+
+            if( ! empty($schedule)){
+                $nbToSend = count($schedule);
+                $nbSent = $accountScore->getNbSentToday();
+
+                if($nbSent < $nbToSend){
+                    $filename = 'pointage-'.strtotime(date('Y-m-d H:i'));
+                    $date = date('d-M-Y').' '.$schedule[$nbSent];
+                    $dateToSend = new \Datetime($date);
+
+                    //here we look for the timestamp of the last sent mail
+                    if($nbSent != 0){ //if another account score was expected the same day
+                        $beginTime = $schedule[$nbSent - 1];
+                        $begin = new \Datetime($beginTime);
+                        $begin->modify('+1 hour');
+
+                    }else{ //otherwise, get the last timestamp of the previous day, if any
+                        $clone = clone $now;
+                        $dayBefore = $clone->modify('-1 day');
+
+                        if($dateToSend->format('H') < '6'){ // if  evening activity, must deal with day before
+                            if($endYesterday = end($accountScore->getSchedule()[$dayBefore->format('D')]) ){
+                                $begin = $dayBefore->modify($endYesterday)->modify('+1 hour');
+                            }else{
+                                $begin = $dayBefore->modify('15:00');
+                            }
+                        }else{ // daytime activity 
+                            $cloneNow = clone $now;
+                            $begin = $cloneNow->modify('00:00');
+                        }
+
+                                                
+                    }
+
+                    if( $now->diff($dateToSend)->invert == 1 ){
+                        $ob = $operationRepo->createQueryBuilder('o');
+
+                        $operationRepo
+                            ->whereCreditor($ob, $accountScore->getUser())
+                            ->whereSubmissionDateBetween($ob, $begin, $now);
+
+                        $ob->andWhere('o.paymentID is not NULL')
+                            ->andWhere( 
+                                $ob->expr()->orX(
+                                    'o.type = '.Operation::TYPE_SMS_PAYMENT
+                                    ,
+                                    'o.type = '.Operation::TYPE_MOBILE_APP
+                                )
+                            )
+                            ->orderBy('o.executionDate','ASC');
+                        $operations = $ob->getQuery()->getResult();
+
+                        //generate Document
+                        if($accountScore->getFormat() == 'csv'){ // CSV FORMAT
+                            $filename = $filename.'.csv';
+                            $handle = fopen($filename, 'w');
+
+                            // Add the header of the CSV file
+                            fputcsv($handle,array('Compte : ' . $accountScore->getUser()->getName()),';');
+                            fputcsv($handle, array('Horodatage', 'Type','Montant'),';');
+
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+
+                                $totalAmount += $operation->getAmount();
+                                fputcsv(
+                                    $handle, // The file pointer
+                                    array(
+                                        $operation->getExecutionDate()->format('H:i'),
+                                        Operation::getTypeName($operation->getType()),
+                                        $operation->getAmount()
+                                    ), // The fields
+                                    ';' // The delimiter
+                                );
+                            }
+
+                            fputcsv($handle,array('Somme cumulée : '.$totalAmount.' cairns'),';');
+                            fputcsv($handle,array());
+
+                            fclose($handle);
+
+                            // You can alternatively use method chaining to build the attachment
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/force-download')
+                                ->setBody(file_get_contents($filename))
+                            ;
+
+                            unlink($filename);
+                        }else{ // PDF FORMAT
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+                                $totalAmount += $operation->getAmount();
+                            }
+
+                            $projectDir = $this->container->getParameter('kernel.project_dir');
+ 
+                            $snappy = new Pdf($projectDir.'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
+                            $html =  $this->container->get('templating')->render('CairnUserBundle:Pdf:account_score.html.twig',
+                                array('operations'=>$operations,
+                                'totalAmount'=>$totalAmount,
+                                'beginDate'=>$begin,
+                                'endDate'=>$now,
+                                'accountScore'=>$accountScore
+                                ));
+
+                            $filename = $filename.'.pdf';
+
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/pdf')
+                                ->setBody($this->container->get('knp_snappy.pdf')->getOutputFromHtml($html))
+                            ;
+                        }
+
+                        $accountScore->setNbSentToday($accountScore->getNbSentToday() + 1);
+
+                        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore,'begin'=>$begin));
+                        $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
+                    }
+                }
+            }else{//little bit of a hack to deal with side-effect but necessary
+                $accountScore->setNbSentToday(0);
+            }
+        }
+
+        $this->em->flush();
+
+        return 'OK';
+    }
+
+    private function updateMandate(Mandate $mandate)
+    {
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $status = $mandate->getStatus();
+        if($status != Mandate::SCHEDULED && $status != Mandate::UP_TO_DATE){
+            return;
+        }
+
+        $today = new \Datetime();
+
+        if($status == Mandate::SCHEDULED){
+            if($mandate->getBeginAt()->diff($today)->invert == 0){
+                $mandate->setStatus(Mandate::OVERDUE);
+            }
+
+        }else{ //UP_TO_DATE
+            if(! $accountManager->isUpToDateMandate($mandate)){
+                $mandate->setStatus(Mandate::OVERDUE);
+            }
+        }
+    }
+
+    /**
+     * Each month, Updates status of ongoing and scheduled mandates
+     *
+     * If a mandate is ongoing, this command must check if there is an operation to operate or if everything is up to date
+     */
+    public function updateMandatesStatusCommand($username)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $mandateRepo = $this->em->getRepository('CairnUserBundle:Mandate');
+
+        $accountManager = $this->container->get('cairn_user.account_manager');
+
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+
+            if(! $user){
+                return 'User not found';
+            }
+
+            if(! $user->isAdherent()){
+                return 'User must be an adherent';
+            }
+
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandates = $mb->getQuery()->getResult();
+
+            if(! $mandates){
+                return 'Aucun statut de mandat à mettre à jour';
+            }
+
+            foreach($mandates as $mandate){
+                $this->updateMandate($mandate);
+            }
+                    
+        }else{
+            $mb = $mandateRepo->createQueryBuilder('m');
+            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandates = $mb->getQuery()->getResult();
+
+            foreach($mandates as $mandate){
+                $this->updateMandate($mandate);
+            }
+        }
+
+        $this->em->flush();
+
+        return 'Mandates status updated';
+    }
 
     /**
      *Returns true and creates admin if he does not exist yet, returns false otherwise
@@ -356,7 +584,7 @@ class Commands
             $address->setStreet1($cyclosAddress->addressLine1);
 
             $doctrineUser->setAddress($address);                                  
-            $doctrineUser->setDescription('Test user blablablabla');             
+            $doctrineUser->setDescription('Je suis un compte de test !');             
 
             //create fake id doc
             $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
@@ -394,6 +622,14 @@ class Commands
 
             }
 
+
+            //each user can activate his access client after his status has changed from DISABLED to ACTIVE
+            $credentials = array('username'=>$doctrineUser->getUsername(),'password'=>'@@bbccdd');
+            $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
+            $cyclosClient = $this->getClientToken($doctrineUser,'main');
+            $doctrineUser->setCyclosToken($cyclosClient);
+
             $this->em->persist($doctrineUser);
 
             //in the end of the process, admin user will be up, as before, to request cyclos
@@ -405,11 +641,22 @@ class Commands
 
     }
 
+    protected function getClientToken($user,$type)
+    {
+            $securityService = $this->container->get('cairn_user.security');      
+            $securityService->createAccessClient($user,$type);  
+
+            $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),$type,'UNASSIGNED');
+            $tokenClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+
+            return $securityService->vigenereEncode($tokenClient);
+    }
+
     /**
      * Here, we setup Cyclos access clients for users with phone number
      * Then, we create aborted and EXPIRED SMS with these same phone numbers
      */
-    public function setUpAccessClient($user, $em)
+    public function setUpSmsAccessClient($user, $em)
     {
         echo 'Setting up access client for '.$user->getName()."\n";
 
@@ -420,18 +667,11 @@ class Commands
         $smsData = $user->getSmsData();
 
         if($smsData){
-
-            $securityService = $this->container->get('cairn_user.security');      
-            $securityService->createAccessClient($user,'client_sms');  
-
-            $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(),'UNASSIGNED');
-            $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
-
-            $smsClient = $securityService->vigenereEncode($smsClient);
+            $smsClient = $this->getClientToken($user,'client_sms');
             $smsData->setSmsClient($smsClient);
-
-            $em->persist($user);
         }
+
+        $em->persist($user);
 
         $sms = new Sms($smsData->getPhones()[0]->getPhoneNumber(),'PAYER12BOOYASHAKA',Sms::STATE_EXPIRED,rand(0,25));
 
@@ -444,10 +684,16 @@ class Commands
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
     }
+
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
+     *
+     * WARNING : The ID of the TransactionEntryVO object is not the same id than its corresponding transfer
+     * For this reason, $entryVO->id is not what we want 
+     *
      *@param const int $type Operation type
-     *@param stdClass $entryVO stdClass transaction
+     *@param stdClass $entryVO stdClass TransactionEntryVO
+     *@see https://documentation.cyclos.org/4.11.2/ws-api-docs/org/cyclos/model/banking/transactions/TransactionEntryVO.html
      */
     public function createOperation($entryVO, $type)
     {
@@ -655,6 +901,10 @@ class Commands
 
         //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
         $admin->setFirstLogin(false);
+
+        $cyclosClient = $this->getClientToken($admin,'main');
+        $admin->setCyclosToken($cyclosClient);
+
         $uniqueCode = $securityService->findAvailableCode();
         $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
         $card->addUser($admin);
@@ -868,28 +1118,179 @@ class Commands
         $user->setNbPhoneNumberRequests(1);
         $user->setPhoneNumberActivationTries(0);
 
-        echo 'INFO: ------ Set up Cyclos access clients for users with phone number ------- ' . "\n";
+        echo 'INFO: ------ Set up Cyclos sms access clients for users with phone number ------- ' . "\n";
         foreach($usersWithSmsInfo as $user){
-            $this->setUpAccessClient($user, $this->em);
+            $this->setUpSmsAccessClient($user, $this->em);
         }
 
 
         //Forced to set user status after creation of users, access clients... Otherwise, user can't access Cyclos and do any operation
         echo 'INFO: ------ Set up Cyclos user status ------- ' . "\n";
-        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
         $user = $userRepo->findOneByUsername('la_mandragore'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
         $accessPlatformService->changeUserStatus($user, 'DISABLED');
         echo 'INFO: OK !'."\n";
 
-        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
         $user = $userRepo->findOneByUsername('tout_1_fromage'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
         $accessPlatformService->changeUserStatus($user, 'DISABLED');
         echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('Biocoop'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('Alpes_EcoTour'); 
+        echo 'INFO: '. $user->getName(). ' has status DISABLED on Cyclos side'."\n";
+
+        $accessPlatformService->changeUserStatus($user, 'DISABLED');
+        echo 'INFO: OK !'."\n";
+
+
+        //generate mandates for users as persons
+        echo 'INFO: ------ Set up mandates ------- ' . "\n";
+
+        
+        $contractor = $userRepo->findOneByUsername('lacreuse_desiderata'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::COMPLETE,'-7 months','-6 months','-1 month');
+        $this->em->persist($mandate);
+       
+        $contractor = $userRepo->findOneByUsername('barbare_cohen'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::CANCELED,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('crabe_arnold'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::UP_TO_DATE,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('tous_andre'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::OVERDUE,'-4 months','-3 months','+3 months');
+        $this->em->persist($mandate);
+
+        $contractor = $userRepo->findOneByUsername('gjanssens'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 month','+1 month','+7 months');
+        $this->em->persist($mandate);
+
+
+        //need a pro with a mandate and a null account
+        $contractor = $userRepo->findOneByUsername('montagne_arts'); 
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 day','+1 month','+7 months');
+        $this->em->persist($mandate);
+
+        //generate an helloasso payment
+        echo 'INFO: ------ Set up helloasso payments ------- ' . "\n";
+        $creditor = $userRepo->findOneByUsername('mazmax'); 
+
+        $helloasso = new HelloassoConversion();
+
+        $helloasso->setPaymentID('000040877783');
+        $helloasso->setDate(new \Datetime());
+        $helloasso->setAmount(40);
+        $helloasso->setEmail($creditor->getEmail());
+        $helloasso->setCreditorName($creditor->getName());
+
+        $this->em->persist($helloasso);
+
+        //generate account score configurations
+        echo 'INFO: ------ Set up account score configurations ------- ' . "\n";
+
+        $contractor = $userRepo->findOneByUsername('episol'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with csv format' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setFormat('csv');
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
+
+        $contractor = $userRepo->findOneByUsername('tout_1_fromage'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with confirmation token' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setEmail('test_fromage@test.fr');
+        $accountScore->setConfirmationToken($securityService->generateUrlToken());
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
 
         $this->em->flush();
         echo 'INFO: OK !'."\n";
 
         return 'Database successfully generated !';
+
+    }
+
+    private function createMandate(User $contractor, $amount,$status,$createdAt,$beforeToday,$afterToday)
+    {
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $mandate = new Mandate();
+        $mandate->setStatus($status);
+
+        echo 'INFO: '. $contractor->getName(). ' has a mandate '.$mandate->getStatusName($status)."\n";
+
+        $mandate->setContractor($contractor);
+        $mandate->setAmount($amount);
+
+        //create fake mandate document doc
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'poster_sms.pdf';
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+
+        $document = new File();
+        $document->setUrl($file->guessExtension());
+        $document->setAlt($file->getClientOriginalName());
+
+        $mandate->addMandateDocument($document);
+        $document->setMandate($mandate);
+
+        $today = new \Datetime();
+
+        $clone = clone $today;
+        $before = new \Datetime(date_modify($clone, $beforeToday)->format('d-m-Y'));
+
+        if($before->format('d') >= 25){
+            $before->modify('first day of next month');
+        }
+
+        $clone = clone $today;
+        $after = new \Datetime(date_modify($clone,$afterToday)->format('d-m-Y'));
+
+        if($after->format('d') >= 25){
+            $after->modify('first day of next month');
+        }
+
+        $mandate->setBeginAt($before);
+        $mandate->setEndAt($after);
+        $mandate->setCreatedAt(date_modify($clone,$createdAt));
+        $mandate->setStatus($status);
+
+        $count = $accountManager->getConsistentOperationsCount($mandate,$today);
+
+        if($status == Mandate::OVERDUE){ $count -= 1; }
+
+        for($i = 0; $i < $count; $i++){
+            $operation = $accountManager->creditUserAccount($contractor, $amount, Operation::TYPE_MANDATE, 'Règlement de mandat');
+
+            $mandate->addOperation($operation);
+
+            $this->em->persist($operation);
+            $operation->setMandate($mandate);
+        }
+
+        echo 'INFO: OK !'."\n";
+
+        return $mandate;
 
     }
 }

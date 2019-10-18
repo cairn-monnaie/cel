@@ -99,7 +99,7 @@ class Operation
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="creditor_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $creditor;
 
@@ -114,7 +114,7 @@ class Operation
      * @var \Cairn\UserBundle\Entity\User
      *
      *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\User", cascade={"persist"})
-     *@ORM\JoinColumn(nullable=true)
+     *@ORM\JoinColumn(name="debitor_id", nullable=true,referencedColumnName="id", onDelete="SET NULL")
      */
     private $debitor;
 
@@ -126,6 +126,12 @@ class Operation
     private $debitorName;
 
     /**
+     *@ORM\ManyToOne(targetEntity="Cairn\UserBundle\Entity\Mandate", inversedBy="operations" )
+     *@ORM\JoinColumn(nullable=true)
+     */
+    private $mandate;
+
+    /**
      * @var array
      */
     private $fromAccount;
@@ -135,7 +141,7 @@ class Operation
      */
     private $toAccount;
 
-    //WARNING : VALUES SHOULD NOT CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
+    //WARNING : CURRENT VALUES SHOULD NOT BE CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
     const TYPE_TRANSACTION_EXECUTED = 0;
 #    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
@@ -145,9 +151,12 @@ class Operation
     const TYPE_WITHDRAWAL = 6;
     const TYPE_SCHEDULED_FAILED = 7;
     const TYPE_SMS_PAYMENT = 8;
-    const TYPE_ONLINE_PAYMENT = 9;
+    const TYPE_MANDATE = 9;
+    const TYPE_ONLINE_PAYMENT = 10;
+    const TYPE_RECONVERSION = 11;
+    const TYPE_MOBILE_APP = 12;
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT, self::TYPE_RECONVERSION);
 
     /*
      * All types which involve two adherents
@@ -209,7 +218,7 @@ class Operation
             return 'conversion en bureau de change';
             break;
         case "4":
-            return 'conversion par virement bancaire';
+            return 'conversion par virement Helloasso';
             break;
         case "5":
             return 'deposit';
@@ -224,22 +233,27 @@ class Operation
             return 'sms payment';
             break;
         case "9":
+            return 'payment order';
+            break;
+        case "10":
             return 'online payment';
+            break;
+        case "11":
+            return 'reconversion';
             break;
         default:
             return NULL;
         }
     }
 
-
-    public static function getFromOperationTypes()
+    public static function getB2CTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_ONLINE_PAYMENT);//,self::TYPE_RECONVERSION);
+        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);
     }
 
     public static function getDebitOperationTypes()
     {
-        return array(self::TYPE_WITHDRAWAL);//,self::TYPE_RECONVERSION);
+        return array(self::TYPE_WITHDRAWAL,self::TYPE_RECONVERSION);
     }
 
     public static function getToOperationTypes()
@@ -247,9 +261,36 @@ class Operation
         return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
     }
 
-    public static function getExecutedTypes()
+    /**
+     * Types which can lead to desynchronization because of other information system services
+     *
+     * There are several services (docker meaning) connected to each other. A broken connection between two services can lead to desynchronized data.
+     * For instance, if a deposit is done on BDC application and the connection to CEL app is broken, the user account balance will change, but the operation won't appear on
+     * user CEL dashboard
+     *
+     */
+    public static function getPotentiallyDesynchronizedTypes()
     {
-        return self::ARRAY_EXECUTED_TYPES;
+        return array(self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC);
+    }
+
+    /**
+     * Propose TYPE_MANDATE in the list or not
+     * 
+     * If user is PRO, do propose reconversion field
+     */
+    public static function getExecutedTypes($withMandate = NULL, $asPro = false)
+    {
+        $types =  self::ARRAY_EXECUTED_TYPES;
+
+        if($asPro){
+            $types[] = self::TYPE_RECONVERSION;
+        }
+
+        if($withMandate){
+            $types[] = self::TYPE_MANDATE;
+        }
+        return $types;
     }
 
     public static function getScheduledTypes()
@@ -657,6 +698,29 @@ class Operation
     public function getDebitorName()
     {
         return $this->debitorName;
+    }
+
+    /**
+     * Set mandate if any
+     *
+     *
+     * @return Mandate
+     */
+    public function setMandate($mandate)
+    {
+        $this->mandate = $mandate;
+
+        return $this;
+    }
+
+    /**
+     * Get mandate
+     *
+     * @return Mandate
+     */
+    public function getMandate()
+    {
+        return $this->mandate;
     }
 
     /**
