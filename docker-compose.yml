@@ -13,6 +13,7 @@ services:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: 'Europe/Paris'
     networks:
       - mlc_net
 
