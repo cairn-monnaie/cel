@@ -78,6 +78,7 @@ class AccountScore
         $this->schedule = array('Mon'=>array(),'Tue'=>array(),'Wed'=>array(), 'Thu'=>array(), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
         $this->nbSentToday = 0;
 
+        $this->format = self::PDF_FORMAT;
         $this->consideredDay = date('D'); 
     }
 
@@ -269,9 +270,11 @@ class AccountScore
      *
      * @return AccountScore
      */
-    public function setUser($user)
+    public function setUser(User $user)
     {
         $this->user = $user;
+
+        $this->setEmail($user->getEmail());
 
         return $this;
     }

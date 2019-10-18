@@ -236,6 +236,11 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_mandate_validator }
 
+    cairn_user.accountscore_validator:
+        class: Cairn\UserBundle\Validator\AccountScoreValidator
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_accountscore_validator }
+
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"

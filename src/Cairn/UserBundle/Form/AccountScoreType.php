@@ -47,7 +47,11 @@ class AccountScoreType extends AbstractType
 
                 $defaultEmail = ($email = $accountScore->getEmail()) ? $email : $accountScore->getUser()->getEmail();
                 $form->add('email' , TextType::class ,array('label' => 'Adresse email','data'=>$defaultEmail));
-                $form->add('schedule' , AccountScoreScheduleType::class ,array('label' => 'Programme','data'=>$accountScore->getSchedule()));
+                $form->add('schedule' , AccountScoreScheduleType::class ,array(
+                        'label' => 'Programme',
+                        'data'=>$accountScore->getSchedule(),
+                        'error_bubbling' => false
+                    ));
 
             }
         );

@@ -13,21 +13,49 @@
         {{ form_row(form.format) }}
         {{ form_row(form.email) }}
 
+        <div class="row">
+            <div class="col s12">
+                {{ form_errors(form.schedule) }}
+                {{ form_label(form.schedule) }}
+            </div>
+        </div>
+
         {% for formDay in form.schedule %}
             <div class="row js-day-wrapper"
                 data-prototype="{{ form_widget(formDay.vars.prototype)|e }}"
                 data-index="{{ formDay|length }}"
             >
-                {{ form_row(formDay) }}
+                <div class="row">
+                    <div class="col s12">
+                        {{ form_errors(formDay) }}
+                        {{ form_label(formDay) }}
+                    </div>
+                </div>
+                <div class="col s12">
+                    {{ form_widget(formDay) }}
+                </div>
+                  
 
+                {% for timeField in formDay %}
+                    <div class="col s12 m6 js-time-item">
+                       <div class="row ">
+                           <div class="col s12">
+                               {{ form_errors(timeField) }}
+                               {{ form_label(timeField) }}
+                           </div>
+                           <div class="col s12">
+                               {{ form_widget(timeField) }}
+                           </div>
+                       </div>
+                    </div>
+                {% endfor %}
                 <div class="col s12">
                     <a href="#" class="js-time-add">
                         <i class="material-icons">add</i>
                     </a>
                 </div>
 
-            </div>
-            
+            </div>    
         {% endfor %}
     {{ form_rest(form) }}
     {{ form_end(form) }}
@@ -93,8 +121,6 @@
                 $prototype.after($deleteLink);
 
                 $deleteLink.on('click', function(e) {
-
-                    $wrapper.data('index', $wrapper.data('index') - 1);
 
                     $prototype.fadeOut().remove();
                     $(this).fadeOut().remove();

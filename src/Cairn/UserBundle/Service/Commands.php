@@ -20,6 +20,8 @@ use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\Mandate;
+use Cairn\UserBundle\Entity\AccountScore;
+
 
 use Knp\Snappy\Pdf;
 use Cairn\UserCyclosBundle\Entity\UserManager;
@@ -1157,6 +1159,32 @@ class Commands
         $helloasso->setCreditorName($creditor->getName());
 
         $this->em->persist($helloasso);
+
+        //generate account score configurations
+        echo 'INFO: ------ Set up account score configurations ------- ' . "\n";
+
+        $contractor = $userRepo->findOneByUsername('episol'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with csv format' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setFormat('csv');
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
+
+        $contractor = $userRepo->findOneByUsername('tout_1_fromage'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with confirmation token' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setEmail('test_fromage@test.fr');
+        $accountScore->setConfirmationToken($securityService->generateUrlToken());
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
 
         $this->em->flush();
         echo 'INFO: OK !'."\n";
