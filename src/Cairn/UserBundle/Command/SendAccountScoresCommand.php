@@ -19,6 +19,8 @@ class SendAccountScoresCommand extends ContainerAwareCommand
     {
         $this->setName('cairn.user:send-account-scores')
             ->setDescription('Send a reconciliation account document')
+            ->setHelp('This command can contain one optional argument : an username to specify one user')
+            ->addArgument('username', InputArgument::OPTIONAL, 'Username of the user whom you want to send account score')
             ; 
     }
 
@@ -26,7 +28,9 @@ class SendAccountScoresCommand extends ContainerAwareCommand
     {
         $commandsService = $this->getContainer()->get('cairn_user.commands');
 
-        $message = $commandsService->sendAccountScores();
+        $username = $input->getArgument('username');
+
+        $message = $commandsService->sendAccountScores($username);
         $output->writeln($message);
     }
 }

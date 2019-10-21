@@ -203,14 +203,10 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             'invalid email(no @)'                                     => array_replace($baseData, array('email'=>'test.com')),
             'invalid email(not enough characters)'                    => array_replace($baseData, array('email'=>'test@t.c')),
-            //            'email already in use'                                    => array_replace($baseData, array('email'=>$usedEmail)),
-            //            'username already in use'                                 => array_replace($baseData, array('username'=>$usedUsername)),
             'invalid name(too short)'                                 => array_replace($baseData, array('name'=>'AB')),
             'too short password'                                      => array_replace($baseData, array('plainPassword'=>'@bcdefg')),
             'pseudo included in password'                             => array_replace($baseData, array('plainPassword'=>'@testUser@')),
             'no special character'                                    => array_replace($baseData, array('plainPassword'=>'1testPwd2')),
-            //            'too simple password (all characters have 0 distance)'    => array_replace($baseData, array('plainPassword'=>'@@@@@@@@')),
-            //            'too obvious password(mot de passe = mot dans le nom)'    => array_replace($baseData, array('password'=>'V@lidation')),
         );
     }
 

@@ -199,10 +199,12 @@ class MandateControllerTest extends BaseControllerTest
         }
         
         $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
-               
+
+                       
         if($isValid){
             $crawler = $this->client->followRedirect();
 
+            $this->em->refresh($mandate);
 
             if($addDocument){
                 $this->assertEquals($countDocsBefore + 1, $mandate->getMandateDocuments()->count());
@@ -218,13 +220,10 @@ class MandateControllerTest extends BaseControllerTest
         return array(
             'invalid : access disabled to adherents'=>array('comblant_michel','crabe_arnold', 30 ,'+3 months',false,false,'',false),
             'invalid : access disabled to GL'=>array('gl_grenoble','crabe_arnold', 30 ,'+3 months',false,false,'',false),
-
             'valid : uptodate mandate amount + doc added' => array('admin_network','gjanssens', 40, '+7 months',true,true,'',true),
             'valid : uptodate mandate amount + doc not added'=>array('admin_network','gjanssens', 40, '+7 months',true,true,'',false),
             'valid : mandate end date + doc added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',true),
             'valid : mandate end date + doc not added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',false),
-
-            
             'invalid : mandate is complete'=>array('admin_network','lacreuse_desiderata', 30 , '+7 months',false,false,'achevé',false),
             'invalid : mandate is canceled'=>array('admin_network','barbare_cohen', 30 , '+7 months',false,false,'achevé',false),
         );

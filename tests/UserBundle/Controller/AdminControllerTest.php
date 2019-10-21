@@ -232,7 +232,6 @@ class AdminControllerTest extends BaseControllerTest
         $targetOperation = $ob->getQuery()->getResult()[0];
 
         $cyclosID = '4268788535362862840'; //$targetOperation->getPaymentID();
-        var_dump($cyclosID);
 
         if(! $symfonyPersistedID){
             $this->em->remove($targetOperation);
@@ -287,10 +286,10 @@ class AdminControllerTest extends BaseControllerTest
         $reason = 'Dépôt';
 
         return array(
-            //'invalid : no access for adherent' => array('mazmax',false,false,false,$type,$reason),
-            //'invalid : no access for simple admins' => array('gl_grenoble',false,false,false,$type,$reason),
-            //'invalid : paymentID already exists on Symfony side' => array($admin,true, true, true, $type, $reason),
-            //'invalid : paymentID does not exist on Cyclos side' => array($admin, true, false, false, $type, $reason),
+            'invalid : no access for adherent' => array('mazmax',false,false,false,$type,$reason),
+            'invalid : no access for simple admins' => array('gl_grenoble',false,false,false,$type,$reason),
+            'invalid : paymentID already exists on Symfony side' => array($admin,true, true, true, $type, $reason),
+            'invalid : paymentID does not exist on Cyclos side' => array($admin, true, false, false, $type, $reason),
             'valid synchronization' => array($admin, true, false, true, $type, $reason)
         );
 

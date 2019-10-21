@@ -529,7 +529,7 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideDataForSetGeneration()
     {
-        $nbPrintableCards = 5;
+        $nbPrintableCards = $this->container->getParameter('max_printable_cards') - count($this->em->getRepository('CairnUserBundle:Card')->findAvailableCards()) ;
 
         return array(
             'number of printable cards exceeded'=> array('nbRequestedCards'=> $nbPrintableCards + 1,'isExceeded'=>true),

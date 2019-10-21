@@ -205,7 +205,8 @@ class SmsControllerTest extends BaseControllerTest
             'balance : invalid code + sms for pro & person'=>array('+33612345678','SOLDE',$originator,true,'2222',false,
                                                                     array($askCodeMsg,$wrongCodeMsg)),
 
-            'login : no pro'=>array('+33612345678','LOGIN',$originator,false,'1111',true,NULL),
+            'login : no pro'=>array('+33743434343','LOGIN',$originator,false,'1111',true,NULL),
+            'login : same phone number for pro & person '=>array('+33612345678','LOGIN',$originator,true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
             'login : pro + valid code '=>array('+33611223344','LOGIN',$originator,true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
             'login : pro + wrong code '=>array('+33611223344','LOGIN',$originator,true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
 
@@ -342,7 +343,7 @@ class SmsControllerTest extends BaseControllerTest
           'invalid SMS format'=>array('+33612345678','SOLDEADO',$originator,4,1,'SMS INVALIDE',false),
           'invalid SMS identifier'=>array('+33612345678','PAYER 10 JOHNDOE',$originator,4,1,'aucun professionnel',false),
           'request SMS identifier'=>array('+33611223344','LOGIN',$originator,1,1,'code de sécurité',true),
-          'request account balance'=>array('+33611223344','SOLDE',$originator,1,1,'code de sécurité',true),
+          'request account balance'=>array('+33611223344','SOLDE',$originator,2,1,'code de sécurité',true),
         );
     }
 }

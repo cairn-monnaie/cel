@@ -100,9 +100,8 @@ class UserControllerTest extends BaseControllerTest
 
                 $newPhone = $currentUser->getPhones()[$nbPhonesAfter - 1];
                 $this->assertEquals($newPhone->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
-                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
-                $crawler = $this->client->followRedirect();
-                $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
+
+                $this->assertContains('Règles d\'utilisation',$this->client->getResponse()->getContent());
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),'client_sms','ACTIVE');
@@ -123,26 +122,25 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertFalse($newPhone->isPaymentEnabled());
                 }
             }else{
-                $this->assertTrue($this->client->getResponse()->isRedirect($url));
                 $crawler = $this->client->followRedirect();
 
-                $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
+                $this->assertEquals($previous_phoneNumberActivationTries + 1, $currentUser->getPhoneNumberActivationTries());
                 $this->assertEquals($nbPhonesAfter, $nbPhonesBefore);
 
                 if($currentUser->getPhoneNumberActivationTries() >= 3){
-                    $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
-                    $crawler = $this->client->followRedirect();
-                    $crawler = $this->client->followRedirect();
-
+                    $this->assertTrue($this->client->getRequest()->getRequestUri() == '/login');
 
                     $this->assertUserIsDisabled($currentUser,true);
+
+                    $crawler = $this->client->followRedirect();
 
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
                 }else{
+                    $this->assertTrue($this->client->getRequest()->getRequestUri() == $url);
+                    $crawler = $this->client->followRedirect();
+
                     $this->assertUserIsEnabled($currentUser, false);
-                    //                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
-                    //                            $crawler = $this->client->followRedirect();
 
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
@@ -173,52 +171,52 @@ class UserControllerTest extends BaseControllerTest
             'user in admin' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false)),
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold',
-                                                                    'isExpectedForm'=>false,
-                                                                    'expectedMessages'=>'3 demandes de nouveau')),
+                    'isExpectedForm'=>false,
+                    'expectedMessages'=>'3 demandes de nouveau')),
 
-           'current number'=>array_replace_recursive($baseData, array(
-                                                              'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
-                                                              'expectedMessages'=>$usedMsg
-                                                          )),
+            'current number'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
+                        'expectedMessages'=>$usedMsg
+                    )),
 
-         'current number, disable sms'=>array_replace_recursive($baseData, array('newPhone'=>array('phoneNumber'=>'+33743434343'),
-                                                            'isValidData'=>false,'isPaymentEnabled'=>false,
-                                                            'expectedMessages'=>$usedMsg
-                                                        )),
+            'current number, disable sms'=>array_replace_recursive($baseData, array('newPhone'=>array('phoneNumber'=>'+33743434343'),
+                    'isValidData'=>false,'isPaymentEnabled'=>false,
+                    'expectedMessages'=>$usedMsg
+                    )),
 
-          'used by pro & person'=>array_replace_recursive($baseData, array(
-                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-                                            'expectedMessages'=>$usedMsg)),
+            'used by pro & person'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                        'expectedMessages'=>$usedMsg)),
 
             'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar',
-                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-                                            'expectedMessages'=>$usedMsg)),
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                    'expectedMessages'=>$usedMsg)),
 
             'person request : used by person'=>array_replace_recursive($baseData, array(
-                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-                                            'expectedMessages'=>$usedMsg)),
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                    'expectedMessages'=>$usedMsg)),
 
             'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar',
-                                            'newPhone'=>array('phoneNumber'=>'+33644332211'),
-                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+                    'newPhone'=>array('phoneNumber'=>'+33644332211'),
+                    'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                    )),
 
             'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso',
-                                            'newPhone'=>array('phoneNumber'=>'+33611223344'),
-                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+                    'newPhone'=>array('phoneNumber'=>'+33611223344'),
+                    'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                    )),
 
-        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi',
-                                                              'isValidCode'=>false, 'code'=>'2222',
-                                                              'expectedMessages'=>'compte a été bloqué')),
+            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi',
+                    'isValidCode'=>false, 'code'=>'2222',
+                    'expectedMessages'=>'compte a été bloqué')),
 
             'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi',
-                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+                    'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                )),
 
             'user with no phone number'=>array_replace($baseData, array('login'=>'noire_aliss',
-                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                          )),
+                    'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                )),
 
         );
 
@@ -322,10 +320,15 @@ class UserControllerTest extends BaseControllerTest
                         $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
 
                         $this->assertEquals($phoneBefore->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
-                        $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
-                        $crawler = $this->client->followRedirect();
-                        $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
+                        if($isPhoneNumberEdit){
+                            $this->assertContains('Règles d\'utilisation',$this->client->getResponse()->getContent());
+                        }else{
+                            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
+                            $crawler = $this->client->followRedirect();
+                            $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
+                        }
+                        
                         //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                         $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms', 'ACTIVE');
                         $this->assertTrue($accessClientVO != NULL);
@@ -479,13 +482,13 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-        //'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-        //                                                        'isValidCode'=>false, 'code'=>'2222',
-        //                                                        'expectedMessages'=>'compte a été bloqué')),
+        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'isValidCode'=>false, 'code'=>'2222',
+                                                                'expectedMessages'=>'compte a été bloqué')),
 
-        //    'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-        //                                                        'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-        //                                                    )),
+            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
 
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
@@ -621,7 +624,7 @@ class UserControllerTest extends BaseControllerTest
             'no special character'        => array_replace($baseData, array('new'=>'1testPwd2' ,'confirm'=>'1testPwd2',
                                                                   'expectValid'=>false, 'expectedMessage'=>'caractère spécial')),
 
-            'new = current'               => array_replace($baseData, array('expectValid'=>false, 'expectedMessage'=>'déjà utilisé')),          
+            'new = current'               => $baseData,          
             //we make it invalid because of cyclos bug
             'valid <'                  => array_replace($baseData, array('new'=>'i<3cairn','confirm'=>'i<3cairn')),          
 
@@ -634,6 +637,9 @@ class UserControllerTest extends BaseControllerTest
             'valid >'                  => array_replace($baseData, array('new'=>'i>3cairn','confirm'=>'i>3cairn')),          
 
             'invalid §'                  => array_replace($baseData, array('new'=>'§bcdefgh','confirm'=>'§bcdefgh',
+                                                                   'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
+
+            'invalid é'                  => array_replace($baseData, array('new'=>'ébcdefgh','confirm'=>'ébcdefgh',
                                                                    'expectValid'=>false,'expectedMessage'=>'pas autorisés')),          
 
             'invalid ù'                  => array_replace($baseData, array('new'=>'ùbcdefgh','confirm'=>'ùbcdefgh',
@@ -691,7 +697,19 @@ class UserControllerTest extends BaseControllerTest
             // If legit, we just assert content of the email, because this controller action if used from FOS
             // therefore, it does not need to be tested
             if($isLegit){
-                ;
+                $password = '@bcdefgh';
+                $crawler = $this->client->request('GET','reset/'.$currentUser->getConfirmationToken());
+
+                $form = $crawler->selectButton('Modifier le mot de passe')->form();
+                $form['fos_user_resetting_form[plainPassword][first]']->setValue($password);
+                $form['fos_user_resetting_form[plainPassword][second]']->setValue($password);
+
+                $crawler = $this->client->submit($form);
+
+                $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
+
+                $crawler = $this->login($currentUser->getUsername(), $password);
+                $this->assertSame(1,$crawler->filter('html:contains("Espace")')->count());
             }else{
                 if($isEmailSent){
                     $this->assertUserIsDisabled($currentUser, true);
@@ -709,11 +727,14 @@ class UserControllerTest extends BaseControllerTest
 
     }
 
+    //$identifier,$isCorrectUsername, $isLegit, $isEmailSent, $expectedMessage
     public function provideDataForResetPassword()
     {
         return array(
+            'user not found'=>array('xxx',false,false,false,''),
             'user is disabled'=>array('tout_1_fromage',true,false,false,'est bloqué'),
-            'user has never log in'=>array('NaturaVie',true,false,true,'Vous ne pouvez pas changer'),
+            'user has never log in'=>array('NaturaVie',true,true,true,''),
+            'valid reset password'=>array('denis_ketels',true,true,true,''),
         );
     }
 
@@ -751,7 +772,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('a[href*="user/remove/'.$targetUser->getUsername().'"]')->count());
 //            $this->assertTrue($crawler->filter('a[href*="user/sms-data/edit/')->count() >= 1);
 //            $this->assertTrue($crawler->filter('a[href*="user/sms-data/delete/')->count() >= 1);
-            $this->assertSame(1,$crawler->filter('a[href*="user/iddoc/download'.$targetUser->getID().'"]')->count());
+            $this->assertSame(1,$crawler->filter('a[href*="user/iddoc/download/'.$targetUser->getIdentityDocument()->getID().'"]')->count());
 
             if($currentUser === $targetUser){//adherent watching his own profile --> is enabled if so
                 $this->assertSame(1,$crawler->filter('a[href*="user/block/'.$targetUser->getUsername().'"]')->count());
@@ -779,6 +800,12 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertSame(2,$crawler->filter('a[href*="card/order"]')->count());
                 }
 
+                if($targetUser->getSmsData()){
+                    $this->assertTrue($crawler->filter('a[href*="user/smsdata"]')->count() == 1);
+                }else{
+                    $this->assertTrue($crawler->filter('a[href*="user/smsdata"]')->count() == 0);
+                }
+                
             }else{//admin, as referent, watching adherent's profile
 
                 if($targetUser->isEnabled()){
@@ -790,17 +817,22 @@ class UserControllerTest extends BaseControllerTest
                 }
 
                 $this->assertSame(0,$crawler->filter('a[href*="profile/change-password"]')->count());
-                $this->assertSame(0,$crawler->filter('a[href*="profile/edit"]')->count());
                 $this->assertTrue($crawler->filter('a[href*="user/phone/add"]')->count() == 0);
 
-//                $this->assertTrue($crawler->filter('a[href*="user/sms-data/edit/')->count() >= 1);
-//                $this->assertTrue($crawler->filter('a[href*="user/sms-data/delete/')->count() >= 1);
+                //TODO  SHOUD BE 1
+                if($targetUser->getSmsData()){
+                    $this->assertTrue($crawler->filter('a[href*="user/smsdata"]')->count() == 1);
+                }else{
+                    $this->assertTrue($crawler->filter('a[href*="user/smsdata"]')->count() == 0);
+                }
 
                 if($targetUser->hasRole('ROLE_PRO')){
                     if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                        $this->assertSame(1,$crawler->filter('a[href*="admin/profile/edit"]')->count());
                         $this->assertSame(1,$crawler->filter('html:contains("groupe local référent")')->count());
                         $this->assertSame(1,$crawler->filter('a[href*="user/referents/assign/'.$targetUser->getUsername().'"]')->count());
                     }else{//is GL --> cannot assign referent
+                        $this->assertSame(0,$crawler->filter('a[href*="admin/profile/edit"]')->count());
                         $this->assertSame(0,$crawler->filter('html:contains("groupe local référent")')->count());
                         $this->assertSame(0,$crawler->filter('a[href*="user/referents/assign"]')->count());
                     }
@@ -837,7 +869,7 @@ class UserControllerTest extends BaseControllerTest
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$referent));
         $targetUser  = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $crawler = $this->client->request('GET','user/id-document/download/'.$targetUser->getID());
+        $crawler = $this->client->request('GET','user/iddoc/download/'.$targetUser->getIdentityDocument()->getID());
 
         if(! $isLegit){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -974,7 +1006,7 @@ class UserControllerTest extends BaseControllerTest
         return array(
             'non null account' => array($adminUsername,'atelier_eltilo',true,false,false),
             'valid admin removal, user involved in operations' => array($adminUsername,'trankilou',true,true,false),
-            'valid admin removal, user has a mandate assigned' => array($adminUsername,'montagne_arts',true,true,false),
+            'valid admin removal, user has a mandate not overdued assigned' => array($adminUsername,'montagne_arts',true,true,false),
             'not referent' => array($adminUsername,'NaturaVie',false,true,false),
             'user auto-removal' => array('lib_colibri','lib_colibri',true,true,true),
         );
@@ -985,35 +1017,35 @@ class UserControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForRemovePendingUsers
      */
-    public function testRemovePendingUsers($login, $removedUsers, $notRemovedUsers )
-    {
-        $crawler = $this->login($login,'@@bbccdd');
-
-        $this->client->enableProfiler();
-
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
-
-        //sensible operation
-        $url = '/user/remove-pending';
-        $crawler = $this->client->request('GET',$url);
-        $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
-
-        $crawler = $this->client->followRedirect();
-        $crawler = $this->inputCardKey($crawler, '1111');
-        $crawler = $this->client->followRedirect();
-
-        $form = $crawler->selectButton('confirmation_save')->form();
-        $crawler =  $this->client->submit($form);
-
-        foreach($removedUsers as $username){
-            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
-            $this->assertTrue($user == NULL);
-        }
-        foreach($notRemovedUsers as $username){
-            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
-            $this->assertTrue($user != NULL);
-        }
-
+//    public function testRemovePendingUsers($login, $removedUsers, $notRemovedUsers )
+//    {
+//        $crawler = $this->login($login,'@@bbccdd');
+//
+//        $this->client->enableProfiler();
+//
+//        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+//
+//        //sensible operation
+//        $url = '/user/remove-pending';
+//        $crawler = $this->client->request('GET',$url);
+//        $this->assertTrue($this->client->getResponse()->isRedirect('/security/card/?url='.$url));
+//
+//        $crawler = $this->client->followRedirect();
+//        $crawler = $this->inputCardKey($crawler, '1111');
+//        $crawler = $this->client->followRedirect();
+//
+//        $form = $crawler->selectButton('confirmation_save')->form();
+//        $crawler =  $this->client->submit($form);
+//
+//        foreach($removedUsers as $username){
+//            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+//            $this->assertTrue($user == NULL);
+//        }
+//        foreach($notRemovedUsers as $username){
+//            $user = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$username));
+//            $this->assertTrue($user != NULL);
+//        }
+//
 //        $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
 //        $this->assertTrue($mailCollector->getMessageCount() >= 1);
 //        $message = $mailCollector->getMessages()[0];
@@ -1024,13 +1056,16 @@ class UserControllerTest extends BaseControllerTest
 //
 //        $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
 //        $this->assertSame($targetUser->getEmail(), key($message->getTo()));
+//
+//    }
+//
+//    public function provideDataForRemovePendingUsers()
+//    {
+//        return array(
+//            'result'=> array($this->testAdmin, array('Biocoop'), array('Alpes_EcoTour') )
+//        );
+//    }
 
-    }
 
-    public function provideDataForRemovePendingUsers()
-    {
-        return array(
-            'result'=> array($this->testAdmin, array('Biocoop'), array('Alpes_EcoTour') )
-        );
-    }
+
 }

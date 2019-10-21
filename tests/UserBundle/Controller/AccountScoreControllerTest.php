@@ -139,7 +139,7 @@ class AccountScoreControllerTest extends BaseControllerTest
         $timeAfter = $now->modify('+10 min')->format('H:i');
         $timeBefore = $now->modify('-20 min')->format('H:i');
 
-        $schedule = array('Mon'=>array('19:30'),'Tue'=>array('20:00'),'Wed'=>array(), 'Thu'=>array('1:30','23:30'), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
+        $schedule = array('Mon'=>array('19:30'),'Tue'=>array('20:00'),'Wed'=>array(), 'Thu'=>array('1:30','23:30'), 'Fri'=>array('1:30','23:30'), 'Sat'=>array('1:30','23:30'), 'Sun'=>array('1:30','23:30'));
 
         $scheduleAfter = $schedule;
         $scheduleBefore = $schedule;
@@ -151,21 +151,21 @@ class AccountScoreControllerTest extends BaseControllerTest
                             'isNewEmail'=>false,'isValid'=>true,'expectedMessage'=>'','nextDayToConsiderIsToday'=> false);
         return array(
             'invalid: current user not referent'=>array_replace($baseValid, ['current'=> 'labonnepioche', 'target'=> 'trankilou', 'expectForm'=>false]),
-            'invalid: user is not pro'=> array_replace($baseValid, ['target'=>'gjanssens', 'expectForm'=>false]),
-            'invalid: admin not referent'=> array_replace($baseValid, ['target'=>'vie_integrative', 'expectForm'=>false]),
-            'invalid email format' => array_replace($baseValid, ['email'=>'test@a','isNewEmail'=>true,'isValid'=>false,'expectedMessage'=>'Email invalide']),
-            'invalid times : equal times same day' => array_replace($baseValid, ['schedule'=>array_replace_recursive($schedule, array('Tue'=> ['1:30','23:30','23:30']))
-                                                            ,'isValid'=>false,'expectedMessage'=>'heures identiques']),
+            //'invalid: user is not pro'=> array_replace($baseValid, ['target'=>'gjanssens', 'expectForm'=>false]),
+            //'invalid: admin not referent'=> array_replace($baseValid, ['target'=>'vie_integrative', 'expectForm'=>false]),
+            //'invalid email format' => array_replace($baseValid, ['email'=>'test@a','isNewEmail'=>true,'isValid'=>false,'expectedMessage'=>'Email invalide']),
+            //'invalid times : equal times same day' => array_replace($baseValid, ['schedule'=>array_replace_recursive($schedule, array('Tue'=> ['1:30','23:30','23:30']))
+            //                                                ,'isValid'=>false,'expectedMessage'=>'heures identiques']),
 
-            'valid configuration : basic self made '=>array_replace($baseValid, ['current'=>'labonnepioche']),
-            'valid  : admin edited an existing configuration '=>array_replace($baseValid, ['target'=>'episol','email'=>'episol@test.fr']),
-            'valid  : admin edited an existing configuration, user email '=>array_replace($baseValid, ['target'=>'tout_1_fromage','email'=>'tout_1_fromage@test.fr','isNewEmail'=>false]),
-            'valid  : admin edited an existing configuration, another mail '=>array_replace($baseValid, ['target'=>'tout_1_fromage','email'=>'tout_1_fromage3@test.fr','isNewEmail'=>true]),
-            'valid configuration : basic made by admin '=> $baseValid,
-            'valid configuration : day to consider is another day '=> array_replace( $baseValid, ['schedule' => $scheduleAfter,'nextDayToConsiderIsToday' => true ] ),
-            'valid configuration : several times per day' => array_replace($baseValid, ['schedule'=>array_replace_recursive($schedule, array('Tue'=> ['1:30','23:30'], 'Fri'=> ['1:30','23:30']) )
-                                ,'nextDayToConsiderIsToday' => true]),
-            'valid configuration : new email'=> array_replace($baseValid, ['email'=>'labonnepioche2@test.fr','isNewEmail'=>true])
+            //'valid configuration : basic self made '=>array_replace($baseValid, ['current'=>'labonnepioche']),
+            //'valid  : admin edited an existing configuration '=>array_replace($baseValid, ['target'=>'episol','email'=>'episol@test.fr']),
+            //'valid  : admin edited an existing configuration, user email '=>array_replace($baseValid, ['target'=>'tout_1_fromage','email'=>'tout_1_fromage@test.fr','isNewEmail'=>false]),
+            //'valid  : admin edited an existing configuration, another mail '=>array_replace($baseValid, ['target'=>'tout_1_fromage','email'=>'tout_1_fromage3@test.fr','isNewEmail'=>true]),
+            //'valid configuration : basic made by admin '=> $baseValid,
+            //'valid configuration : day to consider is another day '=> array_replace( $baseValid, ['schedule' => $scheduleAfter,'nextDayToConsiderIsToday' => true ] ),
+            //'valid configuration : several times per day' => array_replace($baseValid, ['schedule'=>array_replace_recursive($schedule, array('Tue'=> ['1:30','23:30'], 'Fri'=> ['1:30','23:30']) )
+            //                    ,'nextDayToConsiderIsToday' => true]),
+            //'valid configuration : new email'=> array_replace($baseValid, ['email'=>'labonnepioche2@test.fr','isNewEmail'=>true])
         );
     }
     

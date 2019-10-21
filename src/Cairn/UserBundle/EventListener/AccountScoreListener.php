@@ -38,19 +38,24 @@ class AccountScoreListener
     public function preUpdate(AccountScore $accountScore, PreUpdateEventArgs $eventArgs)
     {
         if ($accountScore instanceof AccountScore) {
-            if ($eventArgs->hasChangedField('email') && $eventArgs->getNewValue('email') != $accountScore->getUser()->getEmail()) {
+            if ($eventArgs->hasChangedField('email') ) {
+                if( $eventArgs->getNewValue('email') != $accountScore->getUser()->getEmail()){
+                    $confirmationToken = $this->securityService->generateUrlToken();
 
-                $confirmationToken = $this->securityService->generateUrlToken();
+                    $accountScore->setConfirmationToken($confirmationToken);
 
-                $accountScore->setConfirmationToken($confirmationToken);
+                    $url = $this->router->generate('cairn_user_accountscore_confirm', array('token' => $accountScore->getConfirmationToken() ), UrlGeneratorInterface::ABSOLUTE_URL);
+                    $body = $this->templating->render('CairnUserBundle:Emails:confirm_account_score.html.twig', array(
+                        'accountScore' => $accountScore,
+                        'confirmationUrl' => $url,
+                    ));
 
-                $url = $this->router->generate('cairn_user_accountscore_confirm', array('token' => $accountScore->getConfirmationToken() ), UrlGeneratorInterface::ABSOLUTE_URL);
-                $body = $this->templating->render('CairnUserBundle:Emails:confirm_account_score.html.twig', array(
-                    'accountScore' => $accountScore,
-                    'confirmationUrl' => $url,
-                ));
+                    $this->messageNotificator->notifyByEmail('Adresse mail pointage', $this->messageNotificator->getNoReplyEmail(),$eventArgs->getNewValue('email'), $body);
 
-                $this->messageNotificator->notifyByEmail('Adresse mail pointage', $this->messageNotificator->getNoReplyEmail(),$eventArgs->getNewValue('email'), $body);
+                }else{
+                    $accountScore->setConfirmationToken(null);
+                }
+
             }
         }
 

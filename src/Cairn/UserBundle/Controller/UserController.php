@@ -337,6 +337,7 @@ class UserController extends Controller
 
             $session->remove('activationCode');
             $session->remove('phone');
+            $session->remove('is_first_connection');
 
             return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
 
@@ -1056,7 +1057,7 @@ class UserController extends Controller
             $mb = $mandateRepo->createQueryBuilder('m');
             $mandateRepo->whereContractor($mb, $user);
 
-            $status = array(Mandate::UP_TO_DATE, Mandate::OVERDUE, Mandate::SCHEDULED);
+            $status = array(Mandate::OVERDUE);
             $mandateRepo->whereStatus($mb, $status);
 
             $mandates = $mb->getQuery()->getResult();
