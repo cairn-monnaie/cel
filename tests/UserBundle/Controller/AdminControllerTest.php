@@ -244,6 +244,10 @@ class AdminControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/operation/sync');
 
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler, '1111');
+        $crawler = $this->client->followRedirect();
+
         if(! $isExpectedForm){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }else{

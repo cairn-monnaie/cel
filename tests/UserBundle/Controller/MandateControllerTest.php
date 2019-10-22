@@ -54,9 +54,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/add');
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -148,9 +148,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/edit/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(!$expectForm){
             if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
@@ -249,9 +249,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/cancel/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -310,9 +310,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/honour/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(!$expectForm){
             if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
