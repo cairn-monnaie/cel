@@ -64,16 +64,6 @@ class SecurityListener
             return;
         }
 
-        //if(!$user->getLastLogin() ){
-        //    $session->getFlashBag()->add('error','Vous ne pouvez pas changer de mot de passe car aucune connexion n\'a été enregistrée. Votre compte a été bloqué car il peut s\'agir d\'une tentative d\'usurpation .');
-        //    $logoutUrl = $router->generate('fos_user_security_logout');
-        //    $event->setResponse(new RedirectResponse($logoutUrl));
-
-        //    $this->container->get('cairn_user.access_platform')->disable(array($user),'password_reset_first_login');
-        //    $this->container->get('doctrine.orm.entity_manager')->flush();
-
-        //    return;
-        //}
     }
 
     public function changeCyclosPassword($old, $new, $user)
@@ -124,7 +114,9 @@ class SecurityListener
 
         $newPassword = $form->get('plainPassword')->getData();
 
-        $changed = $this->changeCyclosPassword(NULL, $newPassword, $user);
+        if(! $user->getCyclosToken()){
+            $changed = $this->changeCyclosPassword(NULL, $newPassword, $user);
+        }
         $this->createAccessClient($user,$user->getUsername(),$newPassword);
 
 
@@ -147,21 +139,27 @@ class SecurityListener
         $form = $event->getForm();
         $user = $form->getData();
 
-        $router = $this->container->get('router');          
+        $templating = $this->container->get('templating');          
+        $router = $this->container->get('router');
+
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-
-        if($user->isFirstLogin()){
-            $user->setFirstLogin(false);
-        }
-
         if($this->container->get('cairn_user.api')->isApiCall()){
+            if($user->isFirstLogin()){
+                $user->setFirstLogin(false);
+            }
+
             $response = new Response('Change password : ok !');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
             $event->setResponse($response);
         }else{
-            $event->setResponse(new RedirectResponse($profileUrl));
+             if($user->isFirstLogin()){
+                $user->setFirstLogin(false);
+                $event->setResponse($templating->renderResponse('CairnUserBundle:Default:howto_sms_page.html.twig'));
+             }else{
+                $event->setResponse(new RedirectResponse($profileUrl));
+             }
         }
     }
 
@@ -253,6 +251,9 @@ class SecurityListener
 
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if($currentUser->isFirstLogin() && ($event->getRequest()->get('_route') != 'fos_user_change_password')){
+                $session = $event->getRequest()->getSession();
+
+                $session->set('is_first_connection',true);
                 $editPwdUrl = $router->generate('fos_user_change_password');
                 $event->setResponse(new RedirectResponse($editPwdUrl));
             }
@@ -320,6 +321,9 @@ class SecurityListener
                 }
             }
             if(($currentUser->isFirstLogin() && $route == 'fos_user_change_password')){
+                $isExceptionCase = true;
+            }
+            if( ($route == 'cairn_user_users_phone_add') &&  $request->getSession()->get('is_first_connection')){
                 $isExceptionCase = true;
             }
 

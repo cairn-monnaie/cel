@@ -261,7 +261,7 @@ class BankingControllerTest extends BaseControllerTest
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($debitorUser->getEmail(), key($message->getTo()));
 
-                $$message = $mailCollector->getMessages()[1];
+                $message = $mailCollector->getMessages()[1];
 
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('Reconversion', $message->getSubject());

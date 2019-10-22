@@ -353,7 +353,12 @@ cairn_user_card_home:
     path:     card/home/{username}.{_format}
     defaults: { _controller: CairnUserBundle:Card:cardOperations, _format: html }
     requirements:
-        #        id: \d+
+        _format: html|json
+
+cairn_user_card_presentation:
+    path:     card/presentation.{_format}
+    defaults: { _controller: CairnUserBundle:Card:cardPresentation, _format: html }
+    requirements:
         _format: html|json
 
 cairn_user_card_order:
@@ -455,10 +460,6 @@ cairn_user_banking_transaction_to:
     requirements:
         frequency: unique #|recurring
         _format: html|json
-
-cairn_user_banking_reconversion:
-    path:     banking/reconversion.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:reconversion, _format: html}
 
 cairn_user_banking_transaction_request:
     path:     banking/transaction/request/{to}-{frequency}

@@ -80,6 +80,7 @@ class CreateInstallAdminCommandTest extends KernelTestCase
             $this->assertTrue($admin->isFirstLogin());
 
             //check that, after first login, user is redirected to password change
+            $crawler =  $client->followRedirect(); //login_check
             $this->assertTrue($client->getResponse()->isRedirect('/profile/change-password'));
             $crawler =  $client->followRedirect();
 

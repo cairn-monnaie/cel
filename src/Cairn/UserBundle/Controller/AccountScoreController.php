@@ -96,19 +96,6 @@ class AccountScoreController extends Controller
             
             $accountScore->setSchedule($schedule);
 
-            // if today schedule has changed, we must simulate that previous emails requested today have been sent
-            // to keep consistent data
-            $cmpt = 0;
-            $now = new \Datetime();
-            $nowTime = $now->format('H:i');
-            $nowDay = $now->format('D');
-
-            $nbTotalTimes = count( $schedule[$nowDay] );
-            while ( ($cmpt < $nbTotalTimes) && ($schedule[$nowDay][$cmpt] < $nowTime) ){
-                $cmpt++;
-            }
-
-            $accountScore->setNbSentToday($cmpt);
             $em->persist($accountScore);
             $em->flush();
 
@@ -132,7 +119,7 @@ class AccountScoreController extends Controller
             return 0;
         }
 
-        return ($a < $b) ? -1 : 1;
+        return (strtotime($a) < strtotime($b) ) ? -1 : 1;
         
     }
 
@@ -149,6 +136,9 @@ class AccountScoreController extends Controller
 
         if($accountScore){
             $accountScore->setConfirmationToken(null);
+
+            //little hack to update schedule and considered date
+            $accountScore->setSchedule($accountScore->getSchedule());
             $em->flush();
             $session->getFlashBag()->add('success','Votre adresse électronique a été confirmée avec succès !');
             return $this->redirectToRoute('cairn_user_accountscore_view',array('id'=>$accountScore->getID())); 

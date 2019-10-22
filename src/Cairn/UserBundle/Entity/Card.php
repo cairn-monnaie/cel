@@ -75,7 +75,7 @@ class Card
     private $code;
 
 
-    public function __construct($rows,$cols,$salt, $code, $expirationDelay)
+    public function __construct($rows,$cols,$salt, $code, $expirationDelay = NULL)
     {
         $this->users = new ArrayCollection();
 

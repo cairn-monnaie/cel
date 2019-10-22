@@ -121,32 +121,18 @@ class Commands
             $this->em->remove($transaction);
         }
 
-//        $sb = $smsRepo->createQueryBuilder('s');                 
-//        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
-//        $expiredSms = $sb->getQuery()->getResult();
-//
-//        foreach($expiredSms as $sms){
-//            $this->em->remove($sms);
-//        }
-//
-//        $sb = $smsRepo->createQueryBuilder('s');                 
-//        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
-//        $expiredSms = $sb->getQuery()->getResult();
-//
-//        foreach($expiredSms as $sms){
-//            $this->em->remove($sms);
-//        }
 
         $this->em->flush();
     }
 
-    public function sendAccountScores()
+    public function sendAccountScores($username = NULL)
     {
         $now = new \Datetime();
         $dayNow = $now->format('D');
         $timeNow =  $now->format('H:i');
         $accountScoreRepo = $this->em->getRepository('CairnUserBundle:AccountScore');
         $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
         $messageNotificator = $this->container->get('cairn_user.message_notificator');
 
@@ -156,6 +142,21 @@ class Commands
         $ab->andWhere('a.confirmationToken is NULL')
             ->andWhere('a.consideredDay = :day')
             ->setParameter('day', $dayNow );
+
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+
+            if(! $user){
+                return 'User not found';
+            }
+
+            if(! $user->hasRole('ROLE_PRO')){
+                return 'User must be a pro';
+            }
+            $ab->andWhere('a.user = :user')
+                ->setParameter('user', $user);
+        }
+
         $accountScores = $ab->getQuery()->getResult();
 
         foreach($accountScores as $accountScore){
@@ -180,7 +181,7 @@ class Commands
                         $clone = clone $now;
                         $dayBefore = $clone->modify('-1 day');
 
-                        if($dateToSend->format('H') < '6'){ // if  evening activity, must deal with day before
+                        if( strtotime($dateToSend->format('H')) < strtotime('6:00') ){ // if  evening activity, must deal with day before
                             if($endYesterday = end($accountScore->getSchedule()[$dayBefore->format('D')]) ){
                                 $begin = $dayBefore->modify($endYesterday)->modify('+1 hour');
                             }else{
@@ -296,7 +297,7 @@ class Commands
         $accountManager = $this->container->get('cairn_user.account_manager');
         
         $status = $mandate->getStatus();
-        if($status != Mandate::SCHEDULED && $status != Mandate::UP_TO_DATE){
+        if( !($status == Mandate::SCHEDULED || $status == Mandate::UP_TO_DATE || $status == Mandate::OVERDUE) ){
             return;
         }
 
@@ -307,10 +308,15 @@ class Commands
                 $mandate->setStatus(Mandate::OVERDUE);
             }
 
-        }else{ //UP_TO_DATE
+        }elseif($status == Mandate::UP_TO_DATE){ //UP_TO_DATE
             if(! $accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::OVERDUE);
             }
+        }else{  //OVERDUE
+            if($accountManager->isUpToDateMandate($mandate)){
+                $mandate->setStatus(Mandate::UP_TO_DATE);
+            }
+
         }
     }
 
@@ -338,7 +344,7 @@ class Commands
             }
 
             $mb = $mandateRepo->createQueryBuilder('m');
-            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED,Mandate::OVERDUE));
             $mandates = $mb->getQuery()->getResult();
 
             if(! $mandates){
@@ -351,7 +357,7 @@ class Commands
                     
         }else{
             $mb = $mandateRepo->createQueryBuilder('m');
-            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED,Mandate::OVERDUE));
             $mandates = $mb->getQuery()->getResult();
 
             foreach($mandates as $mandate){

@@ -397,6 +397,7 @@ class UserController extends Controller
 
             $session->remove('activationCode');
             $session->remove('phone');
+            $session->remove('is_first_connection');
 
             if( $apiService->isRemoteCall()){
                 $res = $this->get('cairn_user.api')->serialize($phone);
@@ -1164,7 +1165,7 @@ class UserController extends Controller
             $mb = $mandateRepo->createQueryBuilder('m');
             $mandateRepo->whereContractor($mb, $user);
 
-            $status = array(Mandate::UP_TO_DATE, Mandate::OVERDUE, Mandate::SCHEDULED);
+            $status = array(Mandate::OVERDUE);
             $mandateRepo->whereStatus($mb, $status);
 
             $mandates = $mb->getQuery()->getResult();

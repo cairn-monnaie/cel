@@ -330,18 +330,18 @@ class MessageNotificator
             $email = 'whoknows@test.com';
             $this->notifyByEmail('SMS',$this->getNoReplyEmail(), $email, $content);
         }
-//        var_dump($err);
-//        var_dump($json);
-        //TODO : define what a good result is. For now, we say code = 200
-//        if($code != 200){
-//            $subject = 'Service SMS indisponible';
-//            $body = 'Erreur lors de l envoi SMS.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
-//            $from = $this->getNoReplyEmail();
-//            $to = $this->getMaintenanceEmail();
-//
-//            $this->notifyByEmail($subject, $from, $to, $body);
-//            return;
-//        }
+      //  var_dump($err);
+      //  var_dump($json);
+      //TODO : define what a good result is. For now, we say code = 200
+        //if($code != 200){
+        //    $subject = 'Service SMS indisponible';
+        //    $body = 'Erreur lors de l envoi SMS.'."\n".'Le SMS de contenu '.$content.' n\'a pu être envoyé au numéro '.$phoneNumber;
+        //    $from = $this->getNoReplyEmail();
+        //    $to = $this->getMaintenanceEmail();
+
+        //    $this->notifyByEmail($subject, $from, $to, $body);
+        //    return;
+        //}
         $sms = new Sms($phoneNumber,$content,Sms::STATE_SENT);
 
         return $sms;
@@ -382,12 +382,17 @@ class MessageNotificator
      *@param string $to email adress of the receiver
      *@param text $body HTML text content
      */
-    public function notifyByEmail($subject,$from,$to,$body)
+    public function notifyByEmail($subject,$from,$to,$body, $attachment = NULL)
     {
         $message = (new \Swift_Message($subject))
             ->setFrom($from)
             ->setTo($to)
             ->setBody($body,'text/html');
+
+        if($attachment){
+            $message->attach($attachment);
+        }
+
         $this->mailer->send($message);
     }
 

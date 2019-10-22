@@ -140,6 +140,11 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:card_operation.html.twig',array('user'=>$user));
     }
 
+    public function cardPresentationAction()
+    {
+        return $this->render('CairnUserBundle:Default:howto_card.html.twig');
+    }
+    
     /**
      * An user with no card can notify the association to receive a security card
      * 
@@ -187,8 +192,15 @@ class CardController extends Controller
         $session->getFlashBag()->add('info','Vous avez reçu un mail récapitulatif de votre demande ');
 
         $session->set('orderCard',true);
-        return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
 
+        $referer = $request->headers->get('referer');
+
+        if(! $referer){
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
+        }else{
+            return new RedirectResponse($referer);
+        }
+        
     }
 
     /**

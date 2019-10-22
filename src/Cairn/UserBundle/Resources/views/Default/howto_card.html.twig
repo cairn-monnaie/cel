@@ -1,0 +1,24 @@
+{# src/Cairn/UserBundle/Resources/views/Default/howto_card.html.twig #}
+
+{% extends "CairnUserBundle::layout.html.twig" %}
+
+{% block body %}
+    {{ parent()  }}
+
+    <h1> Règles d'utilisation </h1>
+    <h2> La carte de sécurité </h2>
+
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <div class="row">
+           {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':app.user.username})) }}
+        </div>
+        <div class="row">
+            {% if app.session.get('is_first_connection') == true %}
+                  <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_users_phone_add') }}"><i class="material-icons right">arrow_forward</i>Continuer</a>
+           {% else %}
+               <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>
+           {% endif %}
+        </div>
+    {% endif %}
+
+{% endblock %}

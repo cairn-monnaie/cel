@@ -139,7 +139,7 @@ class AccountScoreControllerTest extends BaseControllerTest
         $timeAfter = $now->modify('+10 min')->format('H:i');
         $timeBefore = $now->modify('-20 min')->format('H:i');
 
-        $schedule = array('Mon'=>array('19:30'),'Tue'=>array('20:00'),'Wed'=>array(), 'Thu'=>array('1:30','23:30'), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
+        $schedule = array('Mon'=>array('19:30'),'Tue'=>array('20:00'),'Wed'=>array(), 'Thu'=>array('1:30','23:30'), 'Fri'=>array('1:30','23:30'), 'Sat'=>array('1:30','23:30'), 'Sun'=>array('1:30','23:30'));
 
         $scheduleAfter = $schedule;
         $scheduleBefore = $schedule;

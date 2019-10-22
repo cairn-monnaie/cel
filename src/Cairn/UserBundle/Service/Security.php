@@ -265,17 +265,17 @@ class Security
         if(! $operation->isSmsPayment()){ return false; }
 
         $debitor = $operation->getDebitor();
-        //criteria 1 : second payment to the same pro in the same day
-        $ob = $this->operationRepo->createQueryBuilder('o');
-        $this->operationRepo
-            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$debitor)
-            ->whereCreditor($ob,$operation->getCreditor())
-            ->whereCurrentDay($ob);
+    //    //criteria 1 : second payment to the same pro in the same day
+    //    $ob = $this->operationRepo->createQueryBuilder('o');
+    //    $this->operationRepo
+    //        ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+    //        ->whereDebitor($ob,$debitor)
+    //        ->whereCreditor($ob,$operation->getCreditor())
+    //        ->whereCurrentDay($ob);
 
-        $operations = $ob->getQuery()->getResult();
+    //    $operations = $ob->getQuery()->getResult();
 
-        if(count($operations) > 0){ return true; }
+    //    if(count($operations) > 0){ return true; }
 
         //criteria 2 : threshold of amount spent in one day
         $ob = $this->operationRepo->createQueryBuilder('o');

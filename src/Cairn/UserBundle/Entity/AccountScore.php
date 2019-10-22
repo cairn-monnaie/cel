@@ -180,6 +180,18 @@ class AccountScore
     {
         $this->schedule = $schedule;
 
+        // if today schedule has changed, we must simulate that previous emails requested today have been sent
+        // to keep consistent data
+        $cmpt = 0;
+        $nowTime = date('H:i');
+        $nowDay = date('D');
+
+        $nbTotalTimes = count( $schedule[$nowDay] );
+        while ( ($cmpt < $nbTotalTimes) && (strtotime($schedule[$nowDay][$cmpt]) < strtotime($nowTime) ) ){
+            $cmpt++;
+        }
+
+        $this->setNbSentToday($cmpt);
         return $this;
     }
 

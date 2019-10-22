@@ -320,12 +320,17 @@ class SmsController extends Controller
 
         
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
-            if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
-               return;
+            if($parsedSms->isSmsIdentifier){
+                if( !$debitorUser->hasRole('ROLE_PRO') && !$isProAndPersonPhoneNumber){
+                    return;       
+                }else{
+                    $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PRO')) ? $debitorUsers[0] : $debitorUsers[1];
+                }
             }
+
             $this->setUpSmsValidation($em, $debitorUser, $content, $userPhone);
             $em->flush();
-            return;
+            return true;
         }elseif($parsedSms->isOperationValidation){
             $smsPending = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
                                                                           'state'=>Sms::STATE_WAITING_KEY));
@@ -378,32 +383,39 @@ class SmsController extends Controller
 
             //get initial sms request
             $parsedInitialSms = $this->parseSms($smsPending->getContent());
+
             if($parsedInitialSms->isSmsIdentifier){
-                if($debitorUser->hasRole('ROLE_PRO')){
-                    $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userPhone->getIdentifier(), $smsPending);
-                    $this->persistSMS($smsSent);
-                    return true;
-                }
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userPhone->getIdentifier(), $smsPending);
+                $this->persistSMS($smsSent);
+
+                //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                $smsPending->setState(Sms::STATE_PROCESSED);
+
+                $em->flush();
+                return true;
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
                 $res = $this->executePayment($debitorUser, $parsedInitialSms, false, $userPhone);    
                 $em->flush();
 
-                if($res){return true;}else{return NULL;}
+                if($res){
+                    //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                    $smsPending->setState(Sms::STATE_PROCESSED);
+                    return true;
+                }else{return NULL;}
 
             }else{//initial sms was about account balance
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
 
                 $this->persistSMS($smsBalance);
+                //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                $smsPending->setState(Sms::STATE_PROCESSED);
+
                 $em->flush();
                 return true;
             }
           
-            //once pending request has been executed, the corresponding SMS can be set to PROCESSED
-            $smsPending->setState(Sms::STATE_PROCESSED);
-            $em->flush();
-            return true;
         }
 
         //last option : sms request is a payment to be validated
