@@ -15,7 +15,6 @@
         <div class="row">
             {% if app.session.get('is_first_connection') == true %}
                   <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_users_phone_add') }}"><i class="material-icons right">arrow_forward</i>Continuer</a>
-                  <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>
            {% else %}
                <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>
            {% endif %}
