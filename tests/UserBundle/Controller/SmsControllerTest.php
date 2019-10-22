@@ -234,25 +234,25 @@ class SmsControllerTest extends BaseControllerTest
             'payment : too low amount'=>array('+33612345678','PAYER0.001MALTOBAR',$originator,false,'1111',true,array('trop faible')),
             'payment : valid, no code'=>array('+33612345678','PAYER15MALTOBAR',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : pro to pro,valid, no code'=>array('+33611223344','PAYER15NICOPROD',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
-        'payment : valid + code'=>array('+33612345678','PAYER100MALTOBAR',$originator,true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
+            'payment : valid + code'=>array('+33612345678','PAYER100MALTOBAR',$originator,true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
             'payment : person to pro,valid, no code'=>array('+33612345678','PAYER12.522maltobar',$originator,false,'1111',true,
                                                                     array($validDebMsg,$validCredMsg),2),
-          'payment : valid,no code'=>array('+33612345678','PAYER12.5220000maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid,no code'=>array('+33612345678','PAYER12.5220000maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : invalid sms'=>array('+33612345678','PAYER12.maltobar',$originator,false,'1111',true,array('SMS INVALIDE')),
             'payment : invalid sms'=>array('+33612345678','PAYERSHOP',$originator,false,'1111',true,array('Format du montant')),
-          'payment : valid amount'=>array('+33612345678','PAYER00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid amount'=>array('+33612345678','PAYER00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',$originator,false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
-          'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',$originator,false,'1111',true,
-                                                        array('ERREUR TECHNIQUE','Accès client invalide'),2),
+            'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',$originator,false,'1111',true,
+                                                          array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
-          'validation  : nothing to validate'=>array('+33612345678','1111',$originator,false,'1111',true,NULL),
+            'validation  : nothing to validate'=>array('+33612345678','1111',$originator,false,'1111',true,NULL),
 
-          'suspicious payment'=>array('+33612345678','PAYER1500maltobar',$originator,false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
+            'suspicious payment'=>array('+33612345678','PAYER1500maltobar',$originator,false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
 
-        );
+        );  
     }
 
     /**
