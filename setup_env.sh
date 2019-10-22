@@ -85,6 +85,8 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
     fi
 
     cd $ROOT_DIR/cel
+    docker-compose up -d
+    sleep 10
     docker-compose exec engine ./build-setup.sh $ENV
     docker-compose exec engine php bin/console cairn.user:generate-database --env=$ENV admin_network @@bbccdd
     exit 0
