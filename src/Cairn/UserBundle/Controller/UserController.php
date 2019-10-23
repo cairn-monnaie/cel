@@ -70,17 +70,15 @@ class UserController extends Controller
         $currentUser = $this->getUser();
         //last pros registered
         $userRepo = $em->getRepository('CairnUserBundle:User');
-        $user1 = $userRepo->findOneByUsername('admin_network');
-        $address1 = $user1->getAddress();
+        //$user1 = $userRepo->findOneByUsername('admin_network');
+        //$address1 = $user1->getAddress();
 
-        $address2 = $currentUser->getAddress();
+        //$address2 = $currentUser->getAddress();
 
-        //set latitude and longitude of new user
-        $extrema = $this->get('cairn_user.geolocalization')->getExtremaCoords($address2->getLatitude(),$address2->getLongitude(), 2);
+        ////set latitude and longitude of new user
+        //$extrema = $this->get('cairn_user.geolocalization')->getExtremaCoords($address2->getLatitude(),$address2->getLongitude(), 2);
 
-        $users = $userRepo->getUsersAround($address2->getLatitude(),$address2->getLongitude(), 2, $extrema);
-        var_dump($users);
-//        return new Response('ok');
+        //$users = $userRepo->getUsersAround($address2->getLatitude(),$address2->getLongitude(), 2, $extrema);
         $checker = $this->get('security.authorization_checker');
 
         $em = $this->getDoctrine()->getManager();

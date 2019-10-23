@@ -273,8 +273,8 @@ class BankingController extends Controller
             ->andWhere('o.executionDate BETWEEN :begin AND :end')
             ->orderBy('o.executionDate','ASC')
             ->setParameter('number',$id)
-            ->setParameter('begin',$begin)
-            ->setParameter('end',$end)
+            ->setParameter('begin',$beginDefault)
+            ->setParameter('end',$endDefault)
             ->getQuery()->getResult();
 
         //amount of future transactions : next month total amount

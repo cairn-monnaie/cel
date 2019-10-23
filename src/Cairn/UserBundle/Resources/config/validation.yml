@@ -8,15 +8,14 @@ Cairn\UserBundle\Entity\Operation:
     constraints:
             - Cairn\UserBundle\Validator\Operation: ~
 
-<<<<<<< HEAD
 Cairn\UserBundle\Entity\SmsData:
     constraints:
             - Cairn\UserBundle\Validator\SmsData: ~
 
-Cairn\UserBundle\Entity\Address:
-    constraints:
-            - Cairn\UserBundle\Validator\Address: ~
-=======
+              #Cairn\UserBundle\Entity\Address:
+              #    constraints:
+              #            - Cairn\UserBundle\Validator\Address: ~
+
 Cairn\UserBundle\Entity\Mandate:
     constraints:
             - Cairn\UserBundle\Validator\Mandate: ~
@@ -24,4 +23,3 @@ Cairn\UserBundle\Entity\Mandate:
 Cairn\UserBundle\Entity\AccountScore:
     constraints:
             - Cairn\UserBundle\Validator\AccountScore: ~
->>>>>>> master

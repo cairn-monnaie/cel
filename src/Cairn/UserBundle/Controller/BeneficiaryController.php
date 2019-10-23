@@ -306,7 +306,7 @@ class BeneficiaryController extends Controller
                         $response->headers->set('Content-Type', 'application/json');
                         return $response;
                     }else{
-                        foreach($messages as $message){
+                        foreach($errorMessages as $message){
                             $session->getFlashBag()->add('error',$message);
                         }
                         return new RedirectResponse($request->getRequestUri());
