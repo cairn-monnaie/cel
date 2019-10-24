@@ -166,6 +166,9 @@
                 <div class="collapsible-header"><i class="material-icons">lock</i>Carte de sécurité</div>
                 <div class="collapsible-body">
                     {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':user.username})) }}
+                    <div class="row right-align">
+                        <a class="waves-effect waves-light" href="{{path('cairn_user_card_presentation')}}"><i class="material-icons large purple-text text-darken-2">info</i><span> Règles d'utilisation</span></a>
+                    </div>
                 </div>
             </li>
             {% endif %}
