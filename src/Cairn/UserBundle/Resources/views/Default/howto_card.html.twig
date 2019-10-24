@@ -8,17 +8,58 @@
     <h1> Règles d'utilisation </h1>
     <h2> La carte de sécurité </h2>
 
+    <div class="row">
+        <div class="center-align">
+        <img src="{{asset('bundles/cairnuser/img/card_details.svg')}}" alt="member_card" class="security-card-details responsive-img">
+        </div>
+    </div>
+    <div class="left-align">
+        <h3>Authentification à double facteur</h3>
+        <p>
+            Afin de renforcer la sécurité de votre compte [e]-Cairn, deux modes d'identification appartenant à des catégories distinctes sont utilisés : 
+            <ul class="browser-default">
+                <li class="collection-item">Un élément su et mémorisé : votre mot de passe, à saisir lors de la connexion</li>
+                <li class="collection-item">Un élément physique et possédé : votre <b>carte de sécurité</b>, dont vous devez saisir une clé correspondant à la case qui vous est demandée</li>
+            </ul>
+        </p>
+        <h3>Commander ou révoquer une carte de sécurité</h3>
+        <p>
+            <ul class="browser-default">
+                <li class="collection-item">Si vous ne possédez pas de carte de sécurité, vous avez deux possibilités :
+                    <ol>
+                        <li>vous pouvez en commander une. Elle sera envoyée par courrier à l'adresse mentionnée sur votre compte [e]-Cairn</li> 
+                        <li>vous pouvez passer la chercher lors de nos <a class="" target="_blank" href="https://www.cairn-monnaie.com/partenaires/local-associatif-du-cairn">permanences au local de l'Association </a></li>
+                    </ol>
+                </li>
+                <li class="collection-item"> En cas de perte ou de vol, vous pouvez procéder à la révocation immédiate de votre carte de sécurité depuis votre compte. Celle-ci sera alors dissociée et ne pourra plus être utilisée comme méthode d'authentification </li>
+
+            </ul>
+        </p>
+        {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+            <div class="row">
+               {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':app.user.username})) }}
+            </div>
+        {% endif %}
+
+        <h3>Qu'est-ce qu'une opération sensible ? </h3>
+        <p>
+            Une opération sensible est amenée à modifier des données de votre compte [e]-Cairn, par opposition à toute action à but consultatif :
+            <ul class="browser-default">
+                <li>Modification de vos données personnelles</li>
+                <li>Ajout de bénéficiaire enregistré</li>
+                <li>Réalisation d'un virement vers un nouveau bénéficiaire</li>
+                <li>...</li>
+            </ul>
+        </p>
+    </div>
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
-        <div class="row">
-           {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':app.user.username})) }}
-        </div>
-        <div class="row">
-            {% if app.session.get('is_first_connection') == true %}
-                  <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_users_phone_add') }}"><i class="material-icons right">arrow_forward</i>Continuer</a>
-           {% else %}
-               <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>
-           {% endif %}
-        </div>
+       <div class="row">
+           {% if app.session.get('is_first_connection') == true %}
+                 <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_users_phone_add') }}"><i class="material-icons right">arrow_forward</i>Continuer</a>
+          {% else %}
+              <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>
+          {% endif %}
+       </div>
     {% endif %}
 
 {% endblock %}
