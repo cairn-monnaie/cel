@@ -3,14 +3,13 @@
 namespace Tests\UserBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\BrowserKit\Cookie;
 
-use Cairn\UserCyclosBundle\Entity\ScriptManager;
-use Cairn\UserCyclosBundle\Entity\UserManager;
-use Cairn\UserCyclosBundle\Entity\ProductManager;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Address;
 
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 use Cyclos;
 
@@ -18,9 +17,6 @@ class BaseControllerTest extends WebTestCase
 {
     protected $client;
     protected $container;
-    protected $scriptManager;
-    protected $userManager;
-    protected $productManager;
 
     protected $em;
     protected $testAdmin;
@@ -30,22 +26,13 @@ class BaseControllerTest extends WebTestCase
         parent::__construct($name, $data, $dataName);
 
         self::bootKernel();
-        $this->client = static::createClient();
-
-        $this->container = $this->client->getContainer();
-        $this->scriptManager = new ScriptManager();
-        $this->userManager = new UserManager();
-
-        $this->em = $this->container->get('doctrine.orm.entity_manager');                          
         $this->testAdmin = 'admin_network';
     }
 
     protected function setUp()
     {
-        $kernel = static::createKernel();
-        $kernel->boot();
-         
-        $this->container = $kernel->getContainer();
+        $this->client = static::createClient();
+        $this->container = $this->client->getContainer();
         $this->em = $this->container->get('doctrine.orm.entity_manager');                          
 
     }
@@ -63,6 +50,24 @@ class BaseControllerTest extends WebTestCase
 
         return $this->client->followRedirect();
 
+    }
+
+    protected function mobileLogin($username, $password)
+    {
+        $firewallName = 'mobile';
+        $firewallContext = $firewallName;
+
+        $user = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($username);
+
+        $token = new UsernamePasswordToken($user, $user->getPassword(), $firewallName, $user->getRoles());
+        $this->container->get('security.token_storage')->setToken($token);
+
+        $session = $this->container->get('session');
+        $session->set('_security_' . $firewallName, serialize($token));
+        $session->save();
+
+        $cookie = new Cookie($session->getName(), $session->getId());
+        $this->client->getCookieJar()->set($cookie);
     }
 
     public function inputCardKey($crawler, $key)
