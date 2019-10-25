@@ -37,6 +37,27 @@ class BaseControllerTest extends WebTestCase
 
     }
 
+    public function assertSerializedEntityContent($entity,$entityType){
+        switch($entityType){
+        case 'phone':
+            $this->assertArrayHasKey('id', $entity);
+            $this->assertArrayHasKey('phoneNumber', $entity);
+            $this->assertArrayHasKey('identifier', $entity);
+            $this->assertArrayHasKey('paymentEnabled', $entity);
+            $this->assertArrayHasKey('dailyAmountThreshold', $entity);
+            $this->assertArrayHasKey('dailyNumberPaymentsThreshold', $entity);
+
+            $this->assertArrayNotHasKey('smsData', $entity);
+            $this->assertArrayNotHasKey('user', $entity);
+
+            $this->assertEquals(count($entity),6);
+            break;
+
+        default:
+            throw new \Exception('entity not found while testing JSON response');
+
+        }
+    }
     public function login($username,$password)
     {
         $crawler = $this->client->request('GET','/logout');

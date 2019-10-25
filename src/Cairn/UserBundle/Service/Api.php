@@ -156,7 +156,7 @@ class Api
            ));
         }
         if($object instanceOf Phone){
-            $defaultIgnoredAttributes = array();
+            $defaultIgnoredAttributes = array('user','smsData');
             $normalizer->setCallbacks(array(
                         'smsData'=> function ($child) {return $this->objectCallback($child);},
                         'user'=> function ($child) {return $this->objectCallback($child);},

@@ -23,15 +23,37 @@ class ApiControllerTest extends BaseControllerTest
     /**
      *
      *
+     *@dataProvider provideDataForSmsData
      */
-    public function testGetPhones(){
+    public function testGetPhones($username, $isEmpty, $httpResponse){
 
-        $this->mobileLogin('gjanssens','@@bbccdd');
+        $this->mobileLogin($username,'@@bbccdd');
         $crawler = $this->client->request('GET','/mobile/phones');
 
-        $this->assertEquals(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $response = $this->client->getResponse();
 
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpResponse, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($isEmpty){
+            $this->assertEquals($responseData, []);
+        }else{
+            foreach($responseData as $phone){
+                $this->assertSerializedEntityContent($phone,'phone');
+            }
+        }
     }
 
+    public function provideDataForSmsData()
+    {
+        return array(
+            array('username'=>'gjanssens',true, Response::HTTP_OK),
+            array('username'=>'nico_faus_prod',false, Response::HTTP_OK)
+        );
+        
 
+    }
 }
