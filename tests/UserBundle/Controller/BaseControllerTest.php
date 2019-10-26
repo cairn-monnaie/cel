@@ -39,6 +39,63 @@ class BaseControllerTest extends WebTestCase
 
     public function assertSerializedEntityContent($entity,$entityType){
         switch($entityType){
+        case 'user':
+            $this->assertArrayHasKey('id', $entity);
+            $this->assertArrayHasKey('username', $entity);
+            $this->assertArrayHasKey('email', $entity);
+            $this->assertArrayHasKey('name', $entity);
+            $this->assertArrayHasKey('enabled', $entity);
+            $this->assertArrayHasKey('cyclosID', $entity);
+            $this->assertArrayHasKey('mainICC', $entity);
+            $this->assertArrayHasKey('address', $entity);
+            $this->assertArrayHasKey('description', $entity);
+            $this->assertArrayHasKey('creationDate', $entity);
+            $this->assertArrayHasKey('nbPhoneNumberRequests', $entity);
+            $this->assertArrayHasKey('image', $entity);
+            $this->assertArrayHasKey('identityDocument', $entity);
+            $this->assertArrayHasKey('passwordTries', $entity);
+            $this->assertArrayHasKey('cardKeyTries', $entity);
+            $this->assertArrayHasKey('phoneNumberActivationTries', $entity);
+            $this->assertArrayHasKey('cardAssociationTries', $entity);
+            $this->assertArrayHasKey('removalRequest', $entity);
+            $this->assertArrayHasKey('firstLogin', $entity);
+            $this->assertArrayHasKey('autocompleteLabel', $entity);
+            $this->assertArrayHasKey('city', $entity);
+            $this->assertArrayHasKey('lastLogin', $entity);
+            $this->assertArrayHasKey('roles', $entity);
+            $this->assertArrayHasKey('superAdmin', $entity);
+            $this->assertArrayHasKey('admin', $entity);
+            $this->assertArrayHasKey('adherent', $entity);
+            $this->assertArrayHasKey('passwordRequestedAt', $entity);
+
+            $this->assertArrayNotHasKey('phoneNumbers', $entity);
+            $this->assertArrayNotHasKey('phones', $entity);
+            $this->assertArrayNotHasKey('referents', $entity);
+            $this->assertArrayNotHasKey('beneficiaries', $entity);
+            $this->assertArrayNotHasKey('card', $entity);
+            $this->assertArrayNotHasKey('smsData', $entity);
+            $this->assertArrayNotHasKey('apiClient', $entity);
+            $this->assertArrayNotHasKey('firstname', $entity);
+            $this->assertArrayNotHasKey('cyclosToken', $entity);
+            $this->assertArrayNotHasKey('confirmationToken', $entity);
+            $this->assertArrayNotHasKey('salt', $entity);
+            $this->assertArrayNotHasKey('password', $entity);
+            $this->assertArrayNotHasKey('plainPassword', $entity);
+            $this->assertArrayNotHasKey('singleReferent', $entity);
+            $this->assertArrayNotHasKey('localGroupReferent', $entity);
+            $this->assertArrayNotHasKey('webPushSubscriptions', $entity);
+            $this->assertArrayNotHasKey('usernameCanonical', $entity);
+            $this->assertArrayNotHasKey('emailCanonical', $entity);
+            $this->assertArrayNotHasKey('accountNonExpired', $entity);
+            $this->assertArrayNotHasKey('accountNonLocked', $entity);
+            $this->assertArrayNotHasKey('credentialsNonExpired', $entity);
+            $this->assertArrayNotHasKey('groups', $entity);
+            $this->assertArrayNotHasKey('groupNames', $entity);
+
+
+            $this->assertEquals(27,count($entity));
+            break;
+
         case 'phone':
             $this->assertArrayHasKey('id', $entity);
             $this->assertArrayHasKey('phoneNumber', $entity);
@@ -50,7 +107,18 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('smsData', $entity);
             $this->assertArrayNotHasKey('user', $entity);
 
-            $this->assertEquals(count($entity),6);
+            $this->assertEquals(6,count($entity));
+            break;
+
+        case 'beneficiary':
+            $this->assertArrayHasKey('id', $entity);
+            $this->assertArrayHasKey('autocompleteLabel', $entity);
+            $this->assertArrayHasKey('ICC', $entity);
+            $this->assertArrayHasKey('user', $entity);
+
+            $this->assertArrayNotHasKey('sources', $entity);
+
+            $this->assertEquals(4,count($entity));
             break;
 
         default:

@@ -128,7 +128,7 @@ class Api
         $defaultIgnoredAttributes = array();
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('password','phones','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card');
+            $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                         'identityDocument'=> function ($child) {return $this->objectCallback($child);},
                         'image'=> function ($child) {return $this->objectCallback($child);},
