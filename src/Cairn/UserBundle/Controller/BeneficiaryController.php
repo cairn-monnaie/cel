@@ -495,7 +495,7 @@ class BeneficiaryController extends Controller
                 }
 
                 if($this->get('cairn_user.api')->isRemoteCall()){
-                    $response = new Response('{ "message"=>"'.$flashMessage.'"}');
+                    $response = new Response('{ "message":"'.$flashMessage.'"}');
                     $response->setStatusCode(Response::HTTP_OK);
                     $response->headers->set('Content-Type', 'application/json');
                     return $response;

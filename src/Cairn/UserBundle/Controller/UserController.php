@@ -912,7 +912,7 @@ class UserController extends Controller
     {                                                                          
         $currentUser = $this->getUser();
 
-        $personVisitingPro = ($currentUser->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO'));
+        //$personVisitingPro = ($currentUser->hasRole('ROLE_PERSON') && $user->hasRole('ROLE_PRO'));
 
         if(! ( ($user === $currentUser) || $user->hasReferent($currentUser) ) ){
             throw new AccessDeniedException('Pas les droits nécessaires');

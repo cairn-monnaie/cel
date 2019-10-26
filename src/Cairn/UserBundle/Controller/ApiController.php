@@ -67,7 +67,6 @@ class ApiController extends Controller
         $response->headers->set('Content-Type', 'application/json');
         $response->setStatusCode(Response::HTTP_OK);
         return $response;
-
     }
 
     public function createOnlinePaymentAction(Request $request)
