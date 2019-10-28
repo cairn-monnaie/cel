@@ -54,30 +54,12 @@ class SecurityController extends Controller
             $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
-            // ********* get Cyclos Token ****************
-            $networkInfo = $this->get('cairn_user_cyclos_network_info');
-            $networkName = $this->getParameter('cyclos_currency_cairn');
-            $loginManager = new LoginManager();
-
-            $credentials = array('username'=>$params['username'],'password'=> $params['password']);     
-            $networkInfo->switchToNetwork($networkName,'login',$credentials);      
-
-            //set cyclos session timeout
-            $dto = new \stdClass();                                                
-            $dto->amount = $this->getParameter('session_timeout');               
-            $dto->field = 'SECONDS';   
-
-            //effectively log in and get session token
-            $loginResult = $loginManager->login($dto);                             
-
             //send user id
             $em = $this->getDoctrine()->getManager();
             $userRepo = $em->getRepository('CairnUserBundle:User');
             $currentUser = $userRepo->findOneByUsername($params['username']);
 
             $array_oauth['user_id'] =  $currentUser->getID();
-            $session->set('cyclos_token',$this->container->get('cairn_user.security')->vigenereEncode($loginResult->sessionToken));
-
 
             $response =  new Response(json_encode($array_oauth));
             $response->headers->set('Content-Type', 'application/json');
