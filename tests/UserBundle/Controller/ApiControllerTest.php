@@ -117,8 +117,6 @@ class ApiControllerTest extends BaseControllerTest
         if($response->isSuccessful()){
             $this->assertSerializedEntityContent($responseData,'user');
         }
-
-
     }
 
     public function provideDataForProfile()
@@ -294,8 +292,6 @@ class ApiControllerTest extends BaseControllerTest
 
         if($response->isSuccessful()){
 
-            $this->mobileLogin($current,'@@bbccdd');
-
             $crawler = $this->client->request(
                 'POST',
                 '/mobile/phones',
@@ -337,48 +333,185 @@ class ApiControllerTest extends BaseControllerTest
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
-            //'user in admin' => array_replace($baseData, array('current'=>$admin, 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            'user in admin' => array_replace($baseData, array('current'=>$admin, 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            //'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            //'current number'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-            //        ),
+            'current number'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+                    ),
 
-            //'current number, disable sms'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-            //        ),
+            'current number, disable sms'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+                    ),
 
-            //'used by pro & person'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //            )),
+            'used by pro & person'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                        )),
 
-            //'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
-            //        'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //        )),
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                    )),
 
-            //'person request : used by person'=>array_replace_recursive($baseData, array(
-            //        'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //    )),
+            'person request : used by person'=>array_replace_recursive($baseData, array(
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                )),
 
             'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar',
                     'newPhone'=>array('phoneNumber'=>'+33644332211')
                 )),
 
-            //'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
-            //        'newPhone'=>array('phoneNumber'=>'+33611223344')
-            //        )),
+            'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
+                    'newPhone'=>array('phoneNumber'=>'+33611223344')
+                    )),
 
-            //'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
-            //        'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
-            //        )),
+            'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+                    'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
+                    )),
 
-            //'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
-            //    )),
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+                )),
 
-            //'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
-            //    )),
+            'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
+                )),
 
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForRemoteEditPhone
+     */
+    public function testRemoteEditPhone($current,$target, $newPhoneSubmit,$isNewPhoneNumber, $httpPhoneStatusCode,$code,$httpValidationStatusCode)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+
+        $phones = $targetUser->getPhones();
+
+        if(empty($phones)){
+            echo 'TEST SKIPPED : INVALID DATA';
+            return;
+        }
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/phones/'.$phones[0]->getID(),
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(
+                $newPhoneSubmit
+            )
+        );
+
+        $response = $this->client->getResponse();
+
+        file_put_contents('test.txt',$response->getContent());
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpPhoneStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            if(!$isNewPhoneNumber){
+                $this->assertSerializedEntityContent($responseData['phone'],'phone');
+                return;
+            }
+
+            $crawler = $this->client->request(
+                'POST',
+                $responseData['validation_url'],
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(
+                    array(
+                        'activationCode'=> $code,
+                    )
+                )
+            );
+
+            $response = $this->client->getResponse();
+
+            $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+            $this->assertJson($response->getContent());
+            $this->assertEquals($httpValidationStatusCode, $response->getStatusCode());
+
+            $responseData = json_decode($response->getContent(),true);
+
+            if($response->isSuccessful()){
+                $this->assertSerializedEntityContent($responseData,'phone');
+            }
+        }
+    }
+
+    public function provideDataForRemoteEditPhone()
+    {
+        $admin = $this->testAdmin;
+        $baseData = array('current'=>'stuart_andrew','target'=>'stuart_andrew',
+            'newPhone'=>array('phoneNumber'=>'+33699999999','paymentEnabled'=>true),
+            'isPhoneNumberEdit'=>true,
+            'httpPhoneStatusCode'=>Response::HTTP_OK,
+            'code'=>'1111',
+            'httpValidationStatusCode'=>Response::HTTP_CREATED,
+        );
+
+        $baseAdminData = array('current'=>$admin,'target'=>'stuart_andrew',
+            'newPhone'=>array('paymentEnabled'=>true,'identifier'=>'IDSMS'),
+            'isPhoneNumberEdit'=>true,
+            'httpPhoneStatusCode'=>Response::HTTP_OK,
+            'code'=>'1111',
+            'httpValidationStatusCode'=>Response::HTTP_CREATED,
+        );
+
+        return array(
+            'not referent'=>array_replace($baseData, array('current'=>$admin,'target'=>'stuart_andrew', 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+
+            'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','target'=>'crabe_arnold', 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)),
+
+            'current number'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar','isPhoneNumberEdit'=>false,
+                                                              'newPhone'=>array('phoneNumber'=>'+33611223344')
+                                                    )),
+
+            'invalid number'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar',
+                                                            'newPhone'=>array('phoneNumber'=>'+33811223344'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                                                    )),
+
+            'admin enables sms'=>array_replace($baseAdminData, array('current'=>$admin,'target'=>'la_mandragore','isPhoneNumberEdit'=>false)),
+
+            'new number'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar')),
+
+            'used by pro & person'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar',
+                            'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                            )),
+
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar',
+                                                        'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                                                    )),
+
+            'person request : used by person'=>array_replace_recursive($baseData, array('current'=>'benoit_perso','target'=>'benoit_perso',
+                                                        'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                                                    )),
+
+            'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar','target'=>'maltobar',
+                                                        'newPhone'=>array('phoneNumber'=>'+33644332211')
+                                                    )),
+
+            'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso','target'=>'benoit_perso',
+                                                        'newPhone'=>array('phoneNumber'=>'+33611223344'),
+                                                    )),
+
+            'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'code'=>'2222','httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST
+                                                        )),
+
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi')),
+
+            '2 accounts associated before: valid code'=>array_replace($baseData,array('current'=>'nico_faus_perso','target'=>'nico_faus_perso')),
         );
     }
 
@@ -462,6 +595,7 @@ class ApiControllerTest extends BaseControllerTest
 
             $this->assertNull($responseData['operation']['paymentID']);
 
+            $this->mobileLogin($debitor,'@@bbccdd');
             $crawler = $this->client->request(
                 'POST',
                 '/mobile/transaction/confirm/'.$responseData['operation']['id'],

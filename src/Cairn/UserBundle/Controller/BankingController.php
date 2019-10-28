@@ -235,8 +235,8 @@ class BankingController extends Controller
         }
 
         //to see the content, check that currentUser is owner or currentUser is referent
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        if(! (($user === $currentUser) || $currentUser->hasRole('ROLE_SUPER_ADMIN'))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
         }
 
         $accountTypeVO = $account->type; 
@@ -997,6 +997,11 @@ class BankingController extends Controller
         if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
             throw new AccessDeniedException('Pas les droits nécessaires');
         }   
+
+        //to see the content, check that currentUser is owner or currentUser is referent
+        if(! ($currentUser->isAdherent() || $currentUser->hasRole('ROLE_SUPER_ADMIN'))){
+            throw new AccessDeniedException('Pas les droits nécessaires');
+        }
 
         if($_format == 'json'){
             $serializedOperation = $this->get('cairn_user.api')->serialize($operation);

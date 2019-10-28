@@ -201,6 +201,7 @@ class UserController extends Controller
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
+        $apiService = $this->get('cairn_user.api');
 
         if(! $currentUser->isAdherent() ){
             throw new AccessDeniedException('Réserver aux comptes adhérents');
@@ -221,6 +222,15 @@ class UserController extends Controller
         $previousPhoneNumber = NULL;
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
+            if( $apiService->isRemoteCall()){
+                $res = $apiService->serialize(array('message'=>'Trop de demandes non validées'));
+
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_FORBIDDEN);
+                return $response;
+            }
+
             $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de nouveau numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
         }
@@ -262,7 +272,7 @@ class UserController extends Controller
                     return $this->redirectToRoute('cairn_user_users_phone_add');
                 }
             }else{
-                $apiService = $this->get('cairn_user.api');
+                
                 if( $apiService->isRemoteCall()){
                     return $apiService->getErrorResponse($formPhone);
                 }
@@ -402,7 +412,7 @@ class UserController extends Controller
 
                 $response = new Response($res);
                 $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
+                $response->setStatusCode(Response::HTTP_CREATED);
                 return $response;
             }
 
@@ -577,7 +587,7 @@ class UserController extends Controller
 
         $flashMessage = 'Numéro de téléphone '.$phoneNumber.' supprimé';
         if($this->get('cairn_user.api')->isRemoteCall()){
-            $response = new Response('{ "message"=>"'.$flashMessage.'"}');
+            $response = new Response('{ "message":"'.$flashMessage.'"}');
             $response->setStatusCode(Response::HTTP_OK);
             $response->headers->set('Content-Type', 'application/json');
             return $response;
