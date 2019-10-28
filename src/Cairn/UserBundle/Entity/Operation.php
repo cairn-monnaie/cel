@@ -298,26 +298,7 @@ class Operation
         return array(self::TYPE_TRANSACTION_SCHEDULED);
     }
 
-    /**
-     *
-     *@Assert\Callback() 
-     */
-    public function isOperationValid(ExecutionContextInterface $context)
-    {
-        $today = new \Datetime('today');
-        if($today->diff($this->getExecutionDate())->invert == 1){
-            $context->buildViolation('La date d\'exécution ne peut être antérieure à la date du jour')
-                ->atPath('executionDate')
-                ->addViolation();
-        }
-
-        if( strlen($this->getReason()) > 35){
-            $context->buildViolation('Motif trop long : 35 caractères maximum')
-                ->atPath('reason')
-                ->addViolation();
-        }
-    }
-
+    
     public function __construct()
     {
         $today = new \Datetime();
