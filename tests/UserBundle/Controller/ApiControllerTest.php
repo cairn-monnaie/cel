@@ -557,12 +557,11 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForTransaction
      */
-    public function testRemoteTransaction($debitor, $creditor, $httpStatusCode)
+    public function testRemoteTransaction($debitor, $formSubmit, $httpStatusCode)
     {
         $this->mobileLogin($debitor,'@@bbccdd');
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($debitor);
-        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($creditor);
 
         $crawler = $this->client->request(
             'POST',
@@ -571,14 +570,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode(
-                array(
-                    'fromAccount'=>$debitorUser->getMainICC(),
-                    'toAccount'=>$creditorUser->getEmail(),
-                    'amount'=>25,
-                    'reason'=>'Test reason',
-                    'description'=>'Test description',
-                    'executionDate'=> date('Y-m-d')
-                )
+                array_merge(array('fromAccount'=>$debitorUser->getMainICC()), $formSubmit)
             )
         );
 
@@ -624,8 +616,30 @@ class ApiControllerTest extends BaseControllerTest
 
     public function provideDataForTransaction()
     {
+        $now = new \Datetime();
+        $nowFormat = date('Y-m-d');
+        $later = $now->modify('+2 days')->format('Y-m-d');
+        $before = $now->modify('-10 days')->format('Y-m-d');
+        $inconsistent = $now->modify('+4 years')->format('Y-m-d');
+
+        $baseSubmit = array(
+                    'toAccount'=>'labonnepioche@test.fr',
+                    'amount'=>25,
+                    'reason'=>'Test reason',
+                    'description'=>'Test description',
+                    'executionDate'=> $nowFormat
+        );
+
         return array(
-            'valid'=>array('gjanssens','labonnepioche',Response::HTTP_CREATED),
+            'invalid amount too low'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST),
+            'invalid negative amount'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
+            'invalid insufficient balance'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
+            'invalid : identical creditor & debitor'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'gjanssens@test.fr')),Response::HTTP_BAD_REQUEST),
+            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
+            'valid now'=>array('gjanssens',$baseSubmit,Response::HTTP_CREATED),
+            'valid after'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_CREATED),
+            'invalid before'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
+            'invalid inconsistent'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST),
         );
 
     }
