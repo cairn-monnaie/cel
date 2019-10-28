@@ -103,11 +103,11 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('paymentEnabled', $entity);
             $this->assertArrayHasKey('dailyAmountThreshold', $entity);
             $this->assertArrayHasKey('dailyNumberPaymentsThreshold', $entity);
+            $this->assertArrayHasKey('smsData', $entity);
 
-            $this->assertArrayNotHasKey('smsData', $entity);
             $this->assertArrayNotHasKey('user', $entity);
 
-            $this->assertEquals(6,count($entity));
+            $this->assertEquals(7,count($entity));
             break;
 
         case 'beneficiary':
@@ -119,6 +119,40 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('sources', $entity);
 
             $this->assertEquals(4,count($entity));
+            break;
+
+        case 'operation':
+            $this->assertArrayHasKey('id', $entity);
+            $this->assertArrayHasKey('type', $entity);
+            $this->assertArrayHasKey('paymentID', $entity);
+            $this->assertArrayHasKey('amount', $entity);
+            $this->assertArrayHasKey('submissionDate', $entity);
+            $this->assertArrayHasKey('executionDate', $entity);
+            $this->assertArrayHasKey('description', $entity);
+            $this->assertArrayHasKey('reason', $entity);
+            $this->assertArrayHasKey('fromAccountNumber', $entity);
+            $this->assertArrayHasKey('toAccountNumber', $entity);
+            $this->assertArrayHasKey('mandate', $entity);
+            $this->assertArrayHasKey('smsPayment', $entity);
+            $this->assertArrayHasKey('creditor', $entity);
+            $this->assertArrayHasKey('creditorName', $entity);
+            $this->assertArrayHasKey('debitor', $entity);
+            $this->assertArrayHasKey('debitorName', $entity);
+            $this->assertArrayHasKey('updatedAt', $entity);
+
+            $this->assertArrayNotHasKey('fromAccount', $entity);
+            $this->assertArrayNotHasKey('toAccount', $entity);
+
+            $this->assertEquals(17,count($entity));
+            break;
+
+        case 'account':
+            $this->assertArrayHasKey('id', $entity);
+            $this->assertArrayHasKey('owner', $entity);
+            $this->assertArrayHasKey('status', $entity);
+            $this->assertArrayHasKey('number', $entity);
+            $this->assertArrayHasKey('currency', $entity);
+            $this->assertArrayHasKey('type', $entity);
             break;
 
         default:

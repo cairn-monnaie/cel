@@ -11,6 +11,7 @@ use Cairn\UserBundle\Entity\Operation;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ApiControllerTest extends BaseControllerTest
 {
@@ -22,11 +23,10 @@ class ApiControllerTest extends BaseControllerTest
 
     /**
      *
-     *
      *@dataProvider provideDataForSmsData
      */
-    public function testGetPhonesAction($username, $isEmpty, $httpResponse){
-
+    public function testGetPhonesAction($username, $isEmpty, $httpResponse)
+    {
         $this->mobileLogin($username,'@@bbccdd');
         $crawler = $this->client->request('GET','/mobile/phones');
 
@@ -228,7 +228,6 @@ class ApiControllerTest extends BaseControllerTest
         $this->mobileLogin($current,'@@bbccdd');
 
         $ICC = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($beneficiary)->getMainICC();
-        var_dump($ICC);
 
         $crawler = $this->client->request(
             'DELETE',
@@ -256,10 +255,528 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForDeleteBeneficiary()
     {
         return array(
-            //'valid removal'=> array('nico_faus_prod','labonnepioche',Response::HTTP_OK),
-            //'valid removal 2'=> array('le_marque_page','labonnepioche',Response::HTTP_OK),
-            //'invalid : beneficiary does not exist'=> array('nico_faus_prod','comblant_michel',Response::HTTP_BAD_REQUEST),
+            'valid removal'=> array('nico_faus_prod','labonnepioche',Response::HTTP_OK),
+            'valid removal 2'=> array('le_marque_page','labonnepioche',Response::HTTP_OK),
+            'invalid : beneficiary does not exist'=> array('nico_faus_prod','comblant_michel',Response::HTTP_NOT_FOUND),
             'invalid : target not beneficiary of user'=> array('labonnepioche','ferme_bressot',Response::HTTP_BAD_REQUEST),
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForRemoteAddPhone
+     */
+    public function testRemoteAddPhone($current, $newPhoneSubmit, $httpPhoneStatusCode,$code,$httpValidationStatusCode)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/phones',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(
+                array(
+                    'phoneNumber'=> $newPhoneSubmit['phoneNumber'],
+                    'paymentEnabled'=> 'true'
+                )
+            )
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpPhoneStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+
+            $this->mobileLogin($current,'@@bbccdd');
+
+            $crawler = $this->client->request(
+                'POST',
+                '/mobile/phones',
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(
+                    array(
+                        'activationCode'=> $code,
+                    )
+                )
+            );
+
+            $response = $this->client->getResponse();
+
+            $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+            $this->assertJson($response->getContent());
+            $this->assertEquals($httpValidationStatusCode, $response->getStatusCode());
+
+            $responseData = json_decode($response->getContent(),true);
+
+            if($response->isSuccessful()){
+                $this->assertSerializedEntityContent($responseData,'phone');
+            }
+        }
+    }
+
+    public function provideDataForRemoteAddPhone()
+    {
+        $admin = $this->testAdmin;
+        $baseData = array('current'=>'stuart_andrew',
+            'newPhone'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
+            'httpPhoneStatusCode'=>Response::HTTP_OK,
+            'code'=>'1111',
+            'httpValidationStatusCode'=>Response::HTTP_CREATED,
+        );
+
+        $validDataMsg = 'Un code vous a été envoyé';
+        $validCodeMsg = 'enregistré';
+        $usedMsg = 'déjà utilisé';
+        return array(
+            //'user in admin' => array_replace($baseData, array('current'=>$admin, 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+
+            //'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+
+            //'current number'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+            //        ),
+
+            //'current number, disable sms'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+            //        ),
+
+            //'used by pro & person'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //            )),
+
+            //'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
+            //        'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //        )),
+
+            //'person request : used by person'=>array_replace_recursive($baseData, array(
+            //        'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //    )),
+
+            'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar',
+                    'newPhone'=>array('phoneNumber'=>'+33644332211')
+                )),
+
+            //'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
+            //        'newPhone'=>array('phoneNumber'=>'+33611223344')
+            //        )),
+
+            //'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+            //        'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
+            //        )),
+
+            //'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+            //    )),
+
+            //'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
+            //    )),
+
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForRemoteDeletePhone
+     */
+    public function testRemoteDeletePhone($current, $target, $httpStatusCode)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+
+        $crawler = $this->client->request(
+            'DELETE',
+            '/mobile/phones/'.$targetUser->getPhones()[0]->getID(),
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            []
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+    }
+
+    public function provideDataForRemoteDeletePhone()
+    {   
+        return array(
+            'valid self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK),
+            'valid referent'=>array('admin_network','nico_faus_prod',Response::HTTP_OK),
+            'invalid referent'=>array('admin_network','stuart_andrew',Response::HTTP_FORBIDDEN),
+            'invalid referent'=>array('gjanssens','nico_faus_prod',Response::HTTP_FORBIDDEN),
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForTransaction
+     */
+    public function testRemoteTransaction($debitor, $creditor, $httpStatusCode)
+    {
+        $this->mobileLogin($debitor,'@@bbccdd');
+
+        $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($debitor);
+        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($creditor);
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/transaction/request/new-unique',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(
+                array(
+                    'fromAccount'=>$debitorUser->getMainICC(),
+                    'toAccount'=>$creditorUser->getEmail(),
+                    'amount'=>25,
+                    'reason'=>'Test reason',
+                    'description'=>'Test description',
+                    'executionDate'=> date('Y-m-d')
+                )
+            )
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            $this->assertSerializedEntityContent($responseData['operation'],'operation');
+
+            $this->assertNull($responseData['operation']['paymentID']);
+
+            $crawler = $this->client->request(
+                'POST',
+                '/mobile/transaction/confirm/'.$responseData['operation']['id'],
+                [],
+                [],
+                ['CONTENT_TYPE' => 'application/json'],
+                json_encode(
+                    array(
+                        'save'=>""
+                    )
+                )
+            );
+
+            $response = $this->client->getResponse();
+
+            $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+            $this->assertJson($response->getContent());
+            $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
+
+            $responseData = json_decode($response->getContent(),true);
+
+            $this->assertNotNull($responseData['paymentID']);
+            $this->assertSerializedEntityContent($responseData,'operation');
+        }
+    }
+
+    public function provideDataForTransaction()
+    {
+        return array(
+            'valid'=>array('gjanssens','labonnepioche',Response::HTTP_CREATED),
+        );
+
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForAccountOperations
+     */
+    public function testGetAccountOperations($current,$target,$httpStatusCode,$beginDate,$endDate)
+    {
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+
+        //connect to Cyclos to get account ID of the target
+        $credentials = array('username'=>$target,'password'=>'@@bbccdd');
+        $network = $this->container->getParameter('cyclos_currency_cairn');
+        $group = $this->container->getParameter('cyclos_group_network_admins');
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
+
+        $accounts = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($targetUser->getCyclosID());
+
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/account/operations/'.$accounts[0]->id,
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(
+                array(
+                    "begin"=> $beginDate,
+                    "end"=> $endDate,
+                    "minAmount"=> "",
+                    "maxAmount"=> "",
+                    "keywords"=> "",
+                    "types"=> [],
+                    "orderBy"=> "ASC"
+                )
+            )
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            foreach($responseData as $operation){
+                $this->assertSerializedEntityContent($operation,'operation');
+                $this->assertNotNull($operation['paymentID']);
+            }
+        }
+    }
+
+    public function provideDataForAccountOperations()
+    {
+        $now = new \Datetime();
+        $beginDate =$now->modify('-1 month')->format('Y-m-d'); 
+        $endDate = date('Y-m-d'); 
+        return array(
+            'invalid adherent to adherent'=>array('gjanssens','labonnepioche',Response::HTTP_BAD_REQUEST,'',''),
+            'invalid admin referent to adherent'=>array('gl_grenoble','episol',Response::HTTP_FORBIDDEN,'',''),
+            'valid super admin referent to adherent'=>array('admin_network','gjanssens',Response::HTTP_OK,$beginDate,$endDate),
+            'valid super admin to self'=>array('admin_network','admin_network',Response::HTTP_OK,$beginDate,$endDate),
+            'valid pro to self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK,$beginDate,$endDate),
+            'valid person to self'=>array('gjanssens','gjanssens',Response::HTTP_OK,$beginDate,$endDate),
+        );
+
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForGetTransfer
+     */
+    public function testGetTransfer($current,$target,$httpStatusCode)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
+
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+        $ob = $operationRepo->createQueryBuilder('o');
+        $operationRepo->whereInvolvedAccountNumber($ob, $targetUser->getMainICC());
+        $ob->andWhere('o.paymentID is not NULL');
+
+        $operations = $ob->getQuery()->getResult();
+
+        $crawler = $this->client->request('GET','/mobile/operations/'.$operations[0]->getPaymentID());
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            $this->assertSerializedEntityContent($responseData,'operation');
+            $this->assertNotNull($responseData['paymentID']);
+        }
+    }
+
+    public function provideDataForGetTransfer()
+    {
+        $now = new \Datetime();
+        $beginDate =$now->modify('-1 month')->format('Y-m-d'); 
+        $endDate = date('Y-m-d'); 
+        return array(
+            'invalid adherent to adherent operation'=>array('gjanssens','labonnepioche',Response::HTTP_FORBIDDEN),
+            'invalid admin referent to adherent operation'=>array('gl_grenoble','episol',Response::HTTP_FORBIDDEN),
+            'valid super admin referent to adherent'=>array('admin_network','gjanssens',Response::HTTP_OK),
+            'valid pro to self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK),
+            'valid person to self'=>array('gjanssens','gjanssens',Response::HTTP_OK),
+        );
+
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForAccountsOverview
+     */
+    public function testGetAccountsOverview($current,$httpStatusCode)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $crawler = $this->client->request('GET','/mobile/accounts');
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            foreach($responseData as $account){
+                $this->assertSerializedEntityContent($account,'account');
+            }
+        }
+    }
+
+    public function provideDataForAccountsOverview()
+    {
+        return array(
+            'pro'=>array('nico_faus_prod',Response::HTTP_OK),
+            'person'=>array('gjanssens',Response::HTTP_OK),
+            'admin'=>array('gl_grenoble',Response::HTTP_OK),
+            'super admin'=>array('admin_network',Response::HTTP_OK),
+        );
+
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForNewUser
+     */
+    public function testCreateNewUser($email,$hasUploadedFile,$httpStatusCode)
+    {
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'john-doe-id.png';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        if($hasUploadedFile){
+            $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+        }else{
+            $file = array();
+        }
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/users/registration',
+            array(
+                'fos_user_registration_form'=>
+                array(
+                    'email'=>$email,
+                    'name'=>"New User",
+                    'address'=>array(
+                        'street1'=>'10 rue du test',
+                        'street2'=>'',
+                        'zipCity'=>'38000 Grenoble'
+                    ),
+                    'description'=>'test',
+                    'identityDocument'=>array(
+                        'file'=>$file
+                    )
+                )
+            ),
+            [],
+            ['Content-Type' => 'multipart/formdata']
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            $this->assertSerializedEntityContent($responseData,'user');
+            $this->assertNull($responseData['id']);
+        }
+    }
+
+    public function provideDataForNewUser()
+    {
+        return array(
+            'email already in use'=>array('labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST),
+            'invalid email : no @'=>array('test.com',true,Response::HTTP_BAD_REQUEST),
+            'invalid email : not enough characters'=>array('test@t.c',true,Response::HTTP_BAD_REQUEST),
+            'no document file'=>array('newuser@test.fr',false,Response::HTTP_BAD_REQUEST),
+            'valid registration'=>array('newuser@test.fr',true,Response::HTTP_CREATED),
+        );
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForEditProfile
+     */
+    public function testRemoteEditProfile($current, $email,$hasUploadedFile,$httpStatusCode, $password)
+    {
+        $this->mobileLogin($current,'@@bbccdd');
+
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'john-doe-id.png';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
+
+        if($hasUploadedFile){
+            $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+        }else{
+            $file = '';
+        }
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/users/profile',
+            array(
+                'fos_user_profile_form'=>
+                array(
+                    'current_password'=>$password,
+                    'email'=>$email,
+                    'name'=>"New User",
+                    'address'=>array(
+                        'street1'=>'10 rue du test',
+                        'street2'=>'',
+                        'zipCity'=>'38000 Grenoble'
+                    ),
+                    'description'=>'test',
+                    'identityDocument'=>array(
+                        'file'=>$file
+                    )
+
+                )
+            ),
+            [],
+            ['Content-Type' => 'multipart/formdata']
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        if($response->isSuccessful()){
+            $this->assertSerializedEntityContent($responseData,'user');
+            $this->assertNotNull($responseData['id']);
+        }
+
+    }
+
+    public function provideDataForEditProfile()
+    {
+        return array(
+            'email already in use'=>array('comblant_michel','labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
+            'invalid email : no @'=>array('comblant_michel','test.com',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
+            'invalid email : not enough characters'=>array('comblant_michel','test@t.c',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
+            'wrong password'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_BAD_REQUEST,'@bcdefgh'),
+            'valid, no document file'=>array('comblant_michel','newuser@test.fr',false,Response::HTTP_OK,'@@bbccdd'),
+            'valid registration'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_OK,'@@bbccdd'),
         );
     }
 

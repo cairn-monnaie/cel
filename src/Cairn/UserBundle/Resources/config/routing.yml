@@ -50,10 +50,6 @@ cairn_user_api_users_put:
     methods: POST
     defaults: { _controller: CairnUserBundle:Profile:edit, _format: json }
 
-cairn_user_profile_edit:
-    path: profile/edit
-    defaults: { _controller: CairnUserBundle:Profile:edit, _format: html }
-
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}
 #    methods: DELETE
