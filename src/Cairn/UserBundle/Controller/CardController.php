@@ -241,6 +241,7 @@ class CardController extends Controller
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $expirationBefore,
+                'required'=>false
                 ))
             ->add('code',  TextType::class,array(
                 'label'=>'Code',
