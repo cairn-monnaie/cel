@@ -753,7 +753,6 @@ class ApiControllerTest extends BaseControllerTest
         $beginDate =$now->modify('-1 month')->format('Y-m-d'); 
         $endDate = date('Y-m-d'); 
         return array(
-            'invalid adherent to adherent operation'=>array('gjanssens','labonnepioche',Response::HTTP_FORBIDDEN),
             'invalid admin referent to adherent operation'=>array('gl_grenoble','episol',Response::HTTP_FORBIDDEN),
             'valid super admin referent to adherent'=>array('admin_network','gjanssens',Response::HTTP_OK),
             'valid pro to self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK),
@@ -809,7 +808,14 @@ class ApiControllerTest extends BaseControllerTest
         $absolutePath = $absoluteWebDir.$originalName;
 
         if($hasUploadedFile){
-            $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
+            $copyPath =$absoluteWebDir.rand(1000,10000).'.png'; 
+            //copy 
+            if(! copy($absolutePath,$copyPath )){
+                echo "Failed to copy";
+                return;
+             }
+
+            $file = new UploadedFile($copyPath,'test_register.png',null,null,null, true);
         }else{
             $file = array();
         }
@@ -837,6 +843,7 @@ class ApiControllerTest extends BaseControllerTest
             ['Content-Type' => 'multipart/formdata']
         );
 
+
         $response = $this->client->getResponse();
 
         $this->assertEquals($httpStatusCode, $response->getStatusCode());
@@ -846,6 +853,10 @@ class ApiControllerTest extends BaseControllerTest
         if($response->isSuccessful()){
             $this->assertSerializedEntityContent($responseData,'user');
             $this->assertNull($responseData['id']);
+        }else{
+            if($hasUploadedFile){
+                unlink($copyPath);
+             }
         }
     }
 
