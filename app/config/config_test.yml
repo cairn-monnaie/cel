@@ -7,6 +7,14 @@ imports:
 #        main:
 #            type:   test
 
+security:
+    firewalls:
+        # replace 'main' by the name of your own firewall
+        mobile:
+            #looks necessary to allow multiple client requests in a same test action
+            #otherwise, client is redirected to authentication point
+            stateless: false 
+
 framework:
     test: ~
     session:
@@ -16,7 +24,7 @@ framework:
         enabled: true
 
 web_profiler:
-    toolbar: false
+    toolbar: true
     intercept_redirects: false
 
 swiftmailer:
