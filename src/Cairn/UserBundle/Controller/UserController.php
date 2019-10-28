@@ -461,6 +461,8 @@ class UserController extends Controller
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($user);
 
+        $apiService = $this->get('cairn_user.api');
+
         //****************** All cases where edit sms is not allowed ****************//
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
@@ -479,7 +481,17 @@ class UserController extends Controller
 
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
+            if( $apiService->isRemoteCall()){
+                $errorMessage = 'Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible';
+                $res = $this->get('cairn_user.api')->serialize(array('message'=>$errorMessage));
+
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                return $response;
+            }
+
+            $session->getFlashBag()->add('info',$errorMessage);
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
         }
 
@@ -546,7 +558,6 @@ class UserController extends Controller
                 }
 
             }else{
-                $apiService = $this->get('cairn_user.api');
                 if( $apiService->isRemoteCall()){
                     return $apiService->getErrorResponse($formPhone);
                 }

@@ -365,12 +365,12 @@ class ApiControllerTest extends BaseControllerTest
                     'newPhone'=>array('phoneNumber'=>'+33611223344')
                     )),
 
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+                )),
+
             'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
                     'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
                     )),
-
-            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
-                )),
 
             'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
                 )),
@@ -504,12 +504,12 @@ class ApiControllerTest extends BaseControllerTest
             'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso','target'=>'benoit_perso',
                                                         'newPhone'=>array('phoneNumber'=>'+33611223344'),
                                                     )),
+    
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi')),
 
             'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi',
                                                                 'code'=>'2222','httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST
                                                         )),
-
-            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi')),
 
             '2 accounts associated before: valid code'=>array_replace($baseData,array('current'=>'nico_faus_perso','target'=>'nico_faus_perso')),
         );
@@ -904,9 +904,10 @@ class ApiControllerTest extends BaseControllerTest
                         'zipCity'=>'38000 Grenoble'
                     ),
                     'description'=>'test',
-                    'identityDocument'=>array(
-                        'file'=>$file
-                    )
+                    //ONLY ADMIN
+                    //'identityDocument'=>array(
+                    //    'file'=>$file
+                    //)
 
                 )
             ),
