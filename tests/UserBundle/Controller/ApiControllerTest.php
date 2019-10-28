@@ -409,7 +409,6 @@ class ApiControllerTest extends BaseControllerTest
 
         $response = $this->client->getResponse();
 
-        file_put_contents('test.txt',$response->getContent());
         $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
         $this->assertJson($response->getContent());
         $this->assertEquals($httpPhoneStatusCode, $response->getStatusCode());
