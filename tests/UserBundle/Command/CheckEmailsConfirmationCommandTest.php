@@ -69,7 +69,7 @@ class CheckEmailsConfirmationCommandTest extends KernelTestCase
             $this->assertSame($container->getParameter('cairn_email_noreply'), key($message->getFrom()));
             $this->assertSame($user->getEmail(), key($message->getTo()));
         }else{
-            $this->assertEquals(count($messageLogger->getMessages()),0);
+            $this->assertEquals(0,count($messageLogger->getMessages()));
         }
 
         //assert the content of the database with respect to the setup
