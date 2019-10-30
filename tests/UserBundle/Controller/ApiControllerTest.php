@@ -268,6 +268,8 @@ class ApiControllerTest extends BaseControllerTest
     {
         $this->mobileLogin($current,'@@bbccdd');
 
+        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
+
         $crawler = $this->client->request(
             'POST',
             '/mobile/phones',
@@ -282,6 +284,7 @@ class ApiControllerTest extends BaseControllerTest
             )
         );
 
+        
         $response = $this->client->getResponse();
 
         $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
@@ -307,6 +310,7 @@ class ApiControllerTest extends BaseControllerTest
 
             $response = $this->client->getResponse();
 
+            
             $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
             $this->assertJson($response->getContent());
             $this->assertEquals($httpValidationStatusCode, $response->getStatusCode());
@@ -315,6 +319,13 @@ class ApiControllerTest extends BaseControllerTest
 
             if($response->isSuccessful()){
                 $this->assertSerializedEntityContent($responseData,'phone');
+            }else{
+                $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
+
+                //this assertation is necessary to keep data consistent between Cyclos & Symfony
+                if($currentUser->getPhoneNumberActivationTries() >= 3){
+                    $this->assertUserIsDisabled($currentUser,true);
+                }
             }
         }
     }
@@ -365,7 +376,7 @@ class ApiControllerTest extends BaseControllerTest
                     'newPhone'=>array('phoneNumber'=>'+33611223344')
                     )),
 
-            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi'
                 )),
 
             'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
@@ -444,7 +455,15 @@ class ApiControllerTest extends BaseControllerTest
 
             if($response->isSuccessful()){
                 $this->assertSerializedEntityContent($responseData,'phone');
+            }else{
+                $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
+
+                //this assertation is necessary to keep data consistent between Cyclos & Symfony
+                if($currentUser->getPhoneNumberActivationTries() >= 3){
+                    $this->assertUserIsDisabled($currentUser,true);
+                }
             }
+
         }
     }
 
@@ -634,7 +653,7 @@ class ApiControllerTest extends BaseControllerTest
             'invalid negative amount'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
             'invalid insufficient balance'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
             'invalid : identical creditor & debitor'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'gjanssens@test.fr')),Response::HTTP_BAD_REQUEST),
-            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
+            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_INTERNAL_SERVER_ERROR),
             'valid now'=>array('gjanssens',$baseSubmit,Response::HTTP_CREATED),
             'valid after'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_CREATED),
             'invalid before'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
