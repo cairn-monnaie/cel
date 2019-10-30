@@ -452,8 +452,12 @@ class BankingControllerTest extends BaseControllerTest
             ->setParameter('number',$ownerAccount->number)                  
             ->getQuery()->getResult(); 
 
-        $operation = $scheduledOperations[0];
+        if(empty($scheduledOperations)){
+            echo 'TEST SKIPPED : INVALID DATA';
+            return;
+        }
 
+        $operation = $scheduledOperations[0];
 
         if($newStatus == 'execute'){
             $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
