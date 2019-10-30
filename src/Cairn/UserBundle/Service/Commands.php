@@ -719,7 +719,7 @@ class Commands
         $operation->setType($type);
         $operation->setPaymentID($transactionVO->id);
 
-        echo $operation->getPaymentID(); 
+        echo $operation->getPaymentID();
         $operation->setAmount($transactionVO->currencyAmount->amount);
         $operation->setReason('Motif du virement de test');
         $operation->setDescription($transactionVO->description);
@@ -875,14 +875,13 @@ class Commands
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
         $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
 
-
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
-        echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
-        foreach($futureInstallments as $installment){
-            $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
-        }
+        //echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
+        //foreach($futureInstallments as $installment){
+        //    $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+        //}
 
         $accountManager = $this->container->get('cairn_user.account_manager');
         

@@ -133,7 +133,7 @@ class BankingController extends Controller
                 $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($paymentVO->fromOwner));
                 $operation->setCreditorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($paymentVO->toOwner));
 
-                $operation->setPaymentID($paymentVO->id);
+                $operation->setPaymentID($paymentVO->transferId);
                 $operation->setFromAccountNumber($res->fromAccount->number);
                 $operation->setToAccountNumber($res->toAccount->number);
 
@@ -782,7 +782,7 @@ class BankingController extends Controller
                         $operation->setPaymentID($paymentVO->id);
                     }else{
                         $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
-                        $operation->setPaymentID($paymentVO->id);
+                        $operation->setPaymentID($paymentVO->transferId);
                     }
 
                     $em->flush();
@@ -1491,7 +1491,7 @@ class BankingController extends Controller
 
 
 
-                    $operation->setPaymentID($paymentVO->id);
+                    $operation->setPaymentID($paymentVO->transferId);
 
                     $redirectUrl = $onlinePayment->getUrlSuccess();
 

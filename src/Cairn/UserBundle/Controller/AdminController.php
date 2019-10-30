@@ -451,7 +451,7 @@ class AdminController extends Controller
                         $operation = new Operation();
                         $operation->setType(Operation::TYPE_CONVERSION_HELLOASSO);
                         $operation->setReason($reason);
-                        $operation->setPaymentID($paymentVO->id);
+                        $operation->setPaymentID($paymentVO->transferId);
                         $operation->setFromAccountNumber($res->fromAccount->number);
                         $operation->setToAccountNumber($res->toAccount->number);
                         $operation->setAmount($res->totalAmount->amount);

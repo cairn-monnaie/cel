@@ -602,7 +602,7 @@ class SmsController extends Controller
 
         $paymentVO = $this->bankingManager->makePayment($res->payment);
 
-        $operation->setPaymentID($paymentVO->id);
+        $operation->setPaymentID($paymentVO->transferId);
 
         //notify debitor that payment has been executed successfully
         $debitorBalance = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID())->status->balance;
