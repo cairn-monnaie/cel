@@ -154,7 +154,7 @@ class CardControllerTest extends BaseControllerTest
         }else{
 
             $form = $crawler->selectButton('form_add')->form();
-            $form['form[code]']->setValue($code);
+            $form['form[code]']->setValue($this->container->get('cairn_user.security')->vigenereEncode($code));
             $crawler = $this->client->submit($form);
 
             $this->em->refresh($currentUser);
@@ -182,28 +182,9 @@ class CardControllerTest extends BaseControllerTest
     {
         $adminUsername = $this->testAdmin;
 
-        $cardRepo = $this->em->getRepository('CairnUserBundle:Card');
-        $userRepo = $this->em->getRepository('CairnUserBundle:User');
-        $security = $this->container->get('cairn_user.security');
-
-        $availableCode = $cardRepo->findAvailableCards()[0]->getCode();
-        $availableCode = $security->vigenereEncode($availableCode);
-
-        $ub = $userRepo->createQueryBuilder('u'); 
-        $userRepo->whereRoles($ub, array('ROLE_PRO') );
-        $ub->join('u.card','c')                   
-                  ->andWhere('c.id is not NULL');
-                                                                                
-        $proCode =  $ub->getQuery()->getResult()[0]->getCard()->getCode(); 
-        $proCode = $security->vigenereEncode($proCode);
-
-        $ub = $userRepo->createQueryBuilder('u');                                  
-        $userRepo->whereRoles($ub, array('ROLE_PERSON') );
-        $ub->join('u.card','c')  
-                  ->andWhere('c.id is not NULL');
-                                                                                
-        $personCode =  $ub->getQuery()->getResult()[0]->getCard()->getCode(); 
-        $personCode = $security->vigenereEncode($personCode);
+        $availableCode = 'SINGLE0';
+        $proCode =  'PRO_CODE'; 
+        $personCode = 'PERSO_CODE';
 
         return array(
             'valid user + invalid code'   => array('referent'=>$adminUsername,'target'=>'episol','code'=>'aaaaa',
@@ -441,9 +422,11 @@ class CardControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideDataForCardDestruction
      */
-    public function testDestructCard($isValid, $card)
+    public function testDestructCard($isValid, $code)
     {
         $crawler = $this->login('admin_network', '@@bbccdd');
+
+        $card = $this->em->getRepository('CairnUserBundle:Card')->findOneByCode($code);
 
         //sensible operation
         $url = '/card/destruct/'.$card->getID();
@@ -467,12 +450,9 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideDataForCardDestruction()
     {
-        $availableCard = $this->em->getRepository('CairnUserBundle:Card')->findAvailableCards()[0];
-        $associatedCard = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>'nico_faus_prod'))->getCard();
-
         return array(
-            'card associated with user' => array('isValid'=>false,'card'=>$associatedCard),
-            'valid card to destruct'    => array('isValid'=>true ,'card'=>$availableCard),
+            'card associated with user' => array('isValid'=>false,'card'=>'PRO_CODE'),
+            'valid card to destruct'    => array('isValid'=>true ,'code'=>'SINGLE0'),
         );
     }
 
@@ -494,9 +474,16 @@ class CardControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideDataForSetGeneration
      */
-    public function testGenerateSetOfCards($nbRequestedCards,$isExceeded)
+    public function testGenerateSetOfCards($isExceeded)
     {
         $crawler = $this->login('admin_network', '@@bbccdd');
+
+        $nbPrintableCards = $this->container->getParameter('max_printable_cards') - count($this->em->getRepository('CairnUserBundle:Card')->findAvailableCards()) ;
+        if($isExceeded){
+            $nbRequestedCards = $nbPrintableCards + 1;
+        }else{
+            $nbRequestedCards = $nbPrintableCards -1;
+        }
 
         $nbAvailableCardsBefore = count($this->em->getRepository('CairnUserBundle:Card')->findAvailableCards());
 
@@ -529,11 +516,10 @@ class CardControllerTest extends BaseControllerTest
 
     public function provideDataForSetGeneration()
     {
-        $nbPrintableCards = $this->container->getParameter('max_printable_cards') - count($this->em->getRepository('CairnUserBundle:Card')->findAvailableCards()) ;
-
+        
         return array(
-            'number of printable cards exceeded'=> array('nbRequestedCards'=> $nbPrintableCards + 1,'isExceeded'=>true),
-            'correct number of printable cards'=> array('nbRequestedCards'=>$nbPrintableCards - 1,'isExceeded'=>false),
+            'number of printable cards exceeded'=> array('isExceeded'=>true),
+            'correct number of printable cards'=> array('isExceeded'=>false),
         );
     }       
 

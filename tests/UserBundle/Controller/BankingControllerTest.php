@@ -94,12 +94,7 @@ class BankingControllerTest extends BaseControllerTest
 
         $creditorUser = $userRepo->findOneBy(array('username'=>'maltobar'));
         $creditorEmail = $creditorUser->getEmail();
-
-        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
-                                                                                 'login',$credentials);
-
-        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+        $creditorICC = $creditorUser->getMainICC();
 
         //valid data
         $baseData = array('login'=>'labonnepioche','to'=>'new','expectForm'=>true,'ownsAccount'=>true,

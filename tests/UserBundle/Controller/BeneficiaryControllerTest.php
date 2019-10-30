@@ -58,16 +58,15 @@ class BeneficiaryControllerTest extends BaseControllerTest
 
     public function provideBeneficiariesToAdd()
     {
-        //test ICC data
-        $test = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword('alter_mag@test.fr');
-        $ICC = $test->accountNumber;
+        $creditorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername('alter_mag');
+        $ICC = $creditorUser->getMainICC();
 
         return array(
             'self beneficiary'=> array('current'=>'vie_integrative','value'=>'vie_integrative@test.fr','isValid'=>false),
 
-          'user not found'=> array('current'=>'vie_integrative','value'=>'malt@cairn-monnaie.fr','isValid'=>false),
+            'user not found'=> array('current'=>'vie_integrative','value'=>'malt@cairn-monnaie.fr','isValid'=>false),
 
-          'ICC not found'=>array('current'=>'vie_integrative', 'value'=>'123456789','isValid'=>false),
+            'ICC not found'=>array('current'=>'vie_integrative', 'value'=>'123456789','isValid'=>false),
 
             'ICC found'=>array('current'=>'vie_integrative', 'value'=>$ICC,'isValid'=>false),
 
