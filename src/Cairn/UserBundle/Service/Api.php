@@ -142,7 +142,7 @@ class Api
         }
         if($object instanceOf Operation){
 
-            $defaultIgnoredAttributes = array('fromAccount','toAccount');
+            $defaultIgnoredAttributes = array('fromAccount','toAccount','mandate');
             $normalizer->setCallbacks(array(
                         'creditor'=> function ($child) {return $this->objectCallback($child);},
                         'debitor'=>  function ($child) {return $this->objectCallback($child);}
