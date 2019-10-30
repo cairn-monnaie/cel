@@ -481,8 +481,9 @@ class UserController extends Controller
 
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
+
+            $errorMessage = 'Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible';
             if( $apiService->isRemoteCall()){
-                $errorMessage = 'Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible';
                 $res = $this->get('cairn_user.api')->serialize(array('message'=>$errorMessage));
 
                 $response = new Response($res);
