@@ -27,14 +27,21 @@ class BaseControllerTest extends WebTestCase
 
         self::bootKernel();
         $this->testAdmin = 'admin_network';
+
+        $this->client = static::createClient();
+
+        //necessary in order to get data from the container on data providers, before these are called BEFORE setUp function
+        $this->container = $this->client->getContainer();
+        $this->em = $this->container->get('doctrine.orm.entity_manager');                          
+
     }
 
+    //cleanup and create new client before each test function
     protected function setUp()
     {
         $this->client = static::createClient();
         $this->container = $this->client->getContainer();
         $this->em = $this->container->get('doctrine.orm.entity_manager');                          
-
     }
 
     public function assertSerializedEntityContent($entity,$entityType){
@@ -131,8 +138,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('description', $entity);
             $this->assertArrayHasKey('reason', $entity);
             $this->assertArrayHasKey('fromAccountNumber', $entity);
-            $this->assertArrayHasKey('toAccountNumber', $entity);
-            $this->assertArrayHasKey('mandate', $entity);
+            $this->assertArrayHasKey('toAccountNumber', $entity); 
             $this->assertArrayHasKey('smsPayment', $entity);
             $this->assertArrayHasKey('creditor', $entity);
             $this->assertArrayHasKey('creditorName', $entity);
@@ -142,8 +148,8 @@ class BaseControllerTest extends WebTestCase
 
             $this->assertArrayNotHasKey('fromAccount', $entity);
             $this->assertArrayNotHasKey('toAccount', $entity);
-
-            $this->assertEquals(17,count($entity));
+            $this->assertArrayNotHasKey('mandate', $entity);
+            $this->assertEquals(16,count($entity));
             break;
 
         case 'account':
@@ -226,10 +232,10 @@ class BaseControllerTest extends WebTestCase
     {
         $this->assertFalse($user->isEnabled());
 
-        $phones = $user->getPhones();
-        foreach($phones as $phone){
-            $this->assertFalse($phone->isPaymentEnabled());
-        }
+        //$phones = $user->getPhones();
+        //foreach($phones as $phone){
+        //    $this->assertFalse($phone->isPaymentEnabled());
+        //}
 
         //connect to Cyclos as an admin to get user status on Cyclos side
         $credentials = array('username'=> $this->testAdmin,'password'=>'@@bbccdd');
