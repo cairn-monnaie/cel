@@ -128,9 +128,9 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertEquals($nbPhonesAfter, $nbPhonesBefore);
 
                 if($currentUser->getPhoneNumberActivationTries() >= 3){
-                    $this->assertTrue($this->client->getRequest()->getRequestUri() == '/login');
-
                     $this->assertUserIsDisabled($currentUser,true);
+
+                    $this->assertTrue($this->client->getRequest()->getRequestUri() == '/logout');
 
                     $crawler = $this->client->followRedirect();
 
@@ -219,7 +219,6 @@ class UserControllerTest extends BaseControllerTest
                 )),
 
         );
-
     }
 
     /**
@@ -348,22 +347,21 @@ class UserControllerTest extends BaseControllerTest
                             $this->assertFalse($phoneBefore->isPaymentEnabled());
                         }
                     }else{
-                        $this->assertTrue($this->client->getResponse()->isRedirect($url));
-                        $crawler = $this->client->followRedirect();
-
-                        $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
-
-
                         if($currentUser->getPhoneNumberActivationTries() >= 3){
-                            $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
-                            $crawler = $this->client->followRedirect();
-                            $crawler = $this->client->followRedirect();
-
                             $this->assertUserIsDisabled($currentUser,true);
 
-                            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+                            $this->assertTrue($this->client->getRequest()->getRequestUri() == '/logout');
 
+                            $crawler = $this->client->followRedirect();
+
+                            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
                         }else{
+                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
+                            $crawler = $this->client->followRedirect();
+
+                            $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
+
+
                             $this->assertUserIsEnabled($currentUser, false);
 //                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
 //                            $crawler = $this->client->followRedirect();
@@ -482,14 +480,15 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'isValidCode'=>false, 'code'=>'2222',
-                                                                'expectedMessages'=>'compte a été bloqué')),
-
             'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
+        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'isValidCode'=>false, 'code'=>'2222',
+                                                                'expectedMessages'=>'compte a été bloqué')),
+
+            
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
                                                             )),
@@ -625,7 +624,7 @@ class UserControllerTest extends BaseControllerTest
                                                                   'expectValid'=>false, 'expectedMessage'=>'caractère spécial')),
 
             'new = current'               => $baseData,          
-            //we make it invalid because of cyclos bug
+
             'valid <'                  => array_replace($baseData, array('new'=>'i<3cairn','confirm'=>'i<3cairn')),          
 
             'valid \\ at begin'             => array_replace($baseData, array('new'=>'\bcdefgh','confirm'=>'\bcdefgh', 
