@@ -176,7 +176,8 @@ class MandateController extends Controller
             if($date){
                 //$date is modified but not a big deal as the two modifications involve the same month
                 $begin = $date->modify('first day of this month');
-                $end = $date->modify('last day of this month');
+                $clone = clone $begin;
+                $end = $clone->modify('last day of this month');
 
                 $operationRepo->whereSubmissionDateBetween($ob, $begin, $end);
             }
