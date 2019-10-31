@@ -248,12 +248,9 @@ class BaseControllerTest extends WebTestCase
             $this->container->get('cairn_user.access_platform')->changeUserStatus($user,'ACTIVE');
         }
 
-        $phoneRepo = $this->em->getRepository('CairnUserBundle:Phone');
-        $pb = $phoneRepo->createQueryBuilder('p');
-        $phoneRepo->whereUser($pb,$user);
-        //get phones with repository to get updated data
-        $phones = $pb->getQuery()->getResult();
+        $phones = $user->getPhones();
         foreach($phones as $phone){
+            $this->em->refresh($phone);
             $this->assertFalse($phone->isPaymentEnabled());
         }
 
