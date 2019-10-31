@@ -778,8 +778,8 @@ class BankingController extends Controller
                     //                            $paymentVO = $this->bankingManager->makeRecurringPayment( $paymentReview);
                     //                        }else
                     if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
-                        $paymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
-                        $operation->setPaymentID($paymentVO->id);
+                        $scheduledPaymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
+                        $operation->setPaymentID($scheduledPaymentVO->id);
                     }else{
                         $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                         $operation->setPaymentID($paymentVO->transferId);
@@ -1060,6 +1060,7 @@ class BankingController extends Controller
             else{
                 if($status == 'execute'){
                     $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
+                    $operation->setPaymentID($res->transfer->id);
                     $operation->setExecutionDate(new \Datetime());
                 }elseif($status == 'cancel'){
                     $em->remove($operation);

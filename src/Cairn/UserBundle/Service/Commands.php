@@ -710,16 +710,17 @@ class Commands
         if($type == Operation::TYPE_DEPOSIT || $type == Operation::TYPE_TRANSACTION_EXECUTED){
             $dueDate = $entryVO->date;
             $transactionVO = $bankingService->getTransactionByID($entryVO->id);
-        }else{
+        }elseif($type == Operation::TYPE_TRANSACTION_SCHEDULED){ 
             $dueDate = $entryVO->dueDate;
-            $transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //$transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //instance of ScheduledPaymentVO with installments;
+            $transactionVO = $bankingService->getTransactionDataByID($entryVO->scheduledPayment->id)->transaction;
         }
 
         $operation = new Operation();
         $operation->setType($type);
         $operation->setPaymentID($transactionVO->id);
 
-        echo $operation->getPaymentID();
         $operation->setAmount($transactionVO->currencyAmount->amount);
         $operation->setReason('Motif du virement de test');
         $operation->setDescription($transactionVO->description);
@@ -878,10 +879,11 @@ class Commands
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
-        //echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
-        //foreach($futureInstallments as $installment){
-        //    $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
-        //}
+        echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
+        foreach($futureInstallments as $installment){
+            $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+        }
+
 
         $accountManager = $this->container->get('cairn_user.account_manager');
         

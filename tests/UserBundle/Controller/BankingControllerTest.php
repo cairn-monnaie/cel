@@ -460,8 +460,10 @@ class BankingControllerTest extends BaseControllerTest
         $operation = $scheduledOperations[0];
 
         if($newStatus == 'execute'){
+            $this->assertSame(1,$crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->count());
             $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
             $crawler = $this->client->click($link);
+
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
             $crawler = $this->client->followRedirect();
