@@ -3,6 +3,7 @@
 namespace Cairn\UserBundle\Form;
 
 use Cairn\UserBundle\Validator\UserPassword;
+use Cairn\UserBundle\Service\Api;
 
 use FOS\UserBundle\Form\Type\ProfileFormType;
 use Cairn\UserBundle\Form\AddressType;
@@ -26,9 +27,12 @@ class ProfileType extends AbstractType
 {
     private $authorizationChecker;
 
-    public function __construct(AuthorizationChecker $authorizationChecker)
+    private $apiService;
+
+    public function __construct(AuthorizationChecker $authorizationChecker, Api $apiService)
     {
         $this->authorizationChecker = $authorizationChecker;
+        $this->apiService = $apiService;
     }
 
     /**
@@ -53,6 +57,9 @@ class ProfileType extends AbstractType
                 if(null === $user){
                     return;
                 }
+                if($this->apiService->isRemoteCall()){
+                    $form->remove('current_password');
+                }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
                         ->add('description',TextareaType::class,array('label'=>'Description d\'activité en quelques mots (150 car.)'))
@@ -66,7 +73,6 @@ class ProfileType extends AbstractType
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
                     $form->add('description',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
-
                 }
 
                 if(! $this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
@@ -95,8 +101,6 @@ class ProfileType extends AbstractType
 
             }
         );
-
-
     }
 
     /**

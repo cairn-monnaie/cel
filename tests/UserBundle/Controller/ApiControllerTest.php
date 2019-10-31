@@ -893,7 +893,7 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForEditProfile
      */
-    public function testRemoteEditProfile($current, $email,$hasUploadedFile,$httpStatusCode, $password)
+    public function testRemoteEditProfile($current, $email,$hasUploadedFile,$httpStatusCode)
     {
         $this->mobileLogin($current,'@@bbccdd');
 
@@ -913,7 +913,6 @@ class ApiControllerTest extends BaseControllerTest
             array(
                 'fos_user_profile_form'=>
                 array(
-                    'current_password'=>$password,
                     'email'=>$email,
                     'name'=>"New User",
                     'address'=>array(
@@ -949,12 +948,11 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForEditProfile()
     {
         return array(
-            'email already in use'=>array('comblant_michel','labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
-            'invalid email : no @'=>array('comblant_michel','test.com',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
-            'invalid email : not enough characters'=>array('comblant_michel','test@t.c',true,Response::HTTP_BAD_REQUEST,'@@bbccdd'),
-            'wrong password'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_BAD_REQUEST,'@bcdefgh'),
-            'valid, no document file'=>array('comblant_michel','newuser@test.fr',false,Response::HTTP_OK,'@@bbccdd'),
-            'valid registration'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_OK,'@@bbccdd'),
+            'email already in use'=>array('comblant_michel','labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST),
+            'invalid email : no @'=>array('comblant_michel','test.com',true,Response::HTTP_BAD_REQUEST),
+            'invalid email : not enough characters'=>array('comblant_michel','test@t.c',true,Response::HTTP_BAD_REQUEST),
+            'valid, no document file'=>array('comblant_michel','newuser@test.fr',false,Response::HTTP_OK),
+            'valid registration'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_OK),
         );
     }
 
