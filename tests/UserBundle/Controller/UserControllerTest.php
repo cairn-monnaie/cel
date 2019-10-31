@@ -962,7 +962,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertSame(1,$crawler->filter('html:contains("Espace membre supprimé")')->count());
 
                 }else{
-                    $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/login'));
                     $crawler = $this->client->followRedirect();
 
                     $this->em->refresh($targetUser);
