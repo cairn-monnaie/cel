@@ -232,11 +232,6 @@ class BaseControllerTest extends WebTestCase
     {
         $this->assertFalse($user->isEnabled());
 
-        //$phones = $user->getPhones();
-        //foreach($phones as $phone){
-        //    $this->assertFalse($phone->isPaymentEnabled());
-        //}
-
         //connect to Cyclos as an admin to get user status on Cyclos side
         $credentials = array('username'=> $this->testAdmin,'password'=>'@@bbccdd');
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
@@ -252,6 +247,16 @@ class BaseControllerTest extends WebTestCase
         if($statusChanged){
             $this->container->get('cairn_user.access_platform')->changeUserStatus($user,'ACTIVE');
         }
+
+        $phoneRepo = $this->em->getRepository('CairnUserBundle:Phone');
+        $pb = $phoneRepo->createQueryBuilder('p');
+        $phoneRepo->whereUser($pb,$user);
+        //get phones with repository to get updated data
+        $phones = $pb->getQuery()->getResult();
+        foreach($phones as $phone){
+            $this->assertFalse($phone->isPaymentEnabled());
+        }
+
     }
 
     public function provideReferentsAndTargets()
