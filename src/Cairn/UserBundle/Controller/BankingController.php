@@ -230,12 +230,6 @@ class BankingController extends Controller
         $beginDefault = date_modify(new \Datetime(),'-2 months');
         $endDefault = date_modify(new \Datetime(),'+1 days');
 
-        if($account->type->nature == 'SYSTEM'){
-            $id = $accountID;
-        }else{
-            $id = $account->number;
-        }
-
         //get, once for all, the list of executed types
         $hasMandate = ( $mandateRepo->findOneByContractor($user) == NULL ) ? false : true;  
         $executedTypes = Operation::getExecutedTypes($hasMandate,$user->hasRole('ROLE_PRO'));
@@ -257,7 +251,7 @@ class BankingController extends Controller
             ->andWhere('o.paymentID is not NULL')
             ->andWhere('o.executionDate BETWEEN :begin AND :end')
             ->orderBy('o.executionDate','ASC')
-            ->setParameter('number',$id)
+            ->setParameter('number',$account->number)
             ->setParameter('begin',$beginDefault)
             ->setParameter('end',$endDefault)
             ->getQuery()->getResult();
@@ -266,7 +260,7 @@ class BankingController extends Controller
         $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
         $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
-            ->setParameter('number',$id);
+            ->setParameter('number',$account->number);
 
         $res = $query->getSingleScalarResult();
         $totalAmount = ($res == NULL) ? 0 : $res ;
@@ -314,7 +308,7 @@ class BankingController extends Controller
         $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
         $query->setParameter('type', Operation::TYPE_TRANSACTION_SCHEDULED)
             ->setParameter('date',date_modify(new \Datetime(),'+1 months'))
-            ->setParameter('number',$id);
+            ->setParameter('number',$account->number);
 
         $res = $query->getSingleScalarResult();
         $totalAmount = ($res == NULL) ? 0 : $res ;
@@ -322,7 +316,7 @@ class BankingController extends Controller
         if($request->isMethod('GET')){
             //last operations
             $ob = $operationRepo->createQueryBuilder('o');
-            $operationRepo->whereInvolvedAccountNumber($ob, $id)
+            $operationRepo->whereInvolvedAccountNumber($ob, $account->number)
                 ->whereTypes($ob,Operation::getExecutedTypes())
                 ->whereExecutedBefore($ob,$endDefault)->whereExecutedAfter($ob,$beginDefault);
             $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
@@ -386,7 +380,7 @@ class BankingController extends Controller
                 }
 
                 $ob = $operationRepo->createQueryBuilder('o');
-                $operationRepo->whereInvolvedAccountNumber($ob, $id)
+                $operationRepo->whereInvolvedAccountNumber($ob, $account->number)
                     ->whereTypes($ob,$operationTypes)
                     ->whereExecutedBefore($ob,$end)->whereExecutedAfter($ob,$begin)
                     ->whereKeywords($ob,$dataForm['keywords']);
