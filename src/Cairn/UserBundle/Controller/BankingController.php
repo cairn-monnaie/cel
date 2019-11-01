@@ -175,25 +175,10 @@ class BankingController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
-        $username = $this->getParameter('cyclos_anonymous_user');                     
-        $credentials = array('username'=>$username,'password'=>$username); 
-        $network = $this->getParameter('cyclos_currency_cairn');                     
-
-        $this->get('cairn_user_cyclos_network_info')->switchToNetwork($network,'login',$credentials);
-        //get account balance of e-cairns
-        $anonymousVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
-        $anonymousAccounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($anonymousVO->id,NULL);
-
-        foreach($anonymousAccounts as $account){
-            if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
-                $debitAccount = $account;
-            }
-        }
-
         if($_format == 'json'){
             return $this->json(array('user'=>$user,'accounts'=> $accounts));
         }
-        return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts,'availableAmount'=>$debitAccount->status->balance));
+        return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts));
     }
 
     /*
