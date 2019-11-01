@@ -278,11 +278,6 @@ class MandateController extends Controller
 
             $operation = $accountManager->creditUserAccount($mandate->getContractor(), $mandate->getAmount(), Operation::TYPE_MANDATE, 'Règlement de mandat' );
 
-            if(! $operation){
-                $session->getFlashBag()->add('error','Coffre [e]-Cairns insuffisant');
-                return $this->redirectToRoute('cairn_user_mandates_dashboard');
-            }
-
             $mandate->addOperation($operation);
             $operation->setMandate($mandate);
 

@@ -181,19 +181,7 @@ class AccountManager
             }
         }
 
-        $availableAmount = $debitAccount->status->balance;
-
-        if($availableAmount >= 0){
-            $diff = $availableAmount - $amount;
-        }else{
-            $diff = -$amount;
-        }
-
-        if($diff <= 0 ){
-            return NULL;
-        }else{
-            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$reason,$creditTransferType,new \Datetime());
-        }
+        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$reason,$creditTransferType,new \Datetime());
         //preview allows to make sure payment would be executed according to provided data
         $paymentVO = $this->bankingManager->makePayment($res->payment);
 

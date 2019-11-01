@@ -163,10 +163,7 @@ class HelloassoController extends Controller
              $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
 
              $em->persist($newHelloassoPayment);
-
-             if($operation){
-                $em->persist($operation);
-             }
+             $em->persist($operation);
 
              $em->flush();
 
@@ -282,13 +279,9 @@ class HelloassoController extends Controller
 
              $em->persist($newHelloassoPayment);
              
-             if(! $operation ){
-                 $session->getFlashBag()->add('error','Le crédit de compte n\'a pas été exécuté. Le coffre [e]-Cairns est probablement vide !');
-             }else{
-                 $operation->setSubmissionDate($newHelloassoPayment->getDate());
-                 $em->persist($operation);
-                 $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
-             }
+             $operation->setSubmissionDate($newHelloassoPayment->getDate());
+             $em->persist($operation);
+             $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
 
             $em->flush();
             return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
