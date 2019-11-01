@@ -229,21 +229,24 @@ class CardController extends Controller
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $beforeDefaultDate,
+                'required'=>false
                 ))
             ->add('after',     DateTimeType::class, array(
                 'label' => 'générées après',
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $afterDefaultDate,
+                'required'=>false
                 ))
             ->add('expires_before',     DateTimeType::class, array(
                 'label' => 'expirent avant',
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $expirationBefore,
+                'required'=>false
                 ))
             ->add('code',  TextType::class,array(
-                'label'=>'Code',
+                'label'=>'Code entier',
                 'required'=>false))
                 ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
                 ->getForm();
