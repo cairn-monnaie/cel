@@ -128,12 +128,9 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertEquals($nbPhonesAfter, $nbPhonesBefore);
 
                 if($currentUser->getPhoneNumberActivationTries() >= 3){
-                    $this->assertTrue($this->client->getRequest()->getRequestUri() == '/login');
-
                     $this->assertUserIsDisabled($currentUser,true);
 
-                    $crawler = $this->client->followRedirect();
-
+                    $this->assertTrue($this->client->getRequest()->getRequestUri() == '/login');
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
                 }else{
@@ -219,7 +216,6 @@ class UserControllerTest extends BaseControllerTest
                 )),
 
         );
-
     }
 
     /**
@@ -333,40 +329,27 @@ class UserControllerTest extends BaseControllerTest
                         $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms', 'ACTIVE');
                         $this->assertTrue($accessClientVO != NULL);
 
-                        //if this is first phone number association, an access client is created for the current user on Cyclos side.
-                        //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
-                        //on Cyclos side, breaking up the logic of our application
-                        //Workaround : removing the access client "by hand" at test end
-                        //this is a problem regarding isolation tests and Cyclos
-//                        if(! $hasPreviousPhoneNumber){
-//                            $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
-//                        }
-
+                        
                         if($isPaymentEnabled){
                             $this->assertTrue($phoneBefore->isPaymentEnabled());
                         }else{
                             $this->assertFalse($phoneBefore->isPaymentEnabled());
                         }
                     }else{
-                        $this->assertTrue($this->client->getResponse()->isRedirect($url));
-                        $crawler = $this->client->followRedirect();
-
-                        $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
-
-
                         if($currentUser->getPhoneNumberActivationTries() >= 3){
-                            $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
-                            $crawler = $this->client->followRedirect();
-                            $crawler = $this->client->followRedirect();
-
                             $this->assertUserIsDisabled($currentUser,true);
 
-                            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+                            $this->assertTrue($this->client->getResponse()->isRedirect('/login'));
+                            $crawler = $this->client->followRedirect();
 
+                            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
                         }else{
                             $this->assertUserIsEnabled($currentUser, false);
-//                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
-//                            $crawler = $this->client->followRedirect();
+
+                            $this->assertTrue($this->client->getResponse()->isRedirect($url));
+                            $crawler = $this->client->followRedirect();
+
+                            $this->assertEquals($currentUser->getPhoneNumberActivationTries(),$previous_phoneNumberActivationTries + 1);
 
                             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
 
@@ -428,33 +411,33 @@ class UserControllerTest extends BaseControllerTest
                                                                     'isExpectedForm'=>false,
                                                                     'expectedMessages'=>'3 demandes de changement')),
 
-           'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,
                                                               'newPhone'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
                                                               'expectedMessages'=>$validCodeMsg
                                                           )),
 
-         'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+            'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                             'isPhoneNumberEdit'=>false,'newPhone'=>array('phoneNumber'=>'+33611223344'),
                                                             'isValidData'=>true,'isSmsEnabled'=>false,
                                                             'expectedMessages'=>$validCodeMsg
                                                         )),
 
-       'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+            'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                           'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
                                                           'isValidData'=>false,'isSmsEnabled'=>false,
                                                           'expectedMessages'=>'Format du numéro'
                                                       )),
 
-        'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+            'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
                                                                 'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
                                                                 'expectedMessages'=>$validCodeMsg)),
 
-          'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
+            'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
                                                                   'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
                                                                   'expectedMessages'=>$validCodeMsg)),
 
-         'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+            'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                             'isPhoneNumberEdit'=>true,
                                                             'isValidData'=>true,'isSmsEnabled'=>false,
                                                             'expectedMessages'=>$validCodeMsg
@@ -482,14 +465,15 @@ class UserControllerTest extends BaseControllerTest
                                                               'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
-        'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'isValidCode'=>false, 'code'=>'2222',
-                                                                'expectedMessages'=>'compte a été bloqué')),
-
             'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                                                                 'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                                                             )),
 
+            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'isValidCode'=>false, 'code'=>'2222',
+                                                                'expectedMessages'=>'compte a été bloqué')),
+
+            
             '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
                                                         'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
                                                             )),
@@ -625,7 +609,7 @@ class UserControllerTest extends BaseControllerTest
                                                                   'expectValid'=>false, 'expectedMessage'=>'caractère spécial')),
 
             'new = current'               => $baseData,          
-            //we make it invalid because of cyclos bug
+
             'valid <'                  => array_replace($baseData, array('new'=>'i<3cairn','confirm'=>'i<3cairn')),          
 
             'valid \\ at begin'             => array_replace($baseData, array('new'=>'\bcdefgh','confirm'=>'\bcdefgh', 
@@ -978,7 +962,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertSame(1,$crawler->filter('html:contains("Espace membre supprimé")')->count());
 
                 }else{
-                    $this->assertTrue($this->client->getResponse()->isRedirect('/logout'));
+                    $this->assertTrue($this->client->getResponse()->isRedirect('/login'));
                     $crawler = $this->client->followRedirect();
 
                     $this->em->refresh($targetUser);

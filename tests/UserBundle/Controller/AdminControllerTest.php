@@ -231,7 +231,7 @@ class AdminControllerTest extends BaseControllerTest
         $operationRepo->whereType($ob, $type);
         $targetOperation = $ob->getQuery()->getResult()[0];
 
-        $cyclosID = '4268788535362862840'; //$targetOperation->getPaymentID();
+        $cyclosID = $targetOperation->getPaymentID();
 
         if(! $symfonyPersistedID){
             $this->em->remove($targetOperation);

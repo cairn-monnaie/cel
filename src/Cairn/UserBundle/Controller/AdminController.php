@@ -451,7 +451,7 @@ class AdminController extends Controller
                         $operation = new Operation();
                         $operation->setType(Operation::TYPE_CONVERSION_HELLOASSO);
                         $operation->setReason($reason);
-                        $operation->setPaymentID($paymentVO->id);
+                        $operation->setPaymentID($paymentVO->transferId);
                         $operation->setFromAccountNumber($res->fromAccount->number);
                         $operation->setToAccountNumber($res->toAccount->number);
                         $operation->setAmount($res->totalAmount->amount);
@@ -567,8 +567,15 @@ class AdminController extends Controller
 
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
-                            //send email to local group referent if pro
+                            //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
+                            if($user->hasRole('ROLE_PRO')){
+                            }
 
+                            //then, if above filter not efficient enough, go through one by one distance calculation
+                            //finally, send notifications to all those people
+
+
+                            //send email to local group referent if pro
                             if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){
                                 $from = $messageNotificator->getNoReplyEmail();
                                 $to = $referent->getEmail();

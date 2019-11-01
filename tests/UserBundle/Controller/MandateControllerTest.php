@@ -97,6 +97,7 @@ class MandateControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('html:contains("succès")')->count());
 
             $this->assertEquals($nbMandatesAfter, $nbMandatesBefore + 1);
+            $this->assertEquals(1, $mandateRepo->findByContractor($contractor)[0]->getMandateDocuments()->count());
             $this->assertNotEquals($scheduledMandate,NULL);
         }else{
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
@@ -188,19 +189,47 @@ class MandateControllerTest extends BaseControllerTest
         $originalName = 'poster_sms.pdf';                                 
         $absolutePath = $absoluteWebDir.$originalName;
 
-        $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+        $copyPath1 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
+        //copy 
+        if(! copy($absolutePath,$copyPath1 )){
+            echo "Failed to copy";
+            return;
+        }
+        $file1 = new UploadedFile($copyPath1, $originalName, 'application/pdf',123);
+
+
         $values = $form->getPhpValues();
 
-        $countDocsBefore = $mandate->getMandateDocuments()->count();
-        $values['cairn_userbundle_mandate']['mandateDocuments'][0]['file'] = $absolutePath; 
-
         if($addDocument){
-            $values['cairn_userbundle_mandate']['mandateDocuments'][1]['file'] = $absolutePath; 
-        }
-        
-        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
+            $copyPath2 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
+            //copy 
+            if(! copy($absolutePath,$copyPath2 )){
+                echo "Failed to copy";
+                return;
+            }
+            $file2 = new UploadedFile($copyPath2, $originalName, 'application/pdf',123);
 
-                       
+            $documents = array(
+                    '0'=>array('file'=>$file1),
+                    '1'=>array('file'=>$file2)
+                );
+        }else{
+            $documents = array(
+                    '0'=>array('file'=>$file1)
+                );
+        }
+
+        $files = array(
+            'cairn_userbundle_mandate'=> array(
+                'mandateDocuments'=>$documents
+            )
+        );
+
+        $countDocsBefore = $mandate->getMandateDocuments()->count();
+
+                
+        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $files);
+
         if($isValid){
             $crawler = $this->client->followRedirect();
 

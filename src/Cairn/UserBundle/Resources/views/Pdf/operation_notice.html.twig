@@ -15,9 +15,9 @@
             <table class="notice-history">
                  <caption> Avis d'opération </caption>
                  <tbody>
-                    <tr><td> Compte-rendu de votre opération, enregistrée le {{transfer.submissionDate|date('d-m-Y')}}  </td></tr>
+                    <tr><td> Compte-rendu de votre opération, enregistrée le {{operation.submissionDate|date('d-m-Y')}}  </td></tr>
                     <tr><td> Imprimé le {{ 'now'|date('d-m-Y') }} </td> </tr>
-                    <tr><td> Identifiant du paiement : {{transfer.paymentID}} </td></tr>
+                    <tr><td> Identifiant du paiement : {{operation.paymentID}} </td></tr>
                  </tbody>
             </table> 
         {% endblock %}
@@ -30,35 +30,35 @@
                 <tbody>
                     <tr> 
                         <td class="title">Type d'opération</td>
-                        <td class="value"> {{transfer.getTypeName(transfer.type)|trans}} </td> 
+                        <td class="value"> {{operation.getTypeName(operation.type)|trans}} </td> 
                     </tr>
                     <tr> 
                         <td class="title">Montant</td>
-                        <td class="value">{{transfer.amount}} CRN</td> 
+                        <td class="value">{{operation.amount}} CRN</td> 
                     </tr>
                     <tr> 
                         <td class="title">Date de soumission</td>
-                        <td class="value"> {{transfer.submissionDate|date('d-m-Y')}} </td>
+                        <td class="value"> {{operation.submissionDate|date('d-m-Y')}} </td>
                     </tr>
                     <tr> 
                         <td class="title">Date d'éxecution</td>
-                        <td class="value"> {{transfer.executionDate|date('d-m-Y')}} </td>
+                        <td class="value"> {{operation.executionDate|date('d-m-Y')}} </td>
                     </tr>
                     <tr> 
                         <td class="title">Etat</td> 
                         <td class="value">
-                            {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                            {% if operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
                                  A exécuter 
-                            {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                            {% elseif operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
                                  Echoué 
-                            {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                            {% elseif operation.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
                                  Exécuté
                             {% endif %}
                         </td>
                     </tr>
                     <tr> 
                         <td class="title">Motif</td>
-                        <td class="value"> {{transfer.reason}} </td>
+                        <td class="value"> {{operation.reason}} </td>
                     </tr>
                 </tbody>
         </table> 
@@ -68,16 +68,16 @@
             <tbody>
                 <tr>
                     <td class="title">Compte débiteur </td>
-                    <td class="value">{{transfer.fromAccountNumber}} 
+                    <td class="value">{{operation.fromAccountNumber}} 
                         <br>
-                        {{transfer.debitorName}}
+                        {{operation.debitorName}}
                     </td> 
                 </tr>
                 <tr>
                     <td class="title">Compte créditeur </td>
-                    <td class="value">{{transfer.toAccountNumber}} 
+                    <td class="value">{{operation.toAccountNumber}} 
                         <br>
-                        {{transfer.creditorName}}
+                        {{operation.creditorName}}
                     </td> 
                 </tr>
             </tbody>

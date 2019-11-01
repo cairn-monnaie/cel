@@ -8,6 +8,14 @@ Cairn\UserBundle\Entity\Operation:
     constraints:
             - Cairn\UserBundle\Validator\Operation: ~
 
+Cairn\UserBundle\Entity\SmsData:
+    constraints:
+            - Cairn\UserBundle\Validator\SmsData: ~
+
+              #Cairn\UserBundle\Entity\Address:
+              #    constraints:
+              #            - Cairn\UserBundle\Validator\Address: ~
+
 Cairn\UserBundle\Entity\Mandate:
     constraints:
             - Cairn\UserBundle\Validator\Mandate: ~

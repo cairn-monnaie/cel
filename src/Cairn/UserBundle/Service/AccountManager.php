@@ -174,7 +174,6 @@ class AccountManager
         //get account balance of e-cairns
         $anonymousVO = $this->userService->getCurrentUser();
         $accounts = $this->accountService->getAccountsSummary($anonymousVO->id,NULL);
-
         foreach($accounts as $account){
             if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
                 $debitAccount = $account;
@@ -189,7 +188,7 @@ class AccountManager
         $operation = new Operation();
         $operation->setType($type);
         $operation->setReason($reason);
-        $operation->setPaymentID($paymentVO->id);
+        $operation->setPaymentID($paymentVO->transferId);
         $operation->setFromAccountNumber($res->fromAccount->number);
         $operation->setToAccountNumber($res->toAccount->number);
         $operation->setAmount($res->totalAmount->amount);

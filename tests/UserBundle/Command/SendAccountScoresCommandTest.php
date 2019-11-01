@@ -41,9 +41,6 @@ class SendAccountScoresCommandTest extends KernelTestCase
 
         $accountScore->setSchedule($schedule);
 
-        //var_dump($accountScore->getNbSentToday());
-        //var_dump($accountScore->getConsideredDay());
-
         $em->persist($accountScore);
 
         $application = new Application($kernel);

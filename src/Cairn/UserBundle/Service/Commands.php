@@ -61,6 +61,47 @@ class Commands
         $this->container = $container;
     }
 
+    public function generateLocalizationCoordinates($username = NULL)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+       
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+            if(! $user){
+                return 'username '.$username.' does not match any account';
+            }
+            if(! $user->isAdherent()){
+                return 'username '.$username.' does not match any adherent account';
+            }
+            $users = array($user);
+        }else{
+            $ub = $userRepo->createQueryBuilder('u');                 
+            $userRepo->whereAdherent($ub);
+
+            $users = $ub->getQuery()->getResult();
+        }
+
+        $returnMsg = '';
+
+        foreach($users as $user){
+            $address = $user->getAddress();
+
+            $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+
+            if(!$coords['latitude']){                                  
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest'];
+            }else{                                         
+                $address->setLongitude($coords['longitude']);
+                $address->setLatitude($coords['latitude']);
+                $returnMsg .= 'OK : '.$user->getUsername().' lat:'.$address->getLatitude().' lon:'.$address->getLongitude()."\n";
+            }             
+        }
+
+        $this->em->flush();
+
+        return $returnMsg;
+    }
+
     /**
      * Removes all operations with no paymentID
      *
@@ -662,7 +703,6 @@ class Commands
      */
     public function createOperation($entryVO, $type)
     {
-
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
@@ -670,14 +710,17 @@ class Commands
         if($type == Operation::TYPE_DEPOSIT || $type == Operation::TYPE_TRANSACTION_EXECUTED){
             $dueDate = $entryVO->date;
             $transactionVO = $bankingService->getTransactionByID($entryVO->id);
-        }else{
+        }elseif($type == Operation::TYPE_TRANSACTION_SCHEDULED){ 
             $dueDate = $entryVO->dueDate;
-            $transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //$transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //instance of ScheduledPaymentVO with installments;
+            $transactionVO = $bankingService->getTransactionDataByID($entryVO->scheduledPayment->id)->transaction;
         }
 
         $operation = new Operation();
         $operation->setType($type);
         $operation->setPaymentID($transactionVO->id);
+
         $operation->setAmount($transactionVO->currencyAmount->amount);
         $operation->setReason('Motif du virement de test');
         $operation->setDescription($transactionVO->description);
@@ -802,8 +845,7 @@ class Commands
         echo 'INFO: -------' . $nbPrintedCards . ' cards to create. Max number of printable cards : '.$maxCards . "--------- \n";
 
         for($i=0; $i < $nbPrintedCards; $i++){
-            $uniqueCode = $securityService->findAvailableCode();
-            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa','SINGLE'.$i,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             $this->em->persist($card);
@@ -811,9 +853,12 @@ class Commands
         echo 'INFO: OK !' . "\n";
 
 
-        // ************************* payments creation ******************************************
-        // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+        // ************************* payments creation & synchronization ******************************************
+        // foreach user living in Grenoble, credit account
+        echo "INFO: ------- Credit user accounts, for each Grenoble living adherent --------- \n";
+
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+
         $list = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($this->container->getParameter('cyclos_currency_cairn'),'USER');
 
         foreach($list as $accountType){
@@ -821,57 +866,54 @@ class Commands
                 $adherentAccountTypeVO = $accountType;
             }
         }
-
-
-        //instances of TransactionEntryVO
-        $processedDeposits = $bankingService->getTransactions(
-            $admin->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
-
-        foreach($processedDeposits as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
-        }
-
-        //instances of TransactionEntryVO
-        //in init_data.py script, trankilou makes a transaction in order to have a null account balance
-        $user = $userRepo->findOneByUsername('trankilou'); 
-        $processedTransactions1 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-        foreach($processedTransactions1 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
-
-        //in init_data.py script, DrDBrew makes transactions
-        $user = $userRepo->findOneByUsername('DrDBrew'); 
-        $processedTransactions2 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-
-        //            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
-        foreach($processedTransactions2 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
-
+        
         //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
         //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
         //in init_data_test.py script, future transactions are made by labonnepioche
-        $user = $userRepo->findOneByUsername('labonnepioche'); 
+        $user = $userRepo->findOneByUsername('labonnepioche');
 
         $credentials = array('username'=>'labonnepioche','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-
         $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
 
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
-        var_dump(count($futureInstallments));
-
+        echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
         foreach($futureInstallments as $installment){
             $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
         }
 
+
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $ub = $userRepo->createQueryBuilder('u');
+         $ub->join('u.address','addr')
+             ->join('addr.zipCity','zp')
+             ->where('zp.city = :city')
+             ->andWhere('u.username <> :username')
+             ->setParameter('city','Grenoble')
+             ->setParameter('username','trankilou');
+        $userRepo->whereRoles($ub, array('ROLE_PRO','ROLE_PERSON'));
+
+        $users = $ub->getQuery()->getResult();
+
+        //here, anonymous user connects to Cyclos in order to credit user accounts without hand-made interaction
+        foreach($users as $user){
+            echo 'INFO: Crédit de compte de 2000 pour '.$user->getName(). "\n";
+            $operation = $accountManager->creditUserAccount($user,2000, Operation::TYPE_DEPOSIT, 'Dépôt Cairn');
+            $this->em->persist($operation);
+            echo 'INFO: Crédit de compte de 2000 pour '.$user->getName().'... Terminé'. "\n";
+        }
+
+        echo 'INFO: OK !' . "\n";
+
         //********************** Fine-tune user data in order to have a diversified database ************************
 
         //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
+        $credentials = array('username'=>'admin_network','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         $admin->setFirstLogin(false);
 
         $cyclosClient = $this->getClientToken($admin,'main');
@@ -897,10 +939,17 @@ class Commands
         $person->setCard($proCard);
         $personCard->getUsers()->clear();
         $this->em->remove($personCard);
+
         //admin is not referent of vie_integrative
         $user = $userRepo->findOneByUsername('vie_integrative'); 
-        echo 'INFO: '.$user->getName(). ' has no referent'."\n";
+        $user->getCard()->setCode('PRO_CODE');
+        echo 'INFO: '.$user->getName(). ' has no referent & card code is PRO_CODE'."\n";
         $user->removeReferent($admin);
+        echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('benoit_perso'); 
+        $user->getCard()->setCode('PERSO_CODE');
+        echo 'INFO: '.$user->getName(). ' has card code PERSON_CODE'."\n";
         echo 'INFO: OK !'."\n";
 
         //episol has NO card
@@ -917,10 +966,11 @@ class Commands
         $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
-        //NaturaVie has NO card and admin not referent
+        //NaturaVie has NO card and admin not referent and never logged in
         $user = $userRepo->findOneByUsername('NaturaVie'); 
         echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
         $user->removeReferent($admin);
+        $user->setLastLogin(NULL);
         $card  = $user->getCard();
         $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";

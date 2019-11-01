@@ -20,11 +20,11 @@ cairn_user_api_online_payment_create:
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:createOnlinePayment, _format: json }
 
-#cairn_user_api_get_tokens:
-#    path: oauth/get-tokens
-#    methods: POST
-#    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
-#
+cairn_user_api_get_tokens:
+    path: oauth/tokens
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Security:getTokens, _format: json }
+
 #cairn_user_api_users_options:
 #    path: api/users
 #    methods: OPTIONS
@@ -40,16 +40,16 @@ cairn_user_api_online_payment_create:
 #    methods: GET
 #    defaults: { _controller: CairnUserBundle:User:list, _format: json }
 #
-#cairn_user_api_users_post:
-#    path: api/users/post
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
-#
-#cairn_user_api_users_put:
-#    path: api/users/put
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:Profile:edit, _format: json }
-#
+cairn_user_api_users_post:
+    path: /mobile/users/registration
+    methods: POST
+    defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
+
+cairn_user_api_users_put:
+    path: mobile/users/profile
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Profile:edit, _format: json }
+
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}
 #    methods: DELETE
@@ -71,8 +71,10 @@ cairn_user_registration:
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
 
 cairn_user_registration_type:
-    path:     inscription/{type}
+    path:     inscription/{type}.{_format}
     defaults: { _controller: CairnUserBundle:Default:registrationByType, _format: html }
+    requirements:
+        _format: html|json
 
 cairn_zipcities_ajax:
     path:     zipcities
@@ -89,6 +91,11 @@ cairn_accounts_ajax:
     methods: POST
     defaults: { _controller: CairnUserBundle:Default:accounts, _format: json }
 
+cairn_accounts_mobile_ajax:
+    path:    mobile/users
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:users, _format: json }
+
 cairn_user_card_security_layer:
     path:     security/card/
     defaults: { _controller: CairnUserBundle:Card:inputCardKey }
@@ -102,8 +109,14 @@ cairn_user_referents_assign:
 cairn_user_profile_view:
     path:     user/profile/view/{username}
     defaults: { _controller: CairnUserBundle:User:viewProfile, _format: html }
-#    requirements:
-#        id: \d+
+
+cairn_user_api_user:
+    path:    /{remote}/users/{id}
+    methods: GET
+    defaults: { _controller: CairnUserBundle:User:viewProfile, _format: json }
+    requirements: 
+        remote: mobile|api
+        id: \d+
 
 cairn_user_profile_edit:
     path:     admin/profile/edit/{username}
@@ -142,14 +155,21 @@ cairn_user_beneficiaries_list:
     methods: GET
     defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: html }
 
-#cairn_user_api_beneficiaries_list:
-#    path:     api/beneficiaries/get
-#    methods: GET
-#    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
+cairn_user_api_beneficiaries_list:
+    path:     /{remote}/beneficiaries
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Beneficiary:listBeneficiaries, _format: json }
+    requirements: 
+        remote: mobile|api
 
 cairn_user_beneficiaries_add:
     path:     user/beneficiaries/add
     defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: html }
+
+cairn_user_api_beneficiaries_add:
+    path:     mobile/beneficiaries
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Beneficiary:addBeneficiary, _format: json }
 
 #cairn_user_api_beneficiaries_post:
 #    path:     api/beneficiaries/post
@@ -166,6 +186,13 @@ cairn_user_beneficiaries_add:
 cairn_user_beneficiaries_remove:
     path:     user/beneficiaries/remove/{ICC}.{_format}
     defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: html }
+    requirements:
+        ICC: \d+
+
+cairn_user_api_beneficiaries_delete:
+    path:     mobile/beneficiaries/{ICC}.{_format}
+    methods: DELETE
+    defaults: { _controller: CairnUserBundle:Beneficiary:removeBeneficiary, _format: json }
     requirements:
         ICC: \d+
 
@@ -232,15 +259,29 @@ cairn_user_users_smsdata:
     path:     user/smsdata
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
+cairn_user_api_smsdata:
+    path:     /{remote}/phones
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Api:phones, _format: json}
+    requirements: 
+        remote: mobile|api
+
 cairn_user_phones_dashboard:
     path:     admin/phones/dashboard
     defaults: { _controller: CairnUserBundle:Admin:phonesDashboard, _format: html }
     requirements:
         _format: html|json
 
-cairn_user_users_phone_add:
+cairn_user_users_phone_add: #finishing the route name with phone_add is important for validation process
     path:     user/phone/add
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: html}
+
+cairn_user_api_phone_add: #finishing the route name with phone_add is important for validation process
+    path:     /{remote}/phones.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:User:addPhone, _format: json}
+    requirements: 
+        remote: mobile|api
 
 cairn_user_users_phone_edit:
     path:     user/phone/{id}
@@ -248,11 +289,27 @@ cairn_user_users_phone_edit:
     requirements:
         id: \d+
 
+cairn_user_api_phone_edit:
+    path:     /{remote}/phones/{id}.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:User:editPhone, _format: json}
+    requirements: 
+        id: \d+
+        remote: mobile|api
+
 cairn_user_users_phone_delete:
     path:     user/phone/delete/{id}
     defaults: { _controller: CairnUserBundle:User:deletePhone, _format: html}
     requirements:
         id: \d+
+
+cairn_user_api_phone_delete:
+    path:     /{remote}/phones/{id}.{_format}
+    methods: DELETE
+    defaults: { _controller: CairnUserBundle:User:deletePhone, _format: json}
+    requirements: 
+        id: \d+
+        remote: mobile|api
 
 cairn_user_mandates_dashboard:
     path:     admin/mandates/dashboard
@@ -366,9 +423,9 @@ cairn_user_banking_rib_download:
         id: "[-]?[0-9]{1,}"
         _format: html|json
 
-cairn_user_banking_transfer_notice_download:
+cairn_user_banking_operation_notice_download:
     path:     banking/download/notice/{paymentID}/
-    defaults: { _controller: CairnUserBundle:Banking:downloadTransferNotice }
+    defaults: { _controller: CairnUserBundle:Banking:downloadOperationNotice }
     requirements:
         paymentID: "[-]?[0-9]{1,}"
 
@@ -392,7 +449,6 @@ cairn_user_banking_operations_view:
     defaults: { _controller: CairnUserBundle:Banking:viewOperations, _format: html }
     requirements:
         type: transaction|deposit|withdrawal|conversion #|reconversion
-        _format: html|json
 
 cairn_user_banking_transaction_to:
     path:     banking/transaction/new/to/{frequency}.{_format}
@@ -402,12 +458,18 @@ cairn_user_banking_transaction_to:
         _format: html|json
 
 cairn_user_banking_transaction_request:
-    path:     banking/transaction/request/{to}-{frequency}.{_format}
+    path:     banking/transaction/request/{to}-{frequency}
     defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: html}
     requirements:
         frequency: unique #|recurring
         to: new|beneficiary|self
-        _format: html|json
+
+cairn_user_api_transaction_create:
+    path:     mobile/transaction/request/{to}-{frequency}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: json}
+    requirements:
+        frequency: unique #|recurring
+        to: new|beneficiary
 
 cairn_user_banking_reconversion:
     path:     banking/reconversion.{_format}
@@ -423,12 +485,15 @@ cairn_user_banking_sms_reception:
 
 
 cairn_user_banking_operation_confirm:
-    path:     banking/operation/confirm/{id}-{type}.{_format}
+    path:     banking/operation/confirm/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: html }
     requirements:
         type: transaction
-        _format: html|json
 
+cairn_user_api_transaction_confirm:
+    path:     mobile/transaction/confirm/{id}.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Banking:confirmOperation, _format: json }
 
 cairn_user_banking_transaction_scheduled_changestatus:
     path:     banking/transaction/scheduled/edit/{id}-{status}.{_format}
@@ -452,6 +517,14 @@ cairn_user_banking_account_operations:
         id: "[-]?[0-9]{1,}"
         _format: html|json
 
+cairn_user_api_account_operations:
+    path:     /{remote}/account/operations/{accountID}.{_format}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Banking:accountOperations, _format: json }
+    requirements:
+        remote: mobile|api
+        accountID: "[-]?[0-9]{1,}"
+
 #cairn_user_banking_transactions_recurring_view_detailed:
 #    path:     banking/transactions/recurring/view/detailed/{id}.{_format}
 #    defaults: { _controller: CairnUserBundle:Banking:viewDetailedRecurringTransaction, _format: html }
@@ -463,9 +536,14 @@ cairn_user_banking_transfer_view:
     path:     banking/transfer/view/{paymentID}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:viewTransfer, _format: html }
     requirements:
-        #        type: scheduled.past|simple #|recurring
         paymentID: "[-]?[0-9]{1,}"
-        _format: html|json
+
+cairn_user_api_operation:
+    path:     /{remote}/operations/{paymentID}.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:viewTransfer, _format: json }
+    requirements:
+        remote: mobile|api
+        paymentID: "[-]?[0-9]{1,}"
 
 #cairn_user_banking_transaction_occurrence_execute:
 #    path:     banking/transactions/recurring/occurrence/execute/{id}/
@@ -474,11 +552,14 @@ cairn_user_banking_transfer_view:
 #        id: "[-]?[0-9]{1,}"
 
 cairn_user_banking_accounts_overview:
-    path:     banking/accounts/overview/{username}.{_format}
+    path:     accounts/overview
     defaults: { _controller: CairnUserBundle:Banking:accountsOverview, _format: html  }
+
+cairn_user_api_accounts_overview:
+    path:     /{remote}/accounts.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:accountsOverview, _format: json  }
     requirements:
-        #        id: \d+
-        _format: html|json
+        remote: mobile|api
 
 cairn_user_accountscore_configure:
     path:     account-score/configure/{username}

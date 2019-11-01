@@ -94,12 +94,7 @@ class BankingControllerTest extends BaseControllerTest
 
         $creditorUser = $userRepo->findOneBy(array('username'=>'maltobar'));
         $creditorEmail = $creditorUser->getEmail();
-
-        $credentials = array('username'=>'labonnepioche','password'=>'@@bbccdd');
-        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),
-                                                                                 'login',$credentials);
-
-        $creditorICC = $this->container->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($creditorUser->getUsername())->accountNumber;
+        $creditorICC = $creditorUser->getMainICC();
 
         //valid data
         $baseData = array('login'=>'labonnepioche','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
@@ -457,12 +452,18 @@ class BankingControllerTest extends BaseControllerTest
             ->setParameter('number',$ownerAccount->number)                  
             ->getQuery()->getResult(); 
 
+        if(empty($scheduledOperations)){
+            echo 'TEST SKIPPED : INVALID DATA';
+            return;
+        }
+
         $operation = $scheduledOperations[0];
 
-
         if($newStatus == 'execute'){
+            $this->assertSame(1,$crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->count());
             $link = $crawler->filter('a[href*="'.$operation->getPaymentID().'-'.$newStatus.'"]')->eq(0)->link();
             $crawler = $this->client->click($link);
+
             $form = $crawler->selectButton('confirmation_save')->form();
             $crawler =  $this->client->submit($form);
             $crawler = $this->client->followRedirect();

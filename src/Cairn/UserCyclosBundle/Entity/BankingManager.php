@@ -113,7 +113,7 @@ class BankingManager
             $res->validStatus = true;
         }elseif($status == 'execute'){
             try{
-                $this->scheduledPaymentService->processInstallment($DTO);
+                $res->transfer = $this->scheduledPaymentService->processInstallment($DTO);
                 $res->validStatus = true;
             }catch(\Exception $e){
                 if($e->errorCode == 'INSUFFICIENT_BALANCE'){

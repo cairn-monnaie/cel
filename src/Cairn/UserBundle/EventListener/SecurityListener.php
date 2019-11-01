@@ -188,6 +188,7 @@ class SecurityListener
         $securityService = $this->container->get('cairn_user.security');
         $currentUser = $securityService->getCurrentUser();
 
+        //in case of authentication with API token
         if(! $this->container->get('cairn_user.api')->isApiCall()){
 
             $username = $request->request->all()['_username'];
@@ -272,15 +273,16 @@ class SecurityListener
 
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if(!$currentUser->isEnabled()){
-                $logoutUrl = $router->generate('fos_user_security_logout');
+                $apiService = $this->container->get('cairn_user.api');
+                
+                $route = $event->getRequest()->get('_route');
 
-                $session = $event->getRequest()->getSession();
-                $session->getFlashBag()->add('error','Le compte est bloqué');
-                $event->setResponse(new RedirectResponse($logoutUrl));
+                if( (! $apiService->isRemoteCall()) && ($route != 'fos_user_security_login')){
+                    $loginUrl = $router->generate('fos_user_security_login');
+                    $event->setResponse(new RedirectResponse($loginUrl));
+                }
             }
         }
-
-
     }
 
     /**

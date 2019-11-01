@@ -17,7 +17,7 @@ security:
                     admin: { password: adminpass, roles: [ 'ROLE_ADMIN' ] }
 
         main:
-            id: fos_user.user_provider.username_email
+            id: fos_user.user_provider.username
 
 
     firewalls:

@@ -168,4 +168,44 @@ class UserRepository extends EntityRepository
         return $ub->getQuery()->getOneOrNullResult();
     }
 
+    /**                                                                        
+     * Calculates extrema coordinates around a point with given distance       
+     *
+     * Here, we are forced to use a raw SQL query instead of DQL or QueryBuilder because the numerical spatial function st_distance_sphere
+     * (which computes spherical distance between two geometric points) is not handled by Doctrine Mysql as it is a PostGreSQL feature
+     *                                                                         
+     *@param float $lat latitude of central point (degrees)                    
+     *@param float $lon longitude of central point (degrees)                   
+     *@param float $dist distance (km)                                         
+     *@param array $extrema set of extrema coordinates to match given distance
+     *@param boolean $proOnly Return only users such that role is ROLE_PRO or not     
+     *@return array of Users 
+     */ 
+    public function getUsersAround($lat, $lon, $dist, $extrema, $proOnly = false)
+    {
+        $subSql = 'roles LIKE "%ROLE_PRO%"';
+        $subSql = ($proOnly) ? $subSql : $subSql.' OR roles LIKE "%ROLE_PERSON%" ';
+        $conn = $this->getEntityManager()->getConnection();                                          
+        $sql = '                                                               
+            SELECT name,email,description,address_id,a.longitude,a.latitude,st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 AS distance 
+            FROM cairn_user u 
+            LEFT JOIN address a ON u.address_id = a.id
+            WHERE ('.$subSql.')
+            AND (a.longitude > :minLon AND a.longitude < :maxLon             
+            AND a.latitude < :maxLat AND a.latitude > :minLat)                 
+            HAVING distance < :dist                                            
+            ORDER BY distance
+        ';
+        $stmt = $conn->prepare($sql);                                          
+        $stmt->execute(
+            array(
+                'minLon' => $extrema['minLon'] , 'maxLon' => $extrema['maxLon'],
+                'minLat' => $extrema['minLat'] , 'maxLat' => $extrema['maxLat'] ,
+                'lon' => $lon,
+                'lat'=>$lat,
+                'dist'=>$dist
+            ));
+        return $stmt->fetchAll();
+    }
+
 }
