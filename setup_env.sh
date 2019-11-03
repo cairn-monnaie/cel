@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # $1 is the environment : dev / test
 
@@ -60,24 +60,48 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
                 exit 0
             fi
 
+            echo "$(tput setaf 3) Delete cyclos data... $(tput sgr 0)"
             rm -rf data/cyclos
             rm etc/cyclos/cyclos_constants_$ENV.yml
             rm etc/cyclos/cyclos_constants_$OTHER_ENV.yml
+            echo "$(tput setaf 2) Delete cyclos data... OK ! "
 
+            sleep 2
+            echo "$(tput setaf 3) Stop and remove containers, networks and volumes...  $(tput sgr 0)"
             docker-compose down
+            echo "$(tput setaf 2)  Stop and remove containers, networks and volumes... OK !"
+
+            sleep 2
+            echo "$(tput setaf 3) (Re)create cyclos database container from cyclos-db service $(tput sgr 0)"
             docker-compose up -d cyclos-db
             sleep 10
+            echo "$(tput setaf 2)  (Re)create cyclos database container from cyclos-db service... OK !"
+            sleep 2
+
+            echo "$(tput setaf 3) Restore cyclos database from dump file in $(pwd)/etc/cyclos/dump/cyclos.sql $(tput sgr 0)"
+            sleep 3
             docker-compose exec -T cyclos-db psql -U cyclos cyclos < etc/cyclos/dump/cyclos.sql
+            echo "$(tput setaf 2)  Restore cyclos database from dump file... OK !"
+            sleep 2
             docker-compose up -d cyclos-app
         fi
 
+        echo "$(tput setaf 3) Generate cyclos configuration and initial data... $(tput sgr 0)"
         docker-compose run --name api_container -e ENV=$ENV api sh etc/cyclos/setup_cyclos.sh
         docker container rm api_container
         docker-compose up -d api
+        echo "$(tput setaf 2)  Generate cyclos configuration and initial data... OK !"
     else
         if [ -f ./etc/cyclos/cyclos_constants_$ENV.yml ]; then
+            echo "$(tput setaf 3) Clean cyclos database from all users, payments and accounts data... $(tput sgr 0)"
+            sleep 2
             docker-compose exec -T cyclos-db psql -v network="'%$ENV%'" -U cyclos cyclos < etc/cyclos/script_clean_database.sql
+            echo "$(tput setaf 2) Clean cyclos database from all users, payments and accounts data... OK !"
+            sleep 2
+            echo "$(tput setaf 3) Regenerate cyclos init data : users, accounts credit and payments ... $(tput sgr 0)"
+            sleep 2
             docker-compose exec -T  -e ENV=$ENV api python /cyclos/init_test_data.py http://cyclos-app:8080/ YWRtaW46YWRtaW4=
+            echo "$(tput setaf 2) Regenerate cyclos init data : users, accounts credit and payments... OK !"
         else
             echo "Cyclos constants file not found for $ENV mode. The cyclos containers and configuration have not been settled. \n Remove -d option from the command"
             exit 0
@@ -85,11 +109,20 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
     fi
 
     cd $ROOT_DIR/cel
+    echo "$(tput setaf 3) (Re)create CEL services $(tput sgr 0)"
     docker-compose up -d
     echo "Wait 5 seconds to let services start..."
     sleep 5
+    echo "$(tput setaf 2)  (Re)create CEL services... OK !"
+    sleep 2
+
+    echo "$(tput setaf 3) Generate mysql database schema and initial data based on cyclos database... $(tput sgr 0)"
+    sleep 2
     docker-compose exec engine ./build-setup.sh $ENV
     docker-compose exec engine php bin/console cairn.user:generate-database --env=$ENV admin_network @@bbccdd
+    echo "$(tput setaf 2)  Generate mysql schema and initial data based on cyclos database... OK !"
+
+    echo "$(tput setaf 2) The script ran successfully !"
     exit 0
 else
     echo "choose dev / test as a script variable"
