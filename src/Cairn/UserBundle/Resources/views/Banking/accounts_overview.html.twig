@@ -15,8 +15,7 @@
         {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
     </div>
 
-    Le nombre de [e]-cairns actuellement disponibles est de <strong>{{availableAmount}}</strong> <br>
-    email à fournir afin de vous identifier : {{app.user.email}}
+    <h3> Email à fournir afin de vous identifier : <b> {{app.user.email}} </b></h3>
     <iframe id="haWidget" allowtransparency="true" scrolling="auto" src="https://www.donnerenligne.fr/le-cairn-monnaie-locale-et-citoyenne/faire-un-don/3" style="width:100%;height:750px;border:none;" onload="window.scroll(0, this.offsetTop)"></iframe>
 {% endblock %}
 
