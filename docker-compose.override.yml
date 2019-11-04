@@ -17,6 +17,7 @@ services:
 
   email-catcher:
     image: schickling/mailcatcher
+    container_name: email-catcher
     ports:
       - '1025:1025'
       - '1080:1080'
@@ -25,6 +26,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
     ports:
         - '${PMA_PORT}:80'
     networks:
@@ -37,11 +39,12 @@ services:
     depends_on:
       - db
 
-  doc-generator:
-    image: phpdoc/phpdoc
-    volumes:
-      - ".:/var/www/Symfony"
-    networks:
-      - mlc_net
-    depends_on:
-      - engine
+        #  doc-generator:
+        #    image: phpdoc/phpdoc
+        #    container_name: phpdoc
+        #    volumes:
+        #      - ".:/var/www/Symfony"
+        #    networks:
+        #      - mlc_net
+        #    depends_on:
+        #      - engine
