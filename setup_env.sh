@@ -109,20 +109,33 @@ if [ "$ENV" = "dev" -o "$ENV" = "test" ]; then
     fi
 
     cd $ROOT_DIR/cel
-    echo "$(tput setaf 3) (Re)create CEL services $(tput sgr 0)"
+    vendor=$(pwd)/vendor
+
+    if [ ! -d "$vendor" ]; then
+        RUN_COMPOSER=1
+    else
+        RUN_COMPOSER=0
+    fi
+    echo "$(tput setaf 3)(Re)create CEL services $(tput sgr 0)"
     docker-compose up -d
     echo "Wait 5 seconds to let services start..."
     sleep 5
-    echo "$(tput setaf 2)  (Re)create CEL services... OK !"
+    echo "$(tput setaf 2)(Re)create CEL services... OK !"
     sleep 2
 
-    echo "$(tput setaf 3) Generate mysql database schema and initial data based on cyclos database... $(tput sgr 0)"
+    if [ "$RUN_COMPOSER" = "1" ]; then
+        docker-compose exec engine composer install
+        docker-compose exec engine assets:install
+    fi
+
+    echo "$(tput setaf 3)Generate mysql database schema and initial data based on cyclos database... $(tput sgr 0)"
     sleep 2
     docker-compose exec engine ./build-setup.sh $ENV
     docker-compose exec engine php bin/console cairn.user:generate-database --env=$ENV admin_network @@bbccdd
-    echo "$(tput setaf 2)  Generate mysql schema and initial data based on cyclos database... OK !"
+    echo "$(tput setaf 2)Generate mysql schema and initial data based on cyclos database... OK !"
 
-    echo "$(tput setaf 2) The script ran successfully !"
+
+    echo "$(tput setaf 2)The script ran successfully !"
     exit 0
 else
     echo "choose dev / test as a script variable"
