@@ -6,7 +6,7 @@
 [Test](##Test)  
 [Production](##Production)  
 
-##Global architecture    
+## Global architecture    
 ![global architecture](/docs/images/archi_globale.png)
 
 ## Model of object-oriented database   
@@ -17,7 +17,7 @@ In either developement or testing environment, all data are controlled for conve
   * all card keys are '1111'  
   * all validation codes are '1111'  
 
-##Development
+## Development
  * **Generate data**
      ```
      cd ..                                         # go to parent directory
@@ -122,5 +122,5 @@ If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/
        See the test `assertUserIsDisabled` in `tests/UserBundle/Controller/BaseControllerTest` test class
        
 
-##Production
+## Production
 
