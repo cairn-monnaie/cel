@@ -6,8 +6,7 @@
 [Test](#test)  
 [Production](#production)  
 
-<a name="global-archi"/>  
-##Global architecture  
+##<a name="global-archi"></a>Global architecture    
 ![global architecture](/docs/images/archi_globale.png)
 
 ## Model of object-oriented database   
@@ -18,8 +17,7 @@ In either developement or testing environment, all data are controlled for conve
   * all card keys are '1111'  
   * all validation codes are '1111'  
 
-<a name="development"/>  
-## Development
+##<a name="development"></a> Development
  * **Generate data**
      ```
      cd ..                                         # go to parent directory
@@ -65,8 +63,7 @@ In either developement or testing environment, all data are controlled for conve
     
     /!\ The port is not `9000` (default for Xdebug) but `9001`.
 
-<a name="test"/>  
-## Functional Testing
+##<a name="test"></a>Functional Testing
 ### Requirements
 If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/cel/blob/master/docs/install.md) **replacing 'dev' by 'test'**  
 
@@ -124,6 +121,6 @@ If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/
      * reset Cyclos data to the state it should be before the test (if possible)
        See the test `assertUserIsDisabled` in `tests/UserBundle/Controller/BaseControllerTest` test class
        
-<a name="production"/>  
-## Production
+
+##<a name="production"></a>Production
 
