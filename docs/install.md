@@ -6,15 +6,31 @@
  * Install [api repo](https://github.com/cairn-monnaie/api/tree/cairn)
 
 ## Download Sources
-
+  Download the sources such that both the repositories _api_ & _cel_ are set up this way :
+ ```
+numerique (parent dir)
+│   setup_env.sh
+└─── api
+│   │   Dockerfile
+│   │   docker-compose.yml
+│   │   .env
+│   │   ...
+└─── cel
+│    │   Dockerfile
+│   │   docker-compose.yml
+│   │   .env
+│   │   ...
+```
    `git clone https://github.com/cairn-monnaie/cel.git`
 
-## Docker setup
-
+## Docker initial setup
  * **Set up global parameters**
 
     Copy the template file containing environment variables and open it with your favorite editor.   
-      `cp .env.dist .env`
+      ```
+        cd cel  
+        cp .env.dist .env
+      ```
 
     Set the different variables and ports, ensuring that ports are not already in use by another application.
     To make sure of it, you can use the following command :  
@@ -61,35 +77,66 @@
       `cairn_default_cgu_url : xxx (e.g 'https://domain.com/register')`
 
  * **Setup the application**
-
-     * Build docker images   
+     * Build docker images  (if necessary)
        `sudo docker-compose build`
 
-     * Then, start the database container, and check that it is listening on port 3306  
-       `sudo docker-compose up -d db`  
-       `sudo docker-compose logs -f db`   
-       Otherwise, restart the container and check again  
-       `sudo docker-compose restart db`  
-       `sudo docker-compose logs -f db`  
-  
-     * Start the remaining containers  
-       `sudo docker-compose up -d`  
-
-     * Install dependencies from composer.json 
-       `sudo docker-compose exec engine composer update`  
-      
-     * Change the set of cities   
-       By default, the web/zipcities.sql file contains cities of Isère (French department). Following the exact same format, replace its content with your custom set of cities.
-
-     * Launch Cyclos configuration script and initialize mysql database  
-       `sudo docker-compose exec engine ./build-setup.sh $env` _note_ : $env = (dev / test / prod)   
-
-     Cette commande, dans un environnement de dev/test, va créer une base de données vide, créer le schéma de BDD à partir des migrations et, finalement, créer un ROLE\_SUPER\_ADMIN avec les identifiants de l'admin réseau Cyclos par défaut : (login = admin\_network et pwd = @@bbccdd )
-     
+     * Launch the main script(from parent dir) to install services  
+       You may need first to give `setup_env.sh` the executable permissions.  
+       This script should not be executed in a production environment in order to avoid data loss. Each command should be ran one by one in order to make sure you know what you are doing. 
+       ```
+       cp setup_env.sh ..
+       cd ..
+       sudo ./setup_env.sh --env $env                               #$env = (test/dev)
+       ``` 
      
     * Install assets
-       `sudo docker-compose exec engine composer install`
+       `sudo docker-compose exec engine assets:install`
 
      * Enable engine's user to write logs, cache files and web static files(images)  
        `sudo docker-compose exec engine chown -R www-data:www-data var web`
+
+## Questions
+ * **How to clear the cache**
+   ```
+     cd cel
+     sudo rm -rf var/cache/*
+     sudo docker-compose exec engine php bin/console cache:clear --env=$env
+     sudo docker-compose exec engine chown -R www-data:www-data var web
+   ```  
+ * **How to regenerate data & cyclos config**
+   Go to the parent directory
+   ```
+     cd ..
+     sudo ./setup_env.sh --env $env                                #$env = (test/dev)
+   ```
+ * **How to regenerate data only**
+   Go to the parent directory
+   ```
+     cd ..
+     sudo ./setup_env.sh --env $env -d                              #$env = (test/dev)
+   ```
+
+## Troubleshooting
+ * **Composer update : How to solve "Allowed memory size of xxx exhausted (tried to allocate 43148176 bytes) in php"**
+   * In dev/test environment : 
+     * open the php configuration file in your favorite text editor
+       ```
+       cd cel
+       vim docker/engine/php.ini
+       ```
+     * Set the memory limit a script can consume to infinity
+       `memory_limit = -1`
+     * Restart the container
+       ```
+        sudo docker-compose restart engine
+        sudo docker-compose exec engine composer update
+       ```
+       
+   * In production environment
+     DO NOT use `composer update` in a production environment. This would result in a possibly new state of your libraries you never tested against. Use :
+     `composer install`  
+   
+    For more information, see [Composer documentation](https://getcomposer.org/doc/articles/troubleshooting.md#memory-limit-errors)
+ * **Composer install/update : How to solve an error with "proc_open() failed" message**
+   See [Composer documentation](https://getcomposer.org/doc/articles/troubleshooting.md#proc-open-fork-failed-errors)
 
