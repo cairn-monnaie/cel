@@ -1,16 +1,16 @@
 # Developer guide
 
-##### Table of Contents  
+### Table of Contents  
 [Global architecture](#global-archi)  
 [Development](#development)  
 [Test](#test)  
 [Production](#production)  
 
-<a name="global-archi"/>
-##Global architecture
+<a name="global-archi"/>  
+##Global architecture  
 ![global architecture](/docs/images/archi_globale.png)
 
-## Model of object-oriented database 
+## Model of object-oriented database   
 ![UML](/docs/images/uml.png)
 
 In either developement or testing environment, all data are controlled for convenience.  
@@ -18,7 +18,7 @@ In either developement or testing environment, all data are controlled for conve
   * all card keys are '1111'  
   * all validation codes are '1111'  
 
-<a name="development"/>
+<a name="development"/>  
 ## Development
  * **Generate data**
      ```
@@ -60,13 +60,12 @@ In either developement or testing environment, all data are controlled for conve
     NB : If you have changed some constants, **clear the cache** ! Otherwise, your changes may not be considered.
  
  * **Xdebug**  
-    You can use Xdebug by setting ```XDEBUG_ENABLED=true```
-    and set ```XDEBUG_REMOTE_HOST``` to your local network computer ip address in your ```.env``` file
+    You can use Xdebug by setting `XDEBUG_ENABLED=true` and set `XDEBUG_REMOTE_HOST` to your local network computer ip address in your `.env` file
     Then docker build and up.
     
-    /!\ The port is not ```9000``` (default for Xdebug) but ```9001```.
+    /!\ The port is not `9000` (default for Xdebug) but `9001`.
 
-<a name="test"/>
+<a name="test"/>  
 ## Functional Testing
 ### Requirements
 If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/cel/blob/master/docs/install.md) **replacing 'dev' by 'test'**  
@@ -106,11 +105,13 @@ If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/
 
     **Warning** : If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above). 
  
-     _Concrete example_ : The user John Doe, in a functional test, has its access changed to 'disabled' state (means he cannot access the Symfony app from login/password). Our disabling process ensures the user is also disabled on Cyclos side. As the Symfony database is rolled back at test end, we finally get, at the beginning of next test :
+     _Concrete example_ :  
+     The user John Doe, in a functional test, has its access changed to 'disabled' state (means he cannot access the Symfony app from login/password). Our disabling process ensures the user is also disabled on Cyclos side. As the Symfony database is rolled back at test end, we finally get, at the beginning of next test :
       * John Doe is disabled on Cyclos side
       * John Doe is enabled on Symfony side
 
-     _Workaround_ : if a test executes a transaction in the Cyclos database, either :
+     _Workaround_ :  
+     If a test executes a transaction in the Cyclos database, either :
      * explicitly commit the transaction before the end of the test 
        ```
        public function testMyTestWhichChangesCyclosDatabase()  
@@ -123,6 +124,6 @@ If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/
      * reset Cyclos data to the state it should be before the test (if possible)
        See the test `assertUserIsDisabled` in `tests/UserBundle/Controller/BaseControllerTest` test class
        
-<a name="production"/>
+<a name="production"/>  
 ## Production
 
