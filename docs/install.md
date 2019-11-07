@@ -28,7 +28,7 @@ numerique (parent dir)
 
     Copy the template file containing environment variables and open it with your favorite editor.   
       ```
-        cd cel  
+        cd $pathToParentDir/cel  
         cp .env.dist .env
       ```
 
@@ -85,7 +85,7 @@ numerique (parent dir)
        This script should not be executed in a production environment in order to avoid data loss. Each command should be ran one by one in order to make sure you know what you are doing. 
        ```
        cp setup_env.sh ..
-       cd ..
+       cd $pathToParentDir/
        sudo ./setup_env.sh --env $env                               #$env = (test/dev)
        ``` 
      
@@ -98,21 +98,21 @@ numerique (parent dir)
 ## Questions
  * **How to clear the cache**
    ```
-     cd cel
+     cd $pathToParentDir/cel
      sudo rm -rf var/cache/*
      sudo docker-compose exec engine php bin/console cache:clear --env=$env
      sudo docker-compose exec engine chown -R www-data:www-data var web
    ```  
- * **How to regenerate data & cyclos config**
+ * **How to regenerate data & cyclos config**  
    Go to the parent directory
    ```
-     cd ..
+     cd $pathToParentDir/
      sudo ./setup_env.sh --env $env                                #$env = (test/dev)
    ```
- * **How to regenerate data only**
+ * **How to regenerate data only**  
    Go to the parent directory
    ```
-     cd ..
+     cd $pathToParentDir/
      sudo ./setup_env.sh --env $env -d                              #$env = (test/dev)
    ```
 
@@ -121,7 +121,7 @@ numerique (parent dir)
    * In dev/test environment : 
      * open the php configuration file in your favorite text editor
        ```
-       cd cel
+       cd $pathToParentDir/cel
        vim docker/engine/php.ini
        ```
      * Set the memory limit a script can consume to infinity
@@ -139,4 +139,5 @@ numerique (parent dir)
     For more information, see [Composer documentation](https://getcomposer.org/doc/articles/troubleshooting.md#memory-limit-errors)
  * **Composer install/update : How to solve an error with "proc_open() failed" message**
    See [Composer documentation](https://getcomposer.org/doc/articles/troubleshooting.md#proc-open-fork-failed-errors)
+
 

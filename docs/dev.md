@@ -20,7 +20,7 @@ In either developement or testing environment, all data are controlled for conve
 ## <a name="devlopment"></a>Development
  * **Generate data**
      ```
-     cd ..                                         # go to parent directory
+     cd $pathToParentDir/                                         # go to parent directory
      sudo ./setup_env.sh --env dev -d
      ```
      Cette commande, à l'heure actuelle,  ne peut pas être reproduite sur n'importe quel réseau Cyclos contenant n'importe quel jeu de données. Elle a été développée, dans un premier temps, pour les besoins du Cairn. Elle permet d'avoir une variété de données permettant de tester plein de cas différents. Il y a donc un besoin de maîtrise du script de génération de données Cyclos pour adapter celui des données Symfony. [dépôt api, branche cairn](https://github.com/cairn-monnaie/api/tree/cairn)  
