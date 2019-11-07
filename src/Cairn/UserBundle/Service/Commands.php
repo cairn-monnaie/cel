@@ -879,10 +879,10 @@ class Commands
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
-        echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
-        foreach($futureInstallments as $installment){
-            $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
-        }
+        //echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
+        //foreach($futureInstallments as $installment){
+        //    $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+        //}
 
 
         $accountManager = $this->container->get('cairn_user.account_manager');
@@ -1263,7 +1263,7 @@ class Commands
 
         //create fake mandate document doc
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'poster_sms.pdf';
+        $originalName = 'mandate_template.pdf';
         $absolutePath = $absoluteWebDir.$originalName;
 
         $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
