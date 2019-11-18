@@ -67,4 +67,9 @@ class PublicController extends Controller
         return $this->render('CairnUserBundle:Pro:all.html.twig',array('pros'=>$pros ));
     }
 
+    public function cardPresentationAction()
+    {
+        return $this->render('CairnUserBundle:Default:howto_card.html.twig');
+    }
+
 }

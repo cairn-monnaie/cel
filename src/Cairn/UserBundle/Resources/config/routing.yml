@@ -353,7 +353,7 @@ cairn_user_card_home:
 
 cairn_user_card_presentation:
     path:     card/presentation.{_format}
-    defaults: { _controller: CairnUserBundle:Card:cardPresentation, _format: html }
+    defaults: { _controller: CairnUserBundle:Public:cardPresentation, _format: html }
     requirements:
         _format: html|json
 

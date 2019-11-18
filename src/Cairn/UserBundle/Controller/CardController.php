@@ -140,11 +140,6 @@ class CardController extends Controller
         return $this->render('CairnUserBundle:Card:card_operation.html.twig',array('user'=>$user));
     }
 
-    public function cardPresentationAction()
-    {
-        return $this->render('CairnUserBundle:Default:howto_card.html.twig');
-    }
-    
     /**
      * An user with no card can notify the association to receive a security card
      * 
