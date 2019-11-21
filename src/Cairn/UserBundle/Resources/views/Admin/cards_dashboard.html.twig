@@ -57,8 +57,9 @@
                 <span class="card-title">Code : {{code}}</span>
                 <p>
                     Date de génération : {{card.creationDate | date('d/m/Y H:i:s')}}
-                    <br>
+                    {#<br>
                     Date limite d'association : {{card.expirationDate | date('d/m/Y')}}
+                    #}
                 </p>
             </div>
             <div class="card-action center">
