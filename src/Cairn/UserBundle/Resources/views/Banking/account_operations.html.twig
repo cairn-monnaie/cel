@@ -64,7 +64,7 @@
     <tbody>
     {% for transaction in transactions %}
         <tr>
-            <td>{{ transaction.executionDate|date('Y-m-d')}}</td>
+            <td>{{ transaction.executionDate|date('d-m-Y')}}</td>
             <td> <em> {{transaction.reason }} </em> </br>
                  {{transaction.description }}  
             </td> 
