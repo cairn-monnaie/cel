@@ -494,13 +494,21 @@ class AdminController extends Controller
 
         $currentUser = $this->getUser();
 
+        if($user->getConfirmationToken()){
+            if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                $security = $this->get('cairn_user.security');
+
+                $user->setConfirmationToken(null);
+                $security->assignDefaultReferents($user);
+            }
+        }
+
+         
         if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }elseif($user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà accessible.');
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
-        }elseif($user->getConfirmationToken()){
-            throw new AccessDeniedException('Email non confirmé, cet utilisateur ne peut être validé');
         }
 
         $form = $this->createForm(ConfirmationType::class);
