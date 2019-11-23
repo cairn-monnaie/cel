@@ -51,7 +51,7 @@ class PhoneType extends AbstractType
 
         }else{
             $builder
-                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +33)',
+                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +336 ou +337)',
                                                               'constraints'=>new UserPhoneNumber($request) ))
                 ->add('paymentEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
                     'required'=>false));

@@ -290,7 +290,7 @@ class MandateController extends Controller
                     $session->getFlashBag()->add('success','Mandat à jour');
                 }else{ // in case if there are several operations overdued
                     $session->getFlashBag()->add('success','Mandat honoré');
-                    $session->getFlashBag()->add('info','Mandat toujours pas à jour');
+                    $session->getFlashBag()->add('info','Le mandat n\'est pas encore à jour');
                 }
             }
 
