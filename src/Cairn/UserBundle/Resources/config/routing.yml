@@ -353,10 +353,12 @@ cairn_user_card_home:
         _format: html|json
 
 cairn_user_card_presentation:
-    path:     card/presentation.{_format}
+    path:     card/presentation
     defaults: { _controller: CairnUserBundle:Public:cardPresentation, _format: html }
-    requirements:
-        _format: html|json
+
+cairn_user_sms_presentation:
+    path:     sms/presentation
+    defaults: { _controller: CairnUserBundle:Public:smsPresentation, _format: html }
 
 cairn_user_card_order:
     path:     card/order/{type}

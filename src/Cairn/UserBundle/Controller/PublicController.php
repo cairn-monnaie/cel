@@ -72,4 +72,9 @@ class PublicController extends Controller
         return $this->render('CairnUserBundle:Default:howto_card.html.twig');
     }
 
+    public function smsPresentationAction()
+    {
+        return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
+    }
+
 }
