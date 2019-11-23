@@ -11,8 +11,6 @@
 
 {% block body %}
     {{parent()}} 
-        <em><b> Attention ! Un SMS vous sera envoyé en cas de nouveau numéro de téléphone. Assurez-vous d'être en mesure de le recevoir</b></em>
-        <br><br>
 
 <div class="row">
     {{ form_start(formPhone) }}
@@ -21,7 +19,7 @@
     {% else %}
             {% if formPhone.phoneNumber is defined %}
                 {% if formPhone.identifier is defined %}
-                    <div class="input-field col s12 m6">
+                    <div class="input-field phoneNumber col s12 m6">
                 {% else %}
                     <div class="input-field">
                 {% endif %}
@@ -32,7 +30,7 @@
              {% endif %}
        
             {% if formPhone.identifier is defined %}
-                <div class="input-field col s12 m6">
+                <div class="input-field identifier col s12 m6">
                    {{ form_widget(formPhone.identifier) }} 
                    {{ form_label(formPhone.identifier) }} 
                 </div>                                        
@@ -55,10 +53,70 @@
         <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
     {% endif %}
 
+    <div id="modalIdentifier" class="modal">
+         <div class="modal-content center-align">
+             <h4> Attention !!</h4>
+             <p><i class="material-icons large red-text">warning</i></p>
+             <p> Ne modifier l'identifiant SMS <b>qu'après avoir eu l'accord du professionnel concerné</b> </p>
+             <p>
+             L’identifiant SMS est communiqué par le professionnel aux utilisateurs lors du paiement par SMS. Si l’identifiant SMS est modifié sans avoir informé le professionnel en amont, le <b>paiement par SMS va dysfonctionner</b>.
+             </p>
+         </div>
+         <div class="modal-footer">
+             <a href="#!" class="modal-close waves-effect waves-green btn-flat"><b>Compris !</b></a>
+         </div>
+     </div>
+
+    <div id="modalPhoneNumber" class="modal">
+         <div class="modal-content center-align">
+             <h4> Nouveau n° de téléphone ?</h4>
+             <p> En cas de nouveau numéro de téléphone, <b>un SMS avec un code de valdation</b> vous sera envoyé. <br>
+                Assurez-vous d'être en mesure de le recevoir !
+             </p>
+         </div>
+         <div class="modal-footer">
+             <a href="#!" class="modal-close waves-effect waves-green btn-flat"><b>Compris !</b></a>
+         </div>
+     </div>
+
 </div>
 {% endblock %}              
 
 {% block javascripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var identifierInputField = document.querySelector('input#cairn_userbundle_phone_identifier');
+
+            var Modalelem = document.querySelector('div#modalIdentifier');
+
+            var instanceModalIdentifier = M.Modal.init(Modalelem,{
+                onCloseEnd : function() {
+                    identifierInputField.focus();
+                }
+            }) ;
+            
+            identifierInputField.addEventListener('click', function() {
+                instanceModalIdentifier.open();
+            });
+
+            var phoneNumberInputField = document.querySelector('input#cairn_userbundle_phone_phoneNumber');
+
+            var Modalelem = document.querySelector('div#modalPhoneNumber');
+
+            var instanceModalPhone = M.Modal.init(Modalelem,{
+                onCloseEnd : function() {
+                    phoneNumberInputField.focus();
+                }
+            }) ;
+            
+            phoneNumberInputField.addEventListener('click', function() {
+                instanceModalPhone.open();
+            });
+
+        });
+         
+    </script>
 {% endblock %}
 
 
