@@ -12,8 +12,6 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
-use Cairn\UserBundle\Validator\UserPhoneNumber;
-
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -51,8 +49,7 @@ class PhoneType extends AbstractType
 
         }else{
             $builder
-                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +336 ou +337)',
-                                                              'constraints'=>new UserPhoneNumber($request) ))
+                ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +336 ou +337)'))
                 ->add('paymentEnabled',    CheckboxType::class, array('label'=>'Autoriser les opérations SMS',
                     'required'=>false));
             //           ->add('dailyAmountThreshold', IntegerType::class, array('label'=>'Montant max/jour en SMS sans validation',

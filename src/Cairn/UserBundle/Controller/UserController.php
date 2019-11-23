@@ -246,15 +246,16 @@ class UserController extends Controller
                 $formPhone->handleRequest($request);
             }
 
+            // POST request is an activation code to validate a new phone number
+            if($formPhone->has('activationCode')){
+                return $this->checkActivationCode($formPhone,$request);
+            }
+
             if($formPhone->isValid()){
 
                 $dataForm = $formPhone->getData();
 
-                // POST request is an activation code to validate a new phone number
-                if($formPhone->has('activationCode')){
-                    return $this->checkActivationCode($formPhone,$request);
-                }
-
+                
                 // POST request is a new phone number for an existing entity smsData
                 if($previousPhoneNumber != $phone->getPhoneNumber()){
                     $this->sendActivationCode(true,$session, $phone);
@@ -507,15 +508,15 @@ class UserController extends Controller
                 $formPhone->handleRequest($request);
             }
 
+            // POST request is an activation code to validate a new phone number
+            if($formPhone->has('activationCode')){
+                return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
+            }
+
             if($formPhone->isValid()){
 
                 $dataForm = $formPhone->getData();
-
-                // POST request is an activation code to validate a new phone number
-                if($formPhone->has('activationCode')){
-                    return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
-                }
-
+            
                 // POST request is a new phone number for an existing entity smsData
                 if($previousPhoneNumber != $phone->getPhoneNumber()){
                     if($user !== $currentUser ){
@@ -1157,6 +1158,7 @@ class UserController extends Controller
         $em = $this->getDoctrine()->getManager();
         $depositRepo = $em->getRepository('CairnUserBundle:Deposit');
         $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
@@ -1184,7 +1186,7 @@ class UserController extends Controller
                 $em->remove($deposit);
             }
 
-            //if mandate ongoing, cancel removal
+            //if mandate ongoing and overdued, cancel removal
             $mb = $mandateRepo->createQueryBuilder('m');
             $mandateRepo->whereContractor($mb, $user);
 
@@ -1194,6 +1196,11 @@ class UserController extends Controller
             $mandates = $mb->getQuery()->getResult();
 
             if($mandates){ return false; }
+
+            $scheduledOperations = $operationRepo->findBy(array('debitor'=>$user, 'type'=>Operation::TYPE_TRANSACTION_SCHEDULED));
+            foreach($scheduledOperations as $operation){
+                $operation->setType(Operation::TYPE_SCHEDULED_FAILED);
+            }
 
             $subject = 'Compte [e]-Cairn clôturé';
             $from = $messageNotificator->getNoReplyEmail();

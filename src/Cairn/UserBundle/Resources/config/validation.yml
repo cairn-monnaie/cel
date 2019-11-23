@@ -8,6 +8,10 @@ Cairn\UserBundle\Entity\Operation:
     constraints:
             - Cairn\UserBundle\Validator\Operation: ~
 
+Cairn\UserBundle\Entity\Phone:
+    constraints:
+            - Cairn\UserBundle\Validator\Phone: ~
+
 Cairn\UserBundle\Entity\SmsData:
     constraints:
             - Cairn\UserBundle\Validator\SmsData: ~

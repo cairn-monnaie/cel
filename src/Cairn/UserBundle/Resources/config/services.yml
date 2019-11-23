@@ -142,6 +142,8 @@ services:
         arguments:
             - "@cairn_user_cyclos_banking_info"
             - "@cairn_user.bridge_symfony"
+            - "@cairn_user.message_notificator"
+            - "@templating"
         tags:
             - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
 
@@ -225,13 +227,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_password_validator }
 
-    cairn_user.user_phone_number_validator:
-        class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
+    cairn_user.phone_validator:
+        class: Cairn\UserBundle\Validator\PhoneValidator
         arguments:
             - "@cairn_user.repository_user"
             - "@cairn_user.security"
         tags:
-            - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }
+            - { name: validator.constraint_validator, alias: cairn_phone_validator }
 
 
     cairn_user.operation_validator:
