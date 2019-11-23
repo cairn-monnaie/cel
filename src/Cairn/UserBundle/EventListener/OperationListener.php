@@ -7,6 +7,8 @@ use Doctrine\ORM\Event\LifecycleEventArgs;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserCyclosBundle\Service\BankingInfo;
 use Cairn\UserBundle\Service\BridgeToSymfony;
+use Cairn\UserBundle\Service\MessageNotificator;
+use Symfony\Bundle\TwigBundle\TwigEngine;
 
 /**
  * This class is used to synchronize operation entities with the Cyclos database 
@@ -23,10 +25,16 @@ class OperationListener
 
     protected $bridgeToSymfony;
 
-    public function __construct(BankingInfo $cyclosBankingInfo, BridgeToSymfony $bridgeToSymfony)
+    protected $messageNotificator;
+
+    protected $templating;
+
+    public function __construct(BankingInfo $cyclosBankingInfo, BridgeToSymfony $bridgeToSymfony, MessageNotificator $messageNotificator, TwigEngine $templating)
     {
         $this->cyclosBankingInfo = $cyclosBankingInfo;
         $this->bridgeToSymfony = $bridgeToSymfony;
+        $this->messageNotificator = $messageNotificator;
+        $this->templating = $templating;
     }
 
     /**
@@ -49,6 +57,15 @@ class OperationListener
                 $scheduledPaymentVO = $this->bridgeToSymfony->fromSymfonyToCyclosOperation($operation);
                 if($scheduledPaymentVO->installments[0]->status == 'FAILED'){
                     $operation->setType(Operation::TYPE_SCHEDULED_FAILED);
+
+                    $body = $this->templating->render('CairnUserBundle:Emails:failed_transaction.html.twig',
+                        array('operation'=>$operation));
+
+                    $subject = 'Echec de votre virement programmé';
+                    $from = $this->messageNotificator->getNoReplyEmail();
+                    $to = $operation->getDebitor()->getEmail();
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);      
+
                 }elseif($scheduledPaymentVO->installments[0]->status == 'PROCESSED'){
                     $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
                 }
