@@ -950,7 +950,10 @@ class UserController extends Controller
             $response->headers->set('Content-Type', 'application/json');
             return $response;
         }
-        return $this->render('CairnUserBundle:Pro:view.html.twig', array('user'=>$user));
+
+        $form = $this->createForm(ConfirmationType::class);
+
+        return $this->render('CairnUserBundle:Pro:view.html.twig', array('form'=>$form->createView(), 'user'=>$user));
     }                      
 
     public function downloadUserDocumentAction(Request $request, CairnFile $file)
