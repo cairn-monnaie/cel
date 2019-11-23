@@ -9,12 +9,25 @@
                 Payer par SMS
             </div>
             <div class="collapsible-body">
+                <div class="center-align">
+                    <h4> N° de téléphone de paiement : +336 44 63 17 77</h4>
+                </div>
                 <p>
                 <b> Pré-requis </b> <br>
-                Pour réaliser un paiement par SMS, il faut avoir <b>son compte associé à son numéro de téléphone</b>
+                Pour réaliser un paiement par SMS, il faut avoir <b>son compte [e]-Cairn associé à son numéro de téléphone</b>
                 </p>
                 <p>
-                Ensuite, il faut créer un nouveau SMS contenant les informations suivantes
+                    <b>Modèle type</b>
+                    <ul class="browser-default">
+                        <li>PAYER 12.34 LECAIRN</li>
+                        <li>Veuillez saisir votre code de sécurité en position A3 utilisable jusqu'à 16h58 </li>
+                        <li>4321 </li>
+                        <li>Votre paiement de 12.34 à LECAIRN a été accepté. Votre nouveau solde: 27.66 </li>
+                    </ul>
+                </p>
+
+                <p> <b>Détail</b> <br>
+                Il faut créer un nouveau SMS contenant les informations suivantes
                 <ol>
                     <li>PAYER (indique une demande de paiement) </li>
                     <li>Un montant (incluant éventuellement les centimes) comme 12.34 </li>
@@ -41,17 +54,7 @@
                     Enfin, vous recevez un SMS confirmant que le paiement a été exécuté avec succès. <br> 
                     <b>Exemple</b> : Votre paiement de 12.34 à LECAIRN a été accepté. Votre nouveau solde: 27.66
                 </p>
-                <p>
-                    <b>Modèle type</b>
-                    <ul class="browser-default">
-                        <li>PAYER 12.34 LECAIRN</li>
-                        <li>Veuillez saisir votre code de sécurité en position A3 utilisable jusqu'à 16h58 </li>
-                        <li>4321 </li>
-                        <li>Votre paiement de 12.34 à LECAIRN a été accepté. Votre nouveau solde: 27.66 </li>
-                    </ul>
-                </p>
             </div>
-
         </li>
         {% if ( app.user and app.user.hasRole('ROLE_PRO')) %}
         <li>
