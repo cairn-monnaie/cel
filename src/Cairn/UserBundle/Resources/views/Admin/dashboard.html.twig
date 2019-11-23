@@ -30,156 +30,357 @@
 
     <br>
 
-        <h2> les membres en attente de carte </h2>
-        <h3> Particuliers </h3>
-            <ul class="collection">
-                {% for person in persons.nocard %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun particulier en attente de carte !
-                {% endfor %}
-            </ul>
+    {% set nbElementsPerTab = 5 %}
+    
+    <div class="col s12 m6">
+        <h2> En attente de carte </h2>
 
-        <h3> Professionnels </h3>
-            <ul class="collection">
-                {% for pro in pros.nocard %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun professionnel en attente de carte !
-                {% endfor %}
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#part_nocard">Particuliers</a></li>
+                <li class="tab col s3"><a href="#pro_nocard">Professionnels</a></li>
             </ul>
+        </div>
 
-        <h2> les membres en attente d'ouverture de compte</h2>
-        <h3> Particuliers </h3>
-            <ul class="collection">
-                {% for person in persons.pending %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun particulier en attente d'ouverture de compte !
-                {% endfor %}
-            </ul>
+        <div id="part_nocard" class="col s12">
+                {% set usersCount = persons.nocard|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
 
-        <h3> Professionnels </h3>
-            <ul class="collection">
-                {% for pro in pros.pending %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun professionnel en attente d'ouverture de compte !
-                {% endfor %}
-            </ul>
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
 
-        <h2> les membres en opposition de compte</h2>
-        <h3> Particuliers </h3>
-            <ul class="collection">
-                {% for person in persons.blocked %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun particulier en opposition de compte !
-                {% endfor %}
-            </ul>
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                        <li class="tab col s3"><a href="#part_nocard{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
 
-        <h3> Professionnels </h3>
-            <ul class="collection">
-                {% for pro in pros.blocked %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun professionnel en opposition de compte !
-                {% endfor %}
-            </ul>
+                    {% for i in 1..nbTabs %}
+                        <div id="tab_nocard{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set person = persons.nocard[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
 
-        <h2> les adhérents en attente de clôture de compte</h2>
-        <h3> Particuliers </h3>
-            <ul class="collection">
-                {% for person in persons.toRemove %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun particulier en attente de clôture de compte!
-                {% endfor %}
-            </ul>
+        </div>
+        <div id="pro_nocard" class="col s12">
+                {% set usersCount = pros.nocard|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
 
-        <h3> Professionnels </h3>
-            <ul class="collection">
-                {% for pro in pros.toRemove %}
-                    <li class="collection-item">
-                        <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
-                    </li>
-                {% else %}  
-                    Aucun professionnel en attente de clôture de compte !
-                {% endfor %}
-            </ul>
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
 
-{#        <h2> les professionnels validés</h2>
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#pro_nocard{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
 
-        <h2> les professionnels bloqués</h2>
-        <ul class="collection">
-            {% for user in validPros.blockedPros %}
-                <li class="collection-item">
-                    <a href="{{path('cairn_user_profile_view', {'username': user.username})}}">
-                        {% if app.user.image.url is defined %}
-                            <img src="{{asset('uploads/img/' ~ app.user.image.id ~ '.' ~ app.user.image.url)}}" alt="{{app.user.image.alt}}" class="circle responsive-img">
-                        {% else %}
-                            <img src="{{asset('bundles/cairnuser/img/usager.png')}}"alt="Logo utilisateur" class="circle responsive-img">
-                        {% endif %}
-                        <span class="title">{{user.name}}</span></a>
-                </li>
-            {% else %}
-                pas  de professionel bloqué !
-            {% endfor %}
-        </ul>
-
-        <h2> les membres en attente de validation</h2>
-            <h3> Les professionnels </h3>
-            <ul>
-                {% for user in pendingUsers.pros %}
-                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
-                {% else %}  
-                    pas <em>encore</em> de professionel en attente !
-                {% endfor %}
-            </ul>
-            <h3> Les groupes locaux </h3>
-            <ul>
-                {% for user in pendingUsers.admins %}
-                   <li><a href="{{path('cairn_user_users_activate', {'id': user.id})}}">{{user.name}}</a></li>
-                {% else %}  
-                    pas <em>encore</em> de groupe local en attente !
-                {% endfor %}
-            </ul>
-
-         <h2> Les groupes locaux valides </h2>
-         <ul>
-            {% for user in listAdmins %}
-               <li><a href="{{path('cairn_user_profile_view', {'username': user.username})}}">{{user.name}}</a></li>
-            {% else %}  
-                Pas <em>encore</em> de groupe local inscrit !
-            {% endfor %}
-        </ul>
-   
-        {% if is_granted('ROLE_SUPER_ADMIN') %}
-            <h2> Les administrateurs </h2>
-            <ul>
-               {% for user in listSuperAdmins %}
-                  <li><a href="{{path('cairn_user_profile_view', {'username': user.username})}}">{{user.name}}</a></li>
-               {% else %}  
-                   Pas <em>encore</em> d'administrateur inscrit !
-               {% endfor %}
-            </ul>
-        {% endif %}
-#}
+                    {% for i in 1..nbTabs %}
+                        <div id="pro_nocard{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set pro = pros.nocard[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        </div>
     </div>
+
+    
+    <div class="col s12 m6">
+
+        <h2> En attente d'ouverture de compte</h2>
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#part_pending">Particuliers</a></li>
+                <li class="tab col s3"><a href="#pro_pending">Professionnels</a></li>
+            </ul>
+        </div>
+
+        <div id="part_pending" class="col s12">
+                {% set usersCount = persons.pending|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#part_pending{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id="part_pending{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set person = persons.pending[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        </div>
+        <div id="pro_pending" class="col s12">
+                {% set usersCount = pros.pending|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#pro_pending{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id=#pro_pending{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set pro = pros.pending[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        </div>
+    </div>
+    
+
+    <div class="col s12 m6">
+        <h2> En opposition de compte</h2>
+
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#part_blocked">Particuliers</a></li>
+                <li class="tab col s3"><a href="#pro_blocked">Professionnels</a></li>
+            </ul>
+        </div>
+
+        <div id="part_blocked" class="col s12">
+                {% set usersCount = persons.blocked|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#part_blocked{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id="part_blocked{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set person = persons.blocked[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        </div>
+        <div id="pro_blocked" class="col s12">
+                {% set usersCount = pros.blocked|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#pro_blocked{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id="pro_blocked{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set pro = pros.blocked[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+        </div>
+    </div>
+        
+    <div class="col s12 m6">
+        <h2> En attente de clôture</h2>
+
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#part_toremove">Particuliers</a></li>
+                <li class="tab col s3"><a href="#pro_toremove">Professionnels</a></li>
+            </ul>
+        </div>
+
+        <div id="part_toremove" class="col s12">
+                {% set usersCount = persons.toRemove|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#part_toremove{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id="part_toremove{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set person = persons.toRemove[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+        </div>
+        <div id="pro_toremove" class="col s12">
+                {% set usersCount = pros.toRemove|length %}
+                {% set cmpt = 0 %}
+                {% set nbTabs = usersCount // nbElementsPerTab %}
+
+                {% if not usersCount is divisible by(nbElementsPerTab) %}
+                    {% set nbTabs = nbTabs + 1 %}
+                {% endif %}
+
+                {% if nbTabs != 0 %}
+                    <div class="col s12">
+                      <ul class="tabs">
+                        {% for i in 1..nbTabs %}
+                            <li class="tab col s3"><a href="#pro_toremove{{i}}">Tab {{i}}</a></li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+
+                    {% for i in 1..nbTabs %}
+                        <div id="pro_toremove{{i}}" class="col s12">
+                            <ul class="collection">
+                                {% for i in 1..nbElementsPerTab %}
+                                    {% if cmpt < usersCount %}
+                                        {% set pro = pros.toRemove[cmpt] %}
+                                        <li class="collection-item">
+                                            <a href="{{path('cairn_user_profile_view', {'username': pro.username})}}"> <span class="title">{{pro.name}}</span></a>
+                                        </li>
+                                        
+                                        {% set cmpt = cmpt + 1 %}
+                                    
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}              
 {% block javascripts %}
