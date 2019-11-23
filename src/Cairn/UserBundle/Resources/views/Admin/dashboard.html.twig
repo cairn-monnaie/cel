@@ -44,7 +44,6 @@
 
         <div id="part_nocard" class="col s12">
                 {% set usersCount = persons.nocard|length %}
-                {% set usersCount = 100 %}
 
                 {% set cmpt = 0 %}
                 {% set nbTabs = usersCount // nbElementsPerTab %}
@@ -67,7 +66,7 @@
                             <ul class="collection">
                                 {% for i in 1..nbElementsPerTab %}
                                     {% if cmpt < usersCount %}
-                                        {% set person = persons.nocard[0] %}
+                                        {% set person = persons.nocard[cmpt] %}
                                         <li class="collection-item">
                                             <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
                                         </li>
