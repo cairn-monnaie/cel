@@ -31,6 +31,7 @@
        
             {% if formPhone.identifier is defined %}
                 <div class="input-field identifier col s12 m6">
+                   {{ form_errors(formPhone.identifier) }} 
                    {{ form_widget(formPhone.identifier) }} 
                    {{ form_label(formPhone.identifier) }} 
                 </div>                                        
