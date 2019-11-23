@@ -378,7 +378,7 @@ class CardController extends Controller
                         $subject = 'Révocation de votre carte de sécurité Cairn';
                         $from = $this->getParameter('cairn_email_noreply');
                         $to = $user->getEmail();
-                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig');
+                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig',array('user'=>$user));
 
                         $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
                         $session->getFlashBag()->add('success','La carte de sécurité Cairn de code'.$saveCode.' appartenant à '.$user->getName().' a été révoquée avec succès ! Un email lui a été envoyé pour l\'en informer.');
