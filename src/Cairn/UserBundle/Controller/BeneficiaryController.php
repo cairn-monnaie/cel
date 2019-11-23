@@ -228,6 +228,8 @@ class BeneficiaryController extends Controller
     {
         $beneficiaries = $this->getUser()->getBeneficiaries();
 
+        $form = $this->createForm(ConfirmationType::class);
+
         if($_format == 'json'){
             $beneficiaries = $this->get('cairn_user.api')->serialize($beneficiaries->getValues());
 
@@ -237,7 +239,7 @@ class BeneficiaryController extends Controller
             return $response;
         }
 
-        return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('beneficiaries'=>$beneficiaries));
+        return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$beneficiaries));
     }
 
 

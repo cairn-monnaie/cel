@@ -29,7 +29,7 @@
                  <td>{% if beneficiary.user.image %}<img class="circle responsive-img" src="/{{ beneficiary.user.image.webPath}}" alt="" style="width: 40px;">{% endif %}</td>
                  <td>{{ beneficiary.user}} </td>
                  <td>{{ beneficiary.ICC}}</td>
-                 <td><a href="{{path('cairn_user_beneficiaries_remove', {'ICC' : beneficiary.ICC})}}" class="red-text"><i class="material-icons left">close</i> Supprimer</a>
+                 <td><a href="{{path('cairn_user_beneficiaries_remove', {'ICC' : beneficiary.ICC})}}" class="red-text confirmModalLink"><i class="material-icons left">close</i> Supprimer</a>
                 </td>
              </tr>
          {% else %}
@@ -39,6 +39,50 @@
          {% endfor %}
          </tbody>
     </table>
+
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+    </div>
+
 {% endblock %}
 
+{% block javascripts %}
+    <script>
+        $(function (){
 
+            $(".confirmModalLink").click(function(e) {
+                e.preventDefault();
+                theHREF = $(this).attr("href");
+                $('form.confirm_operation').attr('action',theHREF);
+                $("#confirmModal").modal("open");
+
+            });
+
+            $("#confirmation_save").click(function(e) {
+                $('form.confirm_operation').submit();
+               
+            });
+
+            $("#confirmModalNo").click(function(e) {
+                $("#confirmModal").modal("close"); 
+            });
+
+        });
+    </script>
+
+{% endblock %}
