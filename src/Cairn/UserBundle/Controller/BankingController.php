@@ -871,6 +871,8 @@ class BankingController extends Controller
             $accountTypesVO[] = $account->type;
         } 
 
+        $form = $this->createForm(ConfirmationType::class);
+
         if($type == 'transaction'){
             $description = $this->getParameter('cairn_default_transaction_description');
             if($frequency == 'unique'){
@@ -906,7 +908,9 @@ class BankingController extends Controller
 
                 return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
                     array('processedTransactions'=>$processedTransactions ,
-                    'futureInstallments'=> $futureInstallments));
+                    'futureInstallments'=> $futureInstallments,
+                    'form'=>$form->createView()
+                ));
 
             }else{
                 $processedTransactions = $bankingService->getRecurringTransactionsDataBy(
