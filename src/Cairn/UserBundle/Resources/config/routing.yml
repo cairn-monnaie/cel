@@ -299,6 +299,7 @@ cairn_user_api_phone_edit:
 
 cairn_user_users_phone_delete:
     path:     user/phone/delete/{id}
+    methods: POST
     defaults: { _controller: CairnUserBundle:User:deletePhone, _format: html}
     requirements:
         id: \d+
