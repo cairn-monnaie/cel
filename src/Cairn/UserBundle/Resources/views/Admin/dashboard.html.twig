@@ -44,6 +44,8 @@
 
         <div id="part_nocard" class="col s12">
                 {% set usersCount = persons.nocard|length %}
+                {% set usersCount = 100 %}
+
                 {% set cmpt = 0 %}
                 {% set nbTabs = usersCount // nbElementsPerTab %}
 
@@ -55,7 +57,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                        <li class="tab col s3"><a href="#part_nocard{{i}}">Tab {{i}}</a></li>
+                        <li class="tab"><a href="#part_nocard{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -65,7 +67,7 @@
                             <ul class="collection">
                                 {% for i in 1..nbElementsPerTab %}
                                     {% if cmpt < usersCount %}
-                                        {% set person = persons.nocard[cmpt] %}
+                                        {% set person = persons.nocard[0] %}
                                         <li class="collection-item">
                                             <a href="{{path('cairn_user_profile_view', {'username': person.username})}}"> <span class="title">{{person.name}}</span></a>
                                         </li>
@@ -93,7 +95,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#pro_nocard{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#pro_nocard{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -143,7 +145,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#part_pending{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#part_pending{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -180,7 +182,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#pro_pending{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#pro_pending{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -230,7 +232,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#part_blocked{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#part_blocked{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -267,7 +269,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#pro_blocked{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#pro_blocked{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -317,7 +319,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#part_toremove{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#part_toremove{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
@@ -354,7 +356,7 @@
                     <div class="col s12">
                       <ul class="tabs">
                         {% for i in 1..nbTabs %}
-                            <li class="tab col s3"><a href="#pro_toremove{{i}}">Tab {{i}}</a></li>
+                            <li class="tab"><a href="#pro_toremove{{i}}">Tab {{i}}</a></li>
                         {% endfor %}
                       </ul>
                     </div>
