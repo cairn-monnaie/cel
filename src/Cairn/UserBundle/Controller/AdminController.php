@@ -82,20 +82,28 @@ class AdminController extends Controller
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
-            if($form->isValid()) {                        
+            if($form->isValid()) {
 
-            $event = new FormEvent($form, $request);                           
-            $this->get('event_dispatcher')->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
+                $event = new FormEvent($form, $request);                           
+                $this->get('event_dispatcher')->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
 
-            $session->getFlashBag()->add('success','Profil utilisateur édité avec succès');
-            $em->flush();
+                if($form->get('initialize_parameters')->getData()){
+                    $user->setNbPhoneNumberRequests(0);
+                    $user->setPhoneNumberActivationTries(0);
+                    $user->setPasswordTries(0);
+                    $user->setCardKeyTries(0);
+                    $user->setCardAssociationTries(0); 
+                }
 
-            if (null === $response = $event->getResponse()) {                  
-                $url = $this->generateUrl('cairn_user_profile_view',array('username' => $user->getUsername()));            
-                $response = new RedirectResponse($url);                        
-            }
+                $session->getFlashBag()->add('success','Profil utilisateur édité avec succès');
+                $em->flush();
 
-            return $response;
+                if (null === $response = $event->getResponse()) {                  
+                    $url = $this->generateUrl('cairn_user_profile_view',array('username' => $user->getUsername()));            
+                    $response = new RedirectResponse($url);                        
+                }
+
+                return $response;
             }
         }
         return $this->render('CairnUserBundle:Admin:edit_profile_content.html.twig',
