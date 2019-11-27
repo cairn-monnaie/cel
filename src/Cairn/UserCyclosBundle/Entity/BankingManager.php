@@ -52,7 +52,7 @@ class BankingManager
         $parameters = $this->hydrateParameters($paymentData,$amount,$description,$transferType);
 
         $interval = $timeData->firstOccurrenceDate->diff($timeData->lastOccurrenceDate);
-        $monthsDiff = $interval->m;
+        $monthsDiff = 12*$interval->y + $interval->m;
 
         $parameters->firstOccurrenceDate = $timeData->firstOccurrenceDate->format('Y-m-d');
 
@@ -63,15 +63,16 @@ class BankingManager
         $parameters->occurrenceInterval = new \stdClass();
         $parameters->occurrenceInterval->field = 'MONTHS';
 
-        if($environment == 'test'){
+        if($environment != 'prod'){
             $parameters->occurrenceInterval->field = 'MINUTES';
         }
+
         $parameters->occurrenceInterval->amount = $timeData->periodicity;
 
         $parameters->occurrencesCount = intdiv($monthsDiff, $timeData->periodicity) + 1;
 
+        echo $parameters->occurrencesCount;
         return $this->recurringPaymentService->preview($parameters);
-
     }
 
 

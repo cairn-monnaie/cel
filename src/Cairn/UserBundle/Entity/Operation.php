@@ -132,6 +132,13 @@ class Operation
     private $mandate;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="recurringID", type="string", length=25, nullable=true)
+     */
+    private $recurringID;
+
+    /**
      * @var array
      */
     private $fromAccount;
@@ -143,7 +150,7 @@ class Operation
 
     //WARNING : CURRENT VALUES SHOULD NOT BE CHANGED ! THIS WOULD MAKE ANY FILTERING OPERATION FAIL
     const TYPE_TRANSACTION_EXECUTED = 0;
-#    const TYPE_TRANSACTION_RECURRING = 1;
+    const TYPE_TRANSACTION_RECURRING = 1;
     const TYPE_TRANSACTION_SCHEDULED = 2;
     const TYPE_CONVERSION_BDC = 3;
     const TYPE_CONVERSION_HELLOASSO = 4;
@@ -155,13 +162,15 @@ class Operation
     const TYPE_ONLINE_PAYMENT = 10;
     const TYPE_RECONVERSION = 11;
     const TYPE_MOBILE_APP = 12;
+    const TYPE_DIRECT_DEBITING = 13;
+
 
     const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT, self::TYPE_RECONVERSION);
 
     /*
      * All types which involve two adherents
      */
-    const ARRAY_TRANSFER_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED, self::TYPE_ONLINE_PAYMENT);
+    const ARRAY_TRANSFER_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING, self::TYPE_ONLINE_PAYMENT);
 
 
     public function isSmsPayment()
@@ -174,6 +183,9 @@ class Operation
         switch ($typeName){
         case "TRANSACTION_EXECUTED":
             return self::TYPE_TRANSACTION_EXECUTED;
+            break;
+        case "TRANSACTION_RECURRING":
+            return self::TYPE_TRANSACTION_RECURRING;
             break;
         case "TRANSACTION_SCHEDULED":
             return self::TYPE_TRANSACTION_SCHEDULED;
@@ -202,7 +214,6 @@ class Operation
         default:
             return NULL;
         }
-
     }
 
     public static function getTypeName($typeIndex)
@@ -210,6 +221,9 @@ class Operation
         switch ($typeIndex){
         case "0":
             return 'transaction';
+            break;
+        case "1":
+            return 'recurring transaction';
             break;
         case "2":
             return 'scheduled transaction';
@@ -295,7 +309,7 @@ class Operation
 
     public static function getScheduledTypes()
     {
-        return array(self::TYPE_TRANSACTION_SCHEDULED);
+        return array(self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING );
     }
 
     
@@ -308,22 +322,11 @@ class Operation
     }
 
     // same idea than a copy constructor
-    public function copyFrom(Operation $operation)
+    public static function copyFrom(Operation $operation)
     {
-        $copy = new self();
-        $copy->setAmount($operation->getAmount());                  
-        $copy->setReason($operation->getReason());          
-        $copy->setDescription($operation->getDescription());          
-        $copy->setFromAccountNumber($operation->getFromAccountNumber());          
-        $copy->setToAccountNumber($operation->getToAccountNumber());          
-        $copy->setCreditor($operation->getCreditor());          
-        $copy->setCreditorName($operation->getCreditorName());  
-        $copy->setDebitor($operation->getDebitor());          
-        $copy->setDebitorName($operation->getDebitorName());  
-        $copy->setExecutionDate($operation->getExecutionDate());
-        $copy->setSubmissionDate($operation->getSubmissionDate());
-        $copy->setType($operation->getType());
+        $copy = clone $operation;
         $copy->setPaymentID(NULL);
+        $copy->setRecurringID(NULL);
 
         return $copy;        
     } 
@@ -383,6 +386,30 @@ class Operation
     public function getPaymentID()
     {
         return $this->paymentID;
+    }
+
+    /**
+     * Set recurringID
+     *
+     * @param string $recurringID
+     *
+     * @return Operation
+     */
+    public function setRecurringID($recurringID)
+    {
+        $this->recurringID = $recurringID;
+
+        return $this;
+    }
+
+    /**
+     * Get recurringID
+     *
+     * @return string
+     */
+    public function getRecurringID()
+    {
+        return $this->recurringID;
     }
 
     /**

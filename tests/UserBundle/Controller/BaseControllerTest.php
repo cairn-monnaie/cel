@@ -132,6 +132,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('id', $entity);
             $this->assertArrayHasKey('type', $entity);
             $this->assertArrayHasKey('paymentID', $entity);
+            $this->assertArrayHasKey('recurringID', $entity);
             $this->assertArrayHasKey('amount', $entity);
             $this->assertArrayHasKey('submissionDate', $entity);
             $this->assertArrayHasKey('executionDate', $entity);
@@ -149,7 +150,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('fromAccount', $entity);
             $this->assertArrayNotHasKey('toAccount', $entity);
             $this->assertArrayNotHasKey('mandate', $entity);
-            $this->assertEquals(16,count($entity));
+            $this->assertEquals(17,count($entity));
             break;
 
         case 'account':
