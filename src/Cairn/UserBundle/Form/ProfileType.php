@@ -13,6 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -93,9 +94,12 @@ class ProfileType extends AbstractType
                     $form->add('identityDocument', IdentityDocumentType::class,
                         array(
                             'label'=>$label,
-                            'attr' => array('class'=>'identity-document')
-                        ));
-
+                            'attr' => array('class'=>'identity-document'),
+                            'required' => false
+                        ))
+                        ->add('initialize_parameters', CheckboxType::class, array('label'=>'Réinitialiser les paramètres',
+                            'mapped'=>false,
+                            'required'=>false));
 
                 }
 

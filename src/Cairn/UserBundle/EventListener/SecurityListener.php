@@ -69,8 +69,12 @@ class SecurityListener
     public function changeCyclosPassword($old, $new, $user)
     {
         $passwordManager = new PasswordManager();
+        $anonymous = $this->container->getParameter('cyclos_anonymous_user');
 
         try{
+            $credentials = array('username'=>$anonymous,'password'=>$anonymous);
+            $this->loginPaymentApp('login',$credentials);
+
             $passwordManager->changePassword($old, $new, $user->getCyclosID());
             return true;
         }catch(\Exception $e){

@@ -25,9 +25,9 @@ class IdentityDocumentType extends AbstractType
                         'mimeTypes'=>array('image/jpeg','image/jpg','image/png','application/pdf')
 
                     )),
-                    new Assert\NotNull(array(
-                        'message'=>'Ce document est obligatoire'
-                    )),
+                    //new Assert\NotNull(array(
+                    //    'message'=>'Ce document est obligatoire'
+                    //)),
 
                 ),
             ));
