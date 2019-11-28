@@ -443,9 +443,9 @@ cairn_user_banking_operations:
 cairn_user_banking_post:
     path:     operations/{type}
     methods: POST
-    defaults: { _controller: CairnUserBundle:Security:synchronizeOperation, _format: json }
+    defaults: { _controller: CairnUserBundle:Security:synchronizeAppsOperations, _format: json }
     requirements:
-        type: deposit|withdrawal|conversion
+        type: deposit|withdrawal|conversion|recurring
 
 cairn_user_banking_operations_view:
     path:     banking/view/operations/{frequency}.{_format}

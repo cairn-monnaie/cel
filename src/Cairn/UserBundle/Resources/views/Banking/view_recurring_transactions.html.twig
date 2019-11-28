@@ -117,8 +117,6 @@
                         <td> {{transaction.currencyAmount.amount }} </td>
                         <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> </td>
                     </tr>
-        {% else %}
-            Aucun virement permanent achevé 
         {% endfor %}
         </tbody>
         </table>
