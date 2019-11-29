@@ -754,17 +754,12 @@ class BankingController extends Controller
                     if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
 
                         $recurringPaymentVO = $this->bankingManager->makeRecurringPayment($paymentReview->recurringPayment);
-                        $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($recurringPaymentVO->id);
+                        // Cyclos script will create operation when the transfer will occur
+                        $em->remove($operation);
+                        $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
 
-                        $operation->setRecurringID($recurringPaymentVO->id);
-                        if($paymentReview->recurringPayment->firstOccurrenceIsNow){
-                            $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
-                            $operation->setPaymentID($recurringPaymentData->occurrences[0]->transferId);
+                        return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id'=>$recurringPaymentVO->id )); 
 
-                        }else{
-                            // Cyclos script will create operation when the transfer will occur
-                            $em->remove($operation);
-                        }
                     }else{
                         if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
                             $scheduledPaymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
