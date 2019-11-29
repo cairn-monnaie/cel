@@ -1,6 +1,6 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/failed_transaction.html.twig #}
 
-    Bonjour {{operation.debitorName}}, <br>
+Bonjour <b>{{operation.debitorName}}</b>, <br>
     <br>
     Un virement programmé le {{operation.submissionDate|date('d-m-Y')}} à {{operation.submissionDate|date('H:i')}} a échoué aujourd'hui. Le solde de votre compte [e]-Cairn était insuffisant au moment de l'exécution automatique de l'opération. <br> <br>
 

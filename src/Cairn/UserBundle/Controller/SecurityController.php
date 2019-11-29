@@ -163,17 +163,21 @@ class SecurityController extends Controller
      * Creates symfony equivalent for changes, deposits and withdrawals made in BDC app
      *
      */
-    public function synchronizeOperationAction(Request $request, $type)
+    public function synchronizeAppsOperationsAction(Request $request, $type)
     {
         $em = $this->getDoctrine()->getManager();
-        $operation = new Operation();
+        
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if($request->isMethod('POST')){
             $data = json_decode($request->getContent(),true);
 
             $networkInfo = $this->get('cairn_user_cyclos_network_info');
             $networkName = $this->getParameter('cyclos_currency_cairn');
-            $networkInfo->switchToNetwork($networkName,'session_token', $data['cyclos_token']);
+
+            $anonymous = $this->getParameter('cyclos_anonymous_user');
+            $credentials = array('username'=>$anonymous,'password'=>$anonymous);
+            $networkInfo->switchToNetwork($networkName,'login', $credentials);
 
             //first, we check that the provided paymentID matches an operation in Cyclos
             //for now, this is a 'transfer' because we do not deal with scheduled conversions. It means that, in Cyclos,
@@ -189,19 +193,11 @@ class SecurityController extends Controller
 
             //Finally, we check that cyclos transfer data correspond to the POST request
             $amount = ($data['amount'] == $cyclosTransfer->currencyAmount->amount);
-#            $description = ($data['description'] == $cyclosTransfer->description);
             $fromAccountNumber = ($data['fromAccountNumber'] == $cyclosTransfer->from->number);
             $toAccountNumber = ($data['toAccountNumber'] == $cyclosTransfer->to->number);
 
             if($amount && $fromAccountNumber && $toAccountNumber){
-                $operation->setPaymentID($data['paymentID']);
-                $operation->setFromAccountNumber($data['fromAccountNumber']);
-                $operation->setToAccountNumber($data['toAccountNumber']);
-                $operation->setAmount($data['amount']);
-
-                //there is not 'reason' property in Cyclos. Then, we use the only one available (description) to set up the 
-                //operation reason on Symfony side
-                $operation->setReason($data['description']);
+                $operation = new Operation();
                 $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($cyclosTransfer->from->owner));
                 $operation->setCreditorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($cyclosTransfer->to->owner));
 
@@ -218,9 +214,80 @@ class SecurityController extends Controller
                     $operation->setDebitor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getDebitorName()));
                     $operation->setType(Operation::TYPE_WITHDRAWAL);
                     break;
+                case "recurring":
+                    $recurringPaymentData = $this->get('cairn_user_cyclos_banking_info')->getRecurringTransactionDataByID($data['transactionID']);
+
+                    $operation->setDebitor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getDebitorName()));
+                    $operation->setCreditor($em->getRepository('CairnUserBundle:User')->findOneByName($operation->getCreditorName()));
+
+                    $operation->setExecutionDate(new \Datetime($cyclosTransfer->date));
+                    $operation->setSubmissionDate(new \Datetime($recurringPaymentData->transaction->date));
+
+
+                    $operation->setRecurringID($data['recurringID']);
+                    if($data['status'] == 'FAILED'){
+                        //send email to debitor user
+                        $body = $this->get('templating')->render('CairnUserBundle:Emails:failed_transaction.html.twig',
+                            array('operation'=>$operation));
+
+                        $subject = 'Echec de votre virement programmé';
+                        $from = $messageNotificator->getNoReplyEmail();
+                        $to = $operation->getDebitor()->getEmail();
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+                        $response = new Response('Transfer Failed. Email sent to user');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        $response->headers->set('Content-Type', 'application/json'); 
+                        $response->headers->set('Accept', 'application/json'); 
+
+                        return $response;
+                    }else{
+                        $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
+                    }
+                    break;
+                case "scheduled":
+                    $existingOperation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID'],'type'=>Operation::TYPE_TRANSACTION_SCHEDULED));
+
+                    if($existingOperation){
+                        $operation = $existingOperation;
+                    }
+
+                                        
+                    if($data['status'] == 'FAILED'){
+                        //send email to debitor user
+                        $body = $this->get('templating')->render('CairnUserBundle:Emails:failed_transaction.html.twig',
+                            array('operation'=>$operation));
+
+                        $subject = 'Echec de votre virement programmé';
+                        $from = $messageNotificator->getNoReplyEmail();
+                        $to = $operation->getDebitor()->getEmail();
+                        $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+                        $response = new Response('Transfer Failed. Email sent to user');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        $response->headers->set('Content-Type', 'application/json'); 
+                        $response->headers->set('Accept', 'application/json'); 
+
+                        return $response;
+                    }else{
+                        $operation->setExecutionDate(new \Datetime($cyclosTransfer->date));
+                        $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
+                    }
+                    break;
+
                 default:
                     throw new SuspiciousOperationException('Unexpected operation type');
                 }
+
+                $operation->setPaymentID($data['paymentID']);
+                $operation->setFromAccountNumber($data['fromAccountNumber']);
+                $operation->setToAccountNumber($data['toAccountNumber']);
+                $operation->setAmount($data['amount']);
+
+                //there is not 'reason' property in Cyclos. Then, we use the only one available (description) to set up the 
+                //operation reason on Symfony side
+                $operation->setReason($data['description']);
+                
 
                 $em->persist($operation);
                 $em->flush();
@@ -232,7 +299,7 @@ class SecurityController extends Controller
                 return $response;
             }else{
                 $response = new Response('Synchronization failed');
-                $response->setStatusCode(Response::HTTP_NOT_ACCEPTABLE);
+                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
                 $response->headers->set('Content-Type', 'application/json'); 
 
                 return $response;

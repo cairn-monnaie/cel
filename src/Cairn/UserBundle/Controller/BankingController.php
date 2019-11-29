@@ -761,19 +761,10 @@ class BankingController extends Controller
                             $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
                             $operation->setPaymentID($recurringPaymentData->occurrences[0]->transferId);
 
-                            //TODO : CREATE NEXT OCCURRENCE HERE
-                            $nextOccurrence = Operation::copyFrom($operation);
-                            $nextOccurrence->setPaymentID($recurringPaymentVO->id);
-                            $nextOccurrence->setRecurringID($recurringPaymentVO->id);
-                            $nextOccurrence->setType(Operation::TYPE_TRANSACTION_RECURRING);
-                            $nextOccurrence->setExecutionDate(new \Datetime($recurringPaymentVO->nextOccurrenceDate));
-
-                            $em->persist($nextOccurrence);
                         }else{
-                            $operation->setType(Operation::TYPE_TRANSACTION_RECURRING);
-                            $operation->setPaymentID($recurringPaymentVO->id);
+                            // Cyclos script will create operation when the transfer will occur
+                            $em->remove($operation);
                         }
-                        
                     }else{
                         if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
                             $scheduledPaymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
@@ -834,8 +825,6 @@ class BankingController extends Controller
                 try{
                     $transferVO = $this->bankingManager->processOccurrence($DTO);
 
-                    $session->getFlashBag()->add('success','Le virement a été effectué avec succès.');
-
                     $operation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$recurringID,'type'=>Operation::TYPE_TRANSACTION_RECURRING));
 
                     if($operation){
@@ -864,16 +853,20 @@ class BankingController extends Controller
                     }
 
                     $em->flush();
+
+                    $session->getFlashBag()->add('success','Le virement a été effectué avec succès.');
+
                 }catch(\Exception $e){
                     if($e instanceof Cyclos\ServiceException){
                         if($e->errorCode == 'INSUFFICIENT_BALANCE'){
                             $message = 'Vous n\'avez pas les fonds nécessaires. Le virement ne peut aboutir';
+                            $session->getFlashBag()->add('error',$message);
                         }
                     }
                     else{
                         throw $e;
                     }
-                    $session->getFlashBag()->add('error',$message);
+                    
                 }
 
                 return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id' => $recurringID));
@@ -883,8 +876,6 @@ class BankingController extends Controller
         return $this->render('CairnUserBundle:Banking:execute_occurrence.html.twig', array(
             'form'   => $form->createView()
         ));
-
-
     }
 
 
@@ -942,9 +933,7 @@ class BankingController extends Controller
                 ->andWhere($ob->expr()->in('o.type',array(Operation::TYPE_TRANSACTION_SCHEDULED,Operation::TYPE_SCHEDULED_FAILED)))
                 ->orderBy('o.executionDate','ASC')
                 ->getQuery();
-            //double query on purpose, because of the "onPostLoad" event on Operation EntityListener that might change the status
-            //of a scheduled operation after first load
-            $futureInstallments = $futureInstallmentQuery->getResult();
+
             $futureInstallments = $futureInstallmentQuery->getResult();
 
             return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
@@ -1086,7 +1075,7 @@ class BankingController extends Controller
                     $em->remove($operation);
                 }
 
-                $em->flush();
+                //$em->flush();
                 $session->getFlashBag()->add('success','Le statut de votre virement a été modifié avec succès.');
             }
 
