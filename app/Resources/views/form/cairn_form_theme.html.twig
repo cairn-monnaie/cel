@@ -48,6 +48,7 @@
                         data[accounts[i].name] = accounts[i].icon;
                     }
                     $('#{{ id }}').autocomplete({
+                        minLength : 4,
                         data: data,
                         limit: 6, // The max amount of results that can be shown at once. Default: Infinity.
                     });
