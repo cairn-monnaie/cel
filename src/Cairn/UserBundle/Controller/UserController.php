@@ -97,8 +97,12 @@ class UserController extends Controller
         //accounts of current user
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
 
-        $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
-
+        if($currentUser->isAdherent()){
+            $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
+        }else{
+            $accounts = array();
+            $accounts[] = $this->get('cairn_user_cyclos_account_info')->getDebitAccount();
+        }
         $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
 
         $executedTypes = Operation::getExecutedTypes(true,$currentUser->hasRole('ROLE_PRO'));
@@ -131,7 +135,6 @@ class UserController extends Controller
             }
             return $this->render('CairnUserBundle:User:index.html.twig',array('accounts'=>$accounts,'lastTransactions'=>$processedTransactions,'lastPros'=>$users));
         }
-
     }
 
     /**
