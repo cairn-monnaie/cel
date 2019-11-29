@@ -224,7 +224,7 @@ class SecurityController extends Controller
                     $operation->setSubmissionDate(new \Datetime($recurringPaymentData->transaction->date));
 
 
-                    $operation->setRecurringID($data['recurringID']);
+                    $operation->setRecurringID($data['transactionID']);
                     if($data['status'] == 'FAILED'){
                         //send email to debitor user
                         $body = $this->get('templating')->render('CairnUserBundle:Emails:failed_transaction.html.twig',
