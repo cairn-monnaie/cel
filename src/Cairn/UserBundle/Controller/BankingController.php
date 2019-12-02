@@ -915,6 +915,7 @@ class BankingController extends Controller
             $ob = $operationRepo->createQueryBuilder('o');
             $processedTransactions = $ob->where($ob->expr()->in('o.fromAccountNumber', $accountNumbers))
                 ->andWhere('o.paymentID is not NULL')
+                ->andWhere('o.recurringID is NULL')
                 ->andWhere('o.executionDate <= :date')
                 ->andWhere('o.type = :type')
                 ->setParameter('type', Operation::TYPE_TRANSACTION_EXECUTED)
@@ -1029,12 +1030,6 @@ class BankingController extends Controller
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
-        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
-
-        $operation = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyOperation($id);
-        if(!$operation){
-            return $this->redirectToRoute('cairn_user_banking_operations_view',array('frequency'=>'unique','type'=>'transaction'));
-        }
 
         //instance of ScheduledPaymentVO with installments
         $scheduledPayment = $this->get('cairn_user_cyclos_banking_info')->getTransactionDataByID($id)->transaction;
@@ -1062,12 +1057,9 @@ class BankingController extends Controller
                 $session->getFlashBag()->add('error',$res->message);
             }
             else{
-                if($status == 'execute'){
-                    $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
-                    $operation->setPaymentID($res->transfer->id);
-                    $operation->setExecutionDate(new \Datetime());
-                }elseif($status == 'cancel'){
+                if($status == 'cancel'){
                     $em->remove($operation);
+                    $em->flush();
                 }
 
                 //$em->flush();
