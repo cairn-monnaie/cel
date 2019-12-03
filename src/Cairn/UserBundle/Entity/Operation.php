@@ -165,7 +165,7 @@ class Operation
     const TYPE_DIRECT_DEBITING = 13;
 
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT, self::TYPE_RECONVERSION);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT,self::TYPE_RECONVERSION,self::TYPE_MANDATE);
 
     /*
      * All types which involve two adherents
@@ -297,12 +297,12 @@ class Operation
     {
         $types =  self::ARRAY_EXECUTED_TYPES;
 
-        if($asPro){
-            $types[] = self::TYPE_RECONVERSION;
+        if(! $asPro){
+            $types = array_diff($types, array(self::TYPE_RECONVERSION));
         }
 
-        if($withMandate){
-            $types[] = self::TYPE_MANDATE;
+        if(! $withMandate){
+            $types = array_diff($types, array(self::TYPE_MANDATE));
         }
         return $types;
     }

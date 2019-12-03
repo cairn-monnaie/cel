@@ -234,7 +234,7 @@ class BankingController extends Controller
 
         //get, once for all, the list of executed types
         $hasMandate = ( $mandateRepo->findOneByContractor($user) == NULL ) ? false : true;  
-        $executedTypes = Operation::getExecutedTypes($hasMandate,$user->hasRole('ROLE_PRO'));
+        $executedTypes = Operation::getExecutedTypes( ($hasMandate || $user->hasRole('ROLE_SUPER_ADMIN')), $user->hasRole('ROLE_PRO') || $user->hasRole('ROLE_SUPER_ADMIN'));
 
         //last operations
 
@@ -319,7 +319,7 @@ class BankingController extends Controller
             //last operations
             $ob = $operationRepo->createQueryBuilder('o');
             $operationRepo->whereInvolvedAccountNumber($ob, $account->number)
-                ->whereTypes($ob,Operation::getExecutedTypes())
+                ->whereTypes($ob,$executedTypes)
                 ->whereExecutedBefore($ob,$endDefault)->whereExecutedAfter($ob,$beginDefault);
             $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
                 ->orderBy('o.executionDate','DESC')
@@ -366,7 +366,7 @@ class BankingController extends Controller
 
                 $operationTypes = $dataForm['types'];
                 if(! $operationTypes){
-                    $operationTypes = Operation::getExecutedTypes();
+                    $operationTypes = $executedTypes;
                 }
                 $minAmount = $dataForm['minAmount'];
                 $maxAmount = $dataForm['maxAmount'];
