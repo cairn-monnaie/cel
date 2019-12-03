@@ -4,9 +4,14 @@
 
 {% block body %}
     {{parent()}}
+
+<div class="row">
+
+    <div class="center-align">
+        <h1>Virement permanent {{data.transaction.description}}</h1>
+    </div>
     <div>
         <table>
-        <caption> <span> Détail du virement permanent</span> </caption>
         <thead>
             <tr>
                 <th> N° </th>
@@ -20,30 +25,89 @@
         <tbody>
         {% for occurrence in data.occurrences %}
                     <tr>
-                        <td> {{occurrence.number}}/{{data.transaction.occurrencesCount}} </td>
+                        <td> <b>{{occurrence.number}}/{{data.transaction.occurrencesCount}}</b> </td>
                         <td>{{occurrence.currencyAmount.amount}} </td>
-                        <td> {{occurrence.date }} </td>  
-                        <td> {{occurrence.status }} </td>
+                        <td> {{occurrence.date|date('d-m-Y')}} </td>  
+                        <td> {{occurrence.status}} </td>
                         <td>
-                             {% if occurrence.status == 'FAILED' %}
-                                <a href="{{path('cairn_user_banking_transaction_occurrence_execute',{'id': occurrence.id })}}" >Executer </a>
-                             {% else %}
-                                <a href="{{path('cairn_user_banking_transfer_view', {'type':'recurring','id' : occurrence.id})}}"> Voir le détail </a>
+                            
+                            {% if occurrence.status == 'FAILED' %}
+                                <a href="{{path('cairn_user_banking_transaction_occurrence_execute',{'recurringID': data.transaction.id,'occurrenceID': occurrence.id })}}" class="confirmModalLink" >Executer </a>
+                            {% elseif occurrence.status == 'PROCESSED' %}
+                                <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : occurrence.transferId})}}"> Voir le détail </a>
                              {% endif %}
+                            
                         </td>
                     </tr>
-        {% else %}
-            Aucune occurrence executée
         {% endfor %}
+
+        {% if data.transaction.status == 'OPEN' %}
+            <tr>
+                <td><b> {{data.occurrences|length + 1}}/{{data.transaction.occurrencesCount}}</b> </td>
+                <td>{{data.transaction.currencyAmount.amount}}</td>
+                <td> {{data.transaction.nextOccurrenceDate|date('d-m-Y')}}</td>  
+                <td> En cours </td>
+                <td>
+                </td>
+            </tr>
+
+            
+        {% endif %}
         </tbody>
         </table>
     </div>    
-    
-    <h3> Informations sur le compte </h3>
-    <ul>
-        <li> Nom du compte : {{fromAccount.type.name }} </li>
-        <li> ICC : {{fromAccount.id}} </li>
-        <li> Solde : {{fromAccount.status.balance}} </li>
-        <li> Capacité totale de dépense : {{fromAccount.status.availableBalance}} </li>
-    </ul>
+    <div class="center-align">
+        <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring'})}}" class="btn blue"><i class="material-icons left">arrow_back</i>Retour</a>
+    </div>
+
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+    </div>
+
+</div>
 {% endblock %}
+
+{% block javascripts %}
+
+<script type="text/javascript">
+
+    
+    $(function (){
+
+        $(".confirmModalLink").click(function(e) {
+            e.preventDefault();
+            theHREF = $(this).attr("href");
+            $('form.confirm_operation').attr('action',theHREF);
+            $("#confirmModal").modal("open");
+
+        });
+
+        $("#confirmation_save").click(function(e) {
+            $('form.confirm_operation').submit();
+           
+        });
+
+        $("#confirmModalNo").click(function(e) {
+            $("#confirmModal").modal("close"); 
+        });
+
+    });
+    </script>
+
+{% endblock %}
+

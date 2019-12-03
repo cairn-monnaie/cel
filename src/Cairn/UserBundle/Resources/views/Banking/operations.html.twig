@@ -7,10 +7,10 @@
     {% if app.user.isAdherent() %}
     <h1>Virements</h1>
     <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'unique'})}}" class="btn"><i class="material-icons left">add</i>Nouveau virement unique</a>
-    {#trending_flat#}
-    {#<a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}"> Virement permanent </a>#}
-    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique','type':'transaction'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Tous mes virements</a>
-    {# <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring','type':'transaction'})}}"> Virements permanents </a>#}
+    <a href="{{path('cairn_user_banking_transaction_to',{'frequency': 'recurring'})}}" class="btn"><i class="material-icons left">add</i>Nouveau virement permanent</a>
+    <br>
+    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'unique'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Tous mes virements uniques</a>
+    <a href="{{path('cairn_user_banking_operations_view',{'frequency':'recurring'})}}" class="btn blue"><i class="material-icons left">format_list_bulleted</i>Tous mes virements permanents</a>
     <br>
     <br>
     <a href="{{path('cairn_user_beneficiaries_list')}}" class="btn cyan"><i class="material-icons left">favorite</i>Mes bénéficiaires enregistrés</a>

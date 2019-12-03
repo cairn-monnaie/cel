@@ -135,12 +135,11 @@ class BankingInfo
      *@param array of strings Java type: org.cyclos.model.banking.transactions.TransactionNature
      *@param array of arrays of strings Java type : interface TransactionStatus :
      *       example : array( array('PROCESSED','SCHEDULED') , 'OPEN', array('BLOCKED','CANCELED'))
-     *@param string $description
      *@param string $orderBy Java type: org.cyclos.model.banking.transactions.TransactionOrderBy
      *@param stdClass $period Java type : org.cyclos.model.utils.DatePeriodDTO
      *@param int $pageSize number of responses
      */
-    public function hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description,$orderBy, $period, $pageSize)
+    public function hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$orderBy, $period, $pageSize)
     {
         $query             = new \stdClass();
         $query->direction = 'DEBIT';
@@ -149,7 +148,6 @@ class BankingInfo
         $query->natures   = $natures; 
         //the array of statuses will be filled in this order : payment request status/recurring payment status/ scheduled payment status
         $query->statuses = $statuses;
-        $query->description = $description;
         $query->orderBy    = ($orderBy == NULL) ? 'DATE_DESC' : $orderBy;
         $query->period = $period;
         $query->pageSize = $pageSize;
@@ -165,15 +163,14 @@ class BankingInfo
      *@param array of strings Java type: org.cyclos.model.banking.transactions.TransactionNature
      *@param array of arrays of strings Java type : interface TransactionStatus :
      *       example : array( array('PROCESSED','SCHEDULED') , 'OPEN', array('BLOCKED','CANCELED'))
-     *@param string $description
      *@param string $orderBy Java type: org.cyclos.model.banking.transactions.TransactionOrderBy
      *@param stdClass $period Java type : org.cyclos.model.utils.DatePeriodDTO
      *@param int $pageSize number of responses
      *@return stdClass Java type: org.cyclos.model.banking.transactions.TransactionVO 
      */
-    public function getTransactions($ownerVO,$accountTypesVO,$natures = NULL,$statuses = NULL,$description=NULL, $orderBy = NULL, $period = NULL, $pageSize = NULL)
+    public function getTransactions($ownerVO,$accountTypesVO,$natures = NULL,$statuses = NULL, $orderBy = NULL, $period = NULL, $pageSize = NULL)
     {
-        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description, $orderBy , $period, $pageSize);
+        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses, $orderBy , $period, $pageSize);
 
         if((count($query->statuses) != 0) && (count($query->statuses) != 3)){
             throw new \Exception('invalid parameter : array $statuses must contain 3 arrays or must be null, ' .count($query->statuses). ' given');
@@ -194,14 +191,13 @@ class BankingInfo
      *@param array of stdClass representing Java type: org.cyclos.model.banking.accounttypes.AccountTypeVO
      *@param array of arrays of strings Java type : interface TransactionStatus :
      *       example : array( array('PROCESSED','SCHEDULED') , 'OPEN', array('BLOCKED','CANCELED'))
-     *@param string $description
      *@param string $orderBy Java type: org.cyclos.model.banking.transactions.TransactionOrderBy
      *@param stdClass $period Java type : org.cyclos.model.utils.DatePeriodDTO
      *@param int $pageSize number of responses
      */
-    public function getRecurringTransactionsDataBy($ownerVO,$accountTypesVO,$statuses,$description,$orderBy = NULL, $period = NULL, $pageSize = NULL)
+    public function getRecurringTransactionsDataBy($ownerVO,$accountTypesVO,$statuses,$orderBy = NULL, $period = NULL, $pageSize = NULL)
     {
-        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,'RECURRING_PAYMENT',$statuses,$description, $orderBy , $period, $pageSize);
+        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,'RECURRING_PAYMENT',$statuses, $orderBy , $period, $pageSize);
 
         $transactions = $this->recurringPaymentService->search($query)->pageItems;
 
@@ -222,14 +218,13 @@ class BankingInfo
      *@param array of stdClass representing Java type: org.cyclos.model.banking.accounttypes.AccountTypeVO
      *@param array of arrays of strings Java type : interface TransactionStatus :
      *       example : array( array('PROCESSED','SCHEDULED') , 'OPEN', array('BLOCKED','CANCELED'))
-     *@param string $description
      *@param string $orderBy Java type: org.cyclos.model.banking.transactions.TransactionOrderBy
      *@param stdClass $period Java type : org.cyclos.model.utils.DatePeriodDTO
      *@param int $pageSize number of responses
      */
-    public function getInstallments($ownerVO,$accountTypesVO,$statuses = NULL,$description, $orderBy = NULL, $period = NULL, $pageSize = NULL)
+    public function getInstallments($ownerVO,$accountTypesVO,$statuses = NULL, $orderBy = NULL, $period = NULL, $pageSize = NULL)
     {
-        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,'SCHEDULED_PAYMENT',$statuses,$description,$orderBy , $period, $pageSize);
+        $query = $this->hydrateQuery($ownerVO,$accountTypesVO,'SCHEDULED_PAYMENT',$statuses,$orderBy , $period, $pageSize);
 
         //one array with all desired statuses is required
         $query->status = $query->statuses;

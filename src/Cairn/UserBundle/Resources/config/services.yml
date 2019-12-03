@@ -137,16 +137,6 @@ services:
             - "%secret%" 
             - "%sms_daily_thresholds%" 
 
-    cairn_user.operation_listener:
-        class: Cairn\UserBundle\EventListener\OperationListener
-        arguments:
-            - "@cairn_user_cyclos_banking_info"
-            - "@cairn_user.bridge_symfony"
-            - "@cairn_user.message_notificator"
-            - "@templating"
-        tags:
-            - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
-
     cairn_user.accountscore_listener:
         class: Cairn\UserBundle\EventListener\AccountScoreListener
         arguments:
