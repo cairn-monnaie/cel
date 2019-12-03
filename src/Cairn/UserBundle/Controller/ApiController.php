@@ -21,13 +21,53 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\OnlinePayment;
+use Cairn\UserBundle\Entity\User;
 
 
 /**
- * This class contains actions related to other applications as webhooks 
+ * This class contains actions related to other applications as webhooks and specific API functions 
  */
 class ApiController extends Controller
 {
+
+    public function phonesAction(Request $request)
+    {
+        $user = $this->getUser();
+        $phones = $user->getPhones(); 
+        $phones = is_array($phones) ? $phones : $phones->getValues();
+
+        $res = $this->get('cairn_user.api')->serialize($phones);
+
+        $response = new Response($res);
+        $response->headers->set('Content-Type', 'application/json');
+        $response->setStatusCode(Response::HTTP_OK);
+        return $response;
+    }
+
+    public function usersAction(Request $request)
+    {
+        $currentUser = $this->getUser();
+        $currentUserID = $currentUser->getID();
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository(User::class);
+
+        $ub = $userRepo->createQueryBuilder('u');
+
+        if($currentUser->isAdherent()){
+            $userRepo->whereEnabled($ub,true)->whereAdherent($ub)->whereConfirmed($ub);
+        }else{
+            $userRepo->whereReferent($ub, $currentUserID);
+        }
+
+        $users = $ub->getQuery()->getResult();
+        $res = $this->get('cairn_user.api')->serialize($users);
+
+        $response = new Response($res);
+        $response->headers->set('Content-Type', 'application/json');
+        $response->setStatusCode(Response::HTTP_OK);
+        return $response;
+    }
 
     public function createOnlinePaymentAction(Request $request)
     {

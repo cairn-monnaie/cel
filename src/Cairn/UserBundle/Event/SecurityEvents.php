@@ -47,6 +47,12 @@ final class SecurityEvents
         'cairn_user_pros_apiclient_edit',
         'cairn_user_helloasso_sync',
         'cairn_user_profile_edit',
+        'cairn_user_mandates_dashboard',
+        'cairn_user_mandates_add',
+        'cairn_user_mandates_honour',
+        'cairn_user_mandates_edit',
+        'cairn_user_mandates_cancel',
+        'cairn_user_operation_sync'
     ];
 
     /**

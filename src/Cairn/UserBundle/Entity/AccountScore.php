@@ -37,6 +37,13 @@ class AccountScore
     private $email;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="confirmation_token", type="string", length=255,nullable=true, unique=true)
+     */
+    private $confirmationToken;
+
+    /**
      * @var array
      *
      * @ORM\Column(name="schedule", type="array")
@@ -51,6 +58,13 @@ class AccountScore
     private $nbSentToday;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="considered_day", type="string", length=4,nullable=false, unique=false)
+     */
+    private $consideredDay;
+
+    /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User",  cascade={"persist"})
      *@ORM\JoinColumn(name="user_id", nullable=false,referencedColumnName="id", onDelete="CASCADE")
      */
@@ -63,6 +77,9 @@ class AccountScore
     {
         $this->schedule = array('Mon'=>array(),'Tue'=>array(),'Wed'=>array(), 'Thu'=>array(), 'Fri'=>array(), 'Sat'=>array(), 'Sun'=>array());
         $this->nbSentToday = 0;
+
+        $this->format = self::PDF_FORMAT;
+        $this->consideredDay = date('D'); 
     }
 
     public static function getPossibleTypes()
@@ -129,6 +146,30 @@ class AccountScore
     }
 
     /**
+     * Set confirmationToken.
+     *
+     * @param string $confirmationToken
+     *
+     * @return AccountScore
+     */
+    public function setConfirmationToken($confirmationToken)
+    {
+        $this->confirmationToken = $confirmationToken;
+
+        return $this;
+    }
+
+    /**
+     * Get confirmationToken.
+     *
+     * @return string
+     */
+    public function getConfirmationToken()
+    {
+        return $this->confirmationToken;
+    }
+
+    /**
      * Set schedule.
      *
      * @param array $schedule
@@ -139,6 +180,18 @@ class AccountScore
     {
         $this->schedule = $schedule;
 
+        // if today schedule has changed, we must simulate that previous emails requested today have been sent
+        // to keep consistent data
+        $cmpt = 0;
+        $nowTime = date('H:i');
+        $nowDay = date('D');
+
+        $nbTotalTimes = count( $schedule[$nowDay] );
+        while ( ($cmpt < $nbTotalTimes) && (strtotime($schedule[$nowDay][$cmpt]) < strtotime($nowTime) ) ){
+            $cmpt++;
+        }
+
+        $this->setNbSentToday($cmpt);
         return $this;
     }
 
@@ -163,6 +216,28 @@ class AccountScore
     {
         $this->nbSentToday = $nbSentToday;
 
+        $nextDayToConsider = new \Datetime();
+
+        $cmpt = 0;
+        if( count($this->getSchedule()[$nextDayToConsider->format('D')]) <= $this->getNbSentToday() ){
+            $nextDayToConsider->modify('+1 day');
+            $cmpt++;
+            while( empty($this->getSchedule()[$nextDayToConsider->format('D')]) ){
+                $nextDayToConsider->modify('+1 day');
+                $cmpt++;
+
+                if($cmpt >= 7){
+                    $nextDayToConsider->modify('+1 day');
+                    break;
+                }
+            }
+
+            $this->setConsideredDay($nextDayToConsider->format('D'));
+            $this->nbSentToday = 0;
+        }else{
+            $this->setConsideredDay($nextDayToConsider->format('D'));
+        }
+
         return $this;
     }
 
@@ -177,15 +252,41 @@ class AccountScore
     }
 
     /**
+     * Set consideredDay.
+     *
+     * @param \DateTime $consideredDay
+     *
+     * @return AccountScore
+     */
+    public function setConsideredDay($consideredDay)
+    {
+        $this->consideredDay = $consideredDay;
+
+        return $this;
+    }
+
+    /**
+     * Get consideredDay.
+     *
+     * @return \DateTime
+     */
+    public function getConsideredDay()
+    {
+        return $this->consideredDay;
+    }
+
+    /**
      * Set user.
      *
      * @param array $user
      *
      * @return AccountScore
      */
-    public function setUser($user)
+    public function setUser(User $user)
     {
         $this->user = $user;
+
+        $this->setEmail($user->getEmail());
 
         return $this;
     }

@@ -3,14 +3,17 @@
 namespace Cairn\UserBundle\Form;
 
 use Cairn\UserBundle\Validator\UserPassword;
+use Cairn\UserBundle\Service\Api;
 
 use FOS\UserBundle\Form\Type\ProfileFormType;
 use Cairn\UserBundle\Form\AddressType;
+use Cairn\UserBundle\Form\IdentityDocumentType;
 use Cairn\UserBundle\Form\ImageType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -25,9 +28,12 @@ class ProfileType extends AbstractType
 {
     private $authorizationChecker;
 
-    public function __construct(AuthorizationChecker $authorizationChecker)
+    private $apiService;
+
+    public function __construct(AuthorizationChecker $authorizationChecker, Api $apiService)
     {
         $this->authorizationChecker = $authorizationChecker;
+        $this->apiService = $apiService;
     }
 
     /**
@@ -52,6 +58,9 @@ class ProfileType extends AbstractType
                 if(null === $user){
                     return;
                 }
+                if($this->apiService->isRemoteCall()){
+                    $form->remove('current_password');
+                }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
                         ->add('description',TextareaType::class,array('label'=>'Description d\'activité en quelques mots (150 car.)'))
@@ -65,7 +74,6 @@ class ProfileType extends AbstractType
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
                     $form->add('description',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
-
                 }
 
                 if(! $this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
@@ -80,12 +88,23 @@ class ProfileType extends AbstractType
                         // I can obviously put the name 'my_field' directly here
                         $form->add($myField->getName(), $fieldType, $fieldOptions);
                     }
+                }else{
+                    $label = ($user->hasRole('ROLE_PRO')) ? 'Justificatif d\'activité professionnelle' :'Pièce d\'identité';
+
+                    $form->add('identityDocument', IdentityDocumentType::class,
+                        array(
+                            'label'=>$label,
+                            'attr' => array('class'=>'identity-document'),
+                            'required' => false
+                        ))
+                        ->add('initialize_parameters', CheckboxType::class, array('label'=>'Réinitialiser les paramètres',
+                            'mapped'=>false,
+                            'required'=>false));
+
                 }
 
             }
         );
-
-
     }
 
     /**

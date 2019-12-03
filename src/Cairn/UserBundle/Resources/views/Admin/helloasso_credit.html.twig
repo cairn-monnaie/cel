@@ -8,11 +8,41 @@
 {% endblock %}
 
 {% block body %}
-    <div class="section">
-      {{ form_start(form) }}
-        {{ form_rest(form) }}
-    {{ form_end(form) }}
-    </div>
+    {{parent()}} 
+    
+    <div class="row">
+        <div class="row">
+          {{ form_start(formSearch) }}
+            {{ form_rest(formSearch) }}
+        {{ form_end(formSearch) }}
+        </div>
 
+        {% if payments is defined %} 
+            {% for payment in payments %}
+
+              <div class="col s12 m6 l4">
+                <div class="card blue-grey darken-1">
+                    <div class="card-content white-text">
+                        <span class="card-title center">{{payment.id}}</span>
+                        <p>
+                            Date d'exécution : {{payment.date|date('d-m-Y')}} à {{payment.date|date('H:i')}}
+                            <br>
+                            montant : {{payment.amount}} CRN
+                        </p>
+                    </div>
+                </div>
+              </div>
+            {% else %}  
+                Aucun paiement via Helloasso ne correspond à votre recherche !
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+          {{ form_start(formSync) }}
+            {{ form_rest(formSync) }}
+        {{ form_end(formSync) }}
+        </div>
+
+    </div>
 {% endblock %}
 

@@ -11,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * @ORM\Table(name="phone")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\PhoneRepository")
+ * @UniqueEntity(fields = {"identifier"},message="Cet identifiant SMS est déjà utilisé") 
  */
 class Phone
 {

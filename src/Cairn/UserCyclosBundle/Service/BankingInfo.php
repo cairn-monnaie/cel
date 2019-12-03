@@ -143,6 +143,7 @@ class BankingInfo
     public function hydrateQuery($ownerVO,$accountTypesVO,$natures,$statuses,$description,$orderBy, $period, $pageSize)
     {
         $query             = new \stdClass();
+        $query->direction = 'DEBIT';
         $query->owner       = $ownerVO;
         $query->accountTypes = $accountTypesVO;
         $query->natures   = $natures; 

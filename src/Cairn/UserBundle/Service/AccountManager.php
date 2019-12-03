@@ -48,28 +48,35 @@ class AccountManager
      */
     public function getConsistentOperationsCount(Mandate $mandate, \Datetime $end)
     {
+        if($end->diff($mandate->getEndAt())->invert == 1){
+            $end = $mandate->getEndAt();
+        }
+
         $interval = $mandate->getBeginAt()->diff($end);
 
         if($interval->invert == 1){
             return -1;
         }
 
-        if($end->diff($mandate->getEndAt())->invert == 1){
-            $end = $mandate->getEndAt();
-        }
-
         $dayBegin = $mandate->getBeginAt()->format('d');
         $dayEnd = $end->format('d');
 
-        $nbOperations = $interval->m;
+        //now, we modify the begin & end to dates such that there is no confusion on the result
+        $begin = clone $mandate->getBeginAt();
+        $begin->modify('first day of next month');
+        $end->modify('last day of previous month');
+        $interval = $begin->diff($end);
 
-        //these two conditions should not occur on a same set of data according to mandate validator class
-        //which contains dayBegin between 1 and 15
-        if($dayEnd < $dayBegin){
+        //no confusion possible on the number of months between begin & end
+        $nbOperations = 12*$interval->y + $interval->m;
+
+        //adapt according to the values of the initial extrema
+        if($dayEnd >= 28){
             $nbOperations += 1;
         }
 
-        if($dayEnd >= 28){
+        //always true with our current validation process
+        if($dayBegin <= 28){
             $nbOperations += 1;
         }
 
@@ -167,26 +174,13 @@ class AccountManager
         //get account balance of e-cairns
         $anonymousVO = $this->userService->getCurrentUser();
         $accounts = $this->accountService->getAccountsSummary($anonymousVO->id,NULL);
-
         foreach($accounts as $account){
             if(preg_match('#compte_de_debit_cairn_numerique#', $account->type->internalName)){
                 $debitAccount = $account;
             }
         }
 
-        $availableAmount = $debitAccount->status->balance;
-
-        if($availableAmount >= 0){
-            $diff = $availableAmount - $amount;
-        }else{
-            $diff = -$amount;
-        }
-
-        if($diff <= 0 ){
-            return NULL;
-        }else{
-            $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$reason,$creditTransferType,new \Datetime());
-        }
+        $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$reason,$creditTransferType,new \Datetime());
         //preview allows to make sure payment would be executed according to provided data
         $paymentVO = $this->bankingManager->makePayment($res->payment);
 
@@ -194,7 +188,7 @@ class AccountManager
         $operation = new Operation();
         $operation->setType($type);
         $operation->setReason($reason);
-        $operation->setPaymentID($paymentVO->id);
+        $operation->setPaymentID($paymentVO->transferId);
         $operation->setFromAccountNumber($res->fromAccount->number);
         $operation->setToAccountNumber($res->toAccount->number);
         $operation->setAmount($res->totalAmount->amount);

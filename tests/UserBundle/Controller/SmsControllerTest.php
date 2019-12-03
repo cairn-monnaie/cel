@@ -7,6 +7,7 @@ use Tests\UserBundle\Controller\BaseControllerTest;
 use Cairn\UserBundle\Controller\SmsController;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Operation;
 
 
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -89,14 +90,29 @@ class SmsControllerTest extends BaseControllerTest
      */
     public function testSmsOperation($phoneNumber, $content, $needsCode, $code, $isValidCode,$expectMessages,$nbEmails = 1)
     {
-        $client = static::createClient();
-        $client->enableProfiler();
+        //$client = static::createClient();
+        $this->client->enableProfiler();
+        
+        $originator = $this->container->getParameter('notificator_consts')['sms']['originator'];
 
-        $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$content);
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+
+        $nbOperationsBefore = count($operationRepo->findByType(Operation::TYPE_SMS_PAYMENT));
+
+        $url = '/sms/reception';
+        $params = array(
+                    'recipient'=>$phoneNumber, // only parameter that matters
+                    'message'=>$content,
+                    'originator'=>$originator
+                );
+
+        $url = $url."?".http_build_query($params);
+
+        $crawler = $this->client->request('GET',$url );
 
         if($expectMessages){
             //TODO : replace email by sms
-            $mailCollector = $client->getProfile()->getCollector('swiftmailer');
+            $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
 
             if(! $needsCode){
                 $this->assertEquals($nbEmails, $mailCollector->getMessageCount());
@@ -116,11 +132,21 @@ class SmsControllerTest extends BaseControllerTest
             }else{
                 $this->assertEquals(1, $mailCollector->getMessageCount());
                 $this->assertContains($expectMessages[0], $mailCollector->getMessages()[0]->getBody());
-                $client->enableProfiler();
-                $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$code);
+                $this->client->enableProfiler();
+
+                $url = '/sms/reception';
+                $params = array(
+                    'recipient'=>$phoneNumber, // only parameter that matters
+                    'message'=>$code,
+                    'originator'=>$originator
+                );
+                
+                $url = $url."?".http_build_query($params);
+                
+                $crawler = $this->client->request('GET',$url );
 
                 if($isValidCode){
-                    $mailCollector = $client->getProfile()->getCollector('swiftmailer');
+                    $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
 
                     $this->assertEquals( $nbEmails, $mailCollector->getMessageCount());
 
@@ -137,13 +163,18 @@ class SmsControllerTest extends BaseControllerTest
                         $this->assertContains($expectMessages[$i], $body);
                     }
 
+                    if(preg_match('#PAY#',$content)){ // if request is a payment
+                        //lets check that an operation has been persisted
+                        $nbOperationsAfter = count($operationRepo->findByType(Operation::TYPE_SMS_PAYMENT));
+
+                        $this->assertEquals($nbOperationsBefore + 1, $nbOperationsAfter);
+                    }
                 }
             }
         }else{
-            $mailCollector = $client->getProfile()->getCollector('swiftmailer');
+            $mailCollector = $this->client->getProfile()->getCollector('swiftmailer');
             $this->assertSame(0, $mailCollector->getMessageCount());
         }
-
     }
   
     /**
@@ -166,7 +197,8 @@ class SmsControllerTest extends BaseControllerTest
             'balance : invalid code + sms for pro & person'=>array('+33612345678','SOLDE',true,'2222',false,
                                                                     array($askCodeMsg,$wrongCodeMsg)),
 
-            'login : no pro'=>array('+33612345678','LOGIN',false,'1111',true,NULL),
+            'login : no pro'=>array('+33743434343','LOGIN',false,'1111',true,NULL),
+            'login : same phone number for pro & person '=>array('+33612345678','LOGIN',true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
             'login : pro + valid code '=>array('+33611223344','LOGIN',true,'1111',true,array($askCodeMsg,'Identifiant SMS')),
             'login : pro + wrong code '=>array('+33611223344','LOGIN',true,'2222',false,array($askCodeMsg,$wrongCodeMsg)),
 
@@ -194,25 +226,25 @@ class SmsControllerTest extends BaseControllerTest
             'payment : too low amount'=>array('+33612345678','PAYER0.001MALTOBAR',false,'1111',true,array('trop faible')),
             'payment : valid, no code'=>array('+33612345678','PAYER15MALTOBAR',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : pro to pro,valid, no code'=>array('+33611223344','PAYER15NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-        'payment : valid + code'=>array('+33612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
+            'payment : valid + code'=>array('+33612345678','PAYER100MALTOBAR',true,'1111',true,array($askCodeMsg,$validDebMsg,$validCredMsg),2),
             'payment : person to pro,valid, no code'=>array('+33612345678','PAYER12.522maltobar',false,'1111',true,
                                                                     array($validDebMsg,$validCredMsg),2),
-          'payment : valid,no code'=>array('+33612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid,no code'=>array('+33612345678','PAYER12.5220000maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : invalid sms'=>array('+33612345678','PAYER12.maltobar',false,'1111',true,array('SMS INVALIDE')),
             'payment : invalid sms'=>array('+33612345678','PAYERSHOP',false,'1111',true,array('Format du montant')),
-          'payment : valid amount'=>array('+33612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
-          'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid amount'=>array('+33612345678','PAYER00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
-          'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',false,'1111',true,
-                                                        array('ERREUR TECHNIQUE','Accès client invalide'),2),
+            'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',false,'1111',true,
+                                                          array('ERREUR TECHNIQUE','Accès client invalide'),2),
 
-          'validation  : nothing to validate'=>array('+33612345678','1111',false,'1111',true,NULL),
+            'validation  : nothing to validate'=>array('+33612345678','1111',false,'1111',true,NULL),
 
-          'suspicious payment'=>array('+33612345678','PAYER1500maltobar',false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
+            'suspicious payment'=>array('+33612345678','PAYER1500maltobar',false,'1111',true,array('SMS bloqués','tentative de paiement','tentative de paiement'),3),
 
-        );
+        );  
     }
 
     /**
@@ -224,25 +256,55 @@ class SmsControllerTest extends BaseControllerTest
         $client = static::createClient();
         $client->enableProfiler();
 
+        $originator = $this->container->getParameter('notificator_consts')['sms']['originator'];
         //assert that sms is sent to user before spam limit reached
         for($i = 0; $i < $spamLimit; $i++){
             $client->enableProfiler();
 
-            $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$content);
+            $url = '/sms/reception';
+            $params = array(
+                'recipient'=>$phoneNumber, // only parameter that matters
+                'message'=>$content,
+                'originator'=>$originator
+            );
+            
+            $url = $url."?".http_build_query($params);
+            
+            $crawler = $client->request('GET',$url );
+
             $mailCollector = $client->getProfile()->getCollector('swiftmailer');
 
             $this->assertEquals($nbEmails, $mailCollector->getMessageCount());
             $this->assertContains($expectMessage, $mailCollector->getMessages()[0]->getBody());
 
             if($needsCode){
-                $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content=1111');
+                $url = '/sms/reception';
+                $params = array(
+                    'recipient'=>$phoneNumber, // only parameter that matters
+                    'message'=>'1111',
+                    'originator'=>$originator
+                );
+
+                $url = $url."?".http_build_query($params);
+
+                $crawler = $client->request('GET',$url );
             }
         }
 
         //then, assert that after spam limit, sms is sent to warn user about his spam activity
         $client->enableProfiler();
 
-        $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$content);
+        $url = '/sms/reception';
+        $params = array(
+            'recipient'=>$phoneNumber, // only parameter that matters
+            'message'=>$content,
+            'originator'=>$originator
+        );
+
+        $url = $url."?".http_build_query($params);
+
+        $crawler = $client->request('GET',$url );
+
         $mailCollector = $client->getProfile()->getCollector('swiftmailer');
 
         $this->assertEquals($nbEmails, $mailCollector->getMessageCount());
@@ -251,7 +313,8 @@ class SmsControllerTest extends BaseControllerTest
         //then, assert that after spam warning, nothing sent
         $client->enableProfiler();
 
-        $crawler = $client->request('GET','/sms/reception?phone='.$phoneNumber.'&content='.$content);
+        $crawler = $client->request('GET',$url );
+
         $mailCollector = $client->getProfile()->getCollector('swiftmailer');
 
         $this->assertEquals(0, $mailCollector->getMessageCount());
@@ -271,7 +334,7 @@ class SmsControllerTest extends BaseControllerTest
           'invalid SMS format'=>array('+33612345678','SOLDEADO',4,1,'SMS INVALIDE',false),
           'invalid SMS identifier'=>array('+33612345678','PAYER 10 JOHNDOE',4,1,'aucun professionnel',false),
           'request SMS identifier'=>array('+33611223344','LOGIN',1,1,'code de sécurité',true),
-          'request account balance'=>array('+33611223344','SOLDE',1,1,'code de sécurité',true),
+          'request account balance'=>array('+33611223344','SOLDE',2,1,'code de sécurité',true),
         );
     }
 }

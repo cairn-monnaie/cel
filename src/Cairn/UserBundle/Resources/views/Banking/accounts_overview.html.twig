@@ -5,18 +5,23 @@
 {% block body %}
     {{parent()}}
 
-    <h1>Mes comptes</h1>
-    {% if user.hasRole('ROLE_SUPER_ADMIN') or user.hasRole('ROLE_PRO') %}
-    <div>
-        <a href="{{path('cairn_user_banking_accounts_overview_download') }}" class="btn"><i class="material-icons left">file_download</i>Télécharger relevé de compte</a>
-    </div>
-    {% endif %}
-    <div class="body_wrapper">
-        {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
-    </div>
+    <div class="row">
+        <h1>Mes comptes</h1>
+        {% if user.hasRole('ROLE_SUPER_ADMIN') or user.hasRole('ROLE_PRO') %}
+        <div>
+            <a href="{{path('cairn_user_banking_accounts_overview_download') }}" class="btn"><i class="material-icons left">file_download</i>Télécharger relevé de compte</a>
+        </div>
+        {% endif %}
+        <div class="body_wrapper">
+            {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
+        </div>
+        <div class="row">
+        </div>
 
-    Le nombre de [e]-cairns actuellement disponibles est de <strong>{{availableAmount}}</strong> <br>
-    email à fournir afin de vous identifier : {{app.user.email}}
+        <div class="center-align">
+            Email à fournir afin d'identifier mon compte [e]-Cairn : <b>{{app.user.email}}</b>
+        </div>
+    </div>
     <iframe id="haWidget" allowtransparency="true" scrolling="auto" src="https://www.donnerenligne.fr/le-cairn-monnaie-locale-et-citoyenne/faire-un-don/3" style="width:100%;height:750px;border:none;" onload="window.scroll(0, this.offsetTop)"></iframe>
 {% endblock %}
 

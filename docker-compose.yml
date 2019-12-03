@@ -8,15 +8,18 @@ networks:
 services:
   db:
     image: mysql:5.7
+    container_name: db
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: 'Europe/Paris'
     networks:
       - mlc_net
 
   engine:
+    container_name: engine
     build:
       context: .
       dockerfile: Dockerfile
@@ -29,6 +32,7 @@ services:
 
   front:
     image: nginx:latest
+    container_name: front
     ports:
       - '${FRONT_PORT}:8000'
     volumes:

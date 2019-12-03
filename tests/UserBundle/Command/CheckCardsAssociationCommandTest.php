@@ -39,9 +39,9 @@ class CheckCardsAssociationCommandTest extends KernelTestCase
         $creationDate = date_modify(new \Datetime(), '-15 days' );                
 
 
-        $salt = $securityService->generateCardSalt();
+        $salt = $securityService->generateToken();
         $uniqueCode = $securityService->findAvailableCode();
-        $card = new Card(NULL,$container->getParameter('cairn_card_rows'),$container->getParameter('cairn_card_cols'),$salt,$uniqueCode,NULL);
+        $card = new Card($container->getParameter('cairn_card_rows'),$container->getParameter('cairn_card_cols'),$salt,$uniqueCode);
         $card->generateCard($container->getParameter('kernel.environment'));
         $card->setCreationDate($creationDate);
         $card->setExpirationDate(date_modify(new \Datetime(), $date));

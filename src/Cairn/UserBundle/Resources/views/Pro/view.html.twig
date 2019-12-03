@@ -31,6 +31,7 @@
                 </h5>
             </div>
         </div>
+        
         <div class="row">
         <ul class="collapsible">
             <li class="">
@@ -126,7 +127,7 @@
                                     {% set textSmsButton = "Editer les données SMS de " ~ user.name %}
                                 {% endif %}
                                 <a href="{{path('cairn_user_users_phone_edit',{'id' : phone.id})}}" class="btn waves-effect waves-light"><i class="material-icons left">edit</i>{{textSmsButton}}</a>
-                                 <a href="{{path('cairn_user_users_phone_delete',{'id' : phone.id})}}" class="btn red"><i class="material-icons left">delete</i>Supprimer</a>
+                                 <a href="{{path('cairn_user_users_phone_delete',{'id' : phone.id})}}" class="btn red confirmModalLink"><i class="material-icons left">delete</i>Supprimer</a>
                                  </div>
                             </div>
                             {% endfor %}
@@ -166,6 +167,9 @@
                 <div class="collapsible-header"><i class="material-icons">lock</i>Carte de sécurité</div>
                 <div class="collapsible-body">
                     {{ render(controller("CairnUserBundle:Card:cardOperations",{'username':user.username})) }}
+                    <div class="row right-align">
+                        <a class="waves-effect waves-light" href="{{path('cairn_user_card_presentation')}}"><i class="material-icons large purple-text text-darken-2">info</i><span> Règles d'utilisation</span></a>
+                    </div>
                 </div>
             </li>
             {% endif %}
@@ -231,6 +235,26 @@
         </div>
     </div>
 
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+    </div>
+
+
         {% if (app.user == user) and user.hasRole('ROLE_PRO') and user.smsData %}
             <div class="js-smsdata-id" data-get-smsdataid="{{user.smsData.id}}">
 
@@ -245,34 +269,56 @@
 
 <script type="text/javascript">
 
-    var containerNotifTable = document.querySelector('table.smsdata_notification');
+    
+    $(function (){
 
-    if (containerNotifTable){
-        var containerID = document.querySelector('.js-smsdata-id');
+        var containerNotifTable = $('table.smsdata_notification');
 
-        if(containerID){
-        var smsDataID = containerID.dataset.getSmsdataid;
+        if (containerNotifTable){
+            var containerID = $('.js-smsdata-id');
 
-            containerNotifTable.addEventListener('click', function() {
-               url = "{{ path('cairn_user_users_smsdata') }}"
-               window.location.href = url;
-            });
+            if(containerID){
+                var smsDataID = containerID.data('getSmsdataid');
+
+                containerNotifTable.click(function() {
+                   url = "{{ path('cairn_user_users_smsdata') }}"
+                   window.location.href = url;
+                });
+            }
+
+            var containerWP = $('.js-user-webpush');
+            var webPushEnabled = containerWP.data('getWp');
+
+            var containerNotifCell = $('.permission');
+
+            if( (Notification.permission == 'granted') && webPushEnabled){
+                var isNotifAuthorized = 'check';
+            }else{
+                var isNotifAuthorized = 'cancel';
+            }
+
+            containerNotifCell.html(isNotifAuthorized);
         }
 
-        var containerWP = document.querySelector('.js-user-webpush');
-        var webPushEnabled = containerWP.dataset.getWp;
+        $(".confirmModalLink").click(function(e) {
+            e.preventDefault();
+            theHREF = $(this).attr("href");
+            $('form.confirm_operation').attr('action',theHREF);
+            $("#confirmModal").modal("open");
 
-        var containerNotifCell = document.querySelector('.permission');
+        });
 
-        if( (Notification.permission == 'granted') && webPushEnabled){
-            var isNotifAuthorized = 'check';
-        }else{
-            var isNotifAuthorized = 'cancel';
-        }
+        $("#confirmation_save").click(function(e) {
+            $('form.confirm_operation').submit();
+           
+        });
 
-        containerNotifCell.innerHTML = isNotifAuthorized;
-    }
-</script>
+        $("#confirmModalNo").click(function(e) {
+            $("#confirmModal").modal("close"); 
+        });
+
+    });
+    </script>
 
 {% endblock %}
 

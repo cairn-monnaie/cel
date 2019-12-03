@@ -1,5 +1,5 @@
 <?php
-// src/Cairn/UserBundle/Validator/UserPhoneNumberValidator.php
+// src/Cairn/UserBundle/Validator/PhoneValidator.php
 
 namespace Cairn\UserBundle\Validator;
 
@@ -13,7 +13,7 @@ use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\User;
 
-class UserPhoneNumberValidator extends ConstraintValidator
+class PhoneValidator extends ConstraintValidator
 {
     protected $userRepo;
     protected $security;    
@@ -28,8 +28,11 @@ class UserPhoneNumberValidator extends ConstraintValidator
      * Validates the provided user sms data.
      *
      */
-    public function validate($phoneNumber, Constraint $constraint)
+    public function validate($phone, Constraint $constraint)
     {
+        // CHECK FOR NUMBER VALIDATION AS BEFORE
+        $phoneNumber = $phone->getPhoneNumber();
+
         $currentUser = $this->security->getCurrentUser();
 
         $phoneNumber = Phone::cleanPhoneNumber($phoneNumber);
@@ -64,8 +67,7 @@ class UserPhoneNumberValidator extends ConstraintValidator
                     ->addViolation();
                 return;
             }else{// 1 occurence
-                $route = $constraint->getRequest()->get('_route');
-                if(strpos($route,'smsdata_add') !== false){
+                if(! $phone->getID()){
                     $this->context->buildViolation("Ce numéro vous appartient déjà.")
                         ->atPath('phoneNumber')
                         ->addViolation();
@@ -93,9 +95,9 @@ class UserPhoneNumberValidator extends ConstraintValidator
                     ->addViolation();
                 return;
             }
-
         }
 
+        // CHECK THAT ID SMS NOT ALREADY IN USE
 //        //check length for example
 //        if(strlen($smsIdentifier) < 5){
 //            $this->context->buildViolation('Identifiant SMS trop court ! 5 caractères minimum')

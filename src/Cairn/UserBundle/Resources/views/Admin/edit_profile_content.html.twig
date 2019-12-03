@@ -102,9 +102,27 @@
                     {{ form_widget(form.image) }}
                 </div>
             {% endif %}
+            {% if form.identityDocument is defined %}
+                <div class="col s12">
+                    {{ form_errors(form.identityDocument) }}
+                    {{ form_label(form.identityDocument) }}
+                </div>
+                <div class="col s12">
+                    {{ form_widget(form.identityDocument) }}
+                </div>
+            {% endif %}
+
         </div>
 
         <div class="col s12 right-align">
+            <p>
+               <label>
+                 {{ form_widget(form.initialize_parameters) }}                                         
+                 <span><b>Remettre à 0 les paramètres de sécurité</b></span>
+               </label>
+               <a href="#!"><i class="material-icons help_parameters purple-text text-darken-2">help</i></a>
+            </p>
+
             <button type="submit" class="btn" ><i class="material-icons left">check</i>Enregistrer</button>
         </div>
 
@@ -112,8 +130,45 @@
         {{ form_end(form) }}
 
     </div>
+
+<div id="modalHelp" class="modal">
+         <div class="modal-content center-align">
+             <h4>Quels sont les paramètres de sécurité ?</h4>
+             <p><i class="material-icons large">security</i></p>
+
+             <p> Les paramètres de sécurité sont l'ensemble des saisies de l'utilisateur pouvant mener au bloquage de son compte [e]-Cairn si elles échouent à 3 reprises </p>
+             <p>
+                <ul class="browser-default">
+                    <li>nombre de saisies de son mot de passe</li>
+                    <li>nombre de tentatives d'authentification par clé sur sa carte de sécurité</li>
+                    <li>nombre de tentatives d'association de sa carte de sécurité</li>
+                    <li>nombre de tentatives d'activation de son n° de téléphone</li>
+                </ul>
+             </p>
+         </div>
+         <div class="modal-footer">
+             <a href="#!" class="modal-close waves-effect waves-green btn-flat"><b>Compris !</b></a>
+         </div>
+     </div>
+
 {% endblock %}              
 
 
 {% block javascripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var helperField = document.querySelector('.help_parameters');
+
+            var Modalelem = document.querySelector('div#modalHelp');
+
+            var instanceModalHelper = M.Modal.init(Modalelem) ;
+            
+            helperField.addEventListener('click', function() {
+                instanceModalHelper.open();
+            });
+        });
+
+    </script>
+
 {% endblock %}

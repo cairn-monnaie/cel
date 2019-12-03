@@ -46,6 +46,12 @@ services:
         arguments:
             - "@request_stack"
 
+    cairn_user.geolocalization:
+        public: true
+        class: Cairn\UserBundle\Service\Geolocalization
+        arguments:
+            - "@cairn_user.api"
+
     cairn_user.api_authenticator:
         public: true
         class: Cairn\UserBundle\Security\TokenAuthenticator
@@ -136,8 +142,20 @@ services:
         arguments:
             - "@cairn_user_cyclos_banking_info"
             - "@cairn_user.bridge_symfony"
+            - "@cairn_user.message_notificator"
+            - "@templating"
         tags:
             - { name: doctrine.orm.entity_listener, event: postLoad, method: postLoad, entity: Cairn\UserBundle\Entity\Operation, lazy: true }
+
+    cairn_user.accountscore_listener:
+        class: Cairn\UserBundle\EventListener\AccountScoreListener
+        arguments:
+            - "@cairn_user.security"
+            - "@cairn_user.message_notificator"
+            - "@router"
+            - "@templating"
+        tags:
+            - { name: doctrine.orm.entity_listener, event: preUpdate, method: preUpdate, entity: Cairn\UserBundle\Entity\AccountScore, lazy: true }
 
     cairn_user.registration_listener:
         class: Cairn\UserBundle\EventListener\RegistrationListener
@@ -147,6 +165,7 @@ services:
             - { name: kernel.event_listener, event: fos_user.registration.initialize, method: onRegistrationInitialize }
             - { name: kernel.event_listener, event: fos_user.registration.success, method: onRegistrationSuccess, priority: -512 }
             - { name: kernel.event_listener, event: fos_user.registration.confirm, method: onRegistrationConfirm }
+            - { name: kernel.event_listener, event: fos_user.registration.failure, method: onRegistrationFailure }
             - { name: kernel.event_listener, event: fos_user.profile.edit.success, method: onProfileEditSuccess, priority: -512 }
 
     cairn_user.security.input_listener:
@@ -161,7 +180,7 @@ services:
             - { name: kernel.event_listener, event: cairn_user.input_card_key, method: onCardKeyInput }
             - { name: kernel.event_listener, event: security.interactive_login, method: onLogin, priority: 128 }
             - { name: kernel.event_listener, event: kernel.controller, method: onKernelController }
-#            - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
+            - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
 
@@ -174,6 +193,7 @@ services:
             - "@doctrine.orm.entity_manager"
             - "@router"
             - "@cairn_user.security"
+            - "@cairn_user.api"
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
     
@@ -189,6 +209,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_validator }
 
+    cairn_user.address_validator:
+        class: Cairn\UserBundle\Validator\AddressValidator
+        arguments:
+            - "@cairn_user.geolocalization"
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_address_validator }
+
     cairn_user.user_password_validator:
         class: Cairn\UserBundle\Validator\UserPasswordValidator
         arguments:
@@ -200,13 +227,13 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_user_password_validator }
 
-    cairn_user.user_phone_number_validator:
-        class: Cairn\UserBundle\Validator\UserPhoneNumberValidator
+    cairn_user.phone_validator:
+        class: Cairn\UserBundle\Validator\PhoneValidator
         arguments:
             - "@cairn_user.repository_user"
             - "@cairn_user.security"
         tags:
-            - { name: validator.constraint_validator, alias: cairn_user_phone_number_validator }
+            - { name: validator.constraint_validator, alias: cairn_phone_validator }
 
 
     cairn_user.operation_validator:
@@ -226,6 +253,11 @@ services:
         tags:
             - { name: validator.constraint_validator, alias: cairn_mandate_validator }
 
+    cairn_user.accountscore_validator:
+        class: Cairn\UserBundle\Validator\AccountScoreValidator
+        tags:
+            - { name: validator.constraint_validator, alias: cairn_accountscore_validator }
+
     Cairn\UserBundle\Form\Extension\DisableCSRFExtension:
         arguments:
             - "@cairn_user.api"
@@ -241,7 +273,7 @@ services:
         arguments: ["@doctrine.orm.entity_manager","@cairn_user.bridge_symfony","@cairn_user_cyclos_user_info","@cairn_user_cyclos_account_info"]
 
     Cairn\UserBundle\Form\ProfileType:
-        arguments: ['@security.authorization_checker']
+        arguments: ['@security.authorization_checker','@cairn_user.api']
         tags: [form.type]
 
     Cairn\UserBundle\Form\MandateType:

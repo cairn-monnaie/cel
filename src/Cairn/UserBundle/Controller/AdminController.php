@@ -82,20 +82,28 @@ class AdminController extends Controller
 
         if($request->isMethod('POST')){
             $form->handleRequest($request);
-            if($form->isValid()) {                        
+            if($form->isValid()) {
 
-            $event = new FormEvent($form, $request);                           
-            $this->get('event_dispatcher')->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
+                $event = new FormEvent($form, $request);                           
+                $this->get('event_dispatcher')->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
 
-            $session->getFlashBag()->add('success','Profil utilisateur édité avec succès');
-            $em->flush();
+                if($form->get('initialize_parameters')->getData()){
+                    $user->setNbPhoneNumberRequests(0);
+                    $user->setPhoneNumberActivationTries(0);
+                    $user->setPasswordTries(0);
+                    $user->setCardKeyTries(0);
+                    $user->setCardAssociationTries(0); 
+                }
 
-            if (null === $response = $event->getResponse()) {                  
-                $url = $this->generateUrl('cairn_user_profile_view',array('username' => $user->getUsername()));            
-                $response = new RedirectResponse($url);                        
-            }
+                $session->getFlashBag()->add('success','Profil utilisateur édité avec succès');
+                $em->flush();
 
-            return $response;
+                if (null === $response = $event->getResponse()) {                  
+                    $url = $this->generateUrl('cairn_user_profile_view',array('username' => $user->getUsername()));            
+                    $response = new RedirectResponse($url);                        
+                }
+
+                return $response;
             }
         }
         return $this->render('CairnUserBundle:Admin:edit_profile_content.html.twig',
@@ -451,7 +459,7 @@ class AdminController extends Controller
                         $operation = new Operation();
                         $operation->setType(Operation::TYPE_CONVERSION_HELLOASSO);
                         $operation->setReason($reason);
-                        $operation->setPaymentID($paymentVO->id);
+                        $operation->setPaymentID($paymentVO->transferId);
                         $operation->setFromAccountNumber($res->fromAccount->number);
                         $operation->setToAccountNumber($res->toAccount->number);
                         $operation->setAmount($res->totalAmount->amount);
@@ -494,13 +502,21 @@ class AdminController extends Controller
 
         $currentUser = $this->getUser();
 
+        if($user->getConfirmationToken()){
+            if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
+                $security = $this->get('cairn_user.security');
+
+                $user->setConfirmationToken(null);
+                $security->assignDefaultReferents($user);
+            }
+        }
+
+         
         if(! $user->hasReferent($currentUser)){
             throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
         }elseif($user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà accessible.');
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
-        }elseif($user->getConfirmationToken()){
-            throw new AccessDeniedException('Email non confirmé, cet utilisateur ne peut être validé');
         }
 
         $form = $this->createForm(ConfirmationType::class);
@@ -567,8 +583,15 @@ class AdminController extends Controller
 
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
-                            //send email to local group referent if pro
+                            //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
+                            if($user->hasRole('ROLE_PRO')){
+                            }
 
+                            //then, if above filter not efficient enough, go through one by one distance calculation
+                            //finally, send notifications to all those people
+
+
+                            //send email to local group referent if pro
                             if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){
                                 $from = $messageNotificator->getNoReplyEmail();
                                 $to = $referent->getEmail();

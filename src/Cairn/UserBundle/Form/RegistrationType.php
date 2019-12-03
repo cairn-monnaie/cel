@@ -52,15 +52,14 @@ class RegistrationType extends AbstractType
                 if(null === $user){
                     return;
                 }
-                if($user->isAdherent()){
-                    $label = ($user->hasRole('ROLE_PRO')) ? 'Justificatif d\'activité professionnelle' :'Pièce d\'identité';
-                    $form->add('identityDocument', IdentityDocumentType::class,
-                        array(
-//                            'compound'=> true,
-                            'label'=>$label,
-                            'attr' => array('class'=>'identity-document')
-                        ));
-                }
+
+                $label = ($user->hasRole('ROLE_PRO')) ? 'Justificatif d\'activité professionnelle' :'Pièce d\'identité';
+                $form->add('identityDocument', IdentityDocumentType::class,
+                    array(
+                        'label'=>$label,
+                        'attr' => array('class'=>'identity-document')
+                    ));
+
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
                     //$form->add('image', ImageType::class,array('label'=>'Logo'));

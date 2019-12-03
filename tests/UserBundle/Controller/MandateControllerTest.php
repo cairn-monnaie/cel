@@ -54,9 +54,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/add');
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -74,7 +74,7 @@ class MandateControllerTest extends BaseControllerTest
         
             //select pdf file
             $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-            $originalName = 'poster_sms.pdf';                                 
+            $originalName = 'mandate_template.pdf';                                 
             $absolutePath = $absoluteWebDir.$originalName;
 
             $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
@@ -97,6 +97,7 @@ class MandateControllerTest extends BaseControllerTest
             $this->assertSame(1,$crawler->filter('html:contains("succès")')->count());
 
             $this->assertEquals($nbMandatesAfter, $nbMandatesBefore + 1);
+            $this->assertEquals(1, $mandateRepo->findByContractor($contractor)[0]->getMandateDocuments()->count());
             $this->assertNotEquals($scheduledMandate,NULL);
         }else{
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
@@ -148,9 +149,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/edit/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(!$expectForm){
             if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
@@ -185,24 +186,54 @@ class MandateControllerTest extends BaseControllerTest
 
         //select pdf file
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'poster_sms.pdf';                                 
+        $originalName = 'mandate_template.pdf';                                 
         $absolutePath = $absoluteWebDir.$originalName;
 
-        $file = new UploadedFile($absolutePath, $originalName, 'application/pdf');
+        $copyPath1 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
+        //copy 
+        if(! copy($absolutePath,$copyPath1 )){
+            echo "Failed to copy";
+            return;
+        }
+        $file1 = new UploadedFile($copyPath1, $originalName, 'application/pdf',123);
+
+
         $values = $form->getPhpValues();
 
-        $countDocsBefore = $mandate->getMandateDocuments()->count();
-        $values['cairn_userbundle_mandate']['mandateDocuments'][0]['file'] = $absolutePath; 
-
         if($addDocument){
-            $values['cairn_userbundle_mandate']['mandateDocuments'][1]['file'] = $absolutePath; 
+            $copyPath2 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
+            //copy 
+            if(! copy($absolutePath,$copyPath2 )){
+                echo "Failed to copy";
+                return;
+            }
+            $file2 = new UploadedFile($copyPath2, $originalName, 'application/pdf',123);
+
+            $documents = array(
+                    '0'=>array('file'=>$file1),
+                    '1'=>array('file'=>$file2)
+                );
+        }else{
+            $documents = array(
+                    '0'=>array('file'=>$file1)
+                );
         }
-        
-        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $form->getPhpFiles());
-               
+
+        $files = array(
+            'cairn_userbundle_mandate'=> array(
+                'mandateDocuments'=>$documents
+            )
+        );
+
+        $countDocsBefore = $mandate->getMandateDocuments()->count();
+
+                
+        $crawler = $this->client->request($form->getMethod(), $form->getUri(), $values, $files);
+
         if($isValid){
             $crawler = $this->client->followRedirect();
 
+            $this->em->refresh($mandate);
 
             if($addDocument){
                 $this->assertEquals($countDocsBefore + 1, $mandate->getMandateDocuments()->count());
@@ -218,13 +249,10 @@ class MandateControllerTest extends BaseControllerTest
         return array(
             'invalid : access disabled to adherents'=>array('comblant_michel','crabe_arnold', 30 ,'+3 months',false,false,'',false),
             'invalid : access disabled to GL'=>array('gl_grenoble','crabe_arnold', 30 ,'+3 months',false,false,'',false),
-
             'valid : uptodate mandate amount + doc added' => array('admin_network','gjanssens', 40, '+7 months',true,true,'',true),
             'valid : uptodate mandate amount + doc not added'=>array('admin_network','gjanssens', 40, '+7 months',true,true,'',false),
             'valid : mandate end date + doc added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',true),
             'valid : mandate end date + doc not added'=>array('admin_network','crabe_arnold', NULL, '+8 months',true, true,'',false),
-
-            
             'invalid : mandate is complete'=>array('admin_network','lacreuse_desiderata', 30 , '+7 months',false,false,'achevé',false),
             'invalid : mandate is canceled'=>array('admin_network','barbare_cohen', 30 , '+7 months',false,false,'achevé',false),
         );
@@ -250,9 +278,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/cancel/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
@@ -311,9 +339,9 @@ class MandateControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request('GET','/admin/mandates/honour/'.$mandate->getID());
 
-        //$crawler = $this->client->followRedirect();
-        //$crawler = $this->inputCardKey($crawler,'1111');
-        //$crawler = $this->client->followRedirect();
+        $crawler = $this->client->followRedirect();
+        $crawler = $this->inputCardKey($crawler,'1111');
+        $crawler = $this->client->followRedirect();
 
         if(!$expectForm){
             if(! $currentUser->hasRole('ROLE_SUPER_ADMIN')){

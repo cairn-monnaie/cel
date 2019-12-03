@@ -141,6 +141,29 @@ class OperationValidator extends ConstraintValidator
             }
         }
 
+        $today = new \Datetime('today');
+
+         $clone = clone $today;
+         $inconsistentLimitDate = $clone->modify('+1 year');
+
+         if($today->diff($operation->getExecutionDate())->invert == 1){
+             $this->context->buildViolation('La date d\'exécution ne peut être antérieure à la date du jour')
+                 ->atPath('executionDate')
+                 ->addViolation();
+         }
+
+         if($operation->getExecutionDate()->diff($inconsistentLimitDate)->invert == 1){
+             $this->context->buildViolation('Cette date est incohérente ! Plus d\'un an avant l\éxecution de cette opération')
+                 ->atPath('executionDate')
+                 ->addViolation();
+         }
+
+         if( strlen($operation->getReason()) > 35){
+             $this->context->buildViolation('Motif trop long : 35 caractères maximum')
+                 ->atPath('reason')
+                 ->addViolation();
+         }
+
 
         //************ Specific validation, anything but SMS payment ************//
         if(! $operation->isSmsPayment()){

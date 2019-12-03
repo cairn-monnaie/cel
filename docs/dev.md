@@ -1,9 +1,15 @@
 # Developer guide
 
-## Global architecture
+### Table of Contents  
+[Global architecture](#global-archi)  
+[Development](#development)  
+[Test](#test)  
+[Production](#production)  
+
+## <a name="global-archi"></a>Global architecture    
 ![global architecture](/docs/images/archi_globale.png)
 
-## Model of object-oriented database 
+## Model of object-oriented database   
 ![UML](/docs/images/uml.png)
 
 In either developement or testing environment, all data are controlled for convenience.  
@@ -11,10 +17,11 @@ In either developement or testing environment, all data are controlled for conve
   * all card keys are '1111'  
   * all validation codes are '1111'  
 
-## Development
+## <a name="devlopment"></a>Development
  * **Generate data**
      ```
-     sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=dev admin_network @@bbccdd
+     cd $pathToParentDir/                                         # go to parent directory
+     sudo ./setup_env.sh --env dev -d
      ```
      Cette commande, à l'heure actuelle,  ne peut pas être reproduite sur n'importe quel réseau Cyclos contenant n'importe quel jeu de données. Elle a été développée, dans un premier temps, pour les besoins du Cairn. Elle permet d'avoir une variété de données permettant de tester plein de cas différents. Il y a donc un besoin de maîtrise du script de génération de données Cyclos pour adapter celui des données Symfony. [dépôt api, branche cairn](https://github.com/cairn-monnaie/api/tree/cairn)  
      PS : Si les identifiants de l'administrateur initial ne sont pas admin_network:@@bbccdd, cette commande va échouer
@@ -22,9 +29,12 @@ In either developement or testing environment, all data are controlled for conve
      Une fois la génération terminée, on a tout un panel d'utilisateurs avec des données différentes (les messages de log affichés pendant l execution du script permettent d'obtenir des informations, voir les scripts pour compléter)
 
  * **Access applications**    
-     From now on, you can access the main application, phpmyadmin and the cyclos underlying application.  
-     Access engine's url (main app) and connect with default credentials : admin_network / @@bbccdd  
-     Start browsing !
+     From now on, you can access the main application, phpmyadmin and the cyclos underlying application according to their respective binding ports.
+     Access front's url (main app) and connect with either :
+   * Admin default credentials : admin_network : @@bbccdd
+   * Adherent default credentials : for instance comblant_michel : @@bbccdd  
+  
+   Start browsing !
 
  * **Update the code**  
      As a volume is mounted on the project's root directory, any change on your host machine is automatically replicated in the docker container. Hence, there is no need to rebuild or restart the engine's container.
@@ -44,19 +54,18 @@ In either developement or testing environment, all data are controlled for conve
      `mailer_transport: smtp`  
      `mailer_host: email-catcher`  
      `mailer_port: 1025`    
-    Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.  
+    Now, access email-catcher's url on port 1080 to see the mailcatcher web interface. Future emails will be available there.
+    NB : If you have changed some constants, **clear the cache** ! Otherwise, your changes may not be considered.
  
  * **Xdebug**  
-    You can use Xdebug by setting ```XDEBUG_ENABLED=true```
-    and set ```XDEBUG_REMOTE_HOST``` to your local network computer ip address in your ```.env``` file
+    You can use Xdebug by setting `XDEBUG_ENABLED=true` and set `XDEBUG_REMOTE_HOST` to your local network computer ip address in your `.env` file
     Then docker build and up.
     
-    /!\ The port is not ```9000``` (default for Xdebug) but ```9001```.
+    /!\ The port is not `9000` (default for Xdebug) but `9001`.
 
-## Functional Testing
-
+## <a name="test"></a>Functional Testing
 ### Requirements
-If not done yet, repeat the [api repo install](https://github.com/cairn-monnaie/api/tree/cairn) **from part "Générer la configuration finale de Cyclos et un jeu de données" replacing "dev" by "test"**  
+If not done yet, repeat the [cel repo install](https://github.com/cairn-monnaie/cel/blob/master/docs/install.md) **replacing 'dev' by 'test'**  
 
  All the information provided in the _Development_ subsection is also relevant here.  
  Tests are achieved using phpunit, a testing framework for PHP with a built-in library for Symfony framework. 
@@ -67,31 +76,51 @@ If not done yet, repeat the [api repo install](https://github.com/cairn-monnaie/
 
  * **Generating test data**  
     This will (re)create a MySQL test database from scratch
-    `sudo docker-compose exec engine ./build-setup.sh test`    
+    `sudo ./setup_env.sh --env test -d`    
 
-    `sudo docker-compose exec engine php bin/console cairn.user:generate-database --env=test admin_network @@bbccdd`
-    This script first generates a set of users with an identical password : @@bbccdd, based on cyclos adherents data. 
-    Then, it creates a set of security cards.
-    Finally, it creates Operation entries based on Cyclos payments data. 
     **WARNING** : This command is based on many external factors which make it difficult to maintain. In the state of the git repo, and without any modification, the script should finish. It depends on :
       * the cyclos configuration : see api repo (setup.py)
       * the cyclos init data script  : see api repo (init_data.py)
       * the symfony command GenerateDatabaseCommand.php
 
  * **Launching tests**  
-    `sudo docker-compose exec engine ./vendor/bin/phpunit`  
-     The bootstrap script is automatically called when phpunit is requested. It can be found in `tests/bootstrap.php`. It executes two symfony custom console commands in order to fill the MySQL database with respect to the Cyclos database for consistency purposes. If the testing database already contains users, the command does nothing.  
-      
+    `sudo docker-compose exec engine ./vendor/bin/phpunit --filter=...`
+
+    NB : We **strongly recommend** not trying to launch all the tests in one command, this way : 
+    `sudo docker-compose exec engine ./vendor/bin/phpunit`
+    Why ? The testing environment is quite unstable and there are many requests executed, sometimes external web services & api calls. As our app is quite complex, it was very time-consuming to mock all the functions, services, so the tests work against database data, which means we do extra database queries inside the tests to ensure database integrity.
+    For these reasons, we recommend to launch tests class by class, this way :
+    ```
+      sudo docker-compose exec engine ./vendor/bin/phpunit --filter=BankingControllerTest
+      sudo docker-compose exec engine ./vendor/bin/phpunit --filter=BeneficiaryControllerTest
+      ...
+    ```
+
+
  * **Tests isolation**  
     In order to ensure MySQL database integrity from one test to another, any begun transaction is rolled back at the end of each test. This way, we always work with the same database content between each test. This process is automatically set up with the doctrine-test-bundle bundle.  
 
     **Warning** : If a test executes a transaction in the Cyclos database, a kind of dissociation between MySQL and Cyclos database may occur, as the corresponding transaction would be rolled back (see Tests isolation part above). 
  
-     _Example_ : The user John Doe, in a functional test, changes its password from '@@bbccdd' to '@bcdefgh'. This operation will be rolled back in MySQL database but persisted in Cyclos. Then, if you re-run the same test, it will fail because, in Cyclos, John Doe's password is not '@@bbccdd' anymore.  
+     _Concrete example_ :  
+     The user John Doe, in a functional test, has its access changed to 'disabled' state (means he cannot access the Symfony app from login/password). Our disabling process ensures the user is also disabled on Cyclos side. As the Symfony database is rolled back at test end, we finally get, at the beginning of next test :
+      * John Doe is disabled on Cyclos side
+      * John Doe is enabled on Symfony side
 
-     _Workaround_ : if a test executes a transaction in the Cyclos database, explicitely commit the transaction before the end of the test  
-     `public function testMyTestWhichChangesCyclosDatabase()  
-     {   
-    // ... something thats changes the Cyclos DB state  
-    \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();  
-     }`
+     _Workaround_ :  
+     If a test executes a transaction in the Cyclos database, either :
+     * explicitly commit the transaction before the end of the test 
+       ```
+       public function testMyTestWhichChangesCyclosDatabase()  
+       {   
+         // ... something thats changes the Cyclos DB state  
+         \DAMA\DoctrineTestBundle\Doctrine\DBAL\StaticDriver::commit();  
+       }
+       ```
+       Concrete case : See the test `testChangeScheduledTransactionStatus` in `tests/UserBundle/Controller/BankingControllerTest` test class, 
+     * reset Cyclos data to the state it should be before the test (if possible)
+       See the test `assertUserIsDisabled` in `tests/UserBundle/Controller/BaseControllerTest` test class
+       
+
+## <a name="production"></a>Production
+

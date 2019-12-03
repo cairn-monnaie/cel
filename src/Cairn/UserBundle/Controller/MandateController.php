@@ -176,7 +176,8 @@ class MandateController extends Controller
             if($date){
                 //$date is modified but not a big deal as the two modifications involve the same month
                 $begin = $date->modify('first day of this month');
-                $end = $date->modify('last day of this month');
+                $clone = clone $begin;
+                $end = $clone->modify('last day of this month');
 
                 $operationRepo->whereSubmissionDateBetween($ob, $begin, $end);
             }
@@ -277,11 +278,6 @@ class MandateController extends Controller
 
             $operation = $accountManager->creditUserAccount($mandate->getContractor(), $mandate->getAmount(), Operation::TYPE_MANDATE, 'Règlement de mandat' );
 
-            if(! $operation){
-                $session->getFlashBag()->add('error','Coffre [e]-Cairns insuffisant');
-                return $this->redirectToRoute('cairn_user_mandates_dashboard');
-            }
-
             $mandate->addOperation($operation);
             $operation->setMandate($mandate);
 
@@ -294,7 +290,7 @@ class MandateController extends Controller
                     $session->getFlashBag()->add('success','Mandat à jour');
                 }else{ // in case if there are several operations overdued
                     $session->getFlashBag()->add('success','Mandat honoré');
-                    $session->getFlashBag()->add('info','Mandat toujours pas à jour');
+                    $session->getFlashBag()->add('info','Le mandat n\'est pas encore à jour');
                 }
             }
 

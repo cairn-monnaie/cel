@@ -149,6 +149,42 @@ class Security
         return false;                                                          
     }                
 
+    public function assignDefaultReferents($user)
+    {
+        $superAdmins = $this->userRepo->myFindByRole(array('ROLE_SUPER_ADMIN'));
+
+        //we set referent roles
+        foreach($superAdmins as $superAdmin){
+            $user->addReferent($superAdmin);
+        } 
+
+        //if user is a person, any local group is referent
+        if($user->hasRole('ROLE_PERSON')){
+            $admins = $this->userRepo->myFindByRole(array('ROLE_ADMIN'));
+            foreach($admins as $admin){
+                $user->addReferent($admin);
+            } 
+        } 
+
+        //if user is a local group, he is referent of any individual adherent
+        if($user->hasRole('ROLE_ADMIN')){
+            $persons = $this->userRepo->myFindByRole(array('ROLE_PERSON'));
+            foreach($persons as $person){
+                $person->addReferent($user);
+            } 
+        } 
+
+        //automatically assigns a local group as referent to a pro if they have same city
+        if($user->hasRole('ROLE_PRO')){
+            $localGroup = $this->userRepo->findAdminWithCity($user->getCity());
+            if($localGroup){
+                if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
+                    $user->addReferent($localGroup);
+                }
+            }
+        }
+    }
+
 
     private function getKey($length){
         $key = $this->secret;
@@ -202,6 +238,10 @@ class Security
         return $salt;
     }
 
+    public function generateUrlToken()
+    {
+        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+    }
 
     public function encodeCard(Card $card, User $user)
     {
@@ -261,17 +301,17 @@ class Security
         if(! $operation->isSmsPayment()){ return false; }
 
         $debitor = $operation->getDebitor();
-        //criteria 1 : second payment to the same pro in the same day
-        $ob = $this->operationRepo->createQueryBuilder('o');
-        $this->operationRepo
-            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$debitor)
-            ->whereCreditor($ob,$operation->getCreditor())
-            ->whereCurrentDay($ob);
+    //    //criteria 1 : second payment to the same pro in the same day
+    //    $ob = $this->operationRepo->createQueryBuilder('o');
+    //    $this->operationRepo
+    //        ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+    //        ->whereDebitor($ob,$debitor)
+    //        ->whereCreditor($ob,$operation->getCreditor())
+    //        ->whereCurrentDay($ob);
 
-        $operations = $ob->getQuery()->getResult();
+    //    $operations = $ob->getQuery()->getResult();
 
-        if(count($operations) > 0){ return true; }
+    //    if(count($operations) > 0){ return true; }
 
         //criteria 2 : threshold of amount spent in one day
         $ob = $this->operationRepo->createQueryBuilder('o');

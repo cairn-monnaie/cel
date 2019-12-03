@@ -39,14 +39,6 @@ class MandateValidator extends ConstraintValidator
 
         $today = new \Datetime();
 
-        if(! $mandate->getID()){ //new entity, not an edit
-            if($today->diff($mandate->getBeginAt())->invert == 1){
-                $this->context->buildViolation("La date de début du mandat doit être ultérieure à la date du jour")
-                    ->atPath('beginAt')
-                    ->addViolation();
-            }
-        }
-
          $interval = $mandate->getBeginAt()->diff($mandate->getEndAt());
          if($interval->invert == 1 || ($interval->invert == 0 && $interval->days == 0)){
             $this->context->buildViolation("Période invalide : la date de fin est antérieure à la date de début")

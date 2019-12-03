@@ -56,39 +56,17 @@ class SmsController extends Controller
 
     public function smsReceptionAction(Request $request)
     {
-        $env = $this->getParameter('kernel.environment');
-        if($env == 'test'){
-            $phoneNumber = '+'.trim($request->query->get('phone'));
-            $res = $this->smsAction($phoneNumber,$request->query->get('content'));
-        }elseif($env == 'prod'){
-//
-//        $this->smsAction('+33788888888','LOGIN');
-//            $this->smsAction('+33611223344','2222');
-//        $this->smsAction('+33611223344','1111');
-//
-            //+33744444444', 'SOLDE
-        $res =  $this->smsAction('+33612345678','PAYER 10 BONNEPIO');
-//
-//        $this->smsAction('+33612345678','2222');
-        $res = $this->smsAction('+33612345678','1111');
-//        $this->smsAction('+33655667788','SOLDE');
-//        $this->smsAction('+33655667788','2222');
-//        $this->smsAction('+33655667788','1111');
-        }elseif($env == 'dev'){
+        parse_str( $request->getQueryString(), $query) ;
 
-            parse_str( $request->getQueryString(), $query) ;
+        if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
+            $response = new Response(' { "message"=>"Invalid request" }');
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_NOT_FOUND);
+            return $response;
+        } 
 
-            if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-                $response = new Response(' { "message"=>"Invalid request" }');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                return $response;
-            } 
-
-            $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
-
-            $res = $this->smsAction($sender_phoneNumber,$query['message']);
-        }
+        $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
+        $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
         if(! $res){
             $response = new Response(' { "message":"Request aborted" }');
@@ -341,12 +319,17 @@ class SmsController extends Controller
         }
 
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
-            if($parsedSms->isSmsIdentifier && !$debitorUser->hasRole('ROLE_PRO')){
-               return;
+            if($parsedSms->isSmsIdentifier){
+                if( !$debitorUser->hasRole('ROLE_PRO') && !$isProAndPersonPhoneNumber){
+                    return;       
+                }else{
+                    $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PRO')) ? $debitorUsers[0] : $debitorUsers[1];
+                }
             }
+
             $this->setUpSmsValidation($em, $debitorUser, $content, $userPhone);
             $em->flush();
-            return;
+            return true;
         }elseif($parsedSms->isOperationValidation){
             $smsPending = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
                                                                           'state'=>Sms::STATE_WAITING_KEY));
@@ -399,32 +382,39 @@ class SmsController extends Controller
 
             //get initial sms request
             $parsedInitialSms = $this->parseSms($smsPending->getContent());
+
             if($parsedInitialSms->isSmsIdentifier){
-                if($debitorUser->hasRole('ROLE_PRO')){
-                    $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userPhone->getIdentifier(), $smsPending);
-                    $this->persistSMS($smsSent);
-                    return true;
-                }
+                $smsSent = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS [e]-Cairn : '.$userPhone->getIdentifier(), $smsPending);
+                $this->persistSMS($smsSent);
+
+                //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                $smsPending->setState(Sms::STATE_PROCESSED);
+
+                $em->flush();
+                return true;
             }elseif($parsedInitialSms->isPaymentRequest){
                 //at this stage, as it is a validation action, it means that payment data has already been checked and validated
                 $res = $this->executePayment($debitorUser, $parsedInitialSms, false, $userPhone);    
                 $em->flush();
 
-                if($res){return true;}else{return NULL;}
+                if($res){
+                    //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                    $smsPending->setState(Sms::STATE_PROCESSED);
+                    return true;
+                }else{return NULL;}
 
             }else{//initial sms was about account balance
                 $account = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID()); 
                 $smsBalance=$messageNotificator->sendSMS($debitorPhoneNumber,'Votre solde compte [e]-Cairn : '.$account->status->balance,$smsPending);
 
                 $this->persistSMS($smsBalance);
+                //once pending request has been executed, the corresponding SMS can be set to PROCESSED
+                $smsPending->setState(Sms::STATE_PROCESSED);
+
                 $em->flush();
                 return true;
             }
           
-            //once pending request has been executed, the corresponding SMS can be set to PROCESSED
-            $smsPending->setState(Sms::STATE_PROCESSED);
-            $em->flush();
-            return true;
         }
 
         //last option : sms request is a payment to be validated
@@ -611,7 +601,7 @@ class SmsController extends Controller
 
         $paymentVO = $this->bankingManager->makePayment($res->payment);
 
-        $operation->setPaymentID($paymentVO->id);
+        $operation->setPaymentID($paymentVO->transferId);
 
         //notify debitor that payment has been executed successfully
         $debitorBalance = $this->get('cairn_user_cyclos_account_info')->getDefaultAccount($debitorUser->getCyclosID())->status->balance;

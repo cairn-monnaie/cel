@@ -52,8 +52,7 @@ class User extends BaseUser
     private $cyclosToken;
 
     /**
-     * @ORM\Column(name="main_icc", type="bigint", unique=true, nullable=true)
-     * @Assert\Length(min=7, minMessage="Contient au moins {{ limit }} chiffres")
+     * @ORM\Column(name="main_icc", type="string", unique=true, nullable=true)
      */
     private $mainICC;
 

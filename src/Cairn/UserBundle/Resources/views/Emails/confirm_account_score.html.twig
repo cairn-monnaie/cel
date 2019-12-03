@@ -1,0 +1,11 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/confirm_account_score.html.twig #}
+
+    {% set user = accountScore.user %}
+
+    Bonjour <b>{{user.name}}</b> !<br>
+    <br>
+    Vous avez soumis une demande d'ajout de cette adresse e-mail pour l'envoi des récapitulatifs de paiement par SMS. <br>
+    Merci de valider cette demande en suivant ce <a href="{{ confirmationUrl }}">lien</a><br>
+    <br>
+    {{signature}}<br>
+    <br>

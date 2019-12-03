@@ -1,5 +1,5 @@
 <?php
-// Cairn/UserBundle/EventListener/RegistraationListener.php
+// Cairn/UserBundle/EventListener/RegistrationListener.php
 
 namespace Cairn\UserBundle\EventListener;
 
@@ -55,7 +55,7 @@ class RegistrationListener
 
         $this->userManager->editUser($userDTO);                          
 
-        if($this->container->get('cairn_user.api')->isApiCall()){
+        if($this->container->get('cairn_user.api')->isRemoteCall()){
             $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
             $response = new Response($serializedUser);
             $response->headers->set('Content-Type', 'application/json');
@@ -67,6 +67,26 @@ class RegistrationListener
         }
     }
 
+//    public function onProfileEditFailure(FormEvent $event)
+//    {
+//        $apiService = $this->container->get('cairn_user.api');
+//        $arrayErrors = array();
+//        foreach($event->getForm()->getErrors(true) as $error){
+//            $arrayErrors[$error->getOrigin()->getName()] = array(
+//                'message'=>$error->getMessage(),
+//                'messageTemplate'=> $error->getMessageTemplate()
+//            );
+//        }
+//
+//        if($apiService->isRemoteCall()){
+//            $serializedErrors = $apiService->serialize($arrayErrors);
+//            $response = new Response($serializedErrors);
+//            $response->headers->set('Content-Type', 'application/json');
+//            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+//            $event->setResponse($response);
+//        }
+//    }
+
     /**
      * Applies some actions on new registered user at confirmation
      *
@@ -77,47 +97,14 @@ class RegistrationListener
     public function onRegistrationConfirm(GetResponseUserEvent $event)
     {
         $messageNotificator = $this->container->get('cairn_user.message_notificator');
-        $em = $this->container->get('doctrine.orm.entity_manager');
-        $userRepo = $em->getRepository('CairnUserBundle:User');
 
-        $superAdmins = $userRepo->myFindByRole(array('ROLE_SUPER_ADMIN'));
+        $security = $this->container->get('cairn_user.security');
 
         $user = $event->getUser();
         $user->setEnabled(false);
 
         //this should be unnecessary
         $user->setConfirmationToken(null);
-
-        //we set referent roles
-        foreach($superAdmins as $superAdmin){
-            $user->addReferent($superAdmin);
-        }
-
-        //if user is a person, any local group is referent
-        if($user->hasRole('ROLE_PERSON')){
-            $admins = $userRepo->myFindByRole(array('ROLE_ADMIN'));
-            foreach($admins as $admin){
-                $user->addReferent($admin);
-            }
-        }
-
-        //if user is a local group, he is referent of any individual adherent
-        if($user->hasRole('ROLE_ADMIN')){
-            $persons = $userRepo->myFindByRole(array('ROLE_PERSON'));
-            foreach($persons as $person){
-                $person->addReferent($user);
-            }
-        }
-
-        //automatically assigns a local group as referent to a pro if they have same city
-        if($user->hasRole('ROLE_PRO')){
-            $localGroup = $userRepo->findAdminWithCity($user->getCity());
-            if($localGroup){
-                if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
-                    $user->addReferent($localGroup);
-                }
-            }
-        }
 
         $subject = 'Adresse mail [e]-Cairn confirmée';                      
         $from = $messageNotificator->getNoReplyEmail();                    
@@ -187,6 +174,8 @@ class RegistrationListener
         $em = $this->container->get('doctrine.orm.entity_manager');
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
+        $router = $this->container->get('router');          
+
         $user = $event->getForm()->getData();
 
         //set cyclos ID here to pass the constraint cyclos_id not null
@@ -199,14 +188,40 @@ class RegistrationListener
         $user->setCyclosID($cyclosID);
         $user->setMainICC(null);
 
-//        if($this->container->get('cairn_user.api')->isApiCall()){
-//            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
-//            $response = new Response($serializedUser);
-//            $response->headers->set('Content-Type', 'application/json');
-//            $response->setStatusCode(Response::HTTP_CREATED);
-//            $event->setResponse($response);
-//        }
+        $security = $this->container->get('cairn_user.security');
+        $security->assignDefaultReferents($user);
+
+        $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
+
+        if($currentUser && $currentUser->hasRole('ROLE_SUPER_ADMIN')){
+            //very important to let it to false in order to create cyclos user at activation
+            $user->setEnabled(false);
+
+            //this should be unnecessary
+            $user->setConfirmationToken(null);
+
+            $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
+            $event->setResponse(new RedirectResponse($profileUrl));
+        }
+
+        
+        if($event->getRequest()->get('_format') == 'json'){
+            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
+            $response = new Response($serializedUser);
+            $response->headers->set('Content-Type', 'application/json');
+            $response->setStatusCode(Response::HTTP_CREATED);
+            $event->setResponse($response);
+        }
     }
 
+    public function onRegistrationFailure(FormEvent $event)
+    {
+        $apiService = $this->container->get('cairn_user.api');
+
+        if($apiService->isRemoteCall()){
+            $response = $apiService->getErrorResponse($event->getForm());
+            $event->setResponse($response);
+        }
+    }
 
 } 

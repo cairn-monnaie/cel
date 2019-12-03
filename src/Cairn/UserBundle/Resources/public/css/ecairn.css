@@ -231,4 +231,8 @@ div.online_payment_pro_logo > img {
   font-size: 18px !important;
 }
 
+img.member_card{
+  max-width: 30% !important;
+}
+
 /*# sourceMappingURL=ecairn.css.map */

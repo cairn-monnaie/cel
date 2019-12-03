@@ -1,4 +1,4 @@
-{# src/Cairn/UserBundle/Resources/views/Banking/transfer_view.html.twig #}
+{# src/Cairn/UserBundle/Resources/views/Banking/operation_view.html.twig #}
 
 {% extends "CairnUserBundle::layout.html.twig" %}
 
@@ -7,9 +7,9 @@
 
 <div class="row">
     <div>
-        <h1> Détail de votre {{transfer.getTypeName(transfer.type)|trans}} </h1>
-        {% if transfer.paymentID is defined %}
-            <a href="{{path('cairn_user_banking_transfer_notice_download',{'paymentID':transfer.paymentID})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
+        <h1> Détail de votre {{operation.getTypeName(operation.type)|trans}} </h1>
+        {% if operation.paymentID is defined %}
+            <a href="{{path('cairn_user_banking_operation_notice_download',{'paymentID':operation.paymentID})}}" class="btn"><i class="material-icons left">file_download</i> Avis d'opération </a>
         {% endif %}
     </div>
 
@@ -19,9 +19,9 @@
                 <div class="card-content purple darken-2 white-text">
                     <span class="card-title">Compte débité</span>
                     <p>
-                        Nom : {{transfer.debitorName}}
+                        Nom : {{operation.debitorName}}
                         <br>
-                        N° de compte : {{transfer.fromAccountNumber}}
+                        N° de compte : {{operation.fromAccountNumber}}
                     </p>
                 </div>
             </div>
@@ -39,27 +39,27 @@
                 <div class="card-content purple darken-2 white-text">
                     <span class="card-title">Compte crédité</span>
                     <p>
-                        Nom : {{transfer.creditorName}}
+                        Nom : {{operation.creditorName}}
                         <br>
-                        N° de compte : {{transfer.toAccountNumber}}
+                        N° de compte : {{operation.toAccountNumber}}
                     </p>
                 </div>
             </div>
         </div>
-        <div class="center-align transfer_data">
+        <div class="center-align operation_data">
             <ul>
-               <li><span class="black-text"> Montant </span>: <span class="grey-text text-darken-3">{{transfer.amount}} [e]-Cairns</span> </li> 
-               <li><span class="black-text"> Date d'exécution demandée</span> : <span class="grey-text text-darken-3">{{transfer.executionDate|date('d-m-Y')}}</span> </li> 
-               <li><span class="black-text"> Date de soumission</span> : <span class="grey-text text-darken-3">{{transfer.submissionDate|date('d-m-Y')}}</span> </li> 
-               <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{transfer.reason}}</span> </li>
-               <li><span class="black-text"> Description</span> : <span class="grey-text text-darken-3">{{transfer.description}}</span> </li>
+               <li><span class="black-text"> Montant </span>: <span class="grey-text text-darken-3">{{operation.amount}} [e]-Cairns</span> </li> 
+               <li><span class="black-text"> Date d'exécution demandée</span> : <span class="grey-text text-darken-3">{{operation.executionDate|date('d-m-Y')}}</span> </li> 
+               <li><span class="black-text"> Date de soumission</span> : <span class="grey-text text-darken-3">{{operation.submissionDate|date('d-m-Y')}}</span> </li> 
+               <li><span class="black-text"> Motif</span> : <span class="grey-text text-darken-3">{{operation.reason}}</span> </li>
+               <li><span class="black-text"> Description</span> : <span class="grey-text text-darken-3">{{operation.description}}</span> </li>
                <li><span class="black-text">Etat</span>:  
                     <span class="grey-text text-darken-3"> 
-                    {% if transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                    {% if operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
                         En cours 
-                    {% elseif transfer.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                    {% elseif operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
                         Echoué 
-                    {% elseif transfer.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
+                    {% elseif operation.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_EXECUTED_TYPES') %}
                         Exécuté 
                     {% endif %}
                     </span>

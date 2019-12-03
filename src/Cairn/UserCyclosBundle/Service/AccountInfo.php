@@ -117,10 +117,10 @@ class AccountInfo
     {
         $systemAccounts = $this->accountService->getAccountsSummary('SYSTEM',NULL);
         foreach($systemAccounts as $account){                                  
-            if($account->unlimited){                                           
+            if( strpos($account->type->internalName, 'compte_de_debit_cairn_numerique') !== false){
                 $debitAccount = $account;                                      
-            }                                                                  
-        }                                                                      
+            }                          
+        }
 
         if(!$debitAccount){                                                    
             throw new \Exception('Compte de débit inexistant <=> aucun compte système illimité.');               
@@ -173,7 +173,7 @@ class AccountInfo
         $userAccounts = $this->getAccountsSummary($userID,NULL);
         foreach($userAccounts as $account){
             if($account->type->nature == 'SYSTEM'){
-                $numbers[] = $account->id;
+                $numbers[] = $account->number;
             }else{
                 $numbers[] = $account->number; 
             }

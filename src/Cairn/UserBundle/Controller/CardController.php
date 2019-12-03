@@ -187,8 +187,15 @@ class CardController extends Controller
         $session->getFlashBag()->add('info','Vous avez reçu un mail récapitulatif de votre demande ');
 
         $session->set('orderCard',true);
-        return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
 
+        $referer = $request->headers->get('referer');
+
+        if(! $referer){
+            return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$currentUser->getUsername()));
+        }else{
+            return new RedirectResponse($referer);
+        }
+        
     }
 
     /**
@@ -217,21 +224,24 @@ class CardController extends Controller
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $beforeDefaultDate,
+                'required'=>false
                 ))
             ->add('after',     DateTimeType::class, array(
                 'label' => 'générées après',
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $afterDefaultDate,
+                'required'=>false
                 ))
             ->add('expires_before',     DateTimeType::class, array(
                 'label' => 'expirent avant',
                 'date_widget' => 'single_text',
                 'time_widget' => 'single_text',
                 'data'=> $expirationBefore,
+                'required'=>false
                 ))
             ->add('code',  TextType::class,array(
-                'label'=>'Code',
+                'label'=>'Code entier',
                 'required'=>false))
                 ->add('save',      SubmitType::class, array('label' => 'Rechercher'))
                 ->getForm();
@@ -368,7 +378,7 @@ class CardController extends Controller
                         $subject = 'Révocation de votre carte de sécurité Cairn';
                         $from = $this->getParameter('cairn_email_noreply');
                         $to = $user->getEmail();
-                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig');
+                        $body = $this->renderView('CairnUserBundle:Emails:revoke_card.html.twig',array('user'=>$user));
 
                         $this->get('cairn_user.message_notificator')->notifyByEmail($subject,$from,$to,$body);
                         $session->getFlashBag()->add('success','La carte de sécurité Cairn de code'.$saveCode.' appartenant à '.$user->getName().' a été révoquée avec succès ! Un email lui a été envoyé pour l\'en informer.');

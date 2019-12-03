@@ -6,6 +6,7 @@ namespace Cairn\UserBundle\Service;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
@@ -14,6 +15,8 @@ use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\Phone;
 
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Form\FormInterface;
 
 /**
  * This class contains all useful services to build an API
@@ -28,6 +31,42 @@ class Api
         $this->requestStack = $requestStack;
     }
 
+    /**
+     * Make a request API
+     *
+     *@param string $baseUrl api base URL
+     *@param array $params request parameters
+     *@param string $resource uri matching a resource
+     *@return stdClass $results result of the api request 
+     */
+    public function get($baseUrl, $resource, $params = NULL, $format = NULL)
+    {
+        $url = $baseUrl.$resource.$format;
+
+        if($params){
+            $url = $url."?".http_build_query($params);
+        }
+
+		$ch = \curl_init($url);
+        
+        // Set the CURL options
+        $options = array(
+            CURLOPT_RETURNTRANSFER => true,
+        );
+
+        \curl_setopt_array ($ch, $options);
+
+		// Execute the request
+		$json = \curl_exec($ch);
+		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $results = \json_decode($json,true);
+
+        curl_close($ch);
+
+        return array('code'=> $code, 'results' => $results);
+
+    }
+
     public function isApiCall()
     {
         $request = $this->requestStack->getCurrentRequest();                     
@@ -39,26 +78,62 @@ class Api
         return ($isCorrectUrl && $isCorrectRoute);
     }
 
+    public function isRemoteCall()
+    {
+        $request = $this->requestStack->getCurrentRequest();                     
+
+        return ($request->getRequestFormat() != 'html');
+    }
+
+    public function getErrorResponse(FormInterface $form)
+    {
+        $errors = [];                                              
+        foreach ($form->getErrors(true) as $error) {               
+            $errors[] = array('key'=>$error->getOrigin()->getName(),'error'=>$error->getMessage()); 
+        }                                                          
+        $response = new Response(json_encode($errors));            
+        $response->setStatusCode(Response::HTTP_BAD_REQUEST);      
+        $response->headers->set('Content-Type', 'application/json');
+
+        return $response;
+    }
+
     function objectCallback($child)
     {
         if($child instanceOf User){
             return array('name'=>$child->getName(),
+                         'address'=>$child->getAddress(),
+                         'image'=>$child->getImage(),
+                         'email'=>$child->getEmail(),
+                         'description'=>$child->getDescription(),
                          'id'=>$child->getID()
                      );
         }
+
+        if($child instanceOf File){
+            return array('url'=>$child->getUrl(),
+                         'alt'=>$child->getAlt(),
+                     );
+        }
+
         if($child instanceOf SmsData){
             return array('user'=>$this->objectCallback($child->getUser()),
                          'id'=>$child->getID()
                      );
         }
-
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
     {
         $defaultIgnoredAttributes = array();
+
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('password','localGroupReferent','singleReferent','referents','beneficiaries','card');
+            $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $normalizer->setCallbacks(array(
+                        'identityDocument'=> function ($child) {return $this->objectCallback($child);},
+                        'image'=> function ($child) {return $this->objectCallback($child);},
+            ));
+
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
@@ -66,7 +141,8 @@ class Api
             ));
         }
         if($object instanceOf Operation){
-            $defaultIgnoredAttributes = array('fromAccount','toAccount');
+
+            $defaultIgnoredAttributes = array('fromAccount','toAccount','mandate');
             $normalizer->setCallbacks(array(
                         'creditor'=> function ($child) {return $this->objectCallback($child);},
                         'debitor'=>  function ($child) {return $this->objectCallback($child);}
@@ -80,7 +156,7 @@ class Api
            ));
         }
         if($object instanceOf Phone){
-            $defaultIgnoredAttributes = array();
+            $defaultIgnoredAttributes = array('user');
             $normalizer->setCallbacks(array(
                         'smsData'=> function ($child) {return $this->objectCallback($child);},
                         'user'=> function ($child) {return $this->objectCallback($child);},
@@ -100,10 +176,18 @@ class Api
      */
     public function serialize($object, $extraIgnoredAttributes=array())
     {
-        $normalizer = new ObjectNormalizer();
-        $this->setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes);
+        $normalizer = array(new DateTimeNormalizer(),new ObjectNormalizer());
+
+        if( is_array($object)){
+            foreach($object as $item){
+                $this->setCallbacksAndAttributes($normalizer[1], $item, $extraIgnoredAttributes);
+            }
+        }else{
+            $this->setCallbacksAndAttributes($normalizer[1], $object, $extraIgnoredAttributes);
+        }
+
         $encoder = new JsonEncoder();
-        $serializer = new Serializer(array($normalizer), array($encoder));
+        $serializer = new Serializer($normalizer, array($encoder));
        
         return $serializer->serialize($object, 'json');
     }

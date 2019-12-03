@@ -30,7 +30,6 @@ class RemoveAbortedOperationsCommandTest extends KernelTestCase
         $container = $kernel->getContainer();
         $em = $container->get('doctrine.orm.entity_manager');
         $operationRepo = $em->getRepository('CairnUserBundle:Operation');
-        $smsRepo = $em->getRepository('CairnUserBundle:Sms');
 
         $application = new Application($kernel);
         $application->add(new RemoveAbortedOperationsCommand());
@@ -52,12 +51,6 @@ class RemoveAbortedOperationsCommandTest extends KernelTestCase
         //assert the database content AFTER command execution
         $abortedOperations = $operationRepo->findBy(array('paymentID'=>NULL));
         $this->assertTrue(count($abortedOperations) == 0);
-
-        $abortedSms = $smsRepo->findByState(Sms::STATE_WAITING_KEY);
-        $this->assertTrue(count($abortedSms) == 0);
-
-        $expiredSms = $smsRepo->findByState(Sms::STATE_EXPIRED);
-        $this->assertTrue(count($abortedSms) == 0);
 
     }
 

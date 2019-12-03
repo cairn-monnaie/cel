@@ -20,7 +20,10 @@ use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\Mandate;
+use Cairn\UserBundle\Entity\AccountScore;
 
+
+use Knp\Snappy\Pdf;
 use Cairn\UserCyclosBundle\Entity\UserManager;
 
 use Symfony\Bundle\FrameworkBundle\Routing\Router;
@@ -58,6 +61,47 @@ class Commands
         $this->container = $container;
     }
 
+    public function generateLocalizationCoordinates($username = NULL)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+       
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+            if(! $user){
+                return 'username '.$username.' does not match any account';
+            }
+            if(! $user->isAdherent()){
+                return 'username '.$username.' does not match any adherent account';
+            }
+            $users = array($user);
+        }else{
+            $ub = $userRepo->createQueryBuilder('u');                 
+            $userRepo->whereAdherent($ub);
+
+            $users = $ub->getQuery()->getResult();
+        }
+
+        $returnMsg = '';
+
+        foreach($users as $user){
+            $address = $user->getAddress();
+
+            $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+
+            if(!$coords['latitude']){                                  
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest'];
+            }else{                                         
+                $address->setLongitude($coords['longitude']);
+                $address->setLatitude($coords['latitude']);
+                $returnMsg .= 'OK : '.$user->getUsername().' lat:'.$address->getLatitude().' lon:'.$address->getLongitude()."\n";
+            }             
+        }
+
+        $this->em->flush();
+
+        return $returnMsg;
+    }
+
     /**
      * Removes all operations with no paymentID
      *
@@ -77,23 +121,175 @@ class Commands
             $this->em->remove($transaction);
         }
 
-//        $sb = $smsRepo->createQueryBuilder('s');                 
-//        $smsRepo->whereState($sb,Sms::STATE_WAITING_KEY)->whereOlderThan($sb,date_modify(new \Datetime(), '-5 minutes'));
-//        $expiredSms = $sb->getQuery()->getResult();
-//
-//        foreach($expiredSms as $sms){
-//            $this->em->remove($sms);
-//        }
-//
-//        $sb = $smsRepo->createQueryBuilder('s');                 
-//        $smsRepo->whereState($sb,Sms::STATE_EXPIRED);
-//        $expiredSms = $sb->getQuery()->getResult();
-//
-//        foreach($expiredSms as $sms){
-//            $this->em->remove($sms);
-//        }
 
         $this->em->flush();
+    }
+
+    public function sendAccountScores($username = NULL)
+    {
+        $now = new \Datetime();
+        $dayNow = $now->format('D');
+        $timeNow =  $now->format('H:i');
+        $accountScoreRepo = $this->em->getRepository('CairnUserBundle:AccountScore');
+        $operationRepo = $this->em->getRepository('CairnUserBundle:Operation');
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+
+        $messageNotificator = $this->container->get('cairn_user.message_notificator');
+
+        //how to get users based on their account score schedule
+        $ab = $accountScoreRepo->createQueryBuilder('a');
+
+        $ab->andWhere('a.confirmationToken is NULL')
+            ->andWhere('a.consideredDay = :day')
+            ->setParameter('day', $dayNow );
+
+        if($username){
+            $user = $userRepo->findOneByUsername($username);
+
+            if(! $user){
+                return 'User not found';
+            }
+
+            if(! $user->hasRole('ROLE_PRO')){
+                return 'User must be a pro';
+            }
+            $ab->andWhere('a.user = :user')
+                ->setParameter('user', $user);
+        }
+
+        $accountScores = $ab->getQuery()->getResult();
+
+        foreach($accountScores as $accountScore){
+            $schedule = $accountScore->getSchedule()[$dayNow];
+
+            if( ! empty($schedule)){
+                $nbToSend = count($schedule);
+                $nbSent = $accountScore->getNbSentToday();
+
+                if($nbSent < $nbToSend){
+                    $filename = 'pointage-'.strtotime(date('Y-m-d H:i'));
+                    $date = date('d-M-Y').' '.$schedule[$nbSent];
+                    $dateToSend = new \Datetime($date);
+
+                    //here we look for the timestamp of the last sent mail
+                    if($nbSent != 0){ //if another account score was expected the same day
+                        $beginTime = $schedule[$nbSent - 1];
+                        $begin = new \Datetime($beginTime);
+                        $begin->modify('+1 hour');
+
+                    }else{ //otherwise, get the last timestamp of the previous day, if any
+                        $clone = clone $now;
+                        $dayBefore = $clone->modify('-1 day');
+
+                        if( strtotime($dateToSend->format('H')) < strtotime('6:00') ){ // if  evening activity, must deal with day before
+                            if($endYesterday = end($accountScore->getSchedule()[$dayBefore->format('D')]) ){
+                                $begin = $dayBefore->modify($endYesterday)->modify('+1 hour');
+                            }else{
+                                $begin = $dayBefore->modify('15:00');
+                            }
+                        }else{ // daytime activity 
+                            $cloneNow = clone $now;
+                            $begin = $cloneNow->modify('00:00');
+                        }
+
+                                                
+                    }
+
+                    if( $now->diff($dateToSend)->invert == 1 ){
+                        $ob = $operationRepo->createQueryBuilder('o');
+
+                        $operationRepo
+                            ->whereCreditor($ob, $accountScore->getUser())
+                            ->whereSubmissionDateBetween($ob, $begin, $now);
+
+                        $ob->andWhere('o.paymentID is not NULL')
+                            ->andWhere( 
+                                $ob->expr()->orX(
+                                    'o.type = '.Operation::TYPE_SMS_PAYMENT
+                                    ,
+                                    'o.type = '.Operation::TYPE_MOBILE_APP
+                                )
+                            )
+                            ->orderBy('o.executionDate','ASC');
+                        $operations = $ob->getQuery()->getResult();
+
+                        //generate Document
+                        if($accountScore->getFormat() == 'csv'){ // CSV FORMAT
+                            $filename = $filename.'.csv';
+                            $handle = fopen($filename, 'w');
+
+                            // Add the header of the CSV file
+                            fputcsv($handle,array('Compte : ' . $accountScore->getUser()->getName()),';');
+                            fputcsv($handle, array('Horodatage', 'Type','Montant'),';');
+
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+
+                                $totalAmount += $operation->getAmount();
+                                fputcsv(
+                                    $handle, // The file pointer
+                                    array(
+                                        $operation->getExecutionDate()->format('H:i'),
+                                        Operation::getTypeName($operation->getType()),
+                                        $operation->getAmount()
+                                    ), // The fields
+                                    ';' // The delimiter
+                                );
+                            }
+
+                            fputcsv($handle,array('Somme cumulée : '.$totalAmount.' cairns'),';');
+                            fputcsv($handle,array());
+
+                            fclose($handle);
+
+                            // You can alternatively use method chaining to build the attachment
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/force-download')
+                                ->setBody(file_get_contents($filename))
+                            ;
+
+                            unlink($filename);
+                        }else{ // PDF FORMAT
+                            $totalAmount = 0;
+                            foreach($operations as $operation ){
+                                $totalAmount += $operation->getAmount();
+                            }
+
+                            $projectDir = $this->container->getParameter('kernel.project_dir');
+ 
+                            $snappy = new Pdf($projectDir.'/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64');
+                            $html =  $this->container->get('templating')->render('CairnUserBundle:Pdf:account_score.html.twig',
+                                array('operations'=>$operations,
+                                'totalAmount'=>$totalAmount,
+                                'beginDate'=>$begin,
+                                'endDate'=>$now,
+                                'accountScore'=>$accountScore
+                                ));
+
+                            $filename = $filename.'.pdf';
+
+                            $attachment = (new \Swift_Attachment())
+                                ->setFilename($filename)
+                                ->setContentType('application/pdf')
+                                ->setBody($this->container->get('knp_snappy.pdf')->getOutputFromHtml($html))
+                            ;
+                        }
+
+                        $accountScore->setNbSentToday($accountScore->getNbSentToday() + 1);
+
+                        $body = $this->container->get('templating')->render('CairnUserBundle:Emails:account_score.html.twig',array('accountScore'=>$accountScore,'begin'=>$begin));
+                        $messageNotificator->notifyByEmail('Compta [e]-Cairn', $messageNotificator->getNoReplyEmail(), $accountScore->getEmail() ,$body, $attachment);
+                    }
+                }
+            }else{//little bit of a hack to deal with side-effect but necessary
+                $accountScore->setNbSentToday(0);
+            }
+        }
+
+        $this->em->flush();
+
+        return 'OK';
     }
 
     private function updateMandate(Mandate $mandate)
@@ -101,7 +297,7 @@ class Commands
         $accountManager = $this->container->get('cairn_user.account_manager');
         
         $status = $mandate->getStatus();
-        if($status != Mandate::SCHEDULED && $status != Mandate::UP_TO_DATE){
+        if( !($status == Mandate::SCHEDULED || $status == Mandate::UP_TO_DATE || $status == Mandate::OVERDUE) ){
             return;
         }
 
@@ -112,10 +308,15 @@ class Commands
                 $mandate->setStatus(Mandate::OVERDUE);
             }
 
-        }else{ //UP_TO_DATE
+        }elseif($status == Mandate::UP_TO_DATE){ //UP_TO_DATE
             if(! $accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::OVERDUE);
             }
+        }else{  //OVERDUE
+            if($accountManager->isUpToDateMandate($mandate)){
+                $mandate->setStatus(Mandate::UP_TO_DATE);
+            }
+
         }
     }
 
@@ -143,7 +344,7 @@ class Commands
             }
 
             $mb = $mandateRepo->createQueryBuilder('m');
-            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandateRepo->whereContractor($mb, $user)->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED,Mandate::OVERDUE));
             $mandates = $mb->getQuery()->getResult();
 
             if(! $mandates){
@@ -156,7 +357,7 @@ class Commands
                     
         }else{
             $mb = $mandateRepo->createQueryBuilder('m');
-            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED));
+            $mandateRepo->whereStatus($mb, array(Mandate::UP_TO_DATE, Mandate::SCHEDULED,Mandate::OVERDUE));
             $mandates = $mb->getQuery()->getResult();
 
             foreach($mandates as $mandate){
@@ -492,12 +693,16 @@ class Commands
 
     /**
      * Here we create an operation, its aborted copy (paymentID is NULL) 
+     *
+     * WARNING : The ID of the TransactionEntryVO object is not the same id than its corresponding transfer
+     * For this reason, $entryVO->id is not what we want 
+     *
      *@param const int $type Operation type
-     *@param stdClass $entryVO stdClass transaction
+     *@param stdClass $entryVO stdClass TransactionEntryVO
+     *@see https://documentation.cyclos.org/4.11.2/ws-api-docs/org/cyclos/model/banking/transactions/TransactionEntryVO.html
      */
     public function createOperation($entryVO, $type)
     {
-
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
@@ -505,14 +710,17 @@ class Commands
         if($type == Operation::TYPE_DEPOSIT || $type == Operation::TYPE_TRANSACTION_EXECUTED){
             $dueDate = $entryVO->date;
             $transactionVO = $bankingService->getTransactionByID($entryVO->id);
-        }else{
+        }elseif($type == Operation::TYPE_TRANSACTION_SCHEDULED){ 
             $dueDate = $entryVO->dueDate;
-            $transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //$transactionVO = $bankingService->getTransactionByID($entryVO->scheduledPayment->id);
+            //instance of ScheduledPaymentVO with installments;
+            $transactionVO = $bankingService->getTransactionDataByID($entryVO->scheduledPayment->id)->transaction;
         }
 
         $operation = new Operation();
         $operation->setType($type);
         $operation->setPaymentID($transactionVO->id);
+
         $operation->setAmount($transactionVO->currencyAmount->amount);
         $operation->setReason('Motif du virement de test');
         $operation->setDescription($transactionVO->description);
@@ -637,8 +845,7 @@ class Commands
         echo 'INFO: -------' . $nbPrintedCards . ' cards to create. Max number of printable cards : '.$maxCards . "--------- \n";
 
         for($i=0; $i < $nbPrintedCards; $i++){
-            $uniqueCode = $securityService->findAvailableCode();
-            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa',$uniqueCode,$this->container->getParameter('card_association_delay'));
+            $card = new Card($this->container->getParameter('cairn_card_rows'),$this->container->getParameter('cairn_card_cols'),'aaaa','SINGLE'.$i,$this->container->getParameter('card_association_delay'));
             $fields = $card->generateCard($this->container->getParameter('kernel.environment'));
 
             $this->em->persist($card);
@@ -646,9 +853,12 @@ class Commands
         echo 'INFO: OK !' . "\n";
 
 
-        // ************************* payments creation ******************************************
-        // foreach deposit and scheduled payment on cyclos side, we create here a Doctrine equivalent
+        // ************************* payments creation & synchronization ******************************************
+        // foreach user living in Grenoble, credit account
+        echo "INFO: ------- Credit user accounts, for each Grenoble living adherent --------- \n";
+
         $bankingService = $this->container->get('cairn_user_cyclos_banking_info');
+
         $list = $this->container->get('cairn_user_cyclos_accounttype_info')->getListAccountTypes($this->container->getParameter('cyclos_currency_cairn'),'USER');
 
         foreach($list as $accountType){
@@ -656,57 +866,54 @@ class Commands
                 $adherentAccountTypeVO = $accountType;
             }
         }
-
-
-        //instances of TransactionEntryVO
-        $processedDeposits = $bankingService->getTransactions(
-            $admin->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'dépôt');
-
-        foreach($processedDeposits as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_DEPOSIT);
-        }
-
-        //instances of TransactionEntryVO
-        //in init_data.py script, trankilou makes a transaction in order to have a null account balance
-        $user = $userRepo->findOneByUsername('trankilou'); 
-        $processedTransactions1 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-        foreach($processedTransactions1 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
-
-        //in init_data.py script, DrDBrew makes transactions
-        $user = $userRepo->findOneByUsername('DrDBrew'); 
-        $processedTransactions2 = $bankingService->getTransactions(
-            $user->getCyclosID(),$adherentAccountTypeVO->id,array('PAYMENT'),array('PROCESSED',NULL,'CLOSED'),'virement');
-
-        //            $processedTransactions = array_merge($processedTransactions1,$processedTransactions2);  
-        foreach($processedTransactions2 as $transaction){
-            $this->createOperation($transaction,Operation::TYPE_TRANSACTION_EXECUTED);
-        }
-
+        
         //instances of ScheduledPaymentInstallmentEntryVO (these are actually installments, not transfers yet)
         //the id used to execute an operation on this installment is from an instance of ScheduledPaymentEntryVO
         //in init_data_test.py script, future transactions are made by labonnepioche
-        $user = $userRepo->findOneByUsername('labonnepioche'); 
+        $user = $userRepo->findOneByUsername('labonnepioche');
 
         $credentials = array('username'=>'labonnepioche','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-
         $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
 
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
 
-        var_dump(count($futureInstallments));
+        //echo "INFO: ------- Get back the ".count($futureInstallments)." scheduled payments ordered by La Bonne Pioche to Alter Mag from Cyclos and synchronize--------- \n";
+        //foreach($futureInstallments as $installment){
+        //    $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+        //}
 
-        foreach($futureInstallments as $installment){
-            $this->createOperation($installment,Operation::TYPE_TRANSACTION_SCHEDULED);
+
+        $accountManager = $this->container->get('cairn_user.account_manager');
+        
+        $ub = $userRepo->createQueryBuilder('u');
+         $ub->join('u.address','addr')
+             ->join('addr.zipCity','zp')
+             ->where('zp.city = :city')
+             ->andWhere('u.username <> :username')
+             ->setParameter('city','Grenoble')
+             ->setParameter('username','trankilou');
+        $userRepo->whereRoles($ub, array('ROLE_PRO','ROLE_PERSON'));
+
+        $users = $ub->getQuery()->getResult();
+
+        //here, anonymous user connects to Cyclos in order to credit user accounts without hand-made interaction
+        foreach($users as $user){
+            echo 'INFO: Crédit de compte de 2000 pour '.$user->getName(). "\n";
+            $operation = $accountManager->creditUserAccount($user,2000, Operation::TYPE_DEPOSIT, 'Dépôt Cairn');
+            $this->em->persist($operation);
+            echo 'INFO: Crédit de compte de 2000 pour '.$user->getName().'... Terminé'. "\n";
         }
+
+        echo 'INFO: OK !' . "\n";
 
         //********************** Fine-tune user data in order to have a diversified database ************************
 
         //admin has a an associated card and has already login once (avoids the compulsary redirection to first login change password)
+        $credentials = array('username'=>'admin_network','password'=>$password);
+        $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
+
         $admin->setFirstLogin(false);
 
         $cyclosClient = $this->getClientToken($admin,'main');
@@ -732,10 +939,17 @@ class Commands
         $person->setCard($proCard);
         $personCard->getUsers()->clear();
         $this->em->remove($personCard);
+
         //admin is not referent of vie_integrative
         $user = $userRepo->findOneByUsername('vie_integrative'); 
-        echo 'INFO: '.$user->getName(). ' has no referent'."\n";
+        $user->getCard()->setCode('PRO_CODE');
+        echo 'INFO: '.$user->getName(). ' has no referent & card code is PRO_CODE'."\n";
         $user->removeReferent($admin);
+        echo 'INFO: OK !'."\n";
+
+        $user = $userRepo->findOneByUsername('benoit_perso'); 
+        $user->getCard()->setCode('PERSO_CODE');
+        echo 'INFO: '.$user->getName(). ' has card code PERSON_CODE'."\n";
         echo 'INFO: OK !'."\n";
 
         //episol has NO card
@@ -752,10 +966,11 @@ class Commands
         $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
 
-        //NaturaVie has NO card and admin not referent
+        //NaturaVie has NO card and admin not referent and never logged in
         $user = $userRepo->findOneByUsername('NaturaVie'); 
         echo 'INFO: '.$user->getName(). ' has no associated card and no referent'."\n";
         $user->removeReferent($admin);
+        $user->setLastLogin(NULL);
         $card  = $user->getCard();
         $card->removeUser($user);                                  
         echo 'INFO: OK !'."\n";
@@ -1001,6 +1216,32 @@ class Commands
 
         $this->em->persist($helloasso);
 
+        //generate account score configurations
+        echo 'INFO: ------ Set up account score configurations ------- ' . "\n";
+
+        $contractor = $userRepo->findOneByUsername('episol'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with csv format' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setFormat('csv');
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
+
+        $contractor = $userRepo->findOneByUsername('tout_1_fromage'); 
+
+        echo 'INFO : '.$contractor->getName().' has an account score config with confirmation token' ."\n";
+        $accountScore = new AccountScore();
+        $accountScore->setUser($contractor);
+        $accountScore->setEmail('test_fromage@test.fr');
+        $accountScore->setConfirmationToken($securityService->generateUrlToken());
+
+        $this->em->persist($accountScore);
+        echo 'INFO: OK !'."\n";
+
+
         $this->em->flush();
         echo 'INFO: OK !'."\n";
 
@@ -1022,7 +1263,7 @@ class Commands
 
         //create fake mandate document doc
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-        $originalName = 'poster_sms.pdf';
+        $originalName = 'mandate_template.pdf';
         $absolutePath = $absoluteWebDir.$originalName;
 
         $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);

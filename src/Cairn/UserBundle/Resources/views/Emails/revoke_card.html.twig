@@ -1,6 +1,17 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/revoke_card.html.twig #}
 
-    Une révocation de votre carte de clés de sécurité Cairn a été executée par {{app.user.name}}.
-    Vous pouvez désormais en commander une nouvelle.
+Bonjour <b>{{user.name}}</b>, <br>
+<br>
 
-Le Cairn,
+    Une révocation de votre carte de sécurité a été executée par <b>{{app.user.name}}</b>. <br>
+    Vous pouvez désormais en commander une nouvelle depuis votre profil. 
+
+    <br> <br>
+
+    Le paiement par SMS, s'il avait été mis en place, est désormais bloqué pour votre compte [e]-Cairn. <br>
+    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+
+    <br>
+    <br>
+    {{signature}},
+

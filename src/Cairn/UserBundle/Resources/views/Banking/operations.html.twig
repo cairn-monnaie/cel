@@ -21,17 +21,14 @@
             <a href="{{path('cairn_user_banking_reconversion')}}" class="btn"><i class="material-icons left">add</i>Effectuer une reconversion</a>
         {% endif %}
     {% elseif app.user.hasRole('ROLE_SUPER_ADMIN') %}
-        <div class="row">
-            <div class="card-panel z-depth-1">
-                <a href="{{path('cairn_user_mandates_dashboard')}}"> <h2>Les mandats </h2></a>
-            </div>
-            <div class="card-panel z-depth-1">
-               <a  href="{{path('cairn_user_electronic_mlc_dashboard')}}"><h2>Coffre [e]-cairns </h2> </a>
-            </div>
-            <div class="card-panel z-depth-1">
-               <a  href="#"><h2>Conversions Helloasso </h2> </a>
-            </div>
-        </div>
+          <div class="row">
+             <div class="card-panel z-depth-1">
+                <a href="{{path('cairn_user_mandates_dashboard')}}"><h2>Les mandats </h2></a>
+             </div>
+             <div class="card-panel z-depth-1">
+               <a href="{{path('cairn_user_helloasso_sync')}}"><h2>Conversions via Helloasso</h2></a>
+             </div>
+         </div>
 
     {% endif %}
 

@@ -125,13 +125,15 @@ class BridgeToSymfony
             $cyclosOperation = $this->cyclosBankingInfo->getTransactionDataByID($operation->getPaymentID());
             return $cyclosOperation->transaction;
         }catch(\Exception $e){
-            if($e->errorCode == 'ENTITY_NOT_FOUND'){
-                $from = $this->messageNotificator->getNoReplyEmail();
-                $to = $this->messageNotificator->getMaintenanceEmail();
+            if(property_exists($e,'errorCode')){
+                if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                    $from = $this->messageNotificator->getNoReplyEmail();
+                    $to = $this->messageNotificator->getMaintenanceEmail();
 
-                $subject = "Dissociation des bases de données Symfony-Cyclos";
-                $body = 'Entité : Operation. Equivalent Cyclos inexistant. ID Symfony valide '.$operation->getID();
-                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $subject = "Dissociation des bases de données Symfony-Cyclos";
+                    $body = 'Entité : Operation. Equivalent Cyclos inexistant. ID Symfony valide '.$operation->getID();
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                }
             }
 
             throw $e;
