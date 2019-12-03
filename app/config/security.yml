@@ -70,6 +70,8 @@ security:
         - { path: ^/api/online-payment/create, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: https, host: moncompte.cairn-monnaie\.com$ }
         - { path: ^/, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: https, host: moncompte.cairn-monnaie\.com$ }
         - { path: ^/config, roles: ROLE_SUPER_ADMIN , requires_channel: http, host: localhost$}
+        - { path: ^/operations/sync, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: http, ips: [172.18.0.0/16] }
+        - { path: ^/operations/sync, roles: ROLE_NO_ACCESS}
         - { path: ^/api/online-payment/create, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: http, host: '%online_payment_hosts%'}
         - { path: ^/api/online-payment/create, roles: ROLE_NO_ACCESS}
         - { path: ^/, roles: IS_AUTHENTICATED_ANONYMOUSLY, requires_channel: http, host: localhost$ }
