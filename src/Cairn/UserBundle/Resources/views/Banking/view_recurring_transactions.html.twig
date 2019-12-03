@@ -5,111 +5,122 @@
 {% block body %}
     {{parent()}}
 
-<div>
-    <table>
-    <caption> <span> Vos virements permanents en cours</span> </caption>
-    <thead>
-        <tr>
-            <th> Date de demande </th>
-            <th> Prochaine échéance </th>
-            <th> Bénéficiaire</th>
-            <th> Motif </th> 
-            <th> Périodicité </th>
-            <th> Montant </th>
-            <th> Action </th>
+<div class="row">
+
+    <div class="center-align">
+        <h1>Suivi de vos virements permanents </h1>
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#ongoing">En cours</a></li>
+                <li class="tab col s3"><a href="#closed">Complets</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div id="ongoing" class="col s12">
+        <table>
+        <thead>
+            <tr>
+                <th> Date de demande </th>
+                <th> Prochaine échéance </th>
+                <th> Bénéficiaire</th>
+                <th> Motif </th> 
+                <th> Périodicité </th>
+                <th> Montant </th>
+                <th> Action </th>
  
-        </tr>
-    </thead>
+            </tr>
+        </thead>
 
-    <tbody>
-    {% for transaction in ongoingTransactions %}
-                <tr>
-                    <td> {{transaction.date}} </td>
-                    <td>{{transaction.nextOccurrenceDate}} </td>
-                    <td>
-                        {% if transaction.toOwner.display is defined %}
-                            {{transaction.toOwner.display }}
-                        {% else %}
-                            Association Le Cairn
-                        {% endif %}
-                    </td>
+        <tbody>
+        {% for transaction in ongoingTransactions %}
+                    <tr>
+                        <td> {{transaction.date|date('d-m-Y')}} </td>
+                        <td>{{transaction.nextOccurrenceDate|date('d-m-Y')}} </td>
+                        <td>
+                            {% if transaction.toOwner.display is defined %}
+                                {{transaction.toOwner.display }}
+                            {% else %}
+                                Association Le Cairn
+                            {% endif %}
+                        </td>
 
-                    <td> {{transaction.description }} </td>  
-                    <td>  
-                        {% if transaction.occurrenceInterval.amount == 1 %}
-                            Mensuelle
-                        {% elseif transaction.occurrenceInterval.amount == 2 %}
-                            Bimestrielle
-                        {% elseif transaction.occurrenceInterval.amount == 3 %}
-                            Trimestrielle
-                        {% elseif transaction.occurrenceInterval.amount == 6 %}
-                            Semestrielle
-                        {% elseif transaction.occurrenceInterval.amount == 12 %}
-                            Annuelle
-                        {% endif %}
-                    </td>  
-                    <td> {{transaction.currencyAmount.amount }} </td>
-                    <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> | <a href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
-                </tr>
-    {% else %}
-        Aucun virement en attente 
-    {% endfor %}
-    </tbody>
-    </table>
+                        <td> {{transaction.description }} </td>  
+                        <td>  
+                            {% if transaction.occurrenceInterval.amount == 1 %}
+                                Mensuelle
+                            {% elseif transaction.occurrenceInterval.amount == 2 %}
+                                Bimestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 3 %}
+                                Trimestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 6 %}
+                                Semestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 12 %}
+                                Annuelle
+                            {% endif %}
+                        </td>  
+                        <td> {{transaction.currencyAmount.amount }} </td>
+                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Consulter l'historique</a> | <a href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
+                    </tr>
+        {% endfor %}
+        </tbody>
+        </table>
 
-    <table>
-    <caption> <span> Vos virements permanents achevés</span> </caption>
-    <thead>
-        <tr>
-            <th> Date de demande </th>
-            <th> Bénéficiaire</th>
-            <th> Motif </th> 
-            <th> Périodicité </th>
-            <th> Montant </th>
-            <th> Action </th>
+    </div>
+
+    <div id="closed" class="col s12">
+
+        <table>
+        <thead>
+            <tr>
+                <th> Date de demande </th>
+                <th> Bénéficiaire</th>
+                <th> Motif </th> 
+                <th> Périodicité </th>
+                <th> Montant </th>
+                <th> Action </th>
  
-        </tr>
-    </thead>
+            </tr>
+        </thead>
 
-    <tbody>
-    {% for transaction in processedTransactions %}
-                <tr>
-                    <td> {{transaction.date}} </td>
-                    <td>
-                        {% if transaction.toOwner.display is defined %}
-                            {{transaction.toOwner.display }}
-                        {% else %}
-                            Association Le Cairn
-                        {% endif %}
-                    </td>
-                    <td> 
-                        {% if transaction.description is not defined %}
-                            Virement Cairn
-                        {% else %}
-                            {{transaction.description}}
-                        {% endif %}
-                    </td>  
-                    <td>  
-                        {% if transaction.occurrencesCount == 1 %}
-                            Mensuelle
-                        {% elseif transaction.occurrencesCount == 2 %}
-                            Bimestrielle
-                        {% elseif transaction.occurrencesCount == 3 %}
-                            Trimestrielle
-                        {% elseif transaction.occurrencesCount == 6 %}
-                            Semestrielle
-                        {% elseif transaction.occurrencesCount == 12 %}
-                            Annuelle
-                        {% endif %}
-                    </td>  
-                    <td> {{transaction.currencyAmount.amount }} </td>
-                    <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> </td>
-                </tr>
-    {% else %}
-        Aucun virement permanent achevé 
-    {% endfor %}
-    </tbody>
-    </table>
+        <tbody>
+        {% for transaction in processedTransactions %}
+                    <tr>
+                        <td> {{transaction.date|date('d-m-Y')}} </td>
+                        <td>
+                            {% if transaction.toOwner.display is defined %}
+                                {{transaction.toOwner.display }}
+                            {% else %}
+                                Association Le Cairn
+                            {% endif %}
+                        </td>
+                        <td> 
+                            {% if transaction.description is not defined %}
+                                Virement Cairn
+                            {% else %}
+                                {{transaction.description}}
+                            {% endif %}
+                        </td>  
+                        <td>  
+                            {% if transaction.occurrenceInterval.amount == 1 %}
+                                Mensuelle
+                            {% elseif transaction.occurrenceInterval.amount == 2 %}
+                                Bimestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 3 %}
+                                Trimestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 6 %}
+                                Semestrielle
+                            {% elseif transaction.occurrenceInterval.amount == 12 %}
+                                Annuelle
+                            {% endif %}
+                        </td>  
+                        <td> {{transaction.currencyAmount.amount }} </td>
+                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Voir le détail</a> </td>
+                    </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
 
 </div>
 {% endblock %}

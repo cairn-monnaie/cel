@@ -1,15 +1,16 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/failed_transaction.html.twig #}
 
-    Bonjour {{operation.debitorName}}, <br>
+Bonjour <b>{{cyclosTransaction.fromOwner.display}}</b>, <br>
     <br>
-    Un virement programmé le {{operation.submissionDate|date('d-m-Y')}} à {{operation.submissionDate|date('H:i')}} a échoué aujourd'hui. Le solde de votre compte [e]-Cairn était insuffisant au moment de l'exécution automatique de l'opération. <br> <br>
+    Un virement programmé le {{cyclosTransaction.date|date('d-m-Y')}} à {{cyclosTransaction.date|date('H:i')}} a échoué aujourd'hui. Le solde de votre compte [e]-Cairn était insuffisant au moment de l'exécution automatique de l'opération. <br> <br>
 
     Ci-dessous un récapitulatif des informations liées à ce virement : 
     <ul>
-        <li> Créditeur : {{operation.creditorName}} </li>
-        <li> montant : {{operation.amount}} CRN </li>
-        <li> date de soumission : {{operation.submissionDate|date('d-m-Y')}} </li>
-        <li> date d'exécution : {{operation.executionDate|date('d-m-Y')}} </li>
+        <li> Créditeur : {{cyclosTransaction.toOwner.display}} </li>
+        <li> montant : {{cyclosTransaction.currencyAmount.amount}} CRN </li>
+        <li> motif :  {{cyclosTransaction.description}} </li>
+        <li> date de soumission : {{cyclosTransaction.date|date('d-m-Y')}} </li>
+        <li> date d'exécution : {{"now"|date("d-m-Y") }} </li>
     </ul>
 
     Vous pouvez réalimenter le solde de votre compte [e]-Cairn et exécuter l'opération ensuite depuis la liste de vos virements en attente.

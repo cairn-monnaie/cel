@@ -55,7 +55,7 @@
                <li><span class="black-text"> Description</span> : <span class="grey-text text-darken-3">{{operation.description}}</span> </li>
                <li><span class="black-text">Etat</span>:  
                     <span class="grey-text text-darken-3"> 
-                    {% if operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                    {% if operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') or operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_RECURRING') %}
                         En cours 
                     {% elseif operation.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
                         Echoué 

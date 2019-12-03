@@ -153,7 +153,7 @@ class OperationValidator extends ConstraintValidator
          }
 
          if($operation->getExecutionDate()->diff($inconsistentLimitDate)->invert == 1){
-             $this->context->buildViolation('Cette date est incohérente ! Plus d\'un an avant l\éxecution de cette opération')
+             $this->context->buildViolation('Cette date est incohérente ! Plus d\'un an avant l\éxecution de cette opération...')
                  ->atPath('executionDate')
                  ->addViolation();
          }

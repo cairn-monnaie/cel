@@ -29,7 +29,13 @@
             </div>
             <div class="col s12">
                 {{ form_row(form.amount) }}
-                {{ form_row(form.executionDate) }}
+                {% if form.executionDate is defined %}
+                    {{ form_row(form.executionDate) }}
+                {% else %}
+                    {{ form_row(form.firstOccurrenceDate) }}
+                    {{ form_row(form.lastOccurrenceDate) }}
+                    {{ form_row(form.periodicity) }}
+                {% endif %}
             </div>
         </div>
         <div class="col s2 hide-on-large-only">

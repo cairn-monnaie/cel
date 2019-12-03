@@ -874,7 +874,7 @@ class Commands
 
         $credentials = array('username'=>'labonnepioche','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
-        $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'),'virement');
+        $futureInstallments = $bankingService->getInstallments($user->getCyclosID(),$adherentAccountTypeVO->id,array('BLOCKED','SCHEDULED'));
 
         $credentials = array('username'=>'admin_network','password'=>$password);
         $this->container->get('cairn_user_cyclos_network_info')->switchToNetwork($this->container->getParameter('cyclos_currency_cairn'),'login',$credentials);
