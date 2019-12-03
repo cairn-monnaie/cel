@@ -440,8 +440,9 @@ cairn_user_banking_operations:
     path:     banking/operations
     defaults: { _controller: CairnUserBundle:Banking:bankingOperations, _format: html }
 
+# WARNING : IF YOU CHANGE THIS URL, YOU MUST EDIT API SERVICE CODE && CYCLOS SYNCHRONIZATION SCRIPTS WHICH RELY ON THIS URL
 cairn_user_banking_post:
-    path:     operations/{type}
+    path:     operations/sync/{type}
     methods: POST
     defaults: { _controller: CairnUserBundle:Security:synchronizeAppsOperations, _format: json }
     requirements:
