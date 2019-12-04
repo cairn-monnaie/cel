@@ -304,10 +304,12 @@ class Commands
         $today = new \Datetime();
 
         if($status == Mandate::SCHEDULED){
-            if($mandate->getBeginAt()->diff($today)->invert == 0){
-                $mandate->setStatus(Mandate::OVERDUE);
+            $interval = $mandate->getBeginAt()->diff($today);
+            if($interval->invert == 0){
+                if( ($interval->m > 0) || ($today->format('d') >= 28) ){
+                    $mandate->setStatus(Mandate::OVERDUE);
+                }
             }
-
         }elseif($status == Mandate::UP_TO_DATE){ //UP_TO_DATE
             if(! $accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::OVERDUE);
