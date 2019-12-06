@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 //manage Forms
+use Cairn\UserBundle\Form\ConfirmationType;
 use Symfony\Component\Form\AbstractType;                                       
 use Symfony\Component\Form\FormBuilderInterface;                               
 use Cairn\UserBundle\Form\MandateType;
@@ -47,7 +48,9 @@ class MandateController extends Controller
      */
     public function viewMandateAction(Request $request, Mandate $mandate)
     {
-        return $this->render('CairnUserBundle:Mandate:view.html.twig',array('mandate'=>$mandate));
+        $form = $this->createForm(ConfirmationType::class);
+
+        return $this->render('CairnUserBundle:Mandate:view.html.twig',array('form'=>$form->createView(),'mandate'=>$mandate));
     }
 
     public function downloadMandateDocumentAction(Request $request, CairnFile $file)
@@ -94,7 +97,7 @@ class MandateController extends Controller
 
         $totalAmount = $operationRepo->countTotalAmount($ob);
 
-
+        $form = $this->createForm(ConfirmationType::class);
         $formMandate = $this->createFormBuilder()
             ->add('cairn_user', TextType::class, array('label' => 'Compte','attr'=>array('placeholder'=>'email ou nom'),'required'=>false))
             ->add('status',    ChoiceType::class, array(
@@ -154,7 +157,7 @@ class MandateController extends Controller
             $mandates = $mb->getQuery()->getResult();
 
             return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
-                array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
+                array('form'=>$form->createView(),'formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
                 'mandates'=>$mandates,
                 'totalAmount'=>$totalAmount
             )
@@ -201,7 +204,7 @@ class MandateController extends Controller
             }
 
             return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
-                array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
+                array('form'=>$form->createView(),'formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),
                 'totalAmount'=>$totalAmount,
                 'operations'=> $operations)
             );
@@ -210,7 +213,7 @@ class MandateController extends Controller
 
 
         return $this->render('CairnUserBundle:Mandate:dashboard.html.twig',
-            array('formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),'mandates'=>$mandates,'totalAmount'=>$totalAmount)
+            array('form'=>$form->createView(),'formMandate'=>$formMandate->createView(),'formOperations'=>$formOperations->createView(),'mandates'=>$mandates,'totalAmount'=>$totalAmount)
             );
 
 
@@ -278,10 +281,7 @@ class MandateController extends Controller
         $em = $this->getDoctrine()->getManager();
         $accountManager = $this->get('cairn_user.account_manager');
 
-        $form = $this->createFormBuilder()
-            ->add('execute', SubmitType::class, array('label' => 'Honorer'))
-            ->getForm();
-
+        $form = $this->createForm(ConfirmationType::class);
 
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
@@ -342,10 +342,7 @@ class MandateController extends Controller
 
         $em = $this->getDoctrine()->getManager();
 
-        $form = $this->createFormBuilder()
-            ->add('execute', SubmitType::class, array('label' => 'Révoquer'))
-            ->getForm();
-
+        $form = $this->createForm(ConfirmationType::class);
 
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){

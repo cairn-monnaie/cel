@@ -15,9 +15,9 @@
         {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
             <a href="{{path('cairn_user_mandates_add') }}" class="btn green" ><i class="material-icons left">add</i>Créer un nouveau mandat</a>
 
-            <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}" class="btn green" > Honorer le mandat</a>
+            <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}" class="btn green confirmModalLink" > Honorer le mandat</a>
         {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
-            <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"  class="btn red" > Révoquer</a>
+            <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"  class="btn red confirmModalLink" > Révoquer</a>
         {% endif %}
         <a href="{{path('cairn_user_mandates_dashboard')}}"  class="btn blue" ><i class="material-icons right">arrow_forward</i>Tableau de bord</a>
     </p>
@@ -83,6 +83,26 @@
         <h2> Fin : {{mandate.endAt|date('d-m-Y')}} </h2>
 
     </div>
+
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+    </div>
+
 </div>
 
 {% endblock %}
