@@ -952,7 +952,7 @@ class BankingController extends Controller
             }
 
             return $this->render('CairnUserBundle:Banking:view_recurring_transactions.html.twig', 
-                array('processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
+                array('form'=>$form->createView(),'processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
 
         }
     }
@@ -1031,6 +1031,12 @@ class BankingController extends Controller
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
 
+        $operationRepo = $em->getRepository('CairnUserBundle:Operation');
+
+        $operation = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyOperation($id);
+        if(!$operation){
+            return $this->redirectToRoute('cairn_user_banking_operations_view',array('frequency'=>'unique','type'=>'transaction'));
+        }
         //instance of ScheduledPaymentVO with installments
         $scheduledPayment = $this->get('cairn_user_cyclos_banking_info')->getTransactionDataByID($id)->transaction;
 
@@ -1062,7 +1068,6 @@ class BankingController extends Controller
                     $em->flush();
                 }
 
-                //$em->flush();
                 $session->getFlashBag()->add('success','Le statut de votre virement a été modifié avec succès.');
             }
 
@@ -1099,7 +1104,6 @@ class BankingController extends Controller
                     $em->remove($operation);
                     $em->flush();
                 }
-
        
                 $session->getFlashBag()->add('success','Le virement permanent a été annulé avec succès');
             }
