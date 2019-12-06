@@ -32,7 +32,7 @@
                         <td>
                             
                             {% if occurrence.status == 'FAILED' %}
-                                <a href="{{path('cairn_user_banking_transaction_occurrence_execute',{'recurringID': data.transaction.id,'occurrenceID': occurrence.id })}}" class="confirmModalLink" >Executer </a>
+                                <a href="{{path('cairn_user_banking_transaction_occurrence_execute',{'recurringID': data.transaction.id,'occurrenceID': occurrence.id })}}" class="confirmModalLink green-text" >Executer</a>
                             {% elseif occurrence.status == 'PROCESSED' %}
                                 <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : occurrence.transferId})}}"> Voir le détail </a>
                              {% endif %}

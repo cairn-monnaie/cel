@@ -4,51 +4,95 @@
 
 {% block body %}
     {{parent()}}
+    <div class="row">
 
-    {% if futureInstallments | length %}
-    <table>
-    <h2>Vos virements à venir</h2>
-    <thead>
-        <tr>
-            <th> Date de demande </th>
-            <th> Date d'éxecution </th>
-            <th> Bénéficiaire</th>
-            <th> Motif </th> 
-            <th> Montant </th>
-            <th> Etat </th>
-            <th> Action </th>
+    <div class="center-align">
+        <h1>Suivi de vos virements simples</h1>
+        <div class="col s12">
+            <ul class="tabs">
+                <li class="tab col s3"><a href="#ongoing">Futurs</a></li>
+                <li class="tab col s3"><a href="#closed">Achevés</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="ongoing" class="col s12">
+        <table>
+        <thead>
+            <tr>
+                <th> Date de demande </th>
+                <th> Date d'éxecution </th>
+                <th> Bénéficiaire</th>
+                <th> Motif </th> 
+                <th> Montant </th>
+                <th> Etat </th>
+                <th> Action </th>
  
-        </tr>
-    </thead>
+            </tr>
+        </thead>
 
-    <tbody>
-    {% for installment in futureInstallments %}
-                <tr>
-                    <td> {{installment.submissionDate|date('d-m-Y')}} </td>
-                    <td> {{installment.executionDate|date('d-m-Y')}} </td>
-                    <td> <span> {{installment.creditorName}} </span> </td>
-                    <td> {{installment.reason }} </td>  
-                    <td> {{installment.amount }} </td>
-                    {% if installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
-                        <td> En cours </td>
-                    {% elseif installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
-                        <td> Echoué </td>
-                    {% endif %}
-                    <td>
-                         <a class="confirmModalLink" href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'cancel' })}}"> Annuler </a>
-                     | 
-                         <a class="confirmModalLink" href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'execute' })}}"> Exécuter maintenant </a>
-                    <br>
-                         <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : installment.paymentID})}}"> Voir le détail </a>
-                    </td>
-                </tr>
-    {% else %}
-        <tr>
-            <td colspan="7" class="center-align">Aucun virement en attente</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-    </table>
+        <tbody>
+        {% for installment in futureInstallments %}
+                    <tr>
+                        <td> {{installment.submissionDate|date('d-m-Y')}} </td>
+                        <td> {{installment.executionDate|date('d-m-Y')}} </td>
+                        <td> <span> {{installment.creditorName}} </span> </td>
+                        <td> {{installment.reason }} </td>  
+                        <td> {{installment.amount }} </td>
+                        {% if installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_TRANSACTION_SCHEDULED') %}
+                            <td> En cours </td>
+                        {% elseif installment.type == constant('Cairn\\UserBundle\\Entity\\Operation::TYPE_SCHEDULED_FAILED') %}
+                            <td> Echoué </td>
+                        {% endif %}
+                        <td>
+                            <a class="confirmModalLink red-text" href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'cancel' })}}">Annuler le virement</a>
+                            <br>
+                            <a class="confirmModalLink green-text" href="{{path('cairn_user_banking_transaction_scheduled_changestatus', {'id' : installment.paymentID,'status' : 'execute' })}}">Exécuter maintenant</a>
+                                
+                            <br>
+                            <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : installment.paymentID})}}">Voir le détail</a>
+                        </td>
+                    </tr>
+        {% else %}
+        {% endfor %}
+        </tbody>
+        </table>
+
+    </div>
+
+    <div id="closed" class="col s12">
+        <table cellpadding="1" cellspacing="1" class="table table-hover" id="myTable">
+        <thead>
+            <tr>
+                <th> Date d'éxecution </th>
+                <th> Bénéficiaire</th>
+                <th> Motif </th> 
+                <th> Montant </th>
+                <th> Action </th>
+
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for transaction in processedTransactions %}
+                    <tr>
+                        <td> {{transaction.executionDate|date('d-m-Y')}} </td>
+                        <td>
+                            {#{% if transaction.creditor is defined %}#}
+                                {#<a href="{{path('cairn_user_profile_view', {'username' : transaction.creditor.username})}}"> {{transaction.creditorName}} </a>#}
+                            {#{% else %}#}
+                                {{transaction.creditorName}}
+                            {#{% endif %}#}
+                        </td>
+                        <td> {{transaction.reason }} </td>  
+                        <td> {{transaction.amount }} </td>
+                        <td><a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : transaction.paymentID})}}"><i class="material-icons left">more_vert</i>Voir le détail</a></td>
+                    </tr>
+        {% else %}
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
 
     <div id="confirmModal" class="modal center-align">
          <div class="modal-content center-align">
@@ -68,45 +112,7 @@
             {{ form_rest(form) }}
             {{ form_end(form) }}
     </div>
-
-{% endif %}
-
-    <h2>Vos virements passés</h2>
-    <table cellpadding="1" cellspacing="1" class="table table-hover" id="myTable">
-    <thead>
-        <tr>
-            <th> Date d'éxecution </th>
-            <th> Bénéficiaire</th>
-            <th> Motif </th> 
-            <th> Montant </th>
-            <th> Action </th>
-
-        </tr>
-    </thead>
-
-    <tbody>
-    {% for transaction in processedTransactions %}
-                <tr>
-                    <td> {{transaction.executionDate|date('d-m-Y')}} </td>
-                    <td>
-                        {#{% if transaction.creditor is defined %}#}
-                            {#<a href="{{path('cairn_user_profile_view', {'username' : transaction.creditor.username})}}"> {{transaction.creditorName}} </a>#}
-                        {#{% else %}#}
-                            {{transaction.creditorName}}
-                        {#{% endif %}#}
-                    </td>
-                    <td> {{transaction.reason }} </td>  
-                    <td> {{transaction.amount }} </td>
-                    <td> <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : transaction.paymentID})}}"> Voir le détail </a></td>
-                </tr>
-    {% else %}
-        <tr>
-            <td colspan="5" class="center-align">Aucun virement en attente</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-    </table>
-
+    
 </div>
 {% endblock %}
 
