@@ -22,6 +22,21 @@
             Email à fournir afin d'identifier mon compte [e]-Cairn : <b>{{app.user.email}}</b>
         </div>
     </div>
-    <iframe id="haWidget" allowtransparency="true" scrolling="auto" src="https://www.donnerenligne.fr/le-cairn-monnaie-locale-et-citoyenne/faire-un-don/3" style="width:100%;height:750px;border:none;" onload="window.scroll(0, this.offsetTop)"></iframe>
+    <div id="IframeWrapper" style="position: relative;">
+         <div id="iframeBlocker" style="position: absolute; top: 0; left: 0; width:95%; height:95%;z-index:2"></div>
+    	 <iframe id="haWidget" allowtransparency="true" scrolling="auto" src="https://www.donnerenligne.fr/le-cairn-monnaie-locale-et-citoyenne/faire-un-don/3" style="width:100%;height:750px;border:none;" onload="window.scroll(0, this.offsetTop)"></iframe>
+
+    </div>
 {% endblock %}
 
+{% block javascripts %}
+     {{parent()}}
+ 
+     <script>
+         $(function (){
+             $("#IframeWrapper").click(function(e) {
+                 alert('Ceci est un compte de test. Ne pas remplir le formulaire de don Helloasso')
+             })
+         });
+     </script>
+ {% endblock %}
