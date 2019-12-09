@@ -304,10 +304,12 @@ class Commands
         $today = new \Datetime();
 
         if($status == Mandate::SCHEDULED){
-            if($mandate->getBeginAt()->diff($today)->invert == 0){
-                $mandate->setStatus(Mandate::OVERDUE);
+            $interval = $mandate->getBeginAt()->diff($today);
+            if($interval->invert == 0){
+                if( ($interval->m > 0) || ($today->format('d') >= 28) ){
+                    $mandate->setStatus(Mandate::OVERDUE);
+                }
             }
-
         }elseif($status == Mandate::UP_TO_DATE){ //UP_TO_DATE
             if(! $accountManager->isUpToDateMandate($mandate)){
                 $mandate->setStatus(Mandate::OVERDUE);
@@ -1176,30 +1178,39 @@ class Commands
         echo 'INFO: ------ Set up mandates ------- ' . "\n";
 
         
+        //get number of documents
+        $nbFiles = count($this->em->getRepository('CairnUserBundle:File')->findAll());
         $contractor = $userRepo->findOneByUsername('lacreuse_desiderata'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::COMPLETE,'-7 months','-6 months','-1 month');
+        $mandate = $this->createMandate($contractor, 20, Mandate::COMPLETE,'-7 months','-6 months','-1 month', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
-       
+
+        
         $contractor = $userRepo->findOneByUsername('barbare_cohen'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::CANCELED,'-4 months','-3 months','+3 months');
+        $mandate = $this->createMandate($contractor, 20, Mandate::CANCELED,'-4 months','-3 months','+3 months', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
 
         $contractor = $userRepo->findOneByUsername('crabe_arnold'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::UP_TO_DATE,'-4 months','-3 months','+3 months');
+        $mandate = $this->createMandate($contractor, 20, Mandate::UP_TO_DATE,'-4 months','-3 months','+3 months', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
 
         $contractor = $userRepo->findOneByUsername('tous_andre'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::OVERDUE,'-4 months','-3 months','+3 months');
+        $mandate = $this->createMandate($contractor, 20, Mandate::OVERDUE,'-4 months','-3 months','+3 months', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
 
         $contractor = $userRepo->findOneByUsername('gjanssens'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 month','+1 month','+7 months');
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 month','+1 month','+7 months', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
 
 
         //need a pro with a mandate and a null account
         $contractor = $userRepo->findOneByUsername('montagne_arts'); 
-        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 day','+1 month','+7 months');
+        $mandate = $this->createMandate($contractor, 20, Mandate::SCHEDULED,'-1 day','+1 month','+7 months', $nbFiles);
+        $nbFiles++;
         $this->em->persist($mandate);
 
         //generate an helloasso payment
@@ -1249,7 +1260,7 @@ class Commands
 
     }
 
-    private function createMandate(User $contractor, $amount,$status,$createdAt,$beforeToday,$afterToday)
+    private function createMandate(User $contractor, $amount,$status,$createdAt,$beforeToday,$afterToday,$rank)
     {
         $accountManager = $this->container->get('cairn_user.account_manager');
         
@@ -1271,6 +1282,10 @@ class Commands
         $document = new File();
         $document->setUrl($file->guessExtension());
         $document->setAlt($file->getClientOriginalName());
+
+        if(! copy($absolutePath, $absoluteWebDir.$document->getUploadDir().'/'.$rank.'.'.$document->getUrl())){
+            echo "Failed to copy";
+        }
 
         $mandate->addMandateDocument($document);
         $document->setMandate($mandate);

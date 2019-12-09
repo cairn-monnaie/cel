@@ -60,12 +60,31 @@
                             {% endif %}
                         </td>  
                         <td> {{transaction.currencyAmount.amount }} </td>
-                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Consulter l'historique</a> | <a href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
+                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Consulter l'historique</a> | <a class="confirmModalLink" href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
                     </tr>
         {% endfor %}
         </tbody>
         </table>
 
+    </div>
+
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
     </div>
 
     <div id="closed" class="col s12">
@@ -126,7 +145,5 @@
 {% endblock %}
 
 {% block javascripts %}
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.min.js"></script>
-
+    {{parent()}}
 {% endblock %}

@@ -253,7 +253,7 @@ class SecurityController extends Controller
 
                     $em->persist($operation);
                     $em->flush();
-                    $response = new Response(' { "message"=>"Operation synchronized !" }');
+                    $response = new Response(' { "message": "Operation synchronized !" }');
 
                     $response->setStatusCode(Response::HTTP_CREATED);
                     $response->headers->set('Content-Type', 'application/json'); 
@@ -281,6 +281,15 @@ class SecurityController extends Controller
 
                         $response->setStatusCode(Response::HTTP_OK);
 
+                        if($type == 'scheduled'){
+                            $operation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID']));
+                            if(! $operation){
+                                throw new SuspiciousOperationException('Scheduled payment not found on Symfony side');
+                            }
+
+                            $operation->setType(Operation::TYPE_SCHEDULED_FAILED);
+                            $em->flush();
+                        }
                     }else{
                         $response = new Response(' { "message"=>"Nothing to send !" }');
                         $response->setStatusCode(Response::HTTP_BAD_REQUEST);

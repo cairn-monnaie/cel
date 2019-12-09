@@ -111,27 +111,5 @@
 {% endblock %}
 
 {% block javascripts %}
-    <script>
-        $(function (){
-
-            $(".confirmModalLink").click(function(e) {
-                e.preventDefault();
-                theHREF = $(this).attr("href");
-                $('form.confirm_operation').attr('action',theHREF);
-                $("#confirmModal").modal("open");
-
-            });
-
-            $("#confirmation_save").click(function(e) {
-                $('form.confirm_operation').submit();
-               
-            });
-
-            $("#confirmModalNo").click(function(e) {
-                $("#confirmModal").modal("close"); 
-            });
-
-        });
-    </script>
-
+    {{parent()}}
 {% endblock %}

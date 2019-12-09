@@ -11,6 +11,7 @@ use Cyclos;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Mandate;
 use Cairn\UserBundle\Entity\Operation;
+use Cairn\UserBundle\Entity\File as CairnFile;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -47,6 +48,15 @@ class MandateController extends Controller
     public function viewMandateAction(Request $request, Mandate $mandate)
     {
         return $this->render('CairnUserBundle:Mandate:view.html.twig',array('mandate'=>$mandate));
+    }
+
+    public function downloadMandateDocumentAction(Request $request, CairnFile $file)
+    {
+        $mandateRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:Mandate');
+        
+        $env = $this->getParameter('kernel.environment');
+        var_dump($file->getWebPath($env));
+        return $this->file($file->getWebPath($env), 'mandat_'.$file->getMandate()->getContractor()->getUsername().'.'.$file->getUrl());
     }
 
     public function mandatesDashboardAction(Request $request)
