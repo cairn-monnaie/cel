@@ -90,7 +90,8 @@ numerique (parent dir)
        ``` 
      
     * Install assets
-       `sudo docker-compose exec engine assets:install`
+       `cd cel/`
+       `sudo docker-compose exec engine php bin/console assets:install`
 
      * Enable engine's user to write logs, cache files and web static files(images)  
        `sudo docker-compose exec engine chown -R www-data:www-data var web`
