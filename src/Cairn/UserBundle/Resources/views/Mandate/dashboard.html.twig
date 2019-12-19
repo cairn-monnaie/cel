@@ -98,11 +98,11 @@
                      <a href="{{path('cairn_user_mandates_view', {'id': mandate.id})}}"> Détail</a>
 
                     {% if status == constant('Cairn\\UserBundle\\Entity\\Mandate::OVERDUE') %}
-                        <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
+                        <a class="confirmModalLink" href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}"> Honorer</a>
                         <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}"> Editer</a>
 
                     {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
-                        <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"> Révoquer</a>
+                        <a class="confirmModalLink" href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"> Révoquer</a>
                         <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}"> Editer</a>
 
                     {% endif %}
@@ -144,10 +144,31 @@
             </div>
     {% endif %}
 
+    <div id="confirmModal" class="modal center-align">
+         <div class="modal-content center-align">
+             <h4> Êtes-vous sûr(e) de vouloir continuer ? </h4>
+         </div>
+        {{ form_start(form, {'method': 'post','attr': {'class': 'confirm_operation'}}) }}
+
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <a href="#" class="btn red" id="confirmModalNo">Annuler</a>
+                </div>
+                {{ form_row(form.cancel,  {'attr': {'class':'hide'} }) }}
+                
+            {{ form_rest(form) }}
+            {{ form_end(form) }}
+    </div>
+
 </div>
 {% endblock %}              
 
 {% block javascripts %}
+    {{parent()}}
+
     <script>
         $(function (){
             $('select#form_date_year').on('change', function(e){

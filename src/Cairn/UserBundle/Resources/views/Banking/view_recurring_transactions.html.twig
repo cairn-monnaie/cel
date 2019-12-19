@@ -60,7 +60,7 @@
                             {% endif %}
                         </td>  
                         <td> {{transaction.currencyAmount.amount }} </td>
-                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Consulter l'historique</a> | <a class="confirmModalLink" href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
+                        <td> <a href="{{path('cairn_user_banking_transactions_recurring_view_detailed',{'id': transaction.id })}}">Consulter l'historique</a> | <a class="confirmModalLink red-text" href="{{path('cairn_user_banking_transaction_recurring_cancel', {'id' : transaction.id })}}"> Annuler </a></td>
                     </tr>
         {% endfor %}
         </tbody>

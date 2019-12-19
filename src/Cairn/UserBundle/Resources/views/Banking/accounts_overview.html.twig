@@ -19,24 +19,10 @@
         </div>
 
         <div class="center-align">
-            Email à fournir afin d'identifier mon compte [e]-Cairn : <b>{{app.user.email}}</b>
+            Email à renseigner afin d'identifier mon compte [e]-Cairn : <b>{{app.user.email}}</b> <br>
+            <a href="https://www.helloasso.com/associations/le-cairn-monnaie-locale-et-citoyenne/formulaires/3" target="_blank" class="btn"><i class="material-icons left">credit_card</i>Créditer mon compte [e]-Cairn</a>
         </div>
-    </div>
-    <div id="IframeWrapper" style="position: relative;">
-         <div id="iframeBlocker" style="position: absolute; top: 0; left: 0; width:95%; height:95%;z-index:2"></div>
-    	 <iframe id="haWidget" allowtransparency="true" scrolling="auto" src="https://www.donnerenligne.fr/le-cairn-monnaie-locale-et-citoyenne/faire-un-don/3" style="width:100%;height:750px;border:none;" onload="window.scroll(0, this.offsetTop)"></iframe>
+
 
     </div>
 {% endblock %}
-
-{% block javascripts %}
-     {{parent()}}
- 
-     <script>
-         $(function (){
-             $("#IframeWrapper").click(function(e) {
-                 alert('Ceci est un compte de test. Ne pas remplir le formulaire de don Helloasso')
-             })
-         });
-     </script>
- {% endblock %}
