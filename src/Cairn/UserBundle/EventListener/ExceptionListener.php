@@ -111,7 +111,6 @@ class ExceptionListener
                                                  )
         {
             $subject = 'Erreur circulaire';
-            $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
             $event->setResponse(new RedirectResponse($logoutUrl));
         }else{
             if($exception instanceof Cyclos\ServiceException){
@@ -121,13 +120,10 @@ class ExceptionListener
                     $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
                 elseif($exception->errorCode == 'LOGIN'){
-                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
                     $errorMessage = 'Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.';
                     $this->sendException($event, $errorMessage, $logoutUrl);
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
-                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $errorMessage = 'Vous n\'avez pas les droits nécessaires';
                     $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
@@ -139,7 +135,6 @@ class ExceptionListener
                     $event->setResponse(new RedirectResponse($logoutUrl));
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){
-                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $errorMessage = 'Donnée introuvable';
                     $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
@@ -155,8 +150,6 @@ class ExceptionListener
                     $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
                 else{
-                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-
                     $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
                     $this->sendException($event, $errorMessage, $welcomeUrl);
                 }
