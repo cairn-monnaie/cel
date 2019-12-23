@@ -1248,8 +1248,6 @@ class BankingController extends Controller
             throw new AccessDeniedException('Vous ne pouvez pas télécharger le relevé de compte d\'un adhérent.');
         }
 
-        $accountTypesVO = array();
-
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
 
         $accounts = $accountService->getAccountsSummary($ownerVO->id);
@@ -1263,8 +1261,9 @@ class BankingController extends Controller
                 ->add('accounts',ChoiceType::class,array(
                     'label'=>'Comptes',
                     'choices'=>$accounts,
+                    //'data'=>json_decode(json_encode($accounts[0]), true),
                     'choice_label'=>'type.name',
-                    'multiple'=>true,
+                    //'multiple'=>true,
 //                    'expanded'=>true
                 ))
                     ->add('begin', DateType::class,array(
@@ -1291,7 +1290,7 @@ class BankingController extends Controller
                 $end = $dataForm['end'];
 
                 //if nothing selected, select all
-                $accounts = ($dataForm['accounts'] != NULL) ? $dataForm['accounts'] : $accounts;
+                $accounts = array($dataForm['accounts']);
                 if(! $this->get('cairn_user.datetime_checker')->isValidInterval($begin,$end)){
                     $session->getFlashBag()->add('error','La date de fin ne peut être antérieure à la date de première échéance.');
                     return new RedirectResponse($request->getRequestUri());
