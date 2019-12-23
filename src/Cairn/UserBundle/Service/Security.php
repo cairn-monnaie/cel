@@ -217,15 +217,23 @@ class Security
         return $return;
     }
 
-
+    /**
+     * No character O or 0 in the encoded Code in order not to confuse user
+     *
+     */
     public function findAvailableCode()                                        
     {                                                                          
         $uniqueCode = substr($this->generateToken(),0,5);        
         $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);         
 
-        while($existingCard){                                                  
+        $encodedCode = $this->vigenereEncode($uniqueCode);
+
+        while( (strpos($encodedCode,'O') !==  false) || (strpos($encodedCode,'0') !== false) || $existingCard ){
             $uniqueCode = substr($this->generateToken(),0,5);    
             $existingCard = $this->cardRepo->findAvailableCardWithCode($uniqueCode);     
+
+            $encodedCode = $this->vigenereEncode($uniqueCode);
+
         }                                                                      
 
         return $uniqueCode;                                                    
