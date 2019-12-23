@@ -172,6 +172,10 @@ class Operation
      */
     const ARRAY_TRANSFER_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING, self::TYPE_ONLINE_PAYMENT);
 
+    /*
+     * All types which involve a potential administration by hand  
+     */
+    const ARRAY_ADMIN_TYPES = array(self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_RECONVERSION,self::TYPE_MANDATE);
 
     public function isSmsPayment()
     {
@@ -272,7 +276,7 @@ class Operation
 
     public static function getToOperationTypes()
     {
-        return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO);
+        return array(self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO,self::TYPE_MANDATE);
     }
 
     /**
