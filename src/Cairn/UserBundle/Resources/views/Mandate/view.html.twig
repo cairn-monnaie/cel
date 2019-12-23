@@ -16,15 +16,17 @@
             <a href="{{path('cairn_user_mandates_add') }}" class="btn green" ><i class="material-icons left">add</i>Créer un nouveau mandat</a>
 
             <a href="{{path('cairn_user_mandates_honour', {'id': mandate.id})}}" class="btn green confirmModalLink" > Honorer le mandat</a>
+            <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}" class="btn purple" > Editer le mandat</a>
         {% elseif (status == constant('Cairn\\UserBundle\\Entity\\Mandate::UP_TO_DATE')) or (status == constant('Cairn\\UserBundle\\Entity\\Mandate::SCHEDULED')) %}
             <a href="{{path('cairn_user_mandates_cancel', {'id': mandate.id})}}"  class="btn red confirmModalLink" > Révoquer</a>
+            <a href="{{path('cairn_user_mandates_edit', {'id': mandate.id})}}" class="btn purple" > Editer le mandat</a>
         {% endif %}
         <a href="{{path('cairn_user_mandates_dashboard')}}"  class="btn blue" ><i class="material-icons right">arrow_forward</i>Tableau de bord</a>
     </p>
 
     <p>
         {% for document in mandate.mandateDocuments %}
-            <a href="{{path('cairn_user_mandates_download_document', {'id': document.id} )}}"  class="btn blue" ><i class="material-icons right">file_download</i>Télécharger le PDF</a>
+            <a href="{{path('cairn_user_mandates_download_document', {'id': document.id} )}}"  class="btn blue" ><i class="material-icons right">file_download</i>Télécharger le document n°{{loop.index}}</a>
         {% endfor %}
     </p>
 
