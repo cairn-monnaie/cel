@@ -43,6 +43,22 @@ class MandateController extends Controller
 {
 
     /**
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function mandatesUpdateAction(Request $request)
+    {
+        $session = $request->getSession();
+
+        $commandService = $this->get('cairn_user.commands');
+        $commandService->updateMandatesStatusCommand(NULL);
+
+        $session->getFlashBag()->add('success','Les mandats ont été mis à jour');
+        return $this->redirectToRoute('cairn_user_mandates_dashboard');
+    }
+
+
+    /**
      * View specific mandate together with its executed operations
      *
      */
@@ -58,7 +74,7 @@ class MandateController extends Controller
         $mandateRepo = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:Mandate');
         
         $env = $this->getParameter('kernel.environment');
-        var_dump($file->getWebPath($env));
+        //var_dump($file->getWebPath($env));
         return $this->file($file->getWebPath($env), 'mandat_'.$file->getMandate()->getContractor()->getUsername().'.'.$file->getUrl());
     }
 
@@ -269,6 +285,52 @@ class MandateController extends Controller
 
     }
 
+    private function honourMandate($mandate)
+    {
+        if(! ($mandate->getStatus() == Mandate::OVERDUE) ){
+            return NULL;
+        } 
+
+        $accountManager = $this->get('cairn_user.account_manager');
+
+        $operation = $accountManager->creditUserAccount($mandate->getContractor(), $mandate->getAmount(), Operation::TYPE_MANDATE, 'Règlement de mandat' );
+
+        $mandate->addOperation($operation);
+        $operation->setMandate($mandate);
+
+        if($accountManager->getConsistentOperationsCount($mandate, $mandate->getEndAt()) <= $mandate->getOperations()->count()){
+            $mandate->setStatus(Mandate::COMPLETE);
+        }else{
+            if($accountManager->isUpToDateMandate($mandate)){
+                $mandate->setStatus(Mandate::UP_TO_DATE);
+            }
+        }
+
+        return $operation;
+    }
+
+    public function honourAllMandatesAction(Request $request)
+    {
+        $session = $request->getSession();
+
+        $em = $this->getDoctrine()->getManager();
+        $accountManager = $this->get('cairn_user.account_manager');
+        $mandateRepo = $em->getRepository('CairnUserBundle:Mandate');
+
+        $mandates = $mandateRepo->findByStatus(Mandate::OVERDUE);
+
+        foreach($mandates as $mandate){
+
+            while(! ($mandate->getStatus() == Mandate::UP_TO_DATE || $mandate->getStatus() == Mandate::COMPLETE)){
+                $operation = $this->honourMandate($mandate);
+
+            }
+        }
+
+        $em->flush();
+        return $this->redirectToRoute('cairn_user_mandates_dashboard');
+    }
+
     public function honourMandateAction(Request $request, Mandate $mandate)
     {
         $session = $request->getSession();
@@ -286,28 +348,19 @@ class MandateController extends Controller
         $form->handleRequest($request);
         if($form->isSubmitted() && $form->isValid()){
 
-            $operation = $accountManager->creditUserAccount($mandate->getContractor(), $mandate->getAmount(), Operation::TYPE_MANDATE, 'Règlement de mandat' );
+            $operation = $this->honourMandate($mandate);
 
-            $mandate->addOperation($operation);
-            $operation->setMandate($mandate);
-
-            if($accountManager->getConsistentOperationsCount($mandate, $mandate->getEndAt()) <= $mandate->getOperations()->count()){
-                $mandate->setStatus(Mandate::COMPLETE);
+            if($mandate->getStatus() == Mandate::COMPLETE){
                 $session->getFlashBag()->add('success','Le mandat est complet');
+            }elseif($mandate->getStatus() == Mandate::UP_TO_DATE){
+                $session->getFlashBag()->add('success','Le mandat est à jour');
             }else{
-                if($accountManager->isUpToDateMandate($mandate)){
-                    $mandate->setStatus(Mandate::UP_TO_DATE);
-                    $session->getFlashBag()->add('success','Mandat à jour');
-                }else{ // in case if there are several operations overdued
-                    $session->getFlashBag()->add('success','Mandat honoré');
-                    $session->getFlashBag()->add('info','Le mandat n\'est pas encore à jour');
-                }
+                $session->getFlashBag()->add('success','Mandat honoré');
+                $session->getFlashBag()->add('info','Le mandat n\'est pas encore à jour');
             }
 
-            $em->persist($operation);
             $em->flush();
             return $this->redirectToRoute('cairn_user_mandates_view',array('id'=>$mandate->getID()));
-
         }
 
         return $this->render('CairnUserBundle:Mandate:honour.html.twig',

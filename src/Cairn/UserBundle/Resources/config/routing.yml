@@ -318,6 +318,12 @@ cairn_user_mandates_dashboard:
     requirements:
         _format: html|json
 
+cairn_user_mandates_update:
+    path:     admin/mandates/update
+    defaults: { _controller: CairnUserBundle:Mandate:mandatesUpdate, _format: html }
+    requirements:
+        _format: html|json
+
 cairn_user_mandates_download_document:
     path:     admin/mandates/download/doc/{id}
     defaults: { _controller: CairnUserBundle:Mandate:downloadMandateDocument, _format: html}
@@ -329,6 +335,12 @@ cairn_user_mandates_add:
 cairn_user_mandates_view:
     path:     admin/mandates/view/{id}
     defaults: { _controller: CairnUserBundle:Mandate:viewMandate, _format: html}
+    requirements:
+        id: \d+
+
+cairn_user_mandates_honour_all:
+    path:     admin/mandates/honour-all
+    defaults: { _controller: CairnUserBundle:Mandate:honourAllMandates, _format: html}
     requirements:
         id: \d+
 

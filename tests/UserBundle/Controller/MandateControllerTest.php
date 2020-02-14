@@ -289,7 +289,7 @@ class MandateControllerTest extends BaseControllerTest
 
 
         if($isValid){
-            $form = $crawler->selectButton('form_execute')->form();
+            $form = $crawler->selectButton('confirmation_save')->form();
     
             $crawler = $this->client->submit($form);
     
@@ -354,7 +354,7 @@ class MandateControllerTest extends BaseControllerTest
             return;
         }
         
-        $form = $crawler->selectButton('form_execute')->form();
+        $form = $crawler->selectButton('confirmation_save')->form();
 
         $crawler = $this->client->submit($form);
 
