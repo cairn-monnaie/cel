@@ -274,7 +274,7 @@ class BankingController extends Controller
                 'dates croissantes' => 'ASC'),
                 'data'=>'DESC'
             ))
-                ->add('types',    ChoiceType::class, array(
+            ->add('types',    ChoiceType::class, array(
                 'label' => 'type d\'opération',
                 'required'=>false,
                 'choices' => $executedTypes,
@@ -283,28 +283,41 @@ class BankingController extends Controller
                 },
                 'multiple'=>true,
                 'expanded'=>false
-                ))
-                ->add('begin',     DateType::class, array(
-                    'label' => 'depuis',
-                    'widget' => 'single_text',
-                    'data' => $beginDefault,
-                    'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
-                    ->add('end',       DateType::class, array(
-                        'label' => 'jusqu\'à',
-                        'widget' => 'single_text',
-                        'data'=> $endDefault,
-                        'required'=>false,'attr'=>array('class'=>'datepicker_cairn')))
-                        ->add('minAmount', NumberType::class,array(
-                            'label'=>'Montant minimum',
-                            'required'=>false))
-                            ->add('maxAmount', NumberType::class,array(
-                                'label'=>'Montant maximum',
-                                'required'=>false))
-                                ->add('keywords',  TextType::class,array(
-                                    'label'=>'Mots-clés',
-                                    'required'=>false))
-                                    ->add('save',      SubmitType::class, array('label' => 'Filtrer'))
-                                    ->getForm();
+            ))
+            ->add('begin',     DateType::class, array(
+                'label' => 'depuis',
+                'widget' => 'single_text',
+                'data' => $beginDefault,
+                'required'=>false,'attr'=>array('class'=>'datepicker_cairn')
+            ))
+            ->add('end',       DateType::class, array(
+                'label' => 'jusqu\'à',
+                'widget' => 'single_text',
+                'data'=> $endDefault,
+                'required'=>false,'attr'=>array('class'=>'datepicker_cairn')
+            ))
+            ->add('minAmount', NumberType::class,array(
+                'label'=>'Montant minimum',
+                'required'=>false
+            ))
+            ->add('maxAmount', NumberType::class,array(
+                'label'=>'Montant maximum',
+                'required'=>false
+            ))
+            ->add('creditor',  TextType::class,array(
+                'label'=>'Compte créditeur',
+                'required'=>false
+            ))
+            ->add('debitor',  TextType::class,array(
+                'label'=>'Compte débiteur',
+                'required'=>false
+            ))
+            ->add('keywords',  TextType::class,array(
+                'label'=>'Mots-clés(motif, description)',
+                'required'=>false
+            ))
+            ->add('save',      SubmitType::class, array('label' => 'Filtrer'))
+            ->getForm();
 
         //amount of future transactions : next month total amount
         $query = $em->createQuery('SELECT SUM(o.amount) FROM CairnUserBundle:Operation o WHERE o.type = :type AND o.executionDate < :date AND o.fromAccountNumber = :number AND o.paymentID is not NULL');
@@ -372,6 +385,9 @@ class BankingController extends Controller
                 $maxAmount = $dataForm['maxAmount'];
                 $keywords = $dataForm['keywords'];
 
+                $debitorSubstring = $dataForm['debitor'];
+                $creditorSubstring = $dataForm['creditor'];
+
 
                 //+1 day because the time is 00:00:00 so if currentUser input 2018-07-13 the filter will get payments until 2018-07-12 23:59:59
                 $end = date_modify($end,'+1 days');
@@ -394,6 +410,26 @@ class BankingController extends Controller
                 if($maxAmount){
                     $ob->andWhere('o.amount <= :max')
                         ->setParameter('max',$maxAmount);
+                }
+
+                if($debitorSubstring){
+                    if(preg_match('#^\d+$#',$debitorSubstring)){
+                        $ob->andWhere('o.fromAccountNumber = :debitorNumber')
+                            ->setParameter('debitorNumber',$debitorSubstring);
+                    }else{
+                        $ob->andWhere($ob->expr()->like('o.debitorName', ':debitor'))
+                            ->setParameter('debitor','%'.$debitorSubstring.'%');
+                    }
+                }
+
+                if($creditorSubstring){
+                    if(preg_match('#^\d+$#',$creditorSubstring)){
+                        $ob->andWhere('o.toAccountNumber = :creditorNumber')
+                            ->setParameter('creditorNumber',$creditorSubstring);
+                    }else{
+                        $ob->andWhere($ob->expr()->like('o.creditorName', ':creditor'))
+                            ->setParameter('creditor','%'.$creditorSubstring.'%');
+                    }
                 }
 
                 $executedTransactions = $ob->andWhere('o.paymentID is not NULL')

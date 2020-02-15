@@ -29,10 +29,17 @@
                     <div class="col s6 l2">
                         {{ form_row(form.end) }}
                     </div>
-                    <div class="col s6">
+                    <div class="col s6 l3">
+                        {{ form_row(form.debitor) }}
+                    </div>
+                    <div class="col s6 l3">
+                        {{ form_row(form.creditor) }}
+                    </div>
+
+                    <div class="col s6 l3">
                         {{ form_row(form.minAmount) }}
                     </div>
-                    <div class="col s6">
+                    <div class="col s6 l3">
                         {{ form_row(form.maxAmount) }}
                     </div>
                     {{ form_rest(form) }}
@@ -65,15 +72,26 @@
     {% for transaction in transactions %}
         <tr>
             <td>{{ transaction.executionDate|date('d-m-Y')}}</td>
-            <td> <em> {{transaction.reason }} </em> </br>
-                 {{transaction.description }}  
-            </td> 
-            
-                {% if transaction.debitorName == app.user.name %}
-                    <td class="deb-amount"> -{{transaction.amount}} cairns </td>
+            {% if transaction.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_ADMIN_TYPES') %}
+                {% if app.user.isAdmin() %}
+                    {% if transaction.type in transaction.getDebitOperationTypes() %}
+                        <td><em> {{transaction.reason}} {{transaction.debitorName}}</em></td>
+                    {% elseif transaction.type in transaction.getToOperationTypes() %}
+                        <td><em> {{transaction.reason}} {{transaction.creditorName}}</em></td>
+                    {% endif %}
+                    
                 {% else %}
-                    <td class="cred-amount"> +{{transaction.amount}} cairns </td>
+                    <td><em> {{transaction.reason}} </em></td>
                 {% endif %}
+            {% else %}
+                <td><em> {{transaction.reason}} </em></td>
+            {% endif%}
+            
+            {% if transaction.debitorName == app.user.name %}
+                <td class="deb-amount"> -{{transaction.amount}} cairns </td>
+            {% else %}
+                <td class="cred-amount"> +{{transaction.amount}} cairns </td>
+            {% endif %}
             </td>
             <td> <a href="{{path('cairn_user_banking_transfer_view', {'paymentID' : transaction.paymentID})}}"> Voir le détail </a></td>
 
