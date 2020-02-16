@@ -340,6 +340,33 @@ class AdminController extends Controller
     }
 
     /**
+     * Credits user account from nothing, available only in dev environment 
+     *
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function exnihiloCreditAction(Request $request, User $creditor)
+    {
+        $session = $request->getSession();
+
+        if($this->getParameter('kernel.environment') != 'dev'){
+            throw new Exception('Feature only available in development environment');
+        }
+
+        $amount = 2000;
+        $em = $this->getDoctrine()->getManager();
+        $accountManager = $this->get('cairn_user.account_manager');
+
+        $operation = $accountManager->creditUserAccount($creditor, $amount, Operation::TYPE_DEPOSIT, 'Crédit de compte test' );
+
+        $em->persist($operation);
+        $em->flush();
+
+        $session->getFlashBag()->add('success','Compte de '.$creditor->getName().' crédité de '.$amount);
+
+        return $this->redirectToRoute('cairn_user_profile_view',array('username' => $creditor->getUsername()));
+    }
+
+    /**
      * Administrator's dashboard to see data related to electronic money safe on a single page
      *
      * This action retrieves all waiting deposits, their cumulated amount of money and the currently available electronic money
@@ -542,7 +569,8 @@ class AdminController extends Controller
                             $userDTO->login = $user->getUsername();                        
                             $userDTO->email = $user->getEmail();                           
 
-                            $temporaryPassword = User::randomPassword();
+
+                            $temporaryPassword = ($this->getParameter('kernel.environment') == 'prod') ? User::randomPassword() : '@@bbccdd';
                             $user->setPlainPassword($temporaryPassword);
 
                             $password = new \stdClass();                                   

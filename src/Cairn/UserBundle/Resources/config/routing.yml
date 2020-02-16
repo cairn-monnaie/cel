@@ -435,6 +435,11 @@ cairn_user_helloasso_notification:
     path:     helloasso/notification
     defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification}
 
+cairn_user_banking_credit_exnihilo:
+    path:       banking/credit/exnihilo/{username}
+    defaults:   { _controller: CairnUserBundle:Admin:exnihiloCredit}
+
+
 cairn_user_banking_rib_download:
     path:     banking/download/rib/{id}.{_format}
     defaults: { _controller: CairnUserBundle:Banking:downloadRIB, _format: html }
