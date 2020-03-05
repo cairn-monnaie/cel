@@ -100,6 +100,21 @@
                     {% for transaction in lastTransactions %}
                         <tr>
                             <td>{{transaction.executionDate|date('d-m-Y')}}</td>
+                            {% if transaction.type in constant('Cairn\\UserBundle\\Entity\\Operation::ARRAY_ADMIN_TYPES') %}
+                                {% if app.user.isAdmin() %}
+                                    {% if transaction.type in transaction.getDebitOperationTypes() %}
+                                        <td><em> {{transaction.reason}} {{transaction.debitorName}}</em></td>
+                                    {% elseif transaction.type in transaction.getToOperationTypes() %}
+                                        <td><em> {{transaction.reason}} {{transaction.creditorName}}</em></td>
+                                    {% endif %}
+                                    
+                                {% else %}
+                                    <td><em> {{transaction.reason}} </em></td>
+                                {% endif %}
+                            {% else %}
+                                <td><em> {{transaction.reason}} </em></td>
+                            {% endif%}
+
                             <td>{{transaction.reason}}</td>
                             {% if transaction.debitorName == app.user.name %}
                                 <td class="deb-amount"> -{{transaction.amount}} cairns </td>
