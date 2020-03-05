@@ -305,8 +305,8 @@ class SmsController extends Controller
         //4) Parse SMS content
         $parsedSms = $this->parseSms($content);
 
-        if( $parsedSms->error){
 
+        if( $parsedSms->error){
             $smsFormat = new Sms($debitorPhoneNumber, $content, Sms::STATE_INVALID, NULL);
 
             $reason = 'SMS INVALIDE : '."\n".$parsedSms->error;
@@ -318,7 +318,6 @@ class SmsController extends Controller
             return;
         }
 
-        
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
             if($parsedSms->isSmsIdentifier){
                 if( !$debitorUser->hasRole('ROLE_PRO') && !$isProAndPersonPhoneNumber){

@@ -111,7 +111,6 @@ class ExceptionListener
                                                  )
         {
             $subject = 'Erreur circulaire';
-            $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
             $event->setResponse(new RedirectResponse($logoutUrl));
         }else{
             if($exception instanceof Cyclos\ServiceException){
