@@ -550,6 +550,11 @@ class BankingController extends Controller
         $session = $request->getSession();
         $currentUser = $this->getUser();
 
+        if( count($currentUser->getPhones()) == 0){
+            $session->getFlashBag()->add('info','Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement');
+            return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$currentUser->getUsername()));
+        }
+
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $beneficiaryRepo = $em->getRepository('CairnUserBundle:Beneficiary');
@@ -607,6 +612,22 @@ class BankingController extends Controller
         }else{
             $form = $this->createForm(RecurringOperationType::class, $operation);
         }
+
+        if( count($currentUser->getPhoneNumbers()) > 1){
+            $form->add('sendTo',ChoiceType::class,array(
+                'label'=>'Envoyer le code de confirmation au',
+                //'empty_data'=>null,
+                //'data'=>'',
+                'choices'=>$currentUser->getPhoneNumbers(),
+                'choice_label' => function ($value) {
+                    return $value;
+                },
+                'multiple'=>false,
+                'mapped'=>false,
+            
+            ));
+        }
+
 
         if($request->isMethod('POST')){
 
@@ -696,6 +717,27 @@ class BankingController extends Controller
                 $em->persist($operation);
                 $em->flush();
 
+                //SEND VALIDATION CODE HERE
+                //give a new code to be validated
+                if($this->getParameter('kernel.environment') != 'prod'){
+                    $code = 1111;
+                }else{
+                    $code = rand(100000,999999);
+                }
+
+                // send SMS with validation code to current user's new phone number
+                $phoneNumber = $form->has('sendTo') ? $form->get('sendTo')->getData() : $currentUser->getPhones()[0]->getPhoneNumber();
+                $sms = $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,'Code de confirmation de votre virement '.$code.' utilisable jusqu\'à ' . date('H:i',strtotime(date('H:i')." +5 mins")) );
+
+                $session->getFlashBag()->add('info','Un code de confirmation de votre virement vous a été envoyé au '.$phoneNumber);
+                //$em->persist($sms);
+                //$em->flush();
+
+       
+                $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+                $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
+                $session->set('confirmationCode', $session_code);
+
                 if($_format == 'json'){
                     $redirectUrl = $this->generateUrl(
                         'cairn_user_api_transaction_confirm',
@@ -772,7 +814,10 @@ class BankingController extends Controller
         $session = $request->getSession();
         $paymentReview = $session->get('paymentReview');
 
+        $confirmationCodeAttr = 'confirmationCode';
+
         $form = $this->createFormBuilder()
+            ->add($confirmationCodeAttr,TextType::class, array('label'=>'Code de confirmation', 'required'=>false))
             ->add('cancel',    SubmitType::class, array('label' => 'Annuler','attr' => array('class'=>'red')))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
             ->getForm();
@@ -786,40 +831,73 @@ class BankingController extends Controller
 
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
-                    //according to the given type and amount, adapt the banking operation
-                    if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
+                    //CHECK VALIDATION CODE HERE
 
-                        $recurringPaymentVO = $this->bankingManager->makeRecurringPayment($paymentReview->recurringPayment);
-                        // Cyclos script will create operation when the transfer will occur
-                        $em->remove($operation);
-                        $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
+                    $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+                    
+                    $providedCode = $form->get($confirmationCodeAttr)->getData();
+                    $session_code = $session->get($confirmationCodeAttr);
 
-                        return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id'=>$recurringPaymentVO->id )); 
+                    //valid code
+                    if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
 
-                    }else{
-                        if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
-                            $scheduledPaymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
-                            $operation->setPaymentID($scheduledPaymentVO->id);
+                        //according to the given type and amount, adapt the banking operation
+                        if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
+
+                            $recurringPaymentVO = $this->bankingManager->makeRecurringPayment($paymentReview->recurringPayment);
+                            // Cyclos script will create operation when the transfer will occur
+                            $em->remove($operation);
+                            $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
+
+                            return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id'=>$recurringPaymentVO->id )); 
+
                         }else{
-                            $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
-                            $operation->setPaymentID($paymentVO->transferId);
+                            if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
+                                $scheduledPaymentVO = $this->bankingManager->makePayment($paymentReview->scheduledPayment);
+                                $operation->setPaymentID($scheduledPaymentVO->id);
+                            }else{
+                                $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
+                                $operation->setPaymentID($paymentVO->transferId);
+                            }
+                        }
+
+                        $em->flush();
+                        $session->remove($confirmationCodeAttr);
+                        $session->remove('confirmationTries');
+
+                        if($_format == 'json'){
+                            $res = $this->get('cairn_user.api')->serialize($operation);
+                            $response = new Response($res);
+                            $response->headers->set('Content-Type', 'application/json');
+                            $response->setStatusCode(Response::HTTP_CREATED);
+                            return $response;
+
+                        }
+                        $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
+                        return $this->redirectToRoute('cairn_user_banking_transfer_view',array('paymentID'=>$operation->getPaymentID() ));
+
+                    }else{//wrong confirmation code 
+                        if(!$session->get('confirmationTries')){
+                            $session->set('confirmationTries',1);
+                        }
+
+                        if($session->get('confirmationTries') < 3){
+                            $session->set('confirmationTries',$session->get('confirmationTries') + 1);
+                            $session->getFlashBag()->add('error','Code de confirmation erroné');
+                        }else{
+                            $session->remove($confirmationCodeAttr);
+                            $session->remove('confirmationTries');
+
+                            $session->getFlashBag()->add('error','3 erreurs de saisie : le virement a été annulé');
+
+                            $em->remove($operation);
+                            $em->flush();
+                            return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
+
                         }
                     }
-                    
-                    $em->flush();
-
-                    if($_format == 'json'){
-                        $res = $this->get('cairn_user.api')->serialize($operation);
-                        $response = new Response($res);
-                        $response->headers->set('Content-Type', 'application/json');
-                        $response->setStatusCode(Response::HTTP_CREATED);
-                        return $response;
-
-                    }
-                    $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
-                    return $this->redirectToRoute('cairn_user_banking_transfer_view',array('paymentID'=>$operation->getPaymentID() )); 
-
                 }else{//cancel button clicked
+                    $session->remove($confirmationCodeAttr);
                     $em->remove($operation);
                     $em->flush();
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
