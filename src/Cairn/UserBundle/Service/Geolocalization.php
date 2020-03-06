@@ -28,10 +28,10 @@ class Geolocalization
     {
         //set latitude and longitude of new user           
         $arrayParams = array(                              
-            'q' => $address->getStreet1(),                 
-            'postcode' => $address->getZipCity()->getZipCode(),
+            'q' => $address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
+            //'postcode' => $address->getZipCity()->getZipCode(),
             'type' => 'housenumber',
-            'limit' => 2                                   
+            'limit' => 5                                   
         );                                                 
 
         $res = $this->api->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);

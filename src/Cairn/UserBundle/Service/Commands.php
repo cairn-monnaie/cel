@@ -1,5 +1,4 @@
 <?php                                                                          
-// src/Cairn/UserBundle/Service/Commands.php                             
 
 namespace Cairn\UserBundle\Service;                                      
 
@@ -566,6 +565,8 @@ class Commands
 
             if($doctrineUser->isAdherent()){
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
+
+
             }
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
@@ -586,12 +587,13 @@ class Commands
             }                
 
             $cyclosAddress = $cyclosUserData->addressListData->addresses[0];
-            $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('city'=>$cyclosAddress->city));
+            $zip = $this->em->getRepository('CairnUserBundle:ZipCity')->findOneBy(array('zipCode'=>$cyclosAddress->zip,'city'=>$cyclosAddress->city));
             $address = new Address();                                          
             $address->setZipCity($zip);                                        
             $address->setStreet1($cyclosAddress->addressLine1);
 
             $doctrineUser->setAddress($address);                                  
+
             $doctrineUser->setDescription('Je suis un compte de test !');             
 
             //create fake id doc
@@ -1252,6 +1254,10 @@ class Commands
         $this->em->persist($accountScore);
         echo 'INFO: OK !'."\n";
 
+        //generate geolocation date
+        echo 'INFO: ------ Generate geolocalization data ------- ' . "\n";
+        $resume = $this->generateLocalizationCoordinates();
+        echo $resume;
 
         $this->em->flush();
         echo 'INFO: OK !'."\n";
