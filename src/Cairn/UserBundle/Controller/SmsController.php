@@ -104,7 +104,7 @@ class SmsController extends Controller
         //3)Regex analysis
         //TODO : make it more flexible
         //PAYER autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)\s*(\d+([,\.]\d+)?)\s*([0-9A-Z]{1}\w+)\s*(PRO)?$#',$content,$matches_payment);
+        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)\s*(\d+([,\.]\d+)?)\s*(([0-9A-Z]{1}\w+)|((\+33|0|0033)[6-8]\d{8}))\s*(PRO)?$#',$content,$matches_payment);
         preg_match('#^SOLDE\s*(PRO)?$#',$content,$matches_balance);
         preg_match('#^\d{4}$#',$content, $matches_code);
         preg_match('#^LOGIN$#',$content, $matches_login);
@@ -537,7 +537,26 @@ class SmsController extends Controller
         }
 
         //then we check that creditor user is valid
-        $creditorPhone = $em->getRepository('CairnUserBundle:Phone')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
+        //Creditor Identifier can be either an SMS identifier (PRO) or a phone number(individual)
+        
+        if(preg_match('#^(\+33|0|0033)[6-8]\d{8}$#',$parsedSms->creditorIdentifier)){//identifier is a phone number
+            $phoneIdentifier = preg_replace('/^(\+33|0033|0)/','+33', $parsedSms->creditorIdentifier);
+
+            //FIND a user with the given phone number 
+            $creditorPhones = $em->getRepository('CairnUserBundle:Phone')->findByPhoneNumber($phoneIdentifier);
+            if( count($creditorPhones) == 2){//if the phone number is used twice, choose person account
+                $creditorPhone = ($creditorPhones[0]->getUser()->hasRole('ROLE_PERSON')) ? $creditorPhones[0] : $creditorPhones[1];
+            }elseif( count($creditorPhones) == 1){
+                $creditorPhone = $creditorPhones[0];
+            }else{
+                $creditorPhone = NULL;
+            }
+
+        }else{// identifier is an SMS ID
+            $creditorPhone = $em->getRepository('CairnUserBundle:Phone')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
+        }
+        
+        
         if(! $creditorPhone){
             $smsInvalid = new Sms($debitorPhoneNumber, $parsedSms->content, Sms::STATE_INVALID, NULL);
             $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS '.$parsedSms->creditorIdentifier.' ne correspond à aucun professionnel',$smsInvalid);
@@ -548,13 +567,6 @@ class SmsController extends Controller
         }
 
         $creditorUser = $creditorPhone->getUser();
-        if(! $creditorUser->hasRole('ROLE_PRO')){
-            $smsInvalid = new Sms($debitorPhoneNumber, $parsedSms->content, Sms::STATE_INVALID, NULL);
-            $em->persist($smsInvalid);
-
-            return;
-        }
-
 
         $creditorPhoneNumber = $creditorPhone->getPhoneNumber();
         $operation->setCreditor($creditorUser);

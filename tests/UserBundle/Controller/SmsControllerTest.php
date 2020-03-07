@@ -61,6 +61,10 @@ class SmsControllerTest extends BaseControllerTest
             'valid format : action PAYE 2'=>array('PAYE 12.5 SHOP',true,true,''),
             'valid format : action PAYER 3'=>array('PAY 12.5 SHOP',true,true,''),
             'valid format : action PAYER 4'=>array('PAYEZ 12.5 SHOP',true,true,''),
+            'valid format : action PAYER with phone number'=>array('PAYEZ 12.5 +33612345678',true,true,''),
+            'valid format : action PAYER with PRO'=>array('PAYEZ 12.5 +33612345678 PRO',true,true,''),
+            'valid format : action PAYER with phone number 06'=>array('PAYEZ 12.5 0612345678 PRO',true,true,''),
+            'valid format : action PAYER with phone number 0033'=>array('PAYEZ 12.5 0033612345678 PRO',true,true,''),
             'valid format : float amount with 3 decimals'=>array('PAYER 12.522 SHOP',true,true,''),
             'valid format : float amount with 6 decimals'=>array('PAYER 12.522000 SHOP',true,true,''),
             'invalid format : float amount with dot'=>array('PAYER 12. SHOP',false,true,'Format du montant'),
@@ -208,7 +212,6 @@ class SmsControllerTest extends BaseControllerTest
             'balance : invalid sms'=>array('+33612345678','SOLD',false,'1111',true,array('SMS INVALIDE')),
             'balance : invalid sms'=>array('+33612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
             'payment : wrong creditor identifier'=>array('+33612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
-            'payment mistake : person to person with ID SMS'=>array('+33612345678','PAYER10CRABEARNOLD',false,'1111',true,NULL),
 
             'payment : balance error'=>array('+33722222222','PAYER100MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
@@ -242,6 +245,16 @@ class SmsControllerTest extends BaseControllerTest
 
             'payment : valid PAYER as PRO'=>array('+33612345678','PAYER 12 maltobar PRO',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : valid PAYER as PRO but no pro account'=>array('+33722222222','PAYER 12 maltobar PRO',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+
+            'payment : valid person pay person by number +33'=>array('+33743434343','PAYER 12 +33612345678',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid person pay person by number 06'=>array('+33743434343','PAYER 12 0612345678',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid person pay person by number 0033'=>array('+33743434343','PAYER 12 0033612345678',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+
+            'payment : valid pro pay person by phonenumber'=>array('+33722222222','PAYER 12 +33612345678',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid person pay pro with same phone'=>array('+33612345678','PAYER 12 NICOPROD',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid pro pay person with same phone'=>array('+33612345678','PAYER 12 +33612345678 PRO',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+
+            'payment : invalid identical accounts'=>array('+33612345678','PAYER 12 +33612345678',false,'1111',true,array('identique')),
 
             'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',false,'1111',true,
                                                           array('ERREUR TECHNIQUE','Accès client invalide'),2),
