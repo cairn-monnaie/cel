@@ -46,6 +46,9 @@ class SmsControllerTest extends BaseControllerTest
             'invalid format : no action'=>array('12.5 SHOP', false, true, 'Envoyer PAYER, SOLDE'),
             'invalid format : no amount'=>array('PAYER SHOP',false,true,'Format du montant'),
             'invalid format : negative amount'=>array('PAYER -12.5 SHOP',false,true,'Format du montant'),
+            'invalid format : amount format'=>array('PAYER 12-5 SHOP',false,true,'Format du montant'),
+            'invalid format : amount format 2'=>array('PAYER 12@5 SHOP',false,true,'Format du montant'),
+            'invalid format : amount format 3'=>array('PAYER .125 SHOP',false,true,'Format du montant'),
             'invalid format : no identifier'=>array('PAYER 12.5',false,true,'identifiant SMS'),
             'invalid format : action SOLDE'=>array('SOLD',false,false,'Envoyer PAYER, SOLDE'),
             'invalid format : action SOLDE + texte'=>array('SOLDE OUT!',false,false,'Demande de solde invalide'),
@@ -236,6 +239,9 @@ class SmsControllerTest extends BaseControllerTest
             'payment : valid PAYEZ'=>array('+33612345678','PAYEZ00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : valid PAYE'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
             'payment : valid PAY'=>array('+33612345678','PAYE00012maltobar',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+
+            'payment : valid PAYER as PRO'=>array('+33612345678','PAYER 12 maltobar PRO',false,'1111',true,array($validDebMsg,$validCredMsg),2),
+            'payment : valid PAYER as PRO but no pro account'=>array('+33722222222','PAYER 12 maltobar PRO',false,'1111',true,array($validDebMsg,$validCredMsg),2),
 
             'payment : invalid access client'=>array('+33788888888','PAYER00012maltobar',false,'1111',true,
                                                           array('ERREUR TECHNIQUE','Accès client invalide'),2),
