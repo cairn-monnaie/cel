@@ -47,9 +47,8 @@ class ExceptionListener
 
     }
 
-    private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $redirectUrl)
+    private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $code, $redirectUrl=NULL)
     {
-        $code = $event->getException()->getCode() ;
         if($this->api->isRemoteCall()){
             $event->setResponse($this->api->getErrorResponse(array($errorMessage),$code));           
             return;
@@ -57,8 +56,12 @@ class ExceptionListener
 
         $session = $event->getRequest()->getSession();
         $session->getFlashBag()->add('error',$errorMessage);
-        $event->setResponse(new RedirectResponse($redirectUrl));
+
+        if($redirectUrl){
+            $event->setResponse(new RedirectResponse($redirectUrl));
+        }
     }
+
 
     /**
      * Deals with the exception thrown 
@@ -109,15 +112,15 @@ class ExceptionListener
                 $subject = 'Erreur Cyclos';
                 if($exception->errorCode == 'ENTITY_NOT_FOUND'){
                     $errorMessage = 'Donnée introuvable';
-                    $this->sendException($event, $errorMessage, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND,$welcomeUrl);
                 }
                 elseif($exception->errorCode == 'LOGIN'){
                     $errorMessage = 'Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.';
-                    $this->sendException($event, $errorMessage, $logoutUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,$logoutUrl);
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
                     $errorMessage = 'Vous n\'avez pas les droits nécessaires';
-                    $this->sendException($event, $errorMessage, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_UNAUTHORIZED, $welcomeUrl);
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){//cyclos session token expired before Symfony
 
@@ -128,7 +131,7 @@ class ExceptionListener
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){
                     $errorMessage = 'Donnée introuvable';
-                    $this->sendException($event, $errorMessage, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND,$welcomeUrl);
                 }
                 elseif($exception->errorCode == 'VALIDATION'){
                     $listErrors = '';
@@ -139,11 +142,11 @@ class ExceptionListener
 
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
                     $errorMessage = 'Un problème technique est survenu pendant votre opération. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
-                    $this->sendException($event, $errorMessage, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_BAD_REQUEST, $welcomeUrl);
                 }
                 else{
                     $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
-                    $this->sendException($event, $errorMessage, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,$welcomeUrl);
                 }
             }
             elseif($exception instanceof Cyclos\ConnectionException){
@@ -155,9 +158,9 @@ class ExceptionListener
                file_put_contents("maintenance.txt", '');
 
                $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
-               $this->sendException($event, $errorMessage, $logoutUrl);
+               $this->sendException($event, $errorMessage,Response::HTTP_INTERNAL_SERVER_ERROR, $logoutUrl);
             }else{
-               $this->sendException($event, $exception->getMessage(), $welcomeUrl);
+               $this->sendException($event, $exception->getMessage(),$exception->getCode());
             }
         }
 

@@ -17,6 +17,7 @@ use Cairn\UserCyclosBundle\Service\UserInfo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
+use Symfony\Component\Form\Exception\InvalidArgumentException;
 
 class AccountToStringTransformer implements DataTransformerInterface
 {
@@ -58,6 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
+            throw new \Exception('No creditor account provided',400);
             return;
         }
 
