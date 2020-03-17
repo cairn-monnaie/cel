@@ -49,15 +49,16 @@ class ExceptionListener
 
     private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $redirectUrl)
     {
+        $code = $event->getException()->getCode() ;
         if($this->api->isRemoteCall()){                  
             $error = array(
                 'error'=>array(
-                    'code'=>Response::HTTP_BAD_REQUEST,
+                    'code'=>$code,
                     'message'=>$errorMessage
                 )
             );
             $response = new Response(json_encode($error)); 
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST); 
+            $response->setStatusCode($code); 
             $response->headers->set('Content-Type', 'application/json');   
             $event->setResponse($response);           
             return;
@@ -164,6 +165,8 @@ class ExceptionListener
 
                $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
                $this->sendException($event, $errorMessage, $logoutUrl);
+            }else{
+               $this->sendException($event, $exception->getMessage(), $welcomeUrl);
             }
         }
 

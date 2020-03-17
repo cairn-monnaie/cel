@@ -51,7 +51,17 @@ class SecurityController extends Controller
                 'password' => $params['password']
             ));
 
-            $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
+            try{
+                $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
+            }catch(\Exception $e){
+                $response = new Response(' { "message": "Invalid authentication !" }');
+                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->headers->set('Accept', 'application/json');
+
+                return $response;
+            }
+
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
             //send user id
