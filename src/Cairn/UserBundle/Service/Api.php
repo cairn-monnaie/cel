@@ -85,7 +85,21 @@ class Api
         return ($request->getRequestFormat() != 'html');
     }
 
-    public function getErrorResponse(FormInterface $form)
+    public function getErrorResponse($messages, $statusCode)
+    {
+        $errors = [];                                              
+        foreach ($messages as $message) {               
+            $errors[] = array('error'=>$message); 
+        }                                                          
+        $response = new Response(json_encode($errors));            
+        $response->setStatusCode($statusCode);      
+        $response->headers->set('Content-Type', 'application/json');
+        $response->headers->set('Accept', 'application/json');
+
+        return $response;
+    }
+
+    public function getFormErrorResponse(FormInterface $form)
     {
         $errors = [];                                              
         foreach ($form->getErrors(true) as $error) {               

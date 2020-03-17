@@ -50,17 +50,8 @@ class ExceptionListener
     private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $redirectUrl)
     {
         $code = $event->getException()->getCode() ;
-        if($this->api->isRemoteCall()){                  
-            $error = array(
-                'error'=>array(
-                    'code'=>$code,
-                    'message'=>$errorMessage
-                )
-            );
-            $response = new Response(json_encode($error)); 
-            $response->setStatusCode($code); 
-            $response->headers->set('Content-Type', 'application/json');   
-            $event->setResponse($response);           
+        if($this->api->isRemoteCall()){
+            $event->setResponse($this->api->getErrorResponse(array($errorMessage),$code));           
             return;
         }
 

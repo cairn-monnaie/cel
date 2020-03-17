@@ -54,12 +54,7 @@ class SecurityController extends Controller
             try{
                 $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
             }catch(\Exception $e){
-                $response = new Response(' { "message": "Invalid authentication !" }');
-                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->headers->set('Accept', 'application/json');
-
-                return $response;
+                return $this->get('cairn_user.api')->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
             }
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
