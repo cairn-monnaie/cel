@@ -746,6 +746,8 @@ class BankingController extends Controller
             throw new LogicException('Cette opération a déjà été traitée');
         }
 
+        $messageNotificator = $this->get('cairn_user.message_notificator');
+
         $currentUser = $this->getUser();
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
         $accountNumbers = $this->get('cairn_user_cyclos_account_info')->getAccountNumbers($ownerVO->id);
@@ -803,6 +805,12 @@ class BankingController extends Controller
                         }else{
                             $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                             $operation->setPaymentID($paymentVO->transferId);
+
+                            //IN CASE OF IMMEDIATE PAYMENT, SEND EMAIL NOTIFICATION
+                            $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                                array('operation'=>$operation,'type'=>'transaction'));
+
+                            $messageNotificator->notifyByEmail('Vous avez reçu un virement',$messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
                         }
                     }
                     

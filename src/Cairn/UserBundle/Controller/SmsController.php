@@ -625,7 +625,7 @@ class SmsController extends Controller
             $subject = 'Paiement SMS [e]-Cairn';
             $from = $messageNotificator->getNoReplyEmail();
             $to = $creditorUser->getEmail();
-            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'phone'=>$creditorPhone));
+            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'phone'=>$creditorPhone,'type'=>'sms'));
         
             $messageNotificator->notifyByEmail($subject,$from,$to,$body);
         }
