@@ -170,19 +170,14 @@ class MessageNotificator
         unset($results->success);
 
 //        var_dump($code);
-//        var_dump($results);
+        //var_dump($results);
 
         $default_res = array('campaignID'=>NULL, 'messageID'=>NULL);
 
         foreach($results as $result){
-            try{
                 if( strpos($result->name, $campaignName) !== false){
-                    $default_res = array('campaignID'=>$result->id, 'messageID'=>$result->messages[0]->id);
-
+                    $default_res = array('campaignID'=>$result->id,'messageID'=>NULL);//$result->messages[0]->id);
                 }
-            }catch(\Exception $e){
-                var_dump($e);
-            }
         }
 
         return $default_res;
