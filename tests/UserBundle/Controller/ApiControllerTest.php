@@ -614,6 +614,8 @@ class ApiControllerTest extends BaseControllerTest
                 ['CONTENT_TYPE' => 'application/json'],
                 json_encode(
                     array(
+                        'api_secret' => hash('sha256',$this->container->getParameter('api_secret').$responseData['operation']['id']), 
+                        "confirmationCode"=> "1111",
                         'save'=>""
                     )
                 )
@@ -640,24 +642,33 @@ class ApiControllerTest extends BaseControllerTest
         $before = $now->modify('-10 days')->format('Y-m-d');
         $inconsistent = $now->modify('+4 years')->format('Y-m-d');
 
+        $validLogin = 'benoit_perso';
         $baseSubmit = array(
                     'toAccount'=>'labonnepioche@test.fr',
                     'amount'=>25,
                     'reason'=>'Test reason',
                     'description'=>'Test description',
-                    'executionDate'=> $nowFormat
-        );
+                    'executionDate'=> time($nowFormat),
+                    'api_secret' => hash('sha256',$this->container->getParameter('api_secret').time($nowFormat)) 
+            );
 
         return array(
-            'invalid amount too low'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST),
-            'invalid negative amount'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
-            'invalid insufficient balance'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
-            'invalid : identical creditor & debitor'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'gjanssens@test.fr')),Response::HTTP_UNAUTHORIZED),
-            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
-            'valid now'=>array('gjanssens',$baseSubmit,Response::HTTP_CREATED),
-            'valid after'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_CREATED),
-            'invalid before'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
-            'invalid inconsistent'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST),
+            'invalid amount too low'=>array($validLogin,array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST),
+            'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
+            'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
+            'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED),
+            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
+            'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED),
+            'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED),
+            'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST),
+            'invalid API key'=>array($validLogin,array_replace($baseSubmit,
+                                     array('executionDate'=>time($later),'api_secret'=>'ABCDE')),Response::HTTP_UNAUTHORIZED),
+            'valid after'=>array($validLogin,array_replace($baseSubmit, 
+                                    array('executionDate'=>time($later),
+                                        'api_secret'=>hash('sha256',$this->container->getParameter('api_secret').time($later)) )),
+                                            Response::HTTP_CREATED),
+            'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
+            'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST),
         );
 
     }
