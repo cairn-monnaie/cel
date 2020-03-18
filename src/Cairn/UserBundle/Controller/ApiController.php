@@ -74,22 +74,17 @@ class ApiController extends Controller
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
         $securityService = $this->get('cairn_user.security');
+        $apiService = $this->get('cairn_user.api');
 
         //if no user found linked to the domain name
 
         $creditorUser = $this->getUser();
         if(! $creditorUser ){
-            $response = new Response('User account not found');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_FORBIDDEN);
-            return $response;
+            return $apiService->getErrorResponse(array('User account not found') ,Response::HTTP_FORBIDDEN);
         }
 
         if(! ($request->headers->get('Content-Type') == 'application/json')){
-            $response = new Response(' { "message"=>"Invalid JSON" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
-            return $response;
+            return $apiService->getErrorResponse(array('Invalid JSON') ,Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
         }
 
         //no possible code injection
@@ -99,31 +94,19 @@ class ApiController extends Controller
 
 
         if($creditorUser->getMainICC() != $postAccountNumber ){
-            $response = new Response(' { "message"=>"User not found with provided account number"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_NOT_FOUND);
-            return $response;
+            return $apiService->getErrorResponse(array('User not found with provided account number') ,Response::HTTP_NOT_FOUND);
         }
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            $response = new Response(' { "message"=>"Access denied"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
-            return $response;
+            return $apiService->getErrorResponse(array('Access denied') ,Response::HTTP_UNAUTHORIZED);
         }
 
         if(! $creditorUser->getApiClient()){
-            $response = new Response(' { "message"=>"User has no data to perform online payment"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_PRECONDITION_FAILED);
-            return $response;
+            return $apiService->getErrorResponse(array('User has no data to perform online payment') ,Response::HTTP_PRECONDITION_FAILED);
         }
 
         if(! $creditorUser->getApiClient()->getWebhook()){
-            $response = new Response(' { "message"=>"No webhook defined to perform online payment"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_PRECONDITION_FAILED);
-            return $response;
+            return $apiService->getErrorResponse(array('No webhook defined to perform online payment') ,Response::HTTP_PRECONDITION_FAILED);
         }
 
         $oPRepo = $em->getRepository('CairnUserBundle:OnlinePayment');
@@ -141,41 +124,26 @@ class ApiController extends Controller
 
         //validate POST content
         if( (! is_numeric($postParameters['amount']))   ){
-            $response = new Response(' { "message"=>"No numeric amount"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
+            return $apiService->getErrorResponse(array('No numeric amount') ,Response::HTTP_BAD_REQUEST);
         }
 
         $numericalAmount = floatval($postParameters['amount']);
         $numericalAmount = round($numericalAmount,2); 
 
         if( $numericalAmount < 0.01  ){
-            $response = new Response(' { "message"=>"Amount too low"} ');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
+            return $apiService->getErrorResponse(array('Amount too low') ,Response::HTTP_BAD_REQUEST);
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_success'])){
-            $response = new Response(' { "message"=>"Invalid return_url_success format value" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
+            return $apiService->getErrorResponse(array('Invalid return_url_success format value') ,Response::HTTP_BAD_REQUEST);
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_failure'])){
-            $response = new Response(' { "message"=>"Invalid return_url_failure format value" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
+            return $apiService->getErrorResponse(array('Invalid return_url_failure format value') ,Response::HTTP_BAD_REQUEST);
         }
 
         if( strlen($postParameters['reason']) > 35){                                  
-            $response = new Response(' { "Reason too long : 35 characters allowed" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
+            return $apiService->getErrorResponse(array('Reason too long : 35 characters allowed') ,Response::HTTP_BAD_REQUEST);
         } 
 
         //finally register new onlinePayment data

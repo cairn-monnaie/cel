@@ -346,16 +346,7 @@ class BankingController extends Controller
                 $data = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
 
                 if(!$data){
-                    $error = array(                                                    
-                        'error'=>array(                                                
-                            'code'=>Response::HTTP_BAD_REQUEST,                        
-                            'message'=>"Invalid JSON"  
-                        )                                                              
-                    );                                                                 
-                    $response = new Response(json_encode($error));
-                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                    $response->headers->set('Content-Type', 'application/json');
-                    return $response;
+                    return $this->get('cairn_user.api')->getErrorResponse(array("Invalid JSON"),Response::HTTP_BAD_REQUEST);
                 }
 
                 $operationTypes = $data['types'];
@@ -779,7 +770,7 @@ class BankingController extends Controller
             }else{
                 $apiService = $this->get('cairn_user.api');
                 if( $apiService->isRemoteCall()){
-                    return $apiService->getErrorResponse($form);
+                    return $apiService->getFormErrorResponse($form);
                 }
             }
 

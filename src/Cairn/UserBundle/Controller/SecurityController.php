@@ -51,7 +51,12 @@ class SecurityController extends Controller
                 'password' => $params['password']
             ));
 
-            $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
+            try{
+                $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
+            }catch(\Exception $e){
+                return $this->get('cairn_user.api')->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
+            }
+
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
             //send user id

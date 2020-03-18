@@ -86,7 +86,7 @@ class ProfileController extends Controller
                 return $response;
             }else{
                 if( $apiService->isRemoteCall()){
-                    return $apiService->getErrorResponse($form);
+                    return $apiService->getFormErrorResponse($form);
                 }
             }
         }

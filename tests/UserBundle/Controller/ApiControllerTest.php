@@ -652,8 +652,8 @@ class ApiControllerTest extends BaseControllerTest
             'invalid amount too low'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST),
             'invalid negative amount'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
             'invalid insufficient balance'=>array('gjanssens',array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
-            'invalid : identical creditor & debitor'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'gjanssens@test.fr')),Response::HTTP_BAD_REQUEST),
-            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_INTERNAL_SERVER_ERROR),
+            'invalid : identical creditor & debitor'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'gjanssens@test.fr')),Response::HTTP_UNAUTHORIZED),
+            'invalid : no creditor data'=>array('gjanssens',array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
             'valid now'=>array('gjanssens',$baseSubmit,Response::HTTP_CREATED),
             'valid after'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_CREATED),
             'invalid before'=>array('gjanssens',array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
@@ -721,7 +721,7 @@ class ApiControllerTest extends BaseControllerTest
         $beginDate =$now->modify('-1 month')->format('Y-m-d'); 
         $endDate = date('Y-m-d'); 
         return array(
-            'invalid adherent to adherent'=>array('gjanssens','labonnepioche',Response::HTTP_BAD_REQUEST,'',''),
+            'invalid adherent to adherent'=>array('gjanssens','labonnepioche',Response::HTTP_NOT_FOUND,'',''),
             'invalid admin referent to adherent'=>array('gl_grenoble','episol',Response::HTTP_FORBIDDEN,'',''),
             'valid super admin referent to adherent'=>array('admin_network','gjanssens',Response::HTTP_OK,$beginDate,$endDate),
             'valid super admin to self'=>array('admin_network','admin_network',Response::HTTP_OK,$beginDate,$endDate),

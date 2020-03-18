@@ -219,7 +219,7 @@ class RegistrationListener
         $apiService = $this->container->get('cairn_user.api');
 
         if($apiService->isRemoteCall()){
-            $response = $apiService->getErrorResponse($event->getForm());
+            $response = $apiService->getFormErrorResponse($event->getForm());
             $event->setResponse($response);
         }
     }

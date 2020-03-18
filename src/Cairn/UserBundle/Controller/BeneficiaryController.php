@@ -302,11 +302,7 @@ class BeneficiaryController extends Controller
 
                 if($errorMessages){
                     if( $this->get('cairn_user.api')->isRemoteCall()){
-//                        $response = new Response('{ "message"=>"'.$errorMessages[0].'"}');
-                        $response = new Response(json_encode(array('message'=>$errorMessages[0])));
-                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                        $response->headers->set('Content-Type', 'application/json');
-                        return $response;
+                        return $this->get('cairn_user.api')->getErrorResponse($errorMessages ,Response::HTTP_BAD_REQUEST);
                     }else{
                         foreach($errorMessages as $message){
                             $session->getFlashBag()->add('error',$message);
@@ -345,7 +341,7 @@ class BeneficiaryController extends Controller
 
                 if( $apiService->isRemoteCall()){
 
-                    return $apiService->getErrorResponse($form);
+                    return $apiService->getFormErrorResponse($form);
 //                    $errors = [];
 //                    foreach ($form->getErrors(true) as $error) {
 //                        $errors[] = $error->getMessage();
@@ -456,16 +452,7 @@ class BeneficiaryController extends Controller
             $errorMessage = 'Donnée introuvable';
 
             if($this->get('cairn_user.api')->isRemoteCall()){
-                $error = array(                                                    
-                    'error'=>array(                                                
-                        'code'=>Response::HTTP_BAD_REQUEST,                        
-                        'message'=>$errorMessage 
-                    )                                                              
-                );                                                                 
-                $response = new Response(json_encode($error));
-                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                $response->headers->set('Content-Type', 'application/json');
-                return $response;
+                return $this->get('cairn_user.api')->getErrorResponse(array($errorMessage) ,Response::HTTP_BAD_REQUEST);
             }
 
             $session->getFlashBag()->add('error',$errorMessage);
