@@ -73,6 +73,7 @@ class BankingControllerTest extends BaseControllerTest
 
                 //todo : checker le contenu du récapitulatif
                 $form = $crawler->selectButton('form_save')->form();
+                $form['form[confirmationCode]']->setValue('1111');
                 $crawler = $this->client->submit($form);
             }else{
                 $this->assertTrue($this->client->getResponse()->isRedirect('/banking/transaction/request/'.$to.'-'.$frequency));
@@ -97,7 +98,8 @@ class BankingControllerTest extends BaseControllerTest
         $creditorICC = $creditorUser->getMainICC();
 
         //valid data
-        $baseData = array('login'=>'labonnepioche','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
+        //User needs to have a phone number
+        $baseData = array('login'=>'nico_faus_prod','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
             'isValid'=>true,'toAccount'=>$creditorEmail,'amount'=>'10', 'date'=>$today_format, 'frequency'=>'unique');
 
         return array(

@@ -104,8 +104,8 @@ class SmsController extends Controller
         //3)Regex analysis
         //TODO : make it more flexible
         //PAYER autoriser plus de décimales au montant et tronquer après
-        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)\s*(\d+([,\.]\d+)?)\s*([0-9A-Z]{1}\w+)$#',$content,$matches_payment);
-        preg_match('#^SOLDE$#',$content,$matches_balance);
+        preg_match('#^(PAYER|PAYEZ|PAYE|PAY)\s*(\d+([,\.]\d+)?)\s*(([0-9A-Z]{1}\w+)|((\+33|0|0033)[6-8]\d{8}))\s*(PRO)?$#',$content,$matches_payment);
+        preg_match('#^SOLDE\s*(PRO)?$#',$content,$matches_balance);
         preg_match('#^\d{4}$#',$content, $matches_code);
         preg_match('#^LOGIN$#',$content, $matches_login);
        
@@ -115,15 +115,15 @@ class SmsController extends Controller
         $error = NULL;
 
         if(! ($matches_payment || $matches_balance || $matches_code || $matches_login)){
-            if(! preg_match('#^(PAYER|SOLDE|LOGIN|\d{4})#',$content)){
+            if(! preg_match('#^(PAY|SOLDE|LOGIN|\d{4})#',$content)){
                 $error = 'Envoyer PAYER, SOLDE ou un code à 4 chiffres en cas de validation de paiement';
             }else{
                 if(preg_match('#^PAY#',$content)){ //is payment request
-//                    if(! preg_match('#^PAY[A-Z]*\d+([,\.]\d+)?[A-Z]{1}#',$content)){//invalid amount format
+                    if(! preg_match('#^PAY[A-Z]*\d+([,\.]\d+)?[A-Z]{1}#',$content)){//invalid amount format
                     $error = 'Format du montant invalide ou identifiant SMS incorrect';
-//                    }else{
-//                        $error = 'Un identifiant SMS contient des caractères alphanumériques'."\n";
-//                    }
+                    }else{
+                        $error = 'Un identifiant SMS contient des caractères alphanumériques'."\n";
+                    }
                 }elseif(preg_match('#^SOLDE#',$content)){
                     $error = 'Demande de solde invalide '."\n";
                 }elseif(preg_match('#^LOGIN#',$content)){
@@ -136,25 +136,30 @@ class SmsController extends Controller
             }
         }else{ //one regex match
             $res->content = $content;
+            
             if($matches_payment){
                 $res->isPaymentRequest = true;
                 $res->isOperationValidation = false;
                 $res->isSmsIdentifier = false;
                 $res->amount = str_replace(',','.',$matches_payment[2]);
                 $res->creditorIdentifier = $matches_payment[4];
+                $res->isProAccount = in_array('PRO',$matches_payment);
             }elseif($matches_balance){
                 $res->isPaymentRequest = false;
                 $res->isOperationValidation = false;
                 $res->isSmsIdentifier = false;
+                $res->isProAccount = in_array('PRO',$matches_payment);
             }elseif($matches_login){//SMS identifier requested
                 $res->isPaymentRequest = false;
                 $res->isOperationValidation = false;
                 $res->isSmsIdentifier = true;
+                $res->isProAccount = true;
             }else{
                 $res->isPaymentRequest = false;
                 $res->isOperationValidation = true;
                 $res->isSmsIdentifier = false;
                 $res->cardKey = $matches_code[0];
+                $res->isProAccount = false;
             }
         }
 
@@ -175,6 +180,67 @@ class SmsController extends Controller
     }
 
     /**
+     * Get the user account matching the SMS sender
+     *
+     * Getting the user corresponding to the phone number who sent the SMS can be tricky if the phone number to both an individual and a pro account
+     * In this case, there are two options :
+     *      1. the SMS is a request (payment, balance account). In this case the sender should append 'PRO' at the message end to precise that PRO account should be
+     *         debited
+     *      2. the message is a validation code. In this case, the sender has possibly append PRO... in the previous pending message which needs validation ! not in
+     *         the current message. Therefore, we must fetch the previous message and parse it to know if a precision was made 
+     *
+     * If the message contains an error, should it be attributed by default to PRO or individual account ?
+     * It is attributed to individual account by default
+     *
+     */
+    private function getDebitorUser($parsedSms, $debitorPhoneNumber)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $debitorUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($debitorPhoneNumber);
+        $isUniquePhoneNumber = (count($debitorUsers) == 1);
+        $isProAndPersonPhoneNumber = (count($debitorUsers) == 2);
+
+        if($parsedSms->error){
+            return ( count($debitorUsers) != 0) ? $debitorUsers[0] : NULL;
+        }
+
+        /**
+         * if the SMS is an operation validation, we need to check pending SMS to see if it was requested as a PRO account or not. It is useful if and only if the
+         * phone number is associated to both individual and pro accounts
+         */
+        if($isProAndPersonPhoneNumber){
+            if($parsedSms->isOperationValidation){
+                $smsPending = $em->getRepository('CairnUserBundle:Sms')->findOneBy(array('phoneNumber'=>$debitorPhoneNumber,
+                    'state'=>Sms::STATE_WAITING_KEY));
+
+                if($smsPending){
+                    $parsedInitialSms = $this->parseSms($smsPending->getContent());
+                    if($parsedInitialSms->isProAccount){
+                        $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PRO')) ? $debitorUsers[0] : $debitorUsers[1];
+                    }else{
+                        $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PERSON')) ? $debitorUsers[0] : $debitorUsers[1];
+                    }
+
+                    return $debitorUser;
+                }
+            }else{
+                if($parsedSms->isProAccount){
+                    $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PRO')) ? $debitorUsers[0] : $debitorUsers[1];
+                }else{
+                    $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PERSON')) ? $debitorUsers[0] : $debitorUsers[1];
+                }
+            }
+        }elseif($isUniquePhoneNumber){
+            $debitorUser = $debitorUsers[0];
+        }else{
+            $debitorUser = NULL;
+        }
+        
+        return $debitorUser;
+    }
+
+    /**
      * Analyzes the received SMS data (phone number / content) then handles it 
      *
      * The phone number must match an existing and enabled adherent. Then, the SMS is parsed in order to understand the request and handle
@@ -189,22 +255,15 @@ class SmsController extends Controller
         $securityService = $this->get('cairn_user.security');
 
         //TODO here : get data from SMS and parse content
-
-        $debitorUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($debitorPhoneNumber);
-        $isUniquePhoneNumber = (count($debitorUsers) == 1);
-        $isProAndPersonPhoneNumber = (count($debitorUsers) == 2);
+        //1) Parse SMS content
+        $parsedSms = $this->parseSms($content);
 
 
         //1) we ensure that SMS sender exists
-        //if there are two members with same phone number, ROLE_PERSON is used by default
-        if($isProAndPersonPhoneNumber){
-            $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PERSON')) ? $debitorUsers[0] : $debitorUsers[1];
-        }elseif($isUniquePhoneNumber){
-            $debitorUser = $debitorUsers[0];
-        }else{
-            return;
-        }      
+        $debitorUser = $this->getDebitorUser($parsedSms,$debitorPhoneNumber);
 
+        if(!$debitorUser){return;}
+        
         //then, we check that today's user activity is not considered as spam
         $nbSpamSms = $smsRepo->getNumberOfSmsToday($debitorPhoneNumber, Sms::STATE_SPAM);
         if($nbSpamSms > 0){ return;}
@@ -302,9 +361,7 @@ class SmsController extends Controller
             }
         }
 
-        //4) Parse SMS content
-        $parsedSms = $this->parseSms($content);
-
+        
 
         if( $parsedSms->error){
             $smsFormat = new Sms($debitorPhoneNumber, $content, Sms::STATE_INVALID, NULL);
@@ -319,13 +376,11 @@ class SmsController extends Controller
         }
 
         if(! ($parsedSms->isPaymentRequest || $parsedSms->isOperationValidation)){//account balance or SMS Identifier
-            if($parsedSms->isSmsIdentifier){
-                if( !$debitorUser->hasRole('ROLE_PRO') && !$isProAndPersonPhoneNumber){
-                    return;       
-                }else{
-                    $debitorUser = ($debitorUsers[0]->hasRole('ROLE_PRO')) ? $debitorUsers[0] : $debitorUsers[1];
-                }
-            }
+           if($parsedSms->isSmsIdentifier){
+               if( !$debitorUser->hasRole('ROLE_PRO') ){
+                   return;       
+               }
+           }
 
             $this->setUpSmsValidation($em, $debitorUser, $content, $userPhone);
             $em->flush();
@@ -482,7 +537,26 @@ class SmsController extends Controller
         }
 
         //then we check that creditor user is valid
-        $creditorPhone = $em->getRepository('CairnUserBundle:Phone')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
+        //Creditor Identifier can be either an SMS identifier (PRO) or a phone number(individual)
+        
+        if(preg_match('#^(\+33|0|0033)[6-8]\d{8}$#',$parsedSms->creditorIdentifier)){//identifier is a phone number
+            $phoneIdentifier = preg_replace('/^(\+33|0033|0)/','+33', $parsedSms->creditorIdentifier);
+
+            //FIND a user with the given phone number 
+            $creditorPhones = $em->getRepository('CairnUserBundle:Phone')->findByPhoneNumber($phoneIdentifier);
+            if( count($creditorPhones) == 2){//if the phone number is used twice, choose person account
+                $creditorPhone = ($creditorPhones[0]->getUser()->hasRole('ROLE_PERSON')) ? $creditorPhones[0] : $creditorPhones[1];
+            }elseif( count($creditorPhones) == 1){
+                $creditorPhone = $creditorPhones[0];
+            }else{
+                $creditorPhone = NULL;
+            }
+
+        }else{// identifier is an SMS ID
+            $creditorPhone = $em->getRepository('CairnUserBundle:Phone')->findOneByIdentifier(strtoupper($parsedSms->creditorIdentifier));
+        }
+        
+        
         if(! $creditorPhone){
             $smsInvalid = new Sms($debitorPhoneNumber, $parsedSms->content, Sms::STATE_INVALID, NULL);
             $smsError = $messageNotificator->sendSMS($debitorPhoneNumber,'Identifiant SMS '.$parsedSms->creditorIdentifier.' ne correspond à aucun professionnel',$smsInvalid);
@@ -493,13 +567,6 @@ class SmsController extends Controller
         }
 
         $creditorUser = $creditorPhone->getUser();
-        if(! $creditorUser->hasRole('ROLE_PRO')){
-            $smsInvalid = new Sms($debitorPhoneNumber, $parsedSms->content, Sms::STATE_INVALID, NULL);
-            $em->persist($smsInvalid);
-
-            return;
-        }
-
 
         $creditorPhoneNumber = $creditorPhone->getPhoneNumber();
         $operation->setCreditor($creditorUser);
