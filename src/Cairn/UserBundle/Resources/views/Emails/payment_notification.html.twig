@@ -2,16 +2,30 @@
 Bonjour <b>{{operation.creditorName}}</b>, 
 
 <br><br>
+
+{% if type == 'sms' %}
     Vous avez reçu un paiement [e]-Cairn par SMS. <br> 
     Ci-dessous un récapitulatif du paiement : 
     <ul>
-        <li> Montant : {{operation.amount}} </li>
+        <li> Montant : {{operation.amount}} [e]-Cairns </li>
         <li> nom du payeur : {{operation.debitorName}} </li>
         <li> Date de réalisation : {{operation.executionDate|date('d-m-Y H:i')}} </li>
         <li> Identifiant indiqué du receveur : {{phone.identifier}} </li>
         <li> Identifiant du paiement : {{operation.paymentID}} </li>
-
     </ul>
-    <br><br>
-    {{signature}},
+
+{% elseif type == 'transaction' %}
+    Vous avez reçu un virement. <br> 
+    Ci-dessous un récapitulatif du paiement : 
+    <ul>
+        <li> Montant : {{operation.amount}} [e]-Cairns </li>
+        <li> nom du payeur : {{operation.debitorName}} </li>
+        <li> Date de réalisation : {{operation.executionDate|date('d-m-Y H:i')}} </li>
+        <li> Identifiant du paiement : {{operation.paymentID}} </li>
+    </ul>
+
+{% endif %}
+
+<br><br>
+{{signature}},
 
