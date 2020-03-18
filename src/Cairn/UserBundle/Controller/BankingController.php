@@ -541,8 +541,14 @@ class BankingController extends Controller
         $session = $request->getSession();
         $currentUser = $this->getUser();
 
+        $apiService = $this->get('cairn_user.api');
+
         if( count($currentUser->getPhones()) == 0){
-            $session->getFlashBag()->add('info','Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement');
+            $message = 'Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement';
+            if($apiService->isRemoteCall()){
+                return $apiService->getErrorResponse(array($message),Response::HTTP_UNAUTHORIZED);
+            }
+            $session->getFlashBag()->add('info',$message);
             return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$currentUser->getUsername()));
         }
 
@@ -553,7 +559,7 @@ class BankingController extends Controller
         $session->set('frequency',$frequency);
 
         $accountService = $this->get('cairn_user_cyclos_account_info');
-        $apiService = $this->get('cairn_user.api');
+        
 
         $type = 'transaction';
 
@@ -633,12 +639,13 @@ class BankingController extends Controller
                 //HERE, CHECK FOR API SECURITY CODE
                 $rightKey = hash('sha256',$this->getParameter('api_secret').$jsonRequest['executionDate']);
                 $sentKey = $jsonRequest['api_secret'];
-                if(! $rightKey == $sentKey){
+                if(! ($rightKey == $sentKey)){
                     return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
                 }
 
-                $jsonRequest['executionDate'] = date($jsonRequest['executionDate']);
+                $jsonRequest['executionDate'] = date('Y-m-d',$jsonRequest['executionDate']);
 
+                unset($jsonRequest['api_secret']);
                 $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
@@ -803,9 +810,10 @@ class BankingController extends Controller
             //HERE, CHECK FOR API SECURITY CODE
             $rightKey = hash('sha256',$this->getParameter('api_secret').$operation->getID() );
             $sentKey = $jsonRequest['api_secret'];
-            if(! $rightKey == $sentKey){
+            if(! ($rightKey == $sentKey)){
                 return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
             }
+            unset($jsonRequest['api_secret']);
         }
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
