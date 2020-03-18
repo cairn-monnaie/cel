@@ -81,3 +81,5 @@ parameters:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
     online_payment_hosts: 'localhost$|domain.com$'
+    api_secret: FuckYouCoronavirus
+

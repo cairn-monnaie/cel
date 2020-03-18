@@ -557,6 +557,7 @@ class BankingController extends Controller
         $session->set('frequency',$frequency);
 
         $accountService = $this->get('cairn_user_cyclos_account_info');
+        $apiService = $this->get('cairn_user.api');
 
         $type = 'transaction';
 
@@ -610,8 +611,23 @@ class BankingController extends Controller
 
         if($request->isMethod('POST')){
 
-            if($_format == 'json'){
-                $form->submit(json_decode($request->getContent(), true));
+            if($apiService->isRemoteCall()){
+
+                $jsonRequest = json_decode($request->getContent(), true);
+                if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
+                    return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
+                }
+
+                //HERE, CHECK FOR API SECURITY CODE
+                $rightKey = hash('sha256',$this->getParameter('api_secret').$jsonRequest['executionDate']);
+                $sentKey = $jsonRequest['api_secret'];
+                if(! $rightKey == $sentKey){
+                    return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
+                }
+
+                $jsonRequest['executionDate'] = date($jsonRequest['executionDate']);
+
+                $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
             }
@@ -742,10 +758,22 @@ class BankingController extends Controller
      */
     public function confirmOperationAction(Request $request, Operation $operation, $_format)
     {
+        
         if($operation->getPaymentID()){
             throw new LogicException('Cette opération a déjà été traitée');
         }
 
+        $apiService = $this->get('cairn_user.api');
+
+        if( $apiService->isRemoteCall()){
+            $jsonRequest = json_decode($request->getContent(), true);
+            //HERE, CHECK FOR API SECURITY CODE
+            $rightKey = hash('sha256',$this->getParameter('api_secret').$operation->getID() );
+            $sentKey = $jsonRequest['api_secret'];
+            if(! $rightKey == $sentKey){
+                return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
+            }
+        }
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         $currentUser = $this->getUser();
@@ -781,7 +809,7 @@ class BankingController extends Controller
 
         if($request->isMethod('POST')){ //form filled and submitted
             if($_format == 'json'){
-                $form->submit(json_decode($request->getContent(), true));
+                $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
             }
