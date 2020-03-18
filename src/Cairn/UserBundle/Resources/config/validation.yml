@@ -12,9 +12,9 @@ Cairn\UserBundle\Entity\Phone:
     constraints:
             - Cairn\UserBundle\Validator\Phone: ~
 
-Cairn\UserBundle\Entity\SmsData:
-    constraints:
-            - Cairn\UserBundle\Validator\SmsData: ~
+              #Cairn\UserBundle\Entity\SmsData:
+              #    constraints:
+              #            - Cairn\UserBundle\Validator\SmsData: ~
 
               #Cairn\UserBundle\Entity\Address:
               #    constraints:
