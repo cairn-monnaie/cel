@@ -146,6 +146,7 @@ class UserController extends Controller
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
+        $apiService = $this->get('cairn_user.api');
 
         if(! $currentUser->isAdherent() ){
             throw new AccessDeniedException('Réserver aux comptes adhérents');
@@ -156,13 +157,13 @@ class UserController extends Controller
         $formSmsData = $this->createForm(SmsDataType::class, $smsData);
 
         if($request->isMethod('POST')){
-            if($_format == 'json'){
+            if( $apiService->isRemoteCall()){
                 $formSmsData->submit(json_decode($request->getContent(), true));
             }else{
                 $formSmsData->handleRequest($request);
             }
 
-            if($form->isValid()){
+            if($formSmsData->isValid()){
                 $em->flush();
 
                 $apiService = $this->get('cairn_user.api');
