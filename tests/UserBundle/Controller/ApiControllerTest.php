@@ -648,14 +648,17 @@ class ApiControllerTest extends BaseControllerTest
         $before = $now->modify('-10 days')->format('Y-m-d');
         $inconsistent = $now->modify('+4 years')->format('Y-m-d');
 
+        $timestampNow = 1000*time($nowFormat);
+        $timestampAfter = 1000*time($later);
+
         $validLogin = 'benoit_perso';
         $baseSubmit = array(
                     'toAccount'=>'labonnepioche@test.fr',
                     'amount'=>25,
                     'reason'=>'Test reason',
                     'description'=>'Test description',
-                    'executionDate'=> time($nowFormat),
-                    'api_secret' => hash('sha256',$this->container->getParameter('api_secret').time($nowFormat)) 
+                    'executionDate'=> $timestampNow,
+                    'api_secret' => hash('sha256',$this->container->getParameter('api_secret').$timestampNow)
             );
 
         return array(
@@ -667,13 +670,13 @@ class ApiControllerTest extends BaseControllerTest
             'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST,'1111'),
             'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
             'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'1111'),
-            'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_BAD_REQUEST,'2222'),
+            'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'2222'),
             'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST,'1111'),
             'invalid API key'=>array($validLogin,array_replace($baseSubmit,
                                      array('executionDate'=>time($later),'api_secret'=>'ABCDE')),Response::HTTP_UNAUTHORIZED,'1111'),
             'valid after'=>array($validLogin,array_replace($baseSubmit, 
-                                    array('executionDate'=>time($later),
-                                        'api_secret'=>hash('sha256',$this->container->getParameter('api_secret').time($later)) )),
+                                    array('executionDate'=>$timestampAfter,
+                                        'api_secret'=>hash('sha256',$this->container->getParameter('api_secret').$timestampAfter) )),
                                             Response::HTTP_CREATED,'1111'),
             'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST,'1111'),
             'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST,'1111'),

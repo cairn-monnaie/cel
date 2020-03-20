@@ -919,9 +919,10 @@ class BankingController extends Controller
                         }
 
                         if($session->get('confirmationTries') < 3){
+                            $remainingTries = 3 - $session->get('confirmationTries');
                             $session->set('confirmationTries',$session->get('confirmationTries') + 1);
 
-                            $remainingTries = 3 - $session->get('confirmationTries');
+                            
                             $message = 'Code de confirmation erroné '.$remainingTries.' essais restants'; 
                             $session->getFlashBag()->add('error',$message);
 

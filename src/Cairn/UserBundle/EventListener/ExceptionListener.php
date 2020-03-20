@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 use Cairn\UserBundle\Event\SecurityEvents;
 use Cairn\UserBundle\EventListener\SecurityListener;
@@ -161,7 +162,15 @@ class ExceptionListener
                $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
                $this->sendException($event, $errorMessage,Response::HTTP_INTERNAL_SERVER_ERROR, $logoutUrl);
             }else{
-               $this->sendException($event, $exception->getMessage(),$exception->getCode());
+                if ($exception instanceof HttpException) {
+                    $code =  $exception->getStatusCode();
+                } elseif ($exception->getCode() >= Response::HTTP_BAD_REQUEST){
+                    $code = $exception->getCode();
+                }else{
+                    $code = Response::HTTP_INTERNAL_SERVER_ERROR;
+                }
+     
+                $this->sendException($event, $exception->getMessage(),$code);
             }
         }
 
