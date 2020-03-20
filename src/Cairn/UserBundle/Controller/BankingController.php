@@ -835,7 +835,7 @@ class BankingController extends Controller
             $em->remove($operation);
             $em->flush();
 
-            throw new \Exception('Operation timeout');
+            throw new \Exception('Operation timeout',408);
         }
 
 
@@ -920,17 +920,32 @@ class BankingController extends Controller
 
                         if($session->get('confirmationTries') < 3){
                             $session->set('confirmationTries',$session->get('confirmationTries') + 1);
-                            $session->getFlashBag()->add('error','Code de confirmation erroné');
+
+                            $remainingTries = 3 - $session->get('confirmationTries');
+                            $message = 'Code de confirmation erroné '.$remainingTries.' essais restants'; 
+                            $session->getFlashBag()->add('error',$message);
+
+                            if($_format == 'json'){
+                                return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
+                            }
+                            return new RedirectResponse($request->getRequestUri());
+
                         }else{
                             $session->remove($confirmationCodeAttr);
                             $session->remove('confirmationTries');
 
-                            $session->getFlashBag()->add('error','3 erreurs de saisie : le virement a été annulé');
+                            $message = '3 erreurs de saisie : le virement a été annulé';
+
+                            $session->getFlashBag()->add('error',$message);
 
                             $em->remove($operation);
                             $em->flush();
-                            return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
+                           
+                            if($_format == 'json'){
+                                return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
+                            }
 
+                            return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                         }
                     }
                 }else{//cancel button clicked

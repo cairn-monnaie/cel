@@ -575,7 +575,7 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForTransaction
      */
-    public function testRemoteTransaction($debitor, $formSubmit, $httpStatusCode)
+    public function testRemoteTransaction($debitor, $formSubmit, $httpStatusCode,$confirmCode)
     {
         $this->mobileLogin($debitor,'@@bbccdd');
 
@@ -615,7 +615,7 @@ class ApiControllerTest extends BaseControllerTest
                 json_encode(
                     array(
                         'api_secret' => hash('sha256',$this->container->getParameter('api_secret').$responseData['operation']['id']), 
-                        "confirmationCode"=> "1111",
+                        "confirmationCode"=> $confirmCode,
                         'save'=>""
                     )
                 )
@@ -625,12 +625,18 @@ class ApiControllerTest extends BaseControllerTest
 
             $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
             $this->assertJson($response->getContent());
-            $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
 
-            $responseData = json_decode($response->getContent(),true);
+            if($confirmCode == '1111'){
+                $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
 
-            $this->assertNotNull($responseData['paymentID']);
-            $this->assertSerializedEntityContent($responseData,'operation');
+                 $responseData = json_decode($response->getContent(),true);
+
+                 $this->assertNotNull($responseData['paymentID']);
+                 $this->assertSerializedEntityContent($responseData,'operation');
+                 
+            }else{
+                 $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+            }
         }
     }
 
@@ -653,22 +659,24 @@ class ApiControllerTest extends BaseControllerTest
             );
 
         return array(
-            'invalid amount too low'=>array($validLogin,array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST),
-            'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST),
-            'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST),
-            'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED),
-            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST),
-            'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED),
-            'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED),
-            'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST),
+            'invalid amount too low'=>array($validLogin,array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
+                                                        array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED,'1111'),
+            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
+            'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'1111'),
+            'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_BAD_REQUEST,'2222'),
+            'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST,'1111'),
             'invalid API key'=>array($validLogin,array_replace($baseSubmit,
-                                     array('executionDate'=>time($later),'api_secret'=>'ABCDE')),Response::HTTP_UNAUTHORIZED),
+                                     array('executionDate'=>time($later),'api_secret'=>'ABCDE')),Response::HTTP_UNAUTHORIZED,'1111'),
             'valid after'=>array($validLogin,array_replace($baseSubmit, 
                                     array('executionDate'=>time($later),
                                         'api_secret'=>hash('sha256',$this->container->getParameter('api_secret').time($later)) )),
-                                            Response::HTTP_CREATED),
-            'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST),
-            'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST),
+                                            Response::HTTP_CREATED,'1111'),
+            'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST,'1111'),
         );
 
     }

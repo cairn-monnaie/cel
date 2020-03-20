@@ -27,7 +27,7 @@ class BankingControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideTransactionData
      */
-    public function testTransactionProcess($debitor,$to,$expectForm,$ownsAccount,$isValid,$toAccount,$amount,$date,$frequency)
+    public function testTransactionProcess($debitor,$to,$expectForm,$ownsAccount,$isValid,$toAccount,$amount,$date,$frequency,$confirmCode)
     {
         $crawler = $this->login($debitor, '@@bbccdd');
 
@@ -73,8 +73,18 @@ class BankingControllerTest extends BaseControllerTest
 
                 //todo : checker le contenu du récapitulatif
                 $form = $crawler->selectButton('form_save')->form();
-                $form['form[confirmationCode]']->setValue('1111');
+                $form['form[confirmationCode]']->setValue($confirmCode);
                 $crawler = $this->client->submit($form);
+
+                if($confirmCode == '1111'){
+                    $this->assertTrue($this->client->getResponse()->isRedirect());
+                    $crawler = $this->client->followRedirect();
+                    $this->assertSame(1,$crawler->filter('html:contains("enregistrée")')->count());
+                }else{
+                    $this->assertTrue($this->client->getResponse()->isRedirect());
+                    $crawler = $this->client->followRedirect();
+                    $this->assertSame(1,$crawler->filter('html:contains("erroné")')->count());
+                }
             }else{
                 $this->assertTrue($this->client->getResponse()->isRedirect('/banking/transaction/request/'.$to.'-'.$frequency));
             }
@@ -100,13 +110,14 @@ class BankingControllerTest extends BaseControllerTest
         //valid data
         //User needs to have a phone number
         $baseData = array('login'=>'nico_faus_prod','to'=>'new','expectForm'=>true,'ownsAccount'=>true,
-            'isValid'=>true,'toAccount'=>$creditorEmail,'amount'=>'10', 'date'=>$today_format, 'frequency'=>'unique');
+            'isValid'=>true,'toAccount'=>$creditorEmail,'amount'=>'10', 'date'=>$today_format, 'frequency'=>'unique','confirmCode'=>'1111');
 
         return array(
             'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
             'has no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
             'has beneficiary, data matches no beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary',
                                                             'toAccount'=>$creditorICC, 'isValid'=>false)),
+            'invalid confirmation code'=>array_replace($baseData,array('confirmCode'=>'2222')),
             'valid immediate with email'=>$baseData,
             'valid with ICC'=>array_replace($baseData,array('toAccount'=>$creditorICC)),
             'valid email, future date'=>array_replace($baseData,array('date'=>$future_format)), 
