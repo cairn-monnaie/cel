@@ -238,7 +238,7 @@ class BankingController extends Controller
 
         //last operations
 
-                $ob = $operationRepo->createQueryBuilder('o');
+        $ob = $operationRepo->createQueryBuilder('o');
         $executedTransactions = $ob->where(
              $ob->expr()->orX(
                  $ob->expr()->andX(
@@ -643,7 +643,7 @@ class BankingController extends Controller
                     return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
                 }
 
-                $jsonRequest['executionDate'] = date('Y-m-d',$jsonRequest['executionDate']);
+                $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
 
                 unset($jsonRequest['api_secret']);
                 $form->submit($jsonRequest);
