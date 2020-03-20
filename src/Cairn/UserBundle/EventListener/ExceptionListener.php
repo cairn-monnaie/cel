@@ -50,6 +50,7 @@ class ExceptionListener
     private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $code, $redirectUrl=NULL)
     {
         if($this->api->isRemoteCall()){
+            $code = ($code < 100) ? 500 : $code;
             $event->setResponse($this->api->getErrorResponse(array($errorMessage),$code));           
             return;
         }
