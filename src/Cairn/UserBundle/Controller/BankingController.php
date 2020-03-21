@@ -520,6 +520,116 @@ class BankingController extends Controller
         return $prefix."\n".$description;
     }
 
+    public function mobileAppPaymentRequestAction(Request $request)
+    {
+        $session = $request->getSession();
+        $currentUser = $this->getUser();
+
+        $apiService = $this->get('cairn_user.api');
+
+        $em = $this->getDoctrine()->getManager();
+        $userRepo = $em->getRepository('CairnUserBundle:User');
+
+        $accountService = $this->get('cairn_user_cyclos_account_info');
+        
+        $debitorVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
+        $selfAccounts = $accountService->getAccountsSummary($debitorVO->id);
+
+        $direction = 'USER_TO_USER';
+        $toAccounts = array();
+
+        $operation = new Operation();
+        $operation->setToAccountNumber('new'); //todo: hack, make it cleaner
+
+        $form = $this->createForm(SimpleOperationType::class, $operation);
+
+
+        if($request->isMethod('POST')){
+
+
+            $jsonRequest = json_decode($request->getContent(), true);
+            if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
+                return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
+            }
+
+            //HERE, CHECK FOR API SECURITY CODE
+            $rightKey = hash('sha256',$this->getParameter('api_secret').$jsonRequest['executionDate']);
+            $sentKey = $jsonRequest['api_secret'];
+            if(! ($rightKey == $sentKey)){
+                return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
+            }
+
+            $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
+
+            unset($jsonRequest['api_secret']);
+            $form->submit($jsonRequest);
+
+
+            if($form->isValid()){
+                $dataTime = $operation->getExecutionDate();
+
+                $fromAccount = $accountService->getAccountByNumber($operation->getFromAccount()->number);
+                $toAccount = $operation->getToAccount();
+
+                $toUserVO = $this->get('cairn_user_cyclos_user_info')->getUserVOByKeyword($toAccount->number);
+
+                $bankingService = $this->get('cairn_user_cyclos_banking_info'); 
+                $paymentData = $bankingService->getPaymentData($fromAccount->owner,$toUserVO,NULL);
+
+                //filter the potential transfer types according to the debitor account type
+                $transferTypes = $paymentData->paymentTypes;
+                $accurateTransferTypes = array();
+                foreach($transferTypes as $transferType){
+                    if( strpos($transferType->internalName, 'virement_inter_adherent') !== false){
+                        $onlineTransferType = $transferType;
+                    }
+                }
+
+                $operation->setType(Operation::TYPE_MOBILE_APP);
+
+                $amount = $operation->getAmount();
+
+                //WARNING :  on Cyclos side, there is only one field for description, whereas on Symfony side there is
+                //both reason & description. For this reason, we transmit the reason as cyclos description
+                $cyclosDescription = $operation->getReason();
+
+                $res = $this->bankingManager->makeSinglePreview($paymentData,$amount,$cyclosDescription,$onlineTransferType,$dataTime);
+
+                $session->set('paymentReview',$res);
+
+                $creditorUser = $userRepo->findOneBy(array('username'=>$toUserVO->username));
+                $operation->setFromAccountNumber($res->fromAccount->number);
+                $operation->setToAccountNumber($res->toAccount->number);
+                $operation->setCreditor($creditorUser);
+                $operation->setDebitor($currentUser);
+                $em->persist($operation);
+                $em->flush();
+
+       
+                $redirectUrl = $this->generateUrl(
+                    'cairn_user_api_transaction_confirm',
+                    array(
+                        'id'=>$operation->getID(),
+                    )
+                );
+
+                $redirectOperation = array('confirmation_url' => $redirectUrl,
+                    'operation' => $operation);
+
+                $res = $this->get('cairn_user.api')->serialize($redirectOperation);
+                $response = new Response($res);
+                $response->headers->set('Content-Type', 'application/json');
+                $response->setStatusCode(Response::HTTP_CREATED);
+                return $response;
+
+            }else{
+                return $apiService->getFormErrorResponse($form);
+            }
+
+        }else{
+            throw new NotFoundHttpException('POST Method required !');
+        }
+    } 
 
     /**
      * Builds the transaction request on the cyclos side and created a payment between users with a review to be confirmed
@@ -783,7 +893,6 @@ class BankingController extends Controller
 
         }
 
-
         return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
             'form'=>$form->createView()));
 
@@ -804,6 +913,7 @@ class BankingController extends Controller
         }
 
         $apiService = $this->get('cairn_user.api');
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if( $apiService->isRemoteCall()){
             $jsonRequest = json_decode($request->getContent(), true);
@@ -815,7 +925,7 @@ class BankingController extends Controller
             }
             unset($jsonRequest['api_secret']);
         }
-        $messageNotificator = $this->get('cairn_user.message_notificator');
+        
 
         $currentUser = $this->getUser();
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -839,7 +949,6 @@ class BankingController extends Controller
         }
 
 
-        $type = 'transaction';
         $session = $request->getSession();
         $paymentReview = $session->get('paymentReview');
 
@@ -860,15 +969,22 @@ class BankingController extends Controller
 
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
+
+                    $isValidCode = NULL;
                     //CHECK VALIDATION CODE HERE
+                    if( $apiService->isRemoteCall()){//IF MOBILE APP CALL, CHECK PIN CODE
+                        $isValidCode = true;
+                    }else{ //ELSE, CHECK SMS Validation CODE
+                        $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
-                    $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+                        $providedCode = $form->get($confirmationCodeAttr)->getData();
+                        $session_code = $session->get($confirmationCodeAttr);
+
+                        $isValidCode = ($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code);
+                    }
                     
-                    $providedCode = $form->get($confirmationCodeAttr)->getData();
-                    $session_code = $session->get($confirmationCodeAttr);
-
                     //valid code
-                    if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
+                    if($isValidCode){
 
                         //according to the given type and amount, adapt the banking operation
                         if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
@@ -876,6 +992,7 @@ class BankingController extends Controller
                             $recurringPaymentVO = $this->bankingManager->makeRecurringPayment($paymentReview->recurringPayment);
                             // Cyclos script will create operation when the transfer will occur
                             $em->remove($operation);
+                            $em->flush();
                             $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
 
                             return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id'=>$recurringPaymentVO->id )); 
@@ -888,13 +1005,17 @@ class BankingController extends Controller
                                 $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                                 $operation->setPaymentID($paymentVO->transferId);
 
-                                //IN CASE OF IMMEDIATE PAYMENT, SEND EMAIL NOTIFICATION
-                                $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                                    array('operation'=>$operation,'type'=>'transaction'));
+                                if($operation->getType() == Operation::TYPE_TRANSACTION_EXECUTED){
+                                    //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
+                                    $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                                        array('operation'=>$operation,'type'=>'transaction'));
 
-                                $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                                    $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
+                                    $messageNotificator->notifyByEmail('Vous avez reçu un virement',
+                                        $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
 
+                                }else{//MOBILE APP PAYMENT --> send push to receiver ?
+                                    ;
+                                }
                             }
                         }
 
@@ -924,11 +1045,13 @@ class BankingController extends Controller
 
                             
                             $message = 'Code de confirmation erroné '.$remainingTries.' essais restants'; 
-                            $session->getFlashBag()->add('error',$message);
+                            
 
                             if($_format == 'json'){
                                 return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
                             }
+
+                            $session->getFlashBag()->add('error',$message);
                             return new RedirectResponse($request->getRequestUri());
 
                         }else{
@@ -937,8 +1060,6 @@ class BankingController extends Controller
 
                             $message = '3 erreurs de saisie : le virement a été annulé';
 
-                            $session->getFlashBag()->add('error',$message);
-
                             $em->remove($operation);
                             $em->flush();
                            
@@ -946,6 +1067,7 @@ class BankingController extends Controller
                                 return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
                             }
 
+                            $session->getFlashBag()->add('error',$message);
                             return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                         }
                     }
@@ -953,6 +1075,15 @@ class BankingController extends Controller
                     $session->remove($confirmationCodeAttr);
                     $em->remove($operation);
                     $em->flush();
+
+                    if($_format == 'json'){
+                        $res = $this->get('cairn_user.api')->serialize(array('message'=>'Operation canceled !'));
+                        $response = new Response($res);
+                        $response->headers->set('Content-Type', 'application/json');
+                        $response->setStatusCode(Response::HTTP_OK);
+                        return $response;
+                    }
+
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
                 }
             }

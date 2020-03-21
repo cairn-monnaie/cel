@@ -14,6 +14,7 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Deposit;
 use Cairn\UserBundle\Entity\HelloassoConversion;
+use Cairn\UserBundle\Entity\AppData;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
@@ -65,6 +66,19 @@ class SecurityController extends Controller
             $currentUser = $userRepo->findOneByUsername($params['username']);
 
             $array_oauth['user_id'] =  $currentUser->getID();
+
+            if(! $currentUser->getAppData()){
+                $appData = new AppData();
+                $currentUser->setAppData($appData);
+                $appData->setUser($currentUser);
+            }
+
+            $array_oauth['first_login'] =  (! $currentUser->getAppData()->getPinCode());
+
+            if($currentUser->getAppData()->isFirstLogin()){
+                $currentUser->getAppData()->setFirstLogin(false);
+                $em->flush();
+            }
 
             $response =  new Response(json_encode($array_oauth));
             $response->headers->set('Content-Type', 'application/json');
@@ -230,6 +244,13 @@ class SecurityController extends Controller
                         $operation->setRecurringID($data['transactionID']);
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
 
+                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
+                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                            array('operation'=>$operation,'type'=>'transaction'));
+
+                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
+                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
+
                         break;
                     case "scheduled":
                         $existingOperation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID'],'type'=>Operation::TYPE_TRANSACTION_SCHEDULED));
@@ -240,6 +261,14 @@ class SecurityController extends Controller
 
                         $operation->setExecutionDate(new \Datetime($cyclosTransfer->date));
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
+
+                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
+                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                            array('operation'=>$operation,'type'=>'transaction'));
+
+                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
+                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
+
                         break;
 
                     default:

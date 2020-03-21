@@ -12,6 +12,7 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\AppData;
 use Cairn\UserBundle\Entity\Phone;
 
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -85,8 +86,25 @@ class Api
         return ($request->getRequestFormat() != 'html');
     }
 
+    public function getOkResponse($responseData,$statusCode)
+    {
+        if(($statusCode < 200) || ($statusCode >= 300)){
+            throw new \Exception('Status code '.$statusCode.' is not an OK status',500);
+        }
+
+        $response = new Response($this->serialize($responseData));            
+        $response->setStatusCode($statusCode);      
+        $response->headers->set('Content-Type', 'application/json');
+        $response->headers->set('Accept', 'application/json');
+
+        return $response;
+    }
+
     public function getErrorResponse($messages, $statusCode)
     {
+        if($statusCode < 400){
+            throw new \Exception('Status code '.$statusCode.' is not an error status',500);
+        }
         $errors = [];                                              
         foreach ($messages as $message) {               
             $errors[] = array('error'=>$message); 
@@ -135,6 +153,13 @@ class Api
                          'id'=>$child->getID()
                      );
         }
+
+        if($child instanceOf AppData){
+            return array('user'=>$this->objectCallback($child->getUser()),
+                         'id'=>$child->getID()
+                     );
+        }
+
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)

@@ -573,9 +573,9 @@ class ApiControllerTest extends BaseControllerTest
 
     /**
      *
-     *@dataProvider provideDataForTransaction
+     *@dataProvider provideDataForRemotePayment
      */
-    public function testRemoteTransaction($debitor, $formSubmit, $httpStatusCode,$confirmCode)
+    public function testRemotePayment($debitor, $formSubmit, $httpStatusCode,$confirmCode)
     {
         $this->mobileLogin($debitor,'@@bbccdd');
 
@@ -583,7 +583,7 @@ class ApiControllerTest extends BaseControllerTest
 
         $crawler = $this->client->request(
             'POST',
-            '/mobile/transaction/request/new-unique',
+            '/mobile/payment/request',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -640,7 +640,7 @@ class ApiControllerTest extends BaseControllerTest
         }
     }
 
-    public function provideDataForTransaction()
+    public function provideDataForRemotePayment()
     {
         $now = new \Datetime();
         $nowFormat = date('Y-m-d');
@@ -668,7 +668,7 @@ class ApiControllerTest extends BaseControllerTest
             'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
                                                         array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED,'1111'),
             'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST,'1111'),
-            'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
+            //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
             'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'1111'),
             'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'2222'),
             'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST,'1111'),

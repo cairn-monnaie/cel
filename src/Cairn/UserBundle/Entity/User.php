@@ -114,6 +114,11 @@ class User extends BaseUser
     private $smsData;
 
     /**
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\AppData", mappedBy="user", cascade={"persist","remove"})
+     */
+    private $appData;
+
+    /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist"})
      */
     private $apiClient;
@@ -689,6 +694,30 @@ class User extends BaseUser
     public function getCard()
     {
         return $this->card;
+    }
+
+    /**
+     * Set appData
+     *
+     * @param \Cairn\UserBundle\Entity\AppData $appData
+     *
+     * @return User
+     */
+    public function setAppData(\Cairn\UserBundle\Entity\AppData $appData = null)
+    {
+        $this->appData = $appData;
+
+        return $this;
+    }
+
+    /**
+     * Get appData
+     *
+     * @return \Cairn\UserBundle\Entity\AppData
+     */
+    public function getAppData()
+    {
+        return $this->appData;
     }
 
     /**

@@ -489,12 +489,9 @@ cairn_user_banking_transaction_request:
         frequency: unique|recurring
         to: new|beneficiary|self
 
-cairn_user_api_transaction_create:
-    path:     mobile/transaction/request/{to}-{frequency}.{_format}
-    defaults: { _controller: CairnUserBundle:Banking:transactionRequest, _format: json}
-    requirements:
-        frequency: unique #|recurring
-        to: new|beneficiary
+cairn_user_api_payment_create:
+    path:     mobile/payment/request.{_format}
+    defaults: { _controller: CairnUserBundle:Banking:mobileAppPaymentRequest, _format: json}
 
 cairn_user_banking_reconversion:
     path:     banking/reconversion.{_format}

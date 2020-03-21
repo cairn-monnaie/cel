@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\AppData;
 use Cairn\UserBundle\Entity\NotificationPermission;
 use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
@@ -630,6 +631,13 @@ class Commands
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
 
+                //$appData = new AppData();
+                //$doctrineUser->setAppData($appData);
+                //$appData->setUser($doctrineUser);
+
+                //$appData->setPinCode(1111);
+                //$appData->setFirstLogin(false);
+
             }
 
 
@@ -1147,7 +1155,6 @@ class Commands
         foreach($usersWithSmsInfo as $user){
             $this->setUpSmsAccessClient($user, $this->em);
         }
-
 
         //Forced to set user status after creation of users, access clients... Otherwise, user can't access Cyclos and do any operation
         echo 'INFO: ------ Set up Cyclos user status ------- ' . "\n";

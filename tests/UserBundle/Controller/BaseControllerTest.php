@@ -100,7 +100,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('groupNames', $entity);
 
 
-            $this->assertEquals(27,count($entity));
+            $this->assertEquals(28,count($entity));
             break;
 
         case 'phone':
