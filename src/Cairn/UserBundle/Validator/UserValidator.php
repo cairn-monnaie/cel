@@ -71,14 +71,15 @@ class UserValidator extends ConstraintValidator
                 ->addViolation();
         }
 
-        if(strlen($user->getName()) > 30){
-            $this->context->buildViolation('Le nom doit contenir moins de 30 caractères.')
+        if(strlen($user->getName()) > 50){
+            $this->context->buildViolation('Le nom doit contenir moins de 50 caractères.')
                 ->atPath('name')
                 ->addViolation();
         }
 
-        if(strlen($user->getDescription()) > 150){
-            $this->context->buildViolation('La description doit contenir moins de 150 caractères.')
+        $limit = ($user->hasRole('ROLE_PRO')) ? 500 : 150;
+        if(strlen($user->getDescription()) > $limit){
+            $this->context->buildViolation('La description doit contenir moins de '.$limit.' caractères.')
                 ->atPath('description')
                 ->addViolation();
         }
