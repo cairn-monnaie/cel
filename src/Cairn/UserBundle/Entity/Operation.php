@@ -165,12 +165,12 @@ class Operation
     const TYPE_DIRECT_DEBITING = 13;
 
 
-    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT,self::TYPE_RECONVERSION,self::TYPE_MANDATE);
+    const ARRAY_EXECUTED_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED,self::TYPE_WITHDRAWAL,self::TYPE_DEPOSIT,self::TYPE_CONVERSION_BDC,self::TYPE_CONVERSION_HELLOASSO, self::TYPE_ONLINE_PAYMENT,self::TYPE_RECONVERSION,self::TYPE_MANDATE,self::TYPE_MOBILE_APP);
 
     /*
      * All types which involve two adherents
      */
-    const ARRAY_TRANSFER_TYPES = array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING, self::TYPE_ONLINE_PAYMENT);
+    const ARRAY_TRANSFER_TYPES = array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING, self::TYPE_ONLINE_PAYMENT);
 
     /*
      * All types which involve a potential administration by hand  
@@ -211,6 +211,9 @@ class Operation
             break;
         case "SMS_PAYMENT":
             return self::TYPE_SMS_PAYMENT;
+            break;
+        case "MOBILE_APP":
+            return self::TYPE_MOBILE_APP;
             break;
         case "ONLINE_PAYMENT":
             return self::TYPE_ONLINE_PAYMENT;
@@ -259,6 +262,9 @@ class Operation
         case "11":
             return 'reconversion';
             break;
+        case "12":
+            return 'mobile app';
+            break;
         default:
             return NULL;
         }
@@ -266,7 +272,7 @@ class Operation
 
     public static function getB2CTypes()
     {
-        return array(self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);
+        return array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);
     }
 
     public static function getDebitOperationTypes()
