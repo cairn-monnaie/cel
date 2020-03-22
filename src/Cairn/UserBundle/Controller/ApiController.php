@@ -79,16 +79,17 @@ class ApiController extends Controller
                 $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
             }
 
-            if(! empty(array_values($jsonRequest['bounding_box']) )){
+            $boundingValues = array_values($jsonRequest['bounding_box']);
+            if( (! in_array('', $boundingValues)) && !empty($boundingValues) ){
                 $ub->join('u.address','a')
                     ->andWhere('a.longitude > :minLon')
                     ->andWhere('a.longitude < :maxLon')
                     ->andWhere('a.latitude > :minLat')
                     ->andWhere('a.latitude < :maxLat')
-                    ->setParameter('minLon',$jsonRequest['bounding_box']['minLon'])
-                    ->setParameter('maxLon',$jsonRequest['bounding_box']['maxLon'])
-                    ->setParameter('minLat',$jsonRequest['bounding_box']['minLat'])
-                    ->setParameter('maxLat',$jsonRequest['bounding_box']['maxLat'])
+                    ->setParameter('minLon',$boundingValues['minLon'])
+                    ->setParameter('maxLon',$boundingValues['maxLon'])
+                    ->setParameter('minLat',$boundingValues['minLat'])
+                    ->setParameter('maxLat',$boundingValues['maxLat'])
                     ;
             }
                 
