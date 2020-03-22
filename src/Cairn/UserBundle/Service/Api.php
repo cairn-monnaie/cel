@@ -165,10 +165,10 @@ class Api
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
     {
         $defaultIgnoredAttributes = array();
-
+        $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                         'identityDocument'=> function ($child) {return $this->objectCallback($child);},
                         'image'=> function ($child) {return $this->objectCallback($child);},
@@ -209,7 +209,7 @@ class Api
            ));
         }
 
-        $ignoredAttributes = array_merge($defaultIgnoredAttributes, $extraIgnoredAttributes);
+        $ignoredAttributes = array_merge($defaultIgnoredAttributes, $extraIgnoredAttributes,$serializationAttributes);
         $normalizer->setIgnoredAttributes($ignoredAttributes);
     }
 

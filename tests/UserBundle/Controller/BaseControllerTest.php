@@ -52,29 +52,29 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('email', $entity);
             $this->assertArrayHasKey('name', $entity);
             $this->assertArrayHasKey('enabled', $entity);
-            $this->assertArrayHasKey('cyclosID', $entity);
             $this->assertArrayHasKey('mainICC', $entity);
             $this->assertArrayHasKey('address', $entity);
             $this->assertArrayHasKey('description', $entity);
-            $this->assertArrayHasKey('creationDate', $entity);
-            $this->assertArrayHasKey('nbPhoneNumberRequests', $entity);
             $this->assertArrayHasKey('image', $entity);
-            $this->assertArrayHasKey('identityDocument', $entity);
-            $this->assertArrayHasKey('passwordTries', $entity);
-            $this->assertArrayHasKey('cardKeyTries', $entity);
-            $this->assertArrayHasKey('phoneNumberActivationTries', $entity);
-            $this->assertArrayHasKey('cardAssociationTries', $entity);
-            $this->assertArrayHasKey('removalRequest', $entity);
             $this->assertArrayHasKey('firstLogin', $entity);
             $this->assertArrayHasKey('autocompleteLabel', $entity);
             $this->assertArrayHasKey('city', $entity);
             $this->assertArrayHasKey('lastLogin', $entity);
             $this->assertArrayHasKey('roles', $entity);
-            $this->assertArrayHasKey('superAdmin', $entity);
-            $this->assertArrayHasKey('admin', $entity);
             $this->assertArrayHasKey('adherent', $entity);
-            $this->assertArrayHasKey('passwordRequestedAt', $entity);
 
+            $this->assertArrayNotHasKey('creationDate', $entity);
+            $this->assertArrayNotHasKey('cyclosID', $entity);
+            $this->assertArrayNotHasKey('superAdmin', $entity);
+            $this->assertArrayNotHasKey('admin', $entity);
+            $this->assertArrayNotHasKey('passwordRequestedAt', $entity);
+            $this->assertArrayNotHasKey('identityDocument', $entity);
+            $this->assertArrayNotHasKey('passwordTries', $entity);
+            $this->assertArrayNotHasKey('cardKeyTries', $entity);
+            $this->assertArrayNotHasKey('phoneNumberActivationTries', $entity);
+            $this->assertArrayNotHasKey('cardAssociationTries', $entity);
+            $this->assertArrayNotHasKey('removalRequest', $entity);
+            $this->assertArrayNotHasKey('nbPhoneNumberRequests', $entity);
             $this->assertArrayNotHasKey('phoneNumbers', $entity);
             $this->assertArrayNotHasKey('phones', $entity);
             $this->assertArrayNotHasKey('referents', $entity);
@@ -100,7 +100,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('groupNames', $entity);
 
 
-            $this->assertEquals(28,count($entity));
+            $this->assertEquals(15,count($entity));
             break;
 
         case 'phone':

@@ -64,10 +64,18 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForUsers
      */
-    public function testGetUsersAction($username, $httpResponse, $nbUsers)
+    public function testGetUsersAction($formSubmit, $httpResponse, $nbUsers)
     {
-        $this->mobileLogin($username,'@@bbccdd');
-        $crawler = $this->client->request('POST','/mobile/users');
+        $this->mobileLogin('gjanssens','@@bbccdd');
+
+        $crawler = $this->client->request(
+            'POST',
+            '/mobile/users',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode($formSubmit)
+        );
 
         $response = $this->client->getResponse();
 
@@ -78,6 +86,7 @@ class ApiControllerTest extends BaseControllerTest
         $responseData = json_decode($response->getContent(),true);
 
         if($response->isSuccessful()){
+            $this->assertEquals($nbUsers,count($responseData));
             foreach($responseData as $user){
                 $this->assertSerializedEntityContent($user,'user');
             }
@@ -86,11 +95,35 @@ class ApiControllerTest extends BaseControllerTest
 
     public function provideDataForUsers()
     {
+        $limit = 20;
+        $baseSubmit = array(
+                    'limit'=>$limit,
+                    'offset'=>0,
+                    'orderBy'=> array('key'=>'name','order'=>'ASC') ,
+                    'name'=>'',
+                    'roles'=> array(),
+                    'bounding_box'=>array('minLon'=>'','maxLon'=>'','minLat'=>'','maxLat'=>'')
+            );
+
+
         return array(
-            'request as a person' => array('username'=>'gjanssens', Response::HTTP_OK,49),
-            'request as a pro' => array('username'=>'nico_faus_prod', Response::HTTP_OK,49),
-            'request as GL Gre' => array('username'=>'gl_grenoble', Response::HTTP_OK,1),
-            'request as a super admin' => array('username'=>$this->testAdmin, Response::HTTP_OK,57)
+            'offset too high' =>array( array_replace($baseSubmit,array('offset'=>250)),Response::HTTP_OK,0),
+            'invalid offset' =>array(array_replace($baseSubmit,array('offset'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
+            'invalid limit' =>array(array_replace($baseSubmit,array('limit'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
+            'order by creationDate' =>array(array_replace_recursive($baseSubmit,array('orderBy'=>array('key'=>'creationDate'))),Response::HTTP_OK,$limit),
+            'base request' => array($baseSubmit,Response::HTTP_OK,$limit),
+            'get pros only' =>array(array_replace_recursive($baseSubmit,array('roles'=>array('ROLE_PRO'))),Response::HTTP_OK,$limit),
+            'get persons only' =>array(array_replace_recursive($baseSubmit,array('roles'=>array('ROLE_PERSON'))),Response::HTTP_OK,14),
+            'precise name' =>array(array_replace($baseSubmit,array('name'=>'maltobar')),Response::HTTP_OK,1),
+            'unprecise name' =>array(array_replace($baseSubmit,array('name'=>'test')),Response::HTTP_OK,$limit),
+            'empty bounding box' =>array(array_replace($baseSubmit,array('bounding_box'=>[])),Response::HTTP_OK,$limit),
+            'inconsistent bounding box data' =>array(
+                            array_replace_recursive($baseSubmit,array('bounding_box'=>['minLon'=>'1','maxLon'=>'2','minLat'=>'1','maxLat'=>'2'])),
+                            Response::HTTP_OK,0),
+            'valid bounding box data' =>array(
+                            array_replace_recursive($baseSubmit,array('bounding_box'=>['minLon'=>'4','maxLon'=>'6','minLat'=>'44','maxLat'=>'46'])),
+                            Response::HTTP_OK,
+                            20)
         );
     }
 
