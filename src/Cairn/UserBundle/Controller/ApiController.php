@@ -41,23 +41,51 @@ class ApiController extends Controller
 
     public function usersAction(Request $request)
     {
-        $currentUser = $this->getUser();
-        $currentUserID = $currentUser->getID();
+        if($request->isMethod('POST')){
 
-        $em = $this->getDoctrine()->getManager();
-        $userRepo = $em->getRepository(User::class);
+            $jsonRequest = json_decode($request->getContent(), true);
 
-        $ub = $userRepo->createQueryBuilder('u');
+            $em = $this->getDoctrine()->getManager();
+            $userRepo = $em->getRepository(User::class);
 
-        if($currentUser->isAdherent()){
-            $userRepo->whereEnabled($ub,true)->whereAdherent($ub)->whereConfirmed($ub);
+            $ub = $userRepo->createQueryBuilder('u')
+                ->setMaxResults($jsonRequest['limit'])
+                ->setFirstResult($jsonRequest['offset']);
+
+            if($jsonRequest['orderBy']['key']){
+                $ub->orderBy('u.'.trim($jsonRequest['orderBy']['key']),$jsonRequest['orderBy']['order']);
+            }else{
+                $ub->orderBy('u.name','ASC');
+            }
+
+            if($jsonRequest['name']){
+                $ub->andWhere(
+                    $ub->expr()->orX(
+                        "u.name LIKE '%".$jsonRequest['name']."%'"
+                        ,
+                        "u.username LIKE '%".$jsonRequest['name']."%'"
+                        ,
+                        "u.email LIKE '%".$jsonRequest['name']."%'"
+                    )
+                );
+            }
+
+            $userRepo->whereAdherent($ub)
+                ->whereConfirmed($ub);
+
+            if(empty(array_values($jsonRequest['roles']))){
+                $userRepo->whereAdherent($ub);
+            }else{
+                $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
+
+            }
+                
+            $users = $ub->getQuery()->getResult();
+
+            return $this->get('cairn_user.api')->getOkResponse($users,Response::HTTP_OK);
         }else{
-            $userRepo->whereReferent($ub, $currentUserID);
+            throw new NotFoundHttpException('POST Method required !');
         }
-
-        $users = $ub->getQuery()->getResult();
-
-        return $this->get('cairn_user.api')->getOkResponse($users,Response::HTTP_OK);
     }
 
 
