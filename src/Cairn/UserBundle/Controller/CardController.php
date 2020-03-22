@@ -568,13 +568,6 @@ class CardController extends Controller
                         $session->getFlashBag()->add('error','Ce code ne correspond à aucune carte disponible. Il vous reste '.$remainingTries. ' essais.');// La carte de sécurité expire au bout de '.$this->getParameter('card_association_delay').' jours à partir de sa date d\'impression. Peut-être votre carte a-t-elle expirée ?
                         $em->flush();
 
-                        //                    if($this->get('cairn_user.api')->isApiCall()){
-                        //                        $response =  new Response('card association : FAILED !');
-                        //                        $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                        //                        $response->headers->set('Content-Type', 'application/json');
-                        //                        return $response;
-                        //                    }
-
                         return new RedirectResponse($request->getRequestUri());
                     }
 
@@ -591,13 +584,6 @@ class CardController extends Controller
                 }
 
                 $em->flush();
-
-                //                    if($this->get('cairn_user.api')->isApiCall()){
-                //                        $response =  new Response('card association : OK !');
-                //                        $response->setStatusCode(Response::HTTP_OK);
-                //                        $response->headers->set('Content-Type', 'application/json');
-                //                        return $response;
-                //                    }
 
                 $session->getFlashBag()->add('success', $successMessage);
                 return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));

@@ -56,36 +56,13 @@ class RegistrationListener
         $this->userManager->editUser($userDTO);                          
 
         if($this->container->get('cairn_user.api')->isRemoteCall()){
-            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
-            $response = new Response($serializedUser);
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
-            $event->setResponse($response);
+            $event->setResponse($this->container->get('cairn_user.api')->getOkResponse($user,Response::HTTP_OK));
         }else{
             $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
             $event->setResponse(new RedirectResponse($profileUrl));
         }
     }
 
-//    public function onProfileEditFailure(FormEvent $event)
-//    {
-//        $apiService = $this->container->get('cairn_user.api');
-//        $arrayErrors = array();
-//        foreach($event->getForm()->getErrors(true) as $error){
-//            $arrayErrors[$error->getOrigin()->getName()] = array(
-//                'message'=>$error->getMessage(),
-//                'messageTemplate'=> $error->getMessageTemplate()
-//            );
-//        }
-//
-//        if($apiService->isRemoteCall()){
-//            $serializedErrors = $apiService->serialize($arrayErrors);
-//            $response = new Response($serializedErrors);
-//            $response->headers->set('Content-Type', 'application/json');
-//            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-//            $event->setResponse($response);
-//        }
-//    }
 
     /**
      * Applies some actions on new registered user at confirmation
@@ -206,11 +183,7 @@ class RegistrationListener
 
         
         if($event->getRequest()->get('_format') == 'json'){
-            $serializedUser = $this->container->get('cairn_user.api')->serialize($user, array('plainPassword'));
-            $response = new Response($serializedUser);
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_CREATED);
-            $event->setResponse($response);
+            $event->setResponse($this->container->get('cairn_user.api')->getOkResponse($user,Response::HTTP_CREATED));
         }
     }
 

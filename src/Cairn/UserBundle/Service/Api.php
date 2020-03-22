@@ -166,6 +166,7 @@ class Api
     {
         $defaultIgnoredAttributes = array();
 
+
         if($object instanceOf User){
             $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
@@ -194,6 +195,12 @@ class Api
                         'user'=> function ($child) {return $this->objectCallback($child);},
            ));
         }
+        if($object instanceOf AppData){
+            $normalizer->setCallbacks(array(
+                        'user'=> function ($child) {return $this->objectCallback($child);},
+           ));
+        }
+
         if($object instanceOf Phone){
             $defaultIgnoredAttributes = array('user');
             $normalizer->setCallbacks(array(
@@ -205,6 +212,7 @@ class Api
         $ignoredAttributes = array_merge($defaultIgnoredAttributes, $extraIgnoredAttributes);
         $normalizer->setIgnoredAttributes($ignoredAttributes);
     }
+
 
     /**
      * Serialize an object $object excluding attributes provided in $ignoredAttributes

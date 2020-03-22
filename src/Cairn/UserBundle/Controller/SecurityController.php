@@ -38,6 +38,7 @@ class SecurityController extends Controller
 
     public function getTokensAction(Request $request)
     {
+        $apiService = $this->get('cairn_user.api');
         $session = $request->getSession();
 
         if($request->isMethod('POST')){
@@ -80,9 +81,7 @@ class SecurityController extends Controller
                 $em->flush();
             }
 
-            $response =  new Response(json_encode($array_oauth));
-            $response->headers->set('Content-Type', 'application/json');
-            return $response;
+            return $apiService->getOkResponse($array_oauth,Response::HTTP_OK);
         }else{
             throw new NotFoundHttpException('POST Method required !');
         }
@@ -91,6 +90,8 @@ class SecurityController extends Controller
 
     public function webPushSubscriptionAction(Request $request)
     {
+        $apiService = $this->get('cairn_user.api');
+
         if($request->isMethod('POST')){
 
             $em = $this->getDoctrine()->getManager();
@@ -101,54 +102,28 @@ class SecurityController extends Controller
             try{
                 $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
             }catch(\Exception $e){
-                $response = new Response('Invalid authentication');
-                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
-                $response->headers->set('Content-Type', 'application/json'); 
-                $response->headers->set('Accept', 'application/json'); 
-               
-                return $response;
-               
+                return $apiService->getErrorResponse('Invalid authentication',Response::HTTP_UNAUTHORIZED);
             }
 
             //validate access token
             if($userVO->shortDisplay != $params['username']){
-                $response = new Response('Access denied');
-                $response->setStatusCode(Response::HTTP_UNAUTHORIZED);
-                $response->headers->set('Content-Type', 'application/json'); 
-                $response->headers->set('Accept', 'application/json'); 
-               
-                return $response;
+                return $apiService->getErrorResponse('Access denied',Response::HTTP_UNAUTHORIZED);
             }
 
 
             //validate endpoint exists
             if(! array_key_exists('endpoint',$params['subscription'])){
-                $response = new Response('Subscription must have an endpoint');
-                $response->setStatusCode(Response::BAD_REQUEST);
-                $response->headers->set('Content-Type', 'application/json'); 
-                $response->headers->set('Accept', 'application/json'); 
-               
-                return $response;
+                return $apiService->getErrorResponse('Subscription must have an endpoint',Response::HTTP_BAD_REQUEST);
             }
 
             $subscription = $params['subscription'];
 
             //validate keys because we need payload support
             if(! array_key_exists('keys',$params['subscription'])){
-                $response = new Response('Subscription must have encryption keys');
-                $response->setStatusCode(Response::BAD_REQUEST);
-                $response->headers->set('Content-Type', 'application/json'); 
-                $response->headers->set('Accept', 'application/json'); 
-               
-                return $response;
+                return $apiService->getErrorResponse('Subscription must have encryption keys',Response::HTTP_BAD_REQUEST);
             }else{
                 if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                    $response = new Response('Subscription must have valid encryption keys');
-                    $response->setStatusCode(Response::BAD_REQUEST);
-                    $response->headers->set('Content-Type', 'application/json'); 
-                    $response->headers->set('Accept', 'application/json'); 
-                   
-                    return $response;
+                    return $apiService->getErrorResponse('Subscription must have valid encryption keys',Response::HTTP_BAD_REQUEST);
                 }
             }
 
@@ -161,20 +136,9 @@ class SecurityController extends Controller
 
             $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
 
-            $response = new Response('OK');
-            $response->setStatusCode(Response::HTTP_OK);
-            $response->headers->set('Content-Type', 'application/json'); 
-            $response->headers->set('Accept', 'application/json'); 
-
-            return $response;
+            return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
         }else{
-            $response = new Response('POST method required');
-            $response->setStatusCode(Response::HTTP_METHOD_NOT_ALLOWED);
-            $response->headers->set('Content-Type', 'application/json'); 
-            $response->headers->set('Accept', 'application/json'); 
-
-            return $response;
-
+            return $apiService->getErrorResponse('POST method required',Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 
@@ -185,7 +149,8 @@ class SecurityController extends Controller
     public function synchronizeAppsOperationsAction(Request $request, $type)
     {
         $em = $this->getDoctrine()->getManager();
-        
+        $apiService = $this->get('cairn_user.api');
+   
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if($request->isMethod('POST')){
@@ -217,6 +182,9 @@ class SecurityController extends Controller
                     $operation = new Operation();
                     $operation->setDebitorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($cyclosTransfer->from->owner));
                     $operation->setCreditorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($cyclosTransfer->to->owner));
+                    $operation->setAmount($data['amount']);
+                    $operation->setPaymentID($data['paymentID']);
+
 
                     switch ($type){
                     case "conversion":
@@ -275,11 +243,9 @@ class SecurityController extends Controller
                         throw new SuspiciousOperationException('Unexpected operation type');
                     }
 
-                    $operation->setPaymentID($data['paymentID']);
                     $operation->setFromAccountNumber($data['fromAccountNumber']);
                     $operation->setToAccountNumber($data['toAccountNumber']);
-                    $operation->setAmount($data['amount']);
-
+                    
                     //there is not 'reason' property in Cyclos. Then, we use the only one available (description) to set up the 
                     //operation reason on Symfony side
                     $operation->setReason($data['description']);
@@ -287,13 +253,8 @@ class SecurityController extends Controller
 
                     $em->persist($operation);
                     $em->flush();
-                    $response = new Response(' { "message": "Operation synchronized !" }');
 
-                    $response->setStatusCode(Response::HTTP_CREATED);
-                    $response->headers->set('Content-Type', 'application/json'); 
-                    $response->headers->set('Accept', 'application/json'); 
-
-                    return $response;
+                    return $apiService->getOkResponse(array('Operation synchronized !'),Response::HTTP_CREATED);
                 }
             }else{ //there is a failed payment to notify
 
@@ -311,10 +272,6 @@ class SecurityController extends Controller
                         $to = $debitor->getEmail();
                         $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                        $response = new Response(' { "message"=>"Notification about failed payment sent !" }');
-
-                        $response->setStatusCode(Response::HTTP_OK);
-
                         if($type == 'scheduled'){
                             $operation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID']));
                             if(! $operation){
@@ -324,28 +281,21 @@ class SecurityController extends Controller
                             $operation->setType(Operation::TYPE_SCHEDULED_FAILED);
                             $em->flush();
                         }
+
+                        return $apiService->getOkResponse(array('Notification about failed payment sent !'),Response::HTTP_OK);
+
                     }else{
-                        $response = new Response(' { "message"=>"Nothing to send !" }');
-                        $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+                        return $apiService->getErrorResponse(array('Nothing to send !'),Response::HTTP_BAD_REQUEST);
                     }
                 }else{
                     throw new SuspiciousOperationException('Unexpected operation type');
                 }
-
-                $response->headers->set('Content-Type', 'application/json'); 
-                $response->headers->set('Accept', 'application/json'); 
-
-                return $response;
             }
 
 
 
         }else{
-            $response = new Response(' { "message"=>"POST method accepted !" }');
-            $response->setStatusCode(Response::HTTP_METHOD_NOT_ALLOWED);
-            $response->headers->set('Content-Type', 'application/json'); 
-
-            return $response;
+            return $apiService->getErrorResponse(array('POST method accepted !'),Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 

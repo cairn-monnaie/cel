@@ -77,6 +77,8 @@ class DefaultController extends Controller
     }
 
     public function registrationByTypeAction(Request $request, string $type, $_format){
+        $apiService = $this->get('cairn_user.api');
+
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
             $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
@@ -86,10 +88,7 @@ class DefaultController extends Controller
             $session->set('registration_type',$type);
 
             if($_format == 'json'){
-                $response = new Response(' { "message"=>"session OK" }');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_OK);
-                return $response;
+                return $apiService->getOkResponse(array('Session OK'),Response::HTTP_OK);
             }
 
             return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));

@@ -58,27 +58,19 @@ class SmsController extends Controller
     {
         parse_str( $request->getQueryString(), $query) ;
 
+        $apiService = $this->get('cairn_user.api');
+
         if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-            $response = new Response(' { "message"=>"Invalid request" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_NOT_FOUND);
-            return $response;
+            return $apiService->getErrorResponse('Invalid request',Response::HTTP_NOT_FOUND);
         } 
 
         $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
         $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
         if(! $res){
-            $response = new Response(' { "message":"Request aborted" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-            return $response;
-
+            return $apiService->getErrorResponse(array('Request aborted'),Response::HTTP_BAD_REQUEST);
         }else{
-            $response = new Response(' { "message":"Request OK !" }');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
-            return $response;
+            return $apiService->getOkResponse(array('Request OK !'),Response::HTTP_OK);
         }
     }
 

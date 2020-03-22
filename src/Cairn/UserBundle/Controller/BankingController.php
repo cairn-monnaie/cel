@@ -180,7 +180,7 @@ class BankingController extends Controller
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
         if($_format == 'json'){
-            $response = new Response(json_encode($accounts) );
+             $response = new Response(json_encode($accounts) );
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
             return $response;
@@ -202,6 +202,7 @@ class BankingController extends Controller
     {
         $session = $request->getSession();
         $accountService = $this->get('cairn_user_cyclos_account_info');
+        $apiService = $this->get('cairn_user.api');
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -427,13 +428,8 @@ class BankingController extends Controller
                     ->orderBy('o.executionDate',$orderBy)
                     ->getQuery()->getResult();
 
-                if($this->get('cairn_user.api')->isRemoteCall()){
-                    $res = $this->get('cairn_user.api')->serialize($executedTransactions);
-
-                    $response = new Response($res);
-                    $response->headers->set('Content-Type', 'application/json');
-                    $response->setStatusCode(Response::HTTP_OK);
-                    return $response;
+                if($apiService->isRemoteCall()){
+                    return $apiService->getOkResponse($executedTransactions,Response::HTTP_OK);
                 }
 
             }
@@ -616,11 +612,7 @@ class BankingController extends Controller
                 $redirectOperation = array('confirmation_url' => $redirectUrl,
                     'operation' => $operation);
 
-                $res = $this->get('cairn_user.api')->serialize($redirectOperation);
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_CREATED);
-                return $response;
+                return $apiService->getOkResponse($redirectOperation,Response::HTTP_CREATED);
 
             }else{
                 return $apiService->getFormErrorResponse($form);
@@ -873,11 +865,7 @@ class BankingController extends Controller
                     $redirectOperation = array('confirmation_url' => $redirectUrl,
                                  'operation' => $operation);
 
-                    $res = $this->get('cairn_user.api')->serialize($redirectOperation);
-                    $response = new Response($res);
-                    $response->headers->set('Content-Type', 'application/json');
-                    $response->setStatusCode(Response::HTTP_CREATED);
-                    return $response;
+                    return $apiService->getOkResponse($redirectOperation,Response::HTTP_CREATED);
 
                 }
                 return $this->redirectToRoute('cairn_user_banking_operation_confirm',
@@ -1024,12 +1012,7 @@ class BankingController extends Controller
                         $session->remove('confirmationTries');
 
                         if($_format == 'json'){
-                            $res = $this->get('cairn_user.api')->serialize($operation);
-                            $response = new Response($res);
-                            $response->headers->set('Content-Type', 'application/json');
-                            $response->setStatusCode(Response::HTTP_CREATED);
-                            return $response;
-
+                            return $apiService->getOkResponse($operation,Response::HTTP_CREATED);
                         }
                         $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
                         return $this->redirectToRoute('cairn_user_banking_transfer_view',array('paymentID'=>$operation->getPaymentID() ));
@@ -1077,11 +1060,7 @@ class BankingController extends Controller
                     $em->flush();
 
                     if($_format == 'json'){
-                        $res = $this->get('cairn_user.api')->serialize(array('message'=>'Operation canceled !'));
-                        $response = new Response($res);
-                        $response->headers->set('Content-Type', 'application/json');
-                        $response->setStatusCode(Response::HTTP_OK);
-                        return $response;
+                        return $apiService->getOkResponse(array('Operation canceled !'),Response::HTTP_OK);
                     }
 
                     return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
@@ -1289,6 +1268,7 @@ class BankingController extends Controller
     public function viewTransferAction(Request $request, Operation $operation,$_format)
     {
         $session = $request->getSession();
+        $apiService = $this->get('cairn_user.api');
 
         $currentUser = $this->getUser();
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -1307,11 +1287,7 @@ class BankingController extends Controller
         }
 
         if($_format == 'json'){
-            $serializedOperation = $this->get('cairn_user.api')->serialize($operation);
-            $response = new Response($serializedOperation);
-            $response->headers->set('Content-Type', 'application/json');
-            return $response;
-
+            return $apiService->getOkResponse($operation,Response::HTTP_OK);
         }
         return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
             'operation'=>$operation));

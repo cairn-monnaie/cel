@@ -36,12 +36,7 @@ class ApiController extends Controller
         $phones = $user->getPhones(); 
         $phones = is_array($phones) ? $phones : $phones->getValues();
 
-        $res = $this->get('cairn_user.api')->serialize($phones);
-
-        $response = new Response($res);
-        $response->headers->set('Content-Type', 'application/json');
-        $response->setStatusCode(Response::HTTP_OK);
-        return $response;
+        return $this->get('cairn_user.api')->getOkResponse($phones,Response::HTTP_OK);
     }
 
     public function usersAction(Request $request)
@@ -61,13 +56,10 @@ class ApiController extends Controller
         }
 
         $users = $ub->getQuery()->getResult();
-        $res = $this->get('cairn_user.api')->serialize($users);
 
-        $response = new Response($res);
-        $response->headers->set('Content-Type', 'application/json');
-        $response->setStatusCode(Response::HTTP_OK);
-        return $response;
+        return $this->get('cairn_user.api')->getOkResponse($users,Response::HTTP_OK);
     }
+
 
     public function createOnlinePaymentAction(Request $request)
     {
@@ -161,10 +153,7 @@ class ApiController extends Controller
             'redirect_url' => $this->generateUrl('cairn_user_online_payment_execute',array('suffix'=>$suffix),UrlGeneratorInterface::ABSOLUTE_URL)
         );
 
-        $response = new Response(json_encode($payload) );
-        $response->headers->set('Content-Type', 'application/json');
-        $response->setStatusCode(Response::HTTP_CREATED);
-        return $response;
+        return $apiService->getOkResponse($payload,Response::HTTP_CREATED);
     }
 
 }

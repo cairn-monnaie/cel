@@ -227,16 +227,12 @@ class BeneficiaryController extends Controller
     public function listBeneficiariesAction(Request $request, $_format)
     {
         $beneficiaries = $this->getUser()->getBeneficiaries();
+        $apiService = $this->get('cairn_user.api');
 
         $form = $this->createForm(ConfirmationType::class);
 
         if($_format == 'json'){
-            $beneficiaries = $this->get('cairn_user.api')->serialize($beneficiaries->getValues());
-
-            $response = new Response($beneficiaries);
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
-            return $response;
+            return $apiService->getOkResponse($beneficiaries->getValues(),Response::HTTP_OK);
         }
 
         return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$beneficiaries));
@@ -328,11 +324,7 @@ class BeneficiaryController extends Controller
 
 
                 if( $apiService->isRemoteCall()){
-                    $res = $this->get('cairn_user.api')->serialize($beneficiary);
-                    $response = new Response($res);
-                    $response->setStatusCode(Response::HTTP_CREATED);
-                    $response->headers->set('Content-Type', 'application/json');
-                    return $response;
+                    return $apiService->getOkResponse($beneficiary,Response::HTTP_CREATED);
                 }
 
                 $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
@@ -340,16 +332,7 @@ class BeneficiaryController extends Controller
             }else{
 
                 if( $apiService->isRemoteCall()){
-
                     return $apiService->getFormErrorResponse($form);
-//                    $errors = [];
-//                    foreach ($form->getErrors(true) as $error) {
-//                        $errors[] = $error->getMessage();
-//                    }
-//                    $response = new Response(json_encode($errors));
-//                    $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-//                    $response->headers->set('Content-Type', 'application/json');
-//                    return $response;
                 }
             }
         }
@@ -447,6 +430,7 @@ class BeneficiaryController extends Controller
         $em = $this->getDoctrine()->getManager();
         $form = $this->createForm(ConfirmationType::class);
         $currentUser = $this->getUser();
+        $apiService = $this->get('cairn_user.api');
 
         if(!$currentUser->hasBeneficiary($beneficiary)){
             $errorMessage = 'Donnée introuvable';
@@ -483,11 +467,8 @@ class BeneficiaryController extends Controller
                     $sessionKey = 'info';
                 }
 
-                if($this->get('cairn_user.api')->isRemoteCall()){
-                    $response = new Response('{ "message":"'.$flashMessage.'"}');
-                    $response->setStatusCode(Response::HTTP_OK);
-                    $response->headers->set('Content-Type', 'application/json');
-                    return $response;
+                if($apiService->isRemoteCall()){
+                    return $apiService->getOkResponse(array($flashMessage),Response::HTTP_OK);
                 }
 
                 $session->getFlashBag()->add($sessionKey,$flashMessage);

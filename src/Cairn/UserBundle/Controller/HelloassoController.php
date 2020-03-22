@@ -107,6 +107,8 @@ class HelloassoController extends Controller
      */
     public function helloassoNotificationAction(Request $request)
     {
+        $apiService = $this->get('cairn_user.api');
+
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $helloassoRepo = $em->getRepository('CairnUserBundle:HelloassoConversion');
@@ -117,67 +119,53 @@ class HelloassoController extends Controller
         $accountManager =  $this->get('cairn_user.account_manager');
 
         if($request->isMethod('POST')){
-             $data = htmlspecialchars($request->getContent(),ENT_NOQUOTES) ;
+            $data = htmlspecialchars($request->getContent(),ENT_NOQUOTES) ;
 
-             preg_match('#^id=(\d+)#',$data,$match_id);
+            preg_match('#^id=(\d+)#',$data,$match_id);
 
-             $api_payment = $this->getApiPayment($match_id[1]);
+            $api_payment = $this->getApiPayment($match_id[1]);
 
-             if(! $api_payment){
-                 $response = new Response('No payment found');
-                 $response->headers->set('Content-Type', 'application/json');
-                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
-                 return $response;
-             }
+            if(! $api_payment){
+                return $apiService->getErrorResponse(array('No payment found'),Response::HTTP_NOT_FOUND);
+            }
 
-             //get a new helloassoConversion entity if it is does not exist yet
-             $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
+            //get a new helloassoConversion entity if it is does not exist yet
+            $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
 
-             if(! $newHelloassoPayment){
-                $response = new Response('Helloasso payment already handled');
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_FORBIDDEN);
-                return $response;
-             }
+            if(! $newHelloassoPayment){
+                return $apiService->getErrorResponse(array('Helloasso payment already handled'),Response::HTTP_FORBIDDEN);
+            }
 
 
-             //do cyclos account credit
-             $creditorUser = $userRepo->findOneByEmail($newHelloassoPayment->getEmail());
-             if(! $creditorUser){
-                 $subject = 'Crédit de compte [e]-Cairn et virement Helloasso';
-                 $from = $messageNotificator->getNoReplyEmail();
-                 $to = $newHelloassoPayment->getEmail();
-                 $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$newHelloassoPayment,'reason'=>'unfindable'));
+            //do cyclos account credit
+            $creditorUser = $userRepo->findOneByEmail($newHelloassoPayment->getEmail());
+            if(! $creditorUser){
+                $subject = 'Crédit de compte [e]-Cairn et virement Helloasso';
+                $from = $messageNotificator->getNoReplyEmail();
+                $to = $newHelloassoPayment->getEmail();
+                $body = $this->renderView('CairnUserBundle:Emails:helloasso.html.twig',array('helloasso'=>$newHelloassoPayment,'reason'=>'unfindable'));
 
-                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                 $response = new Response('creditor user not found');
-                 $response->headers->set('Content-Type', 'application/json');
-                 $response->setStatusCode(Response::HTTP_NOT_FOUND);
+                return $apiService->getErrorResponse(array('Creditor user not found'),Response::HTTP_NOT_FOUND);
+            }
 
-                 return $response;
-             }
+            //can be null
+            $reason = 'Change numérique par virement Helloasso';
+            $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
 
-             //can be null
-             $reason = 'Change numérique par virement Helloasso';
-             $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
+            $em->persist($newHelloassoPayment);
+            $em->persist($operation);
 
-             $em->persist($newHelloassoPayment);
-             $em->persist($operation);
+            $em->flush();
 
-             $em->flush();
-
-             $response = new Response('helloasso payment handled');
-             $response->headers->set('Content-Type', 'application/json');
-             $response->setStatusCode(Response::HTTP_OK);
-
-             return $response;
+            return $apiService->getOkResponse(array('Helloasso payment handled'),Response::HTTP_OK);
 
         }
     }
 
 
-    
+
 
     /**
      *
@@ -185,6 +173,8 @@ class HelloassoController extends Controller
      */
     public function helloassoSyncAction(Request $request)
     {
+        $apiService = $this->get('cairn_user.api');
+
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $helloassoRepo = $em->getRepository('CairnUserBundle:HelloassoConversion');
@@ -193,7 +183,7 @@ class HelloassoController extends Controller
 
         $accountManager =  $this->get('cairn_user.account_manager');
         $messageNotificator = $this->get('cairn_user.message_notificator');
-                    
+
         $formSearch = $this->createFormBuilder()
             ->add('from', DateType::class, array('label' => 'Date de début','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
             ->add('to', DateType::class, array('label' => 'Date de fin','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
@@ -242,46 +232,46 @@ class HelloassoController extends Controller
                     'formSearch' => $formSearch->createView(), 
                     'formSync' => $formSync->createView(),
                     'payments'=> $payments_filter
-            ));
+                ));
 
-            
+
         }elseif ($formSync->isSubmitted() && $formSync->isValid()) {
             $dataForm = $formSync->getData();
 
             $api_payment = $this->getApiPayment($dataForm['payment_id']);
-            
-             if(! $api_payment){
-                 $session->getFlashBag()->add('error','Aucun paiement trouvé avec l\'identifiant '.$dataForm['payment_id']);
-                 return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
-             }
+
+            if(! $api_payment){
+                $session->getFlashBag()->add('error','Aucun paiement trouvé avec l\'identifiant '.$dataForm['payment_id']);
+                return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
+            }
 
             $api_payment->payer_email = $dataForm['email'];
 
-             //get a new helloassoConversion entity if it is does not exist yet
-             $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
+            //get a new helloassoConversion entity if it is does not exist yet
+            $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
 
-             if(! $newHelloassoPayment){
-                 $session->getFlashBag()->add('info','Le virement Helloasso d\'identifiant '.$dataForm['payment_id'].' a déjà été traité');
-                 return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
-             }
+            if(! $newHelloassoPayment){
+                $session->getFlashBag()->add('info','Le virement Helloasso d\'identifiant '.$dataForm['payment_id'].' a déjà été traité');
+                return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
+            }
 
 
-             //do cyclos account credit
-             $creditorUser = $userRepo->findOneByEmail($newHelloassoPayment->getEmail());
-             if(! $creditorUser){
+            //do cyclos account credit
+            $creditorUser = $userRepo->findOneByEmail($newHelloassoPayment->getEmail());
+            if(! $creditorUser){
 
-                 $session->getFlashBag()->add('error','Le virement Helloasso d\'identifiant '.$dataForm['payment_id'].' ne correspond à aucun compte [e]-Cairn : '.$newHelloassoPayment->getEmail());
-                 return new RedirectResponse($request->getRequestUri());
-             }
+                $session->getFlashBag()->add('error','Le virement Helloasso d\'identifiant '.$dataForm['payment_id'].' ne correspond à aucun compte [e]-Cairn : '.$newHelloassoPayment->getEmail());
+                return new RedirectResponse($request->getRequestUri());
+            }
 
-             $reason = 'Change numérique par virement Helloasso';
-             $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
+            $reason = 'Change numérique par virement Helloasso';
+            $operation = $accountManager->creditUserAccount($creditorUser, $newHelloassoPayment->getAmount(),Operation::TYPE_CONVERSION_HELLOASSO,$reason);
 
-             $em->persist($newHelloassoPayment);
-             
-             $operation->setSubmissionDate($newHelloassoPayment->getDate());
-             $em->persist($operation);
-             $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
+            $em->persist($newHelloassoPayment);
+
+            $operation->setSubmissionDate($newHelloassoPayment->getDate());
+            $em->persist($operation);
+            $session->getFlashBag()->add('success','Le compte associé à '.$newHelloassoPayment->getEmail().' a été crédité avec succès de '.$operation->getAmount());
 
             $em->flush();
             return $this->redirectToRoute('cairn_user_banking_transfer_view', array('paymentID' => $operation->getPaymentID() ));            
