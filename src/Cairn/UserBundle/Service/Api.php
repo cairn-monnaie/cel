@@ -168,7 +168,7 @@ class Api
 
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                         'identityDocument'=> function ($child) {return $this->objectCallback($child);},
                         'image'=> function ($child) {return $this->objectCallback($child);},

@@ -111,7 +111,7 @@ class AppData
      *
      * @param \Cairn\UserBundle\Entity\User $user
      *
-     * @return SmsData
+     * @return AppData
      */
     public function setUser(\Cairn\UserBundle\Entity\User $user = null)
     {
