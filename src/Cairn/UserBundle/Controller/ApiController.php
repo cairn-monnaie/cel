@@ -86,10 +86,10 @@ class ApiController extends Controller
                     ->andWhere('a.longitude < :maxLon')
                     ->andWhere('a.latitude > :minLat')
                     ->andWhere('a.latitude < :maxLat')
-                    ->setParameter('minLon',$boundingValues['minLon'])
-                    ->setParameter('maxLon',$boundingValues['maxLon'])
-                    ->setParameter('minLat',$boundingValues['minLat'])
-                    ->setParameter('maxLat',$boundingValues['maxLat'])
+                    ->setParameter('minLon',$jsonRequest['bounding_box']['minLon'])
+                    ->setParameter('maxLon',$jsonRequest['bounding_box']['maxLon'])
+                    ->setParameter('minLat',$jsonRequest['bounding_box']['minLat'])
+                    ->setParameter('maxLat',$jsonRequest['bounding_box']['maxLat'])
                     ;
             }
                 
