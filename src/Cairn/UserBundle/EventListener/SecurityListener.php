@@ -104,8 +104,13 @@ class SecurityListener
         $form = $event->getForm();
         $user = $form->getData();
 
+        $session = $event->getRequest()->getSession();
+        $templating = $this->container->get('templating');          
+
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
+        $smsUrl = $router->generate('cairn_user_sms_presentation');
+
 
         $anonymous = $this->container->getParameter('cyclos_anonymous_user');
 
@@ -123,14 +128,22 @@ class SecurityListener
         }
         $this->createAccessClient($user,$user->getUsername(),$newPassword);
 
-
+        if($user->isFirstLogin()){
+            $user->setFirstLogin(false);
+            $session->set('is_first_connection',true); 
+        }
+        
         if($this->container->get('cairn_user.api')->isApiCall()){
             $response = new Response('Change password : ok !');
             $response->headers->set('Content-Type', 'application/json');
             $response->setStatusCode(Response::HTTP_OK);
             $event->setResponse($response);
         }else{
-            $event->setResponse(new RedirectResponse($profileUrl));
+            if($session->get('is_first_connection')){
+                $event->setResponse(new RedirectResponse($smsUrl));
+            }else{
+                $event->setResponse(new RedirectResponse($profileUrl));
+            } 
         }
     }
 
@@ -220,7 +233,7 @@ class SecurityListener
     {
         $securityService = $this->container->get('cairn_user.security');
         $currentUser = $securityService->getCurrentUser();
-
+        
         if($currentUser){
             $this->loginPaymentApp('access_client',$securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
@@ -236,9 +249,41 @@ class SecurityListener
     {
         $templating = $this->container->get('templating');          
 
+        $request = $event->getRequest();
+
+        $apiService = $this->container->get('cairn_user.api');
+
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
+            if($apiService->isRemoteCall()){
+                $event->setResponse($apiService->getErrorResponse(array('Server in maintenance state'),Response::HTTP_INTERNAL_SERVER_ERROR));
+                return;
+            }
             $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
+            return;
+        }
+
+        if($apiService->isMobileCall()){
+            $parsedHeader = $this->container->get('cairn_user.security')->parseAuthorizationHeader($request->headers->get('Authorization'));
+
+            if(! $parsedHeader){
+                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Format'),Response::HTTP_UNAUTHORIZED));
+                return;
+            }
+
+            $data = $parsedHeader['timestamp'].$request->getMethod().$request->getRequestURI();
+            $hashPostContent = hash('md5',json_encode($request->getContent(),true)); 
+
+            if($request->isMethod('POST')){
+                $data .= $hashPostContent;
+            }
+            
+            $rightKey = hash_hmac($parsedHeader['algo'],trim($data),$this->container->getParameter('api_secret'));
+
+            if($rightKey != $parsedHeader['signature']){
+                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization provided'),Response::HTTP_UNAUTHORIZED));
+                return;
+            }
         }
     }
 
