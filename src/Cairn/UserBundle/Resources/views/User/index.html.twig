@@ -115,7 +115,6 @@
                                 <td><em> {{transaction.reason}} </em></td>
                             {% endif%}
 
-                            <td>{{transaction.reason}}</td>
                             {% if transaction.debitorName == app.user.name %}
                                 <td class="deb-amount"> -{{transaction.amount}} cairns </td>
                             {% else %}
