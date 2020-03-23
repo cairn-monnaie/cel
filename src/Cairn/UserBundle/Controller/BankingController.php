@@ -363,7 +363,7 @@ class BankingController extends Controller
             }
 
             if($form->isSubmitted()){
-                $dataForm = $form->getData();            
+                $dataForm = $form->getData(); 
 
                 $begin = $dataForm['begin'];
                 $end = $dataForm['end'];
@@ -424,14 +424,16 @@ class BankingController extends Controller
                     }
                 }
 
-                $executedTransactions = $ob->andWhere('o.paymentID is not NULL')
-                    ->orderBy('o.executionDate',$orderBy)
-                    ->getQuery()->getResult();
+                $ob->andWhere('o.paymentID is not NULL')->orderBy('o.executionDate',$orderBy);
 
                 if($apiService->isRemoteCall()){
+                    $ob->setMaxResults($data['limit'])->setFirstResult($data['offset']);
+                    $executedTransactions = $ob->getQuery()->getResult();
+
                     return $apiService->getOkResponse($executedTransactions,Response::HTTP_OK);
                 }
 
+                $executedTransactions = $ob->getQuery()->getResult();
             }
         }
         return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
@@ -548,16 +550,8 @@ class BankingController extends Controller
                 return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
             }
 
-            //HERE, CHECK FOR API SECURITY CODE
-            $rightKey = hash('sha256',$this->getParameter('api_secret').$jsonRequest['executionDate']);
-            $sentKey = $jsonRequest['api_secret'];
-            if(! ($rightKey == $sentKey)){
-                return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
-            }
-
             $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
 
-            unset($jsonRequest['api_secret']);
             $form->submit($jsonRequest);
 
 
@@ -738,16 +732,7 @@ class BankingController extends Controller
                     return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
                 }
 
-                //HERE, CHECK FOR API SECURITY CODE
-                $rightKey = hash('sha256',$this->getParameter('api_secret').$jsonRequest['executionDate']);
-                $sentKey = $jsonRequest['api_secret'];
-                if(! ($rightKey == $sentKey)){
-                    return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
-                }
-
                 $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
-
-                unset($jsonRequest['api_secret']);
                 $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
@@ -903,17 +888,6 @@ class BankingController extends Controller
         $apiService = $this->get('cairn_user.api');
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
-        if( $apiService->isRemoteCall()){
-            $jsonRequest = json_decode($request->getContent(), true);
-            //HERE, CHECK FOR API SECURITY CODE
-            $rightKey = hash('sha256',$this->getParameter('api_secret').$operation->getID() );
-            $sentKey = $jsonRequest['api_secret'];
-            if(! ($rightKey == $sentKey)){
-                return $apiService->getErrorResponse(array('Wrong API Security code'),Response::HTTP_UNAUTHORIZED);
-            }
-            unset($jsonRequest['api_secret']);
-        }
-        
 
         $currentUser = $this->getUser();
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($currentUser);
@@ -950,6 +924,7 @@ class BankingController extends Controller
 
         if($request->isMethod('POST')){ //form filled and submitted
             if($_format == 'json'){
+                $jsonRequest = json_decode($request->getContent(), true);
                 $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
