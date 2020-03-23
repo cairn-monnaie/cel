@@ -61,7 +61,7 @@ class SmsController extends Controller
         $apiService = $this->get('cairn_user.api');
 
         if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-            return $apiService->getErrorResponse('Invalid request',Response::HTTP_NOT_FOUND);
+            return $apiService->getErrorResponse(array('Invalid request'),Response::HTTP_NOT_FOUND);
         } 
 
         $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );

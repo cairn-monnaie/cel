@@ -382,4 +382,21 @@ class Security
 
         return false;
     }
+
+
+    public function parseAuthorizationHeader(string $authorizationHeader)
+    {
+        preg_match('#^HMAC\-(\w+)\s*(Credential=(\w+)\,)?\s*(Signature=(\d+)\:(\w+))#',$authorizationHeader, $matches_authorization);
+
+        if(! $matches_authorization){
+            return NULL;
+        }
+        return [
+            'algo'=> strToLower($matches_authorization[1]),
+            'timestamp' => $matches_authorization[5],
+            'credential' => $matches_authorization[3],
+            'signature' => $matches_authorization[6]
+        ];
+    }
+
 }

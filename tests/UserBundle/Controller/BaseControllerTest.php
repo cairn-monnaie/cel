@@ -182,6 +182,14 @@ class BaseControllerTest extends WebTestCase
 
     }
 
+    protected function generateApiAuthorizationHeader($timestamp,$method,$uri,$bodyContent=NULL)
+    {
+        $content = ($method == 'POST') ? json_encode($bodyContent,true) : '';
+        $key = hash_hmac('sha256',$timestamp.$method.$uri.$content,$this->container->getParameter('api_secret'));
+
+        return 'HMAC-SHA256 Credential=XXX, Signature='.$key;
+    }
+
     protected function mobileLogin($username, $password)
     {
         $firewallName = 'mobile';
