@@ -73,11 +73,11 @@ class ApiController extends Controller
             $userRepo->whereAdherent($ub)
                 ->whereConfirmed($ub);
 
-            if(empty(array_values($jsonRequest['roles']))){
-                $userRepo->whereAdherent($ub);
-            }else{
-                $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
-            }
+            //if(empty(array_values($jsonRequest['roles']))){
+            //    $userRepo->whereAdherent($ub);
+            //}else{
+                $userRepo->whereRole($ub,'ROLE_PRO');
+            //}
 
             $boundingValues = array_values($jsonRequest['bounding_box']);
             if( (! in_array('', $boundingValues)) && !empty($boundingValues) ){
