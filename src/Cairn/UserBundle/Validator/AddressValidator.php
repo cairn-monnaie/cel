@@ -29,11 +29,12 @@ class AddressValidator extends ConstraintValidator
         $coords = $this->geolocalization->getCoordinates($address);            
 
         if(!$coords['latitude']){                                                          
-            $this->context->buildViolation("Adresse non localisée. Pensez à vérifier le code postal"."\n"."Référence la plus pertinente : ".$coords['closest'])
+            $this->context->buildViolation("Adresse non localisée. Pensez à vérifier le code postal \n Référence la plus pertinente : ".$coords['closest']['label'])
                 ->atPath('street1')
                 ->addViolation();
             return;
         }else{                                                                 
+            $address->setStreet1($coords['closest']['name']);
             $address->setLongitude($coords['longitude']);                      
             $address->setLatitude($coords['latitude']);                        
         }

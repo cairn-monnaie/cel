@@ -31,12 +31,11 @@ class Geolocalization
             'q' => $address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
             //'postcode' => $address->getZipCity()->getZipCode(),
             'type' => 'housenumber',
-            'limit' => 5                                   
+            'limit' => 2                                   
         );                                                 
 
         $res = $this->api->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
 
-//        var_dump($res['results']['features']);
         if($res['code'] == 200){ 
             $features = $res['results']['features'];       
 
@@ -52,15 +51,14 @@ class Geolocalization
                 return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
             } 
 
-            if($location['properties']['score'] <= 0.6){   
-                return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']['label']);
+            if($location['properties']['score'] <= 0.75){   
+                return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']);
             }else{
                 return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
             }
         }
 
         return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
-;
 
     }
 

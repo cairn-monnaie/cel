@@ -99,6 +99,7 @@ INSERT INTO `zip_city` ( `zip_code`, `city`) VALUES
 ('38110', 'Saint-Clair-de-la-Tour'),
 ('38110', 'Cessieu'),
 ('38112', 'Méaudre'),
+('38112', 'Autrans-Méaudre en Vercors'),
 ('38113', 'Veurey-Voroize'),
 ('38114', 'Vaujany'),
 ('38114', 'Allemond'),
