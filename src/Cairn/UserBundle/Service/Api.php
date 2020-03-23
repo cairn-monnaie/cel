@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\AppData;
 use Cairn\UserBundle\Entity\Phone;
+use Cairn\UserBundle\Entity\File as CairnFile;
 
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,7 +84,8 @@ class Api
     {
         $request = $this->requestStack->getCurrentRequest();                     
 
-        return ($request->getRequestFormat() != 'html');
+        return (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
+            ($request->get('_route') == 'cairn_user_api_get_tokens');
     }
 
     public function getOkResponse($responseData,$statusCode)
@@ -142,9 +144,10 @@ class Api
                      );
         }
 
-        if($child instanceOf File){
+        if($child instanceOf CairnFile){
             return array('url'=>$child->getUrl(),
                          'alt'=>$child->getAlt(),
+                         'webPath'=>$child->getWebPath()
                      );
         }
 
