@@ -157,6 +157,7 @@ class UserController extends Controller
         $formSmsData = $this->createForm(SmsDataType::class, $smsData);
 
         if($request->isMethod('POST')){
+
             if( $apiService->isRemoteCall()){
                 $formSmsData->submit(json_decode($request->getContent(), true));
             }else{
@@ -166,7 +167,6 @@ class UserController extends Controller
             if($formSmsData->isValid()){
                 $em->flush();
 
-                $apiService = $this->get('cairn_user.api');
                 if( $apiService->isRemoteCall()){
                     $res = $apiService->serialize($currentUser->getSmsData());
                     $response = new Response($res);
@@ -200,24 +200,24 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function addPhoneAction(Request $request, $_format)
+    public function addPhoneAction(Request $request, User $user, $_format)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
         $apiService = $this->get('cairn_user.api');
 
-        if(! $currentUser->isAdherent() ){
+        if(! $user->isAdherent() ){
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
 
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
-        if(!$currentUser->getSmsData()){
-            $smsData = new SmsData($currentUser);
-            $currentUser->setSmsData($smsData);
+        if(!$user->getSmsData()){
+            $smsData = new SmsData($user);
+            $user->setSmsData($smsData);
         }else{
-            $smsData = $currentUser->getSmsData();
+            $smsData = $user->getSmsData();
         }
 
         $phone = new Phone($smsData);
@@ -227,16 +227,11 @@ class UserController extends Controller
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
             if( $apiService->isRemoteCall()){
-                $res = $apiService->serialize(array('message'=>'Trop de demandes non validées'));
-
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_FORBIDDEN);
-                return $response;
+                return $apiService->getErrorResponse(array('Trop de demandes non validées') ,Response::HTTP_FORBIDDEN);
             }
 
             $session->getFlashBag()->add('info','Vous avez déjà effectué 3 demandes de nouveau numéro de téléphone sans validation... Cette action vous est désormais inaccessible');
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
 
         //************************ end of cases where edit sms is disallowed *************************//
@@ -252,13 +247,12 @@ class UserController extends Controller
 
             // POST request is an activation code to validate a new phone number
             if($formPhone->has('activationCode')){
-                return $this->checkActivationCode($formPhone,$request);
+                return $this->checkActivationCode($formPhone,$request, $user);
             }
 
             if($formPhone->isValid()){
 
                 $dataForm = $formPhone->getData();
-
                 
                 // POST request is a new phone number for an existing entity smsData
                 if($previousPhoneNumber != $phone->getPhoneNumber()){
@@ -274,12 +268,12 @@ class UserController extends Controller
                         return $response;
                     }
 
-                    return $this->redirectToRoute('cairn_user_users_phone_add');
+                    return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$user->getUsername()));
                 }
             }else{
                 
                 if( $apiService->isRemoteCall()){
-                    return $apiService->getErrorResponse($formPhone);
+                    return $apiService->getFormErrorResponse($formPhone);
                 }
             }
 
@@ -347,11 +341,54 @@ class UserController extends Controller
         $session->getFlashBag()->add('success','Un code vous a été envoyé par SMS au ' .$newPhoneNumber.'. Saisissez-le pour valider vos nouvelles données SMS');
     }
 
-    public function checkActivationCode($formPhone, Request $request, $previousPhoneNumber = NULL)
+
+
+    private function setSmsAccessClient(User $user)
+    {
+        $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
+
+        if(! $accessClientVO){
+            $securityService = $this->get('cairn_user.security');
+            $securityService->createAccessClient($user,'client_sms');
+            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(), 'client_sms' ,'UNASSIGNED');
+
+            $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+            $smsClient = $securityService->vigenereEncode($smsClient);
+            $user->getSmsData()->setSmsClient($smsClient);
+        }
+    }
+
+
+    private function setNewPhoneNumber(User $user, Phone $phone, $previousPhoneNumber)
+    {
+
+        $em = $this->getDoctrine()->getManager();
+        $smsData = $user->getSmsData();
+        //we check if the new number was associated to a personal and professional account
+        //if so, send message
+        if($previousPhoneNumber){
+            $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
+            if(count($existingUsers) == 2){
+                if($user->hasRole('ROLE_PERSON')){
+                    $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des opérations par SMS');
+                }
+            }
+        }
+
+        $smsData->setUser($user);
+        $phone->setSmsData($smsData);
+        $smsData->addPhone($phone);
+
+        $em->flush();
+
+    }
+
+
+    public function checkActivationCode($formPhone, Request $request, User $user, $previousPhoneNumber = NULL)
     {
         $session = $request->getSession();
         $currentUser = $this->getUser();
-        $smsData = $currentUser->getSmsData();
+        $smsData = $user->getSmsData();
         $em = $this->getDoctrine()->getManager();
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
         $apiService = $this->get('cairn_user.api');
@@ -374,29 +411,21 @@ class UserController extends Controller
             $currentUser->setPhoneNumberActivationTries(0);
 
 
-            $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
-            if(! $accessClientVO){
-                $securityService = $this->get('cairn_user.security');
-                $securityService->createAccessClient($currentUser,'client_sms');
-                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(), 'client_sms' ,'UNASSIGNED');
+            $this->setSmsAccessClient($user);
 
-                $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
-                $smsClient = $securityService->vigenereEncode($smsClient);
-                $smsData->setSmsClient($smsClient);
-            }
-
+            
             //we check if the new number was associated to a personal and professional account
             //if so, send message
             if($previousPhoneNumber){
                 $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
                 if(count($existingUsers) == 2){
-                    if($currentUser->hasRole('ROLE_PERSON')){
+                    if($user->hasRole('ROLE_PERSON')){
                         $session->getFlashBag()->add('info','Le compte professionnel associé au numéro '.$previousPhoneNumber. ' peut désormais réaliser des opérations par SMS');
                     }
                 }
             }
 
-            $smsData->setUser($currentUser);
+            $smsData->setUser($user);
             $phone->setSmsData($smsData);
             $smsData->addPhone($phone);
 
@@ -421,7 +450,12 @@ class UserController extends Controller
                 return $response;
             }
 
-            return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
+            if( ($currentUser === $user) && $phone->isPaymentEnabled()){
+                return $this->render('CairnUserBundle:Default:howto_sms_page.html.twig');
+            }else{
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+            }
+            
 
         //invalid code
         }else{
@@ -438,12 +472,7 @@ class UserController extends Controller
             $em->flush();
 
             if( $apiService->isRemoteCall()){
-                $res = $this->get('cairn_user.api')->serialize(array('message'=>$errorMessage));
-
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                return $response;
+                return $apiService->getErrorResponse(array($errorMessage) ,Response::HTTP_BAD_REQUEST);
             }
 
             return new RedirectResponse($request->getRequestUri());
@@ -489,12 +518,7 @@ class UserController extends Controller
 
             $errorMessage = 'Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible';
             if( $apiService->isRemoteCall()){
-                $res = $this->get('cairn_user.api')->serialize(array('message'=>$errorMessage));
-
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_BAD_REQUEST);
-                return $response;
+                return $apiService->getErrorResponse(array($errorMessage) ,Response::HTTP_BAD_REQUEST);
             }
 
             $session->getFlashBag()->add('info',$errorMessage);
@@ -514,7 +538,7 @@ class UserController extends Controller
 
             // POST request is an activation code to validate a new phone number
             if($formPhone->has('activationCode')){
-                return $this->checkActivationCode($formPhone,$request, $previousPhoneNumber);
+                return $this->checkActivationCode($formPhone,$request, $user, $previousPhoneNumber);
             }
 
             if($formPhone->isValid()){
@@ -565,7 +589,7 @@ class UserController extends Controller
 
             }else{
                 if( $apiService->isRemoteCall()){
-                    return $apiService->getErrorResponse($formPhone);
+                    return $apiService->getFormErrorResponse($formPhone);
                 }
             }
 

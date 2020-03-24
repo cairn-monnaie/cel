@@ -133,11 +133,10 @@
                             {% endfor %}
                         {% endif %}
 
-                        {% if app.user.isAdherent() %}
                             <br> <br>
                             <div class="valign-wrapper">
                                 <div class="smsdata_new col s12 m4">
-                                    <a href="{{path('cairn_user_users_phone_add')}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un n°</a>
+                                    <a href="{{path('cairn_user_users_phone_add',{'username' : user.username})}}" class="btn waves-effect waves-light"><i class="material-icons left">add</i>Ajouter un n°</a>
                                 </div>
                                 <div class="col s12 m8 left-align">
                                     <a class="waves-effect waves-light modal-trigger" href="#modal1"><i class="material-icons large purple-text text-darken-2">info</i><span> Règles d'utilisation</span></a>
@@ -153,7 +152,6 @@
                                     </div>
                                 </div>
                             </div>
-                        {% endif %}
 
                     </div>
 

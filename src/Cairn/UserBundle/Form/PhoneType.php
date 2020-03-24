@@ -113,7 +113,7 @@ class PhoneType extends AbstractType
 
                         if($this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
                             $form->add('identifier', TextType::class, array('label' => 'ID SMS'))
-                                ->remove('phoneNumber');
+                                ;//->remove('phoneNumber');
                         }
 
                     }
