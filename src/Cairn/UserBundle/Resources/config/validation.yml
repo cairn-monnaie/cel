@@ -16,9 +16,9 @@ Cairn\UserBundle\Entity\Phone:
               #    constraints:
               #            - Cairn\UserBundle\Validator\SmsData: ~
 
-              #Cairn\UserBundle\Entity\Address:
-              #    constraints:
-              #            - Cairn\UserBundle\Validator\Address: ~
+Cairn\UserBundle\Entity\Address:
+    constraints:
+            - Cairn\UserBundle\Validator\Address: ~
 
 Cairn\UserBundle\Entity\Mandate:
     constraints:

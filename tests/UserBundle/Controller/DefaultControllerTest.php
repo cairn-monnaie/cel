@@ -158,10 +158,13 @@ class DefaultControllerTest extends BaseControllerTest
         return array(
             'pro grenoble by himself'=>array(false,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
             'pro grenoble by admin'=>array(true,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
-            'pro no GL by himself'=>array(false,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
-            'pro no GL by admin'=>array(true,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38540 Grenay','Librairie',true),
-            'person by himself'=>array(false,'person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
-            'person by admin'=>array(true,'person','john_doe@test.com','John Doe','15 rue du test','38000 Grenoble','Je suis cairnivore',true),
+            'pro no GL by himself'=>array(false,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
+            'pro no GL by admin'=>array(true,'pro','hmorgan@test.com','Librairie Harry Morgan','10 rue Millet','38000 Grenoble','Librairie',true),
+            'person by himself'=>array(false,'person','john_doe@test.com','John Doe','7 rue Tres Cloitres','38000 Grenoble','Je suis cairnivore',true),
+            'person by admin'=>array(true,'person','john_doe@test.com','John Doe','7 rue Tres Cloitres','38000 Grenoble','Je suis cairnivore',true),
+            'Test with address bis'=>array(true,'person','john_doe@test.com','John Doe','7 bis rue Tres Cloitres','38000 Grenoble','Je suis cairnivore',true),
+            'Test with address ter'=>array(true,'person','john_doe@test.com','John Doe','7 ter rue Tres Cloitres','38000 Grenoble','Je suis cairnivore',true),
+
         );
     }
 

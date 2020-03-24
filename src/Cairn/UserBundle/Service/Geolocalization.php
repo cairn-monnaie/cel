@@ -26,17 +26,17 @@ class Geolocalization
      */
     public function getCoordinates(Address $address)
     {
-        //set latitude and longitude of new user           
+        //set latitude and longitude of new user
+        //remove bis, ter from address street for localization research because it makes the research inaccurate           
         $arrayParams = array(                              
-            'q' => $address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
+            'q' => preg_replace('/\s(bis|ter)\s/',' ',$address->getStreet1()).' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
             //'postcode' => $address->getZipCity()->getZipCode(),
             'type' => 'housenumber',
-            'limit' => 5                                   
+            'limit' => 2                                   
         );                                                 
 
         $res = $this->api->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
 
-//        var_dump($res['results']['features']);
         if($res['code'] == 200){ 
             $features = $res['results']['features'];       
 
@@ -49,18 +49,17 @@ class Geolocalization
             }elseif(count($features) == 1){ 
                 $location = $features[0];              
             }else{
-                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
+                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
             } 
 
-            if($location['properties']['score'] <= 0.6){   
-                return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']['label']);
+            if($location['properties']['score'] <= 0.75){   
+                return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']);
             }else{
                 return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
             }
         }
 
-        return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
-;
+        return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
 
     }
 

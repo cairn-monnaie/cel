@@ -84,8 +84,15 @@ class Api
     {
         $request = $this->requestStack->getCurrentRequest();                     
 
-        return (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
-            ($request->get('_route') == 'cairn_user_api_get_tokens');
+        return ($request->getRequestFormat() != 'html');
+    }
+
+    public function isMobileCall()
+    {
+        $request = $this->requestStack->getCurrentRequest();                     
+
+        return ( (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
+            ($request->get('_route') == 'cairn_user_api_get_tokens'));
     }
 
     public function getOkResponse($responseData,$statusCode)

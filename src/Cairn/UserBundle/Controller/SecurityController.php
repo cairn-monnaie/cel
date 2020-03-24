@@ -102,28 +102,28 @@ class SecurityController extends Controller
             try{
                 $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
             }catch(\Exception $e){
-                return $apiService->getErrorResponse('Invalid authentication',Response::HTTP_UNAUTHORIZED);
+                return $apiService->getErrorResponse(array('Invalid authentication'),Response::HTTP_UNAUTHORIZED);
             }
 
             //validate access token
             if($userVO->shortDisplay != $params['username']){
-                return $apiService->getErrorResponse('Access denied',Response::HTTP_UNAUTHORIZED);
+                return $apiService->getErrorResponse(array('Access denied'),Response::HTTP_UNAUTHORIZED);
             }
 
 
             //validate endpoint exists
             if(! array_key_exists('endpoint',$params['subscription'])){
-                return $apiService->getErrorResponse('Subscription must have an endpoint',Response::HTTP_BAD_REQUEST);
+                return $apiService->getErrorResponse(array('Subscription must have an endpoint'),Response::HTTP_BAD_REQUEST);
             }
 
             $subscription = $params['subscription'];
 
             //validate keys because we need payload support
             if(! array_key_exists('keys',$params['subscription'])){
-                return $apiService->getErrorResponse('Subscription must have encryption keys',Response::HTTP_BAD_REQUEST);
+                return $apiService->getErrorResponse(array('Subscription must have encryption keys'),Response::HTTP_BAD_REQUEST);
             }else{
                 if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                    return $apiService->getErrorResponse('Subscription must have valid encryption keys',Response::HTTP_BAD_REQUEST);
+                    return $apiService->getErrorResponse(array('Subscription must have valid encryption keys'),Response::HTTP_BAD_REQUEST);
                 }
             }
 
@@ -138,7 +138,7 @@ class SecurityController extends Controller
 
             return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
         }else{
-            return $apiService->getErrorResponse('POST method required',Response::HTTP_METHOD_NOT_ALLOWED);
+            return $apiService->getErrorResponse(array('POST method required'),Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 
