@@ -45,18 +45,12 @@ class SecurityController extends Controller
 
             $params = json_decode( htmlspecialchars($request->getContent(),ENT_NOQUOTES),true );
 
-            $grantRequest = new Request(array(
-                'client_id'  => $params['client_id'],
-                'client_secret' => $params['client_secret'],
-                'grant_type' => $params['grant_type'],
-                'username' => $params['username'],
-                'password' => $params['password']
-            ));
+            $grantRequest = new Request($params);
 
             try{
                 $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
             }catch(\Exception $e){
-                return $this->get('cairn_user.api')->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
+                return $apiService->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
             }
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
