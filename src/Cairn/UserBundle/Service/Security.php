@@ -386,7 +386,7 @@ class Security
 
     public function parseAuthorizationHeader(string $authorizationHeader)
     {
-        preg_match('#^HMAC\-(\w+)\s*(Credential=(\w+)\,)?\s*(Signature=(\d+)\:(\w+))#',$authorizationHeader, $matches_authorization);
+        preg_match('#^HMAC\-(\w+)\s*(Bearer\s*(\w+))?\s*(Signature=(\d+)\:(\w+))$#',$authorizationHeader, $matches_authorization);
 
         if(! $matches_authorization){
             return NULL;
