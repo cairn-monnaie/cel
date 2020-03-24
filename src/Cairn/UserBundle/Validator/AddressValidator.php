@@ -34,7 +34,10 @@ class AddressValidator extends ConstraintValidator
                 ->addViolation();
             return;
         }else{                                                                 
-            $address->setStreet1($coords['closest']['name']);
+            if(array_key_exists('closest',$coords)){
+                $address->setStreet1($coords['closest']['name']);
+            }
+            
             $address->setLongitude($coords['longitude']);                      
             $address->setLatitude($coords['latitude']);                        
         }

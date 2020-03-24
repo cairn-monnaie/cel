@@ -89,7 +89,7 @@ class Commands
             $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
             if(!$coords['latitude']){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest'];
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);

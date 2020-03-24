@@ -26,9 +26,10 @@ class Geolocalization
      */
     public function getCoordinates(Address $address)
     {
-        //set latitude and longitude of new user           
+        //set latitude and longitude of new user
+        //remove bis, ter from address street for localization research because it makes the research inaccurate           
         $arrayParams = array(                              
-            'q' => $address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
+            'q' => preg_replace('/\s(bis|ter)\s/',' ',$address->getStreet1()).' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
             //'postcode' => $address->getZipCity()->getZipCode(),
             'type' => 'housenumber',
             'limit' => 2                                   
@@ -48,7 +49,7 @@ class Geolocalization
             }elseif(count($features) == 1){ 
                 $location = $features[0];              
             }else{
-                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
+                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
             } 
 
             if($location['properties']['score'] <= 0.75){   
@@ -58,7 +59,7 @@ class Geolocalization
             }
         }
 
-        return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>'aucune');
+        return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
 
     }
 
