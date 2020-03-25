@@ -95,6 +95,25 @@ class Api
             ($request->get('_route') == 'cairn_user_api_get_tokens'));
     }
 
+     public function fromArrayToStringDeterministicOrder($arr)
+     {
+         if( is_string($arr)){
+             return $arr;
+         }
+
+         $res = '';
+         if( is_array($arr) ){
+             $toSort = [];
+             foreach($arr as $key=>$item){
+                 $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
+                 sort($toSort);
+             }
+             $res .= implode($toSort);
+         }
+
+         return $res;
+     }
+
     public function getOkResponse($responseData,$statusCode)
     {
         if(($statusCode < 200) || ($statusCode >= 300)){

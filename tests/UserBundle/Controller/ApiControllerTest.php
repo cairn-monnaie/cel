@@ -32,7 +32,7 @@ class ApiControllerTest extends BaseControllerTest
         $this->mobileLogin('gjanssens','@@bbccdd');
 
         $uri = '/mobile/beneficiaries';
-        $formSubmit = array('cairn_user'=>$beneficiaryValue);
+        $formSubmit = array('cairn_user'=> $beneficiaryValue);
 
         $authKey = ($isValidFormat) ? $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit) : 'ABCDE';
         $finalKey = ($isValidKey) ? $authKey : $authKey.'0';
@@ -43,8 +43,8 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
-                'HTTP_Authorization' => $finalKey 
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $finalKey
             ],
             json_encode($formSubmit)
         );
@@ -67,11 +67,10 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForApiSecure()
     {
         return array(
-            'valid data + valid Auth'=>array('noire_aliss@test.fr',true,true,Response::HTTP_OK,'added'),
+            'valid data + valid Auth'=>array('noire_aliss@test.fr',true,true,Response::HTTP_CREATED,'added'),
             'valid data + wrong key format'=>array('noire_aliss@test.fr',false,false,Response::HTTP_UNAUTHORIZED,'Format'),
-            'valid data + wrong key value'=>array('noire_aliss@test.fr',true,false,Response::HTTP_UNAUTHORIZED,'key')
+            'valid data + wrong key value'=>array('noire_aliss@test.fr',true,false,Response::HTTP_UNAUTHORIZED,'Wrong')
         );
-
     }
 
 
@@ -90,7 +89,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'GET',$uri)
             ]
         );
@@ -140,7 +139,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit)
             ],
             json_encode($formSubmit)
@@ -203,13 +202,14 @@ class ApiControllerTest extends BaseControllerTest
 
         $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
 
-        $uri = '/mobile/users'.$targetUser->getID();
+        $uri = '/mobile/users/'.$targetUser->getID();
         $crawler = $this->client->request(
             'GET',
             $uri,
             [],
             [],
             [
+                'Content-Type' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'GET',$uri)
             ]
         );
@@ -255,6 +255,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'GET',$uri)
             ]
         );
@@ -298,14 +299,16 @@ class ApiControllerTest extends BaseControllerTest
         $uri = '/mobile/beneficiaries';
         $formSubmit = array('cairn_user'=>$beneficiaryValue);
 
+        $key = $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit);
+
         $crawler = $this->client->request(
             'POST',
             $uri,
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
-                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit)
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $key
             ],
             json_encode($formSubmit)
         );
@@ -348,17 +351,20 @@ class ApiControllerTest extends BaseControllerTest
 
         $ICC = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($beneficiary)->getMainICC();
 
+        $body = array('save'=> "");
+
+        $uri = '/mobile/beneficiaries/'.$ICC;
         $crawler = $this->client->request(
             'DELETE',
-            '/mobile/beneficiaries/'.$ICC,
+            $uri,
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode(
-                array(
-                    'save'=> ""
-                )
-            )
+            [ 
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'DELETE',$uri,$body)
+            ],
+            json_encode($body)
+
         );
 
         $response = $this->client->getResponse();
@@ -385,14 +391,12 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForRemoteAddPhone
      */
-    public function testRemoteAddPhone($current, $newPhoneSubmit, $httpPhoneStatusCode,$code,$httpValidationStatusCode)
+    public function testRemoteAddPhone($current,$target, $newPhoneSubmit, $httpPhoneStatusCode,$code,$httpValidationStatusCode)
     {
         $this->mobileLogin($current,'@@bbccdd');
 
-        $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($current);
-
         $formSubmit = array('phoneNumber'=> $newPhoneSubmit['phoneNumber'], 'paymentEnabled'=> 'true');
-        $uri = '/mobile/phones';
+        $uri = '/mobile/phones'.$target;
 
         $crawler = $this->client->request(
             'POST',
@@ -400,7 +404,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit)
             ],
             json_encode($formSubmit)
@@ -424,7 +428,7 @@ class ApiControllerTest extends BaseControllerTest
                 [],
                 [],
                 [
-                    'CONTENT_TYPE' => 'application/json',
+                    'CONTENT-TYPE' => 'application/json',
                     'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit)
                 ],
                 json_encode($formSubmit)
@@ -455,58 +459,70 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForRemoteAddPhone()
     {
         $admin = $this->testAdmin;
-        $baseData = array('current'=>'stuart_andrew',
-            'newPhone'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
+        $baseData = array('current'=>'stuart_andrew','target'=>'stuart_andrew',
+            'newPhone'=>array('phoneNumber'=>'+33699999999','paymentEnabled'=>true),
             'httpPhoneStatusCode'=>Response::HTTP_OK,
             'code'=>'1111',
             'httpValidationStatusCode'=>Response::HTTP_CREATED,
         );
 
+        $baseAdminData = array('current'=>$admin,'target'=>'hirundo_archi',
+            'newPhone'=>array('phoneNumber'=>'+33699999999','paymentEnabled'=>true,'identifier'=>'IDSMS'),
+            'httpPhoneStatusCode'=>Response::HTTP_OK,
+            'code'=>'1111',
+            'httpValidationStatusCode'=>Response::HTTP_CREATED,
+        );
+
+
         $validDataMsg = 'Un code vous a été envoyé';
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
-            'user in admin' => array_replace($baseData, array('current'=>$admin, 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            'admin not referent' => array_replace($baseAdminData, array('target'=>'stuart_andrew','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            //'admin is referent' => array_replace($baseAdminData, array('target'=>'hirundo_archi')),
 
-            'current number'=>array_replace_recursive($baseData, array(
-                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-                    ),
+            //'user not referent' => array_replace($baseData, array('current'=>'mazmax', 'isExpectedForm'=>false,'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            'current number, disable sms'=>array_replace_recursive($baseData, array(
-                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-                    ),
+            //'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            'used by pro & person'=>array_replace_recursive($baseData, array(
-                        'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-                        )),
+            //'current number'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+            //        ),
 
-            'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
-                    'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-                    )),
+            //'current number, disable sms'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+            //        ),
 
-            'person request : used by person'=>array_replace_recursive($baseData, array(
-                    'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-                )),
+            //'used by pro & person'=>array_replace_recursive($baseData, array(
+            //            'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //            )),
 
-            'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar',
-                    'newPhone'=>array('phoneNumber'=>'+33644332211')
-                )),
+            //'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
+            //        'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //        )),
 
-            'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
-                    'newPhone'=>array('phoneNumber'=>'+33611223344')
-                    )),
+            //'person request : used by person'=>array_replace_recursive($baseData, array(
+            //        'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+            //    )),
 
-            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi'
-                )),
+            //'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar',
+            //        'newPhone'=>array('phoneNumber'=>'+33644332211')
+            //    )),
 
-            'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
-                    'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
-                    )),
+            //'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
+            //        'newPhone'=>array('phoneNumber'=>'+33611223344')
+            //        )),
 
-            'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
-                )),
+            //'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi'
+            //    )),
+
+            //'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
+            //        'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
+            //        )),
+
+            //'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
+            //    )),
 
         );
     }
@@ -537,7 +553,7 @@ class ApiControllerTest extends BaseControllerTest
                 [],
                 [],
                 [
-                    'CONTENT_TYPE' => 'application/json',
+                    'CONTENT-TYPE' => 'application/json',
                     'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$newPhoneSubmit)
                 ],
                 json_encode($newPhoneSubmit)
@@ -564,7 +580,7 @@ class ApiControllerTest extends BaseControllerTest
                 [],
                 [],
                 [
-                    'CONTENT_TYPE' => 'application/json',
+                    'CONTENT-TYPE' => 'application/json',
                     'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$responseData['validation_url'],$body)
                 ],
                 json_encode($body)
@@ -604,7 +620,7 @@ class ApiControllerTest extends BaseControllerTest
         );
 
         $baseAdminData = array('current'=>$admin,'target'=>'stuart_andrew',
-            'newPhone'=>array('paymentEnabled'=>true,'identifier'=>'IDSMS'),
+            'newPhone'=>array('phoneNumber'=>'+33699999999','paymentEnabled'=>true,'identifier'=>'IDSMS'),
             'isPhoneNumberEdit'=>true,
             'httpPhoneStatusCode'=>Response::HTTP_OK,
             'code'=>'1111',
@@ -613,6 +629,11 @@ class ApiControllerTest extends BaseControllerTest
 
         return array(
             'not referent'=>array_replace($baseData, array('current'=>$admin,'target'=>'stuart_andrew', 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+
+            'admin as ref changes a pro number' => array_replace($baseAdminData, array('target'=>'la_mandragore')),
+
+            'user not referent' => array_replace($baseData, array('current'=>'mazmax', 'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+
 
             'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','target'=>'crabe_arnold', 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)),
 
@@ -624,7 +645,9 @@ class ApiControllerTest extends BaseControllerTest
                                                             'newPhone'=>array('phoneNumber'=>'+33811223344'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
                                                     )),
 
-            'admin enables sms'=>array_replace($baseAdminData, array('current'=>$admin,'target'=>'la_mandragore','isPhoneNumberEdit'=>false)),
+            'admin enables sms'=>array_replace_recursive($baseAdminData, array('target'=>'la_mandragore','isPhoneNumberEdit'=>false,
+                                                'newPhone'=>array('phoneNumber'=>'+33744444444')
+            )),
 
             'new number'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar')),
 
@@ -667,13 +690,17 @@ class ApiControllerTest extends BaseControllerTest
         $this->mobileLogin($current,'@@bbccdd');
 
         $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+        $uri = '/mobile/phones/'.$targetUser->getPhones()[0]->getID();
 
         $crawler = $this->client->request(
             'DELETE',
-            '/mobile/phones/'.$targetUser->getPhones()[0]->getID(),
+            $uri,
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'DELETE',$uri)
+            ],
             []
         );
 
@@ -691,8 +718,8 @@ class ApiControllerTest extends BaseControllerTest
         return array(
             'valid self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK),
             'valid referent'=>array('admin_network','nico_faus_prod',Response::HTTP_OK),
-            'invalid referent'=>array('admin_network','stuart_andrew',Response::HTTP_FORBIDDEN),
-            'invalid referent'=>array('gjanssens','nico_faus_prod',Response::HTTP_FORBIDDEN),
+            'invalid referent admin'=>array('admin_network','stuart_andrew',Response::HTTP_FORBIDDEN),
+             'invalid referent'=>array('gjanssens','nico_faus_prod',Response::HTTP_FORBIDDEN),
         );
     }
 
@@ -706,7 +733,6 @@ class ApiControllerTest extends BaseControllerTest
 
         $debitorUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($debitor);
 
-        
         $uri ='/mobile/payment/request' ;
         $form =  array_merge(array('fromAccount'=>$debitorUser->getMainICC()), $formSubmit);
         
@@ -716,7 +742,7 @@ class ApiControllerTest extends BaseControllerTest
                 [],
                 [],
                 [
-                    'CONTENT_TYPE' => 'application/json',
+                    'CONTENT-TYPE' => 'application/json',
                     'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
                 ],
                 json_encode($form)
@@ -746,7 +772,7 @@ class ApiControllerTest extends BaseControllerTest
                 [],
                 [],
                 [
-                    'CONTENT_TYPE' => 'application/json',
+                    'CONTENT-TYPE' => 'application/json',
                     'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
                 ],
                 json_encode($form)
@@ -797,7 +823,7 @@ class ApiControllerTest extends BaseControllerTest
             'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST,'1111'),
             'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
                                                         array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED,'1111'),
-            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_BAD_REQUEST,'1111'),
+            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_INTERNAL_SERVER_ERROR,'1111'),
             //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
             'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'1111'),
             'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'2222'),
@@ -836,7 +862,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
-                'CONTENT_TYPE' => 'application/json',
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$formSubmit)
             ],
             json_encode($formSubmit)
@@ -917,6 +943,7 @@ class ApiControllerTest extends BaseControllerTest
             [],
             [],
             [
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'GET',$uri)
             ]
         );
@@ -946,8 +973,8 @@ class ApiControllerTest extends BaseControllerTest
             'valid pro to self'=>array('nico_faus_prod','nico_faus_prod',Response::HTTP_OK),
             'valid person to self'=>array('gjanssens','gjanssens',Response::HTTP_OK),
         );
-
     }
+
 
     /**
      *
@@ -957,13 +984,14 @@ class ApiControllerTest extends BaseControllerTest
     {
         $this->mobileLogin($current,'@@bbccdd');
 
-        $uri = '/mobile/accounts/';
+        $uri = '/mobile/accounts.json';
         $crawler = $this->client->request(
             'GET',
             $uri,
             [],
             [],
             [
+                'CONTENT-TYPE' => 'application/json',
                 'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'GET',$uri)
             ]
         );
@@ -991,7 +1019,6 @@ class ApiControllerTest extends BaseControllerTest
             'admin'=>array('gl_grenoble',Response::HTTP_OK),
             'super admin'=>array('admin_network',Response::HTTP_OK),
         );
-
     }
 
     /**

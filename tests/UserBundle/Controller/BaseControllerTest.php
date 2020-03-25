@@ -184,10 +184,15 @@ class BaseControllerTest extends WebTestCase
 
     protected function generateApiAuthorizationHeader($timestamp,$method,$uri,$bodyContent=NULL)
     {
-        $content = ($method == 'POST') ? json_encode($bodyContent,true) : '';
-        $key = hash_hmac('sha256',$timestamp.$method.$uri.$content,$this->container->getParameter('api_secret'));
+        $data = $timestamp.$method.$uri;
 
-        return 'HMAC-SHA256 Credential=XXX, Signature='.$key;
+        if($bodyContent){
+            $payloadAsString = $this->container->get('cairn_user.api')->fromArrayToStringDeterministicOrder($bodyContent);
+            $data .= hash('md5', $payloadAsString) ; 
+        }
+        $key = hash_hmac('sha256',$data,$this->container->getParameter('api_secret'));
+
+        return 'HMAC-SHA256 Bearer XXX Signature='.$timestamp.':'.$key;
     }
 
     protected function mobileLogin($username, $password)
