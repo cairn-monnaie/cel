@@ -207,6 +207,11 @@ class UserController extends Controller
         $currentUser = $this->getUser();
         $apiService = $this->get('cairn_user.api');
 
+        //****************** All cases where add phone is not allowed ****************//
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
+
         if(! $user->isAdherent() ){
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
@@ -260,12 +265,7 @@ class UserController extends Controller
 
                     if($_format == 'json'){
                         $validationUrl = $this->generateUrl('cairn_user_api_phone_add',array('remote'=>'mobile'));
-                        $res = $this->get('cairn_user.api')->serialize(array('validation_url'=>$validationUrl,'phone'=>$phone));
-
-                        $response = new Response($res);
-                        $response->headers->set('Content-Type', 'application/json');
-                        $response->setStatusCode(Response::HTTP_OK);
-                        return $response;
+                        return $apiService->getOkResponse(array('validation_url'=>$validationUrl,'phone'=>$phone),Response::HTTP_OK);
                     }
 
                     return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$user->getUsername()));
@@ -288,6 +288,7 @@ class UserController extends Controller
     public function sendActivationCode($isNewEntity,$session, Phone $phone)
     {
         $currentUser = $this->getUser();
+        $targetUser = $phone->getUser();
         $em = $this->getDoctrine()->getManager();
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
@@ -308,7 +309,7 @@ class UserController extends Controller
             //detach is necessary for serialization of associated entities before setting it in session
 
             $em->detach($phone);
-            $currentUser->getSmsData()->removePhone($phone);
+            $targetUser->getSmsData()->removePhone($phone);
             $session->set('phone',$phone);
             $phone = $em->merge($session->get('phone'));
 
@@ -329,7 +330,6 @@ class UserController extends Controller
         $em->persist($sms);
         $em->flush();
 
-
         $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
         $session->set('activationCode', $session_code);
 
@@ -345,6 +345,16 @@ class UserController extends Controller
 
     private function setSmsAccessClient(User $user)
     {
+        $securityService = $this->get('cairn_user.security');
+        $currentUser = $this->getUser();
+        $switch = false;
+        if(! ($user === $currentUser)){
+            $switch = true;
+            $networkInfo = $this->get('cairn_user_cyclos_network_info');
+            $networkName = $this->getParameter('cyclos_currency_cairn');
+            $networkInfo->switchToNetwork($networkName,'access_client', $securityService->vigenereDecode($user->getCyclosToken()));
+        }
+
         $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
 
         if(! $accessClientVO){
@@ -355,6 +365,10 @@ class UserController extends Controller
             $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
             $smsClient = $securityService->vigenereEncode($smsClient);
             $user->getSmsData()->setSmsClient($smsClient);
+        }
+
+        if($switch){
+             $networkInfo->switchToNetwork($networkName,'access_client', $securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
     }
 
@@ -401,7 +415,7 @@ class UserController extends Controller
         if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
 
             if(! $previousPhoneNumber){
-                $res = $this->get('cairn_user.api')->deserialize($session->get('phone'),'Cairn\UserBundle\Entity\Phone');
+                $res = $apiService->deserialize($session->get('phone'),'Cairn\UserBundle\Entity\Phone');
                 $phone = $em->merge($res);
             }else{
                 $phone = $em->merge($session->get('phone'));
@@ -442,12 +456,7 @@ class UserController extends Controller
             $session->remove('is_first_connection');
 
             if( $apiService->isRemoteCall()){
-                $res = $this->get('cairn_user.api')->serialize($phone);
-
-                $response = new Response($res);
-                $response->headers->set('Content-Type', 'application/json');
-                $response->setStatusCode(Response::HTTP_CREATED);
-                return $response;
+                return $apiService->getOkResponse($phone,Response::HTTP_CREATED);
             }
 
             if( ($currentUser === $user) && $phone->isPaymentEnabled()){
@@ -506,10 +515,10 @@ class UserController extends Controller
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
 
-        if(! $user->getCard()){
-            $session->getFlashBag()->add('error','Pas de carte de sécurité associée !');
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
-        }
+        //if(! $user->getCard()){
+        //    $session->getFlashBag()->add('error','Pas de carte de sécurité associée !');
+        //    return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
+        //}
 
         $previousPhoneNumber = $phone->getPhoneNumber();
 
@@ -547,23 +556,21 @@ class UserController extends Controller
             
                 // POST request is a new phone number for an existing entity smsData
                 if($previousPhoneNumber != $phone->getPhoneNumber()){
-                    if($user !== $currentUser ){
-                        throw new AccessDeniedException('Action réservée à '.$user->getName());
-                    }
+                    //if($user !== $currentUser ){
+                    //    throw new AccessDeniedException('Action réservée à '.$user->getName());
+                    //}
                     $this->sendActivationCode(false,$session, $phone);
                     if($_format == 'json'){
                         $validationUrl = $this->generateUrl('cairn_user_api_phone_edit',array('remote'=>'mobile','id'=>$phone->getID()));
-                        $res = $this->get('cairn_user.api')->serialize(array('validation_url'=>$validationUrl,'phone'=>$phone));
 
-                        $response = new Response($res);
-                        $response->headers->set('Content-Type', 'application/json');
-                        $response->setStatusCode(Response::HTTP_OK);
-                        return $response;
+                        return $apiService->getOkResponse(array('validation_url'=>$validationUrl,'phone'=>$phone),Response::HTTP_OK);
                     }
 
                     return $this->redirectToRoute('cairn_user_users_phone_edit',array('id'=>$phone->getID()));
 
                 }else{// POST request does not concern a new phone number
+
+                    $em->flush();
 
                     if($phone->isPaymentEnabled() ){
                         $message = 'Les opérations SMS sont autorisées pour le numéro '.$phone->getPhoneNumber();
@@ -571,18 +578,12 @@ class UserController extends Controller
                         $message = 'Les opérations SMS ne sont plus autorisées pour le numéro '.$phone->getPhoneNumber();
                     }
 
+                   
                     if($_format == 'json'){
-                        $res = $this->get('cairn_user.api')->serialize(array('message'=>$message,'phone'=>$phone));
-
-                        $response = new Response($res);
-                        $response->headers->set('Content-Type', 'application/json');
-                        $response->setStatusCode(Response::HTTP_OK);
-                        return $response;
+                         return $apiService->getOkResponse(array('message'=>$message,'phone'=>$phone),Response::HTTP_OK);
                     }
 
                     $session->getFlashBag()->add('info',$message);
-                    $em->flush();
-
                     $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
                     return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
                 }
@@ -607,10 +608,13 @@ class UserController extends Controller
     public function deletePhoneAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
+        $apiService = $this->get('cairn_user.api');
+
         $em = $this->getDoctrine()->getManager();
         $currentUser = $this->getUser();
         $user = $phone->getUser();
 
+        
         $isAdmin = $this->get('security.authorization_checker')->isGranted('ROLE_ADMIN');
 
         //****************** All cases where delete sms is not allowed ****************//
@@ -627,11 +631,8 @@ class UserController extends Controller
         $em->flush();
 
         $flashMessage = 'Numéro de téléphone '.$phoneNumber.' supprimé';
-        if($this->get('cairn_user.api')->isRemoteCall()){
-            $response = new Response('{ "message":"'.$flashMessage.'"}');
-            $response->setStatusCode(Response::HTTP_OK);
-            $response->headers->set('Content-Type', 'application/json');
-            return $response;
+        if($apiService->isRemoteCall()){
+            return $apiService->getOkResponse(array($flashMessage),Response::HTTP_OK);
         }
         $session->getFlashBag()->add('success',$flashMessage);
         return $this->redirectToRoute('cairn_user_profile_view', array('username'=>$user->getUsername()));

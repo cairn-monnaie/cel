@@ -273,11 +273,11 @@ cairn_user_phones_dashboard:
         _format: html|json
 
 cairn_user_users_phone_add: #finishing the route name with phone_add is important for validation process
-    path:     user/phone/add
+    path:     user/phone/add/{username}
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: html}
 
 cairn_user_api_phone_add: #finishing the route name with phone_add is important for validation process
-    path:     /{remote}/phones.{_format}
+    path:     /{remote}/phones/{username}.{_format}
     methods: POST
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: json}
     requirements: 

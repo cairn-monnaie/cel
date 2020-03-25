@@ -30,13 +30,15 @@ class UserControllerTest extends BaseControllerTest
      * The data provider must provide target users with sms data. Otherwise, edition makes no sense
      *@dataProvider provideDataForAddPhone
      */
-    public function testAddPhone($login,$isExpectedForm, $newPhoneSubmit,$isValidData,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
+    public function testAddPhone($login,$target,$isExpectedForm, $newPhoneSubmit,$isValidData,$code,$isValidCode,$isPaymentEnabled, $expectedMessages)
     {
         $crawler = $this->login($login, '@@bbccdd');
 
         $currentUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$login));
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneBy(array('username'=>$target));
 
-        $url = '/user/phone/add';
+
+        $url = '/user/phone/add/'.$target;
         $crawler = $this->client->request('GET',$url);
 
         $crawler = $this->client->followRedirect();
@@ -45,20 +47,24 @@ class UserControllerTest extends BaseControllerTest
 
         $previous_phoneNumberActivationTries = $currentUser->getPhoneNumberActivationTries();
         $previous_nbPhoneNumberRequests = $currentUser->getNbPhoneNumberRequests();
-        $nbPhonesBefore = count($currentUser->getPhones());
+        $nbPhonesBefore = count($targetUser->getPhones());
 
-        if(! $currentUser->isAdherent()){
+        if(! $targetUser->isAdherent()){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
             return;
         }elseif(! $isExpectedForm){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$currentUser->getUsername()));
-            $crawler = $this->client->followRedirect();
+            $isRedirect = $this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername());
+            $isException = ($this->client->getResponse()->getStatusCode() >= 400 );
+            $this->assertTrue($isRedirect || $isException);
+
+            if($isRedirect){
+                $crawler = $this->client->followRedirect();
+            }
             $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
             return;
         }
 
         $formPhone = $crawler->selectButton('cairn_userbundle_phone_save')->form();
-
         $formPhone['cairn_userbundle_phone[phoneNumber]']->setValue($newPhoneSubmit['phoneNumber']);
 
         if(!$isPaymentEnabled){
@@ -75,8 +81,10 @@ class UserControllerTest extends BaseControllerTest
 
         $crawler = $this->client->submit($formPhone);
 
+        $this->em->refresh($targetUser);
         $this->em->refresh($currentUser);
-        $nbPhonesBetween = count($currentUser->getPhones());
+
+        $nbPhonesBetween = count($targetUser->getPhones());
 
         if($isValidData){
             $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests + 1);
@@ -90,21 +98,21 @@ class UserControllerTest extends BaseControllerTest
             $formCode['cairn_userbundle_phone[activationCode]']->setValue($code);
             $crawler = $this->client->submit($formCode);
 
-            $this->em->refresh($currentUser);
-            $nbPhonesAfter = count($currentUser->getPhones());
+            $this->em->refresh($targetUser);
+            $nbPhonesAfter = count($targetUser->getPhones());
 
             if($isValidCode){
                 $this->assertEquals(0,$currentUser->getPhoneNumberActivationTries());
                 $this->assertEquals(0,$currentUser->getNbPhoneNumberRequests());
                 $this->assertEquals($nbPhonesBefore + 1, $nbPhonesAfter);
 
-                $newPhone = $currentUser->getPhones()[$nbPhonesAfter - 1];
+                $newPhone = $targetUser->getPhones()[$nbPhonesAfter - 1];
                 $this->assertEquals($newPhone->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
 
                 $this->assertContains('Règles d\'utilisation',$this->client->getResponse()->getContent());
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
-                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),'client_sms','ACTIVE');
+                $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms','ACTIVE');
                 $this->assertTrue($accessClientVO != NULL);
 
                 //if this is first phone number association, an access client is created for the current user on Cyclos side.
@@ -151,7 +159,7 @@ class UserControllerTest extends BaseControllerTest
     public function provideDataForAddPhone()
     {
         $admin = $this->testAdmin;
-        $baseData = array('login'=>'stuart_andrew',
+        $baseData = array('login'=>'stuart_andrew','target'=>'stuart_andrew',
             'isExpectedForm'=>true,
             'newPhone'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
             'isValidData'=>true,
@@ -165,9 +173,13 @@ class UserControllerTest extends BaseControllerTest
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
-            'user in admin' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false)),
+            'admin not referent' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
 
-            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold',
+            'admin is referent' => array_replace($baseData, array('login'=>$admin, 'target'=>'mazmax')),
+
+            'user not referent' => array_replace($baseData, array('login'=>'mazmax', 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
+
+            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                     'isExpectedForm'=>false,
                     'expectedMessages'=>'3 demandes de nouveau')),
 
@@ -185,7 +197,7 @@ class UserControllerTest extends BaseControllerTest
                         'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
                         'expectedMessages'=>$usedMsg)),
 
-            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar',
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                     'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
                     'expectedMessages'=>$usedMsg)),
 
@@ -193,25 +205,25 @@ class UserControllerTest extends BaseControllerTest
                     'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
                     'expectedMessages'=>$usedMsg)),
 
-            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar',
+            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
                     'newPhone'=>array('phoneNumber'=>'+33644332211'),
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                     )),
 
-            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso',
+            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
                     'newPhone'=>array('phoneNumber'=>'+33611223344'),
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                     )),
 
-            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi',
+            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                     'isValidCode'=>false, 'code'=>'2222',
                     'expectedMessages'=>'compte a été bloqué')),
 
-            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi',
+            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                 )),
 
-            'user with no phone number'=>array_replace($baseData, array('login'=>'noire_aliss',
+            'user with no phone number'=>array_replace($baseData, array('login'=>'noire_aliss','target'=>'noire_aliss',
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                 )),
 
@@ -253,16 +265,22 @@ class UserControllerTest extends BaseControllerTest
         if(! ($currentUser === $targetUser || $isReferent)){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }elseif(! $isExpectedForm){
-            $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
-            $crawler = $this->client->followRedirect();
-            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+            $isRedirect = $this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername());
+            $isException = ($this->client->getResponse()->getStatusCode() >= 400 );
+            $this->assertTrue($isRedirect || $isException);
 
+            if($isRedirect){
+                $crawler = $this->client->followRedirect();
+            }
+            $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+            return;
         }else{
             $formPhone = $crawler->selectButton('cairn_userbundle_phone_save')->form();
+            $formPhone['cairn_userbundle_phone[phoneNumber]']->setValue($newPhoneSubmit['phoneNumber']);
+
 
             if($currentUser->isAdmin()){
                 $identifierField = $formPhone['cairn_userbundle_phone[identifier]'];
-                $this->assertNotContains('cairn_userbundle_phone[phoneNumber]',$this->client->getResponse()->getContent());
 
                 if($currentUser->hasRole('ROLE_SUPER_ADMIN')){
                     $this->assertFalse($identifierField->isDisabled());
@@ -270,10 +288,8 @@ class UserControllerTest extends BaseControllerTest
                 }else{
                     $this->assertTrue($identifierField->isDisabled());
                 }
-            }else{
-                $formPhone['cairn_userbundle_phone[phoneNumber]']->setValue($newPhoneSubmit['phoneNumber']);
             }
-
+                
             if(!$isPaymentEnabled){
                 $formPhone['cairn_userbundle_phone[paymentEnabled]']->untick();
             }else{
@@ -294,8 +310,6 @@ class UserControllerTest extends BaseControllerTest
 
             if($isPhoneNumberEdit){
                 if($isValidData){
-
-
                     $this->assertEquals($currentUser->getNbPhoneNumberRequests(),$previous_nbPhoneNumberRequests + 1);
                     $this->assertTrue($phoneBefore->getPhoneNumber() == $previous_phoneNumber);
                     $this->assertFalse($phoneBefore->getPhoneNumber() == $newPhoneSubmit['phoneNumber']);
@@ -364,6 +378,7 @@ class UserControllerTest extends BaseControllerTest
                 }
             }else{ //phone number did not change
                 if($isValidData){
+                    var_dump($this->client->getResponse()->getContent());
                     $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                     $crawler = $this->client->followRedirect();
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
@@ -403,80 +418,84 @@ class UserControllerTest extends BaseControllerTest
         $validDataMsg = 'Un code vous a été envoyé';
         $validCodeMsg = 'enregistré';
         return array(
-            'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
-                                                                     'isPhoneNumberEdit'=>false
-             )),
+           // 'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
+           //                                                          'isPhoneNumberEdit'=>false
+           //  )),
 
-            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
-                                                                    'isExpectedForm'=>false,
-                                                                    'expectedMessages'=>'3 demandes de changement')),
+           // 'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
+           //                                                         'isExpectedForm'=>false,
+           //                                                         'expectedMessages'=>'3 demandes de changement')),
 
-            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                              'isPhoneNumberEdit'=>false,
-                                                              'newPhone'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
-                                                              'expectedMessages'=>$validCodeMsg
-                                                          )),
+           // 'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                                   'isPhoneNumberEdit'=>false,
+           //                                                   'newPhone'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
+           //                                                   'expectedMessages'=>$validCodeMsg
+           //                                               )),
 
-            'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                            'isPhoneNumberEdit'=>false,'newPhone'=>array('phoneNumber'=>'+33611223344'),
-                                                            'isValidData'=>true,'isSmsEnabled'=>false,
-                                                            'expectedMessages'=>$validCodeMsg
-                                                        )),
+           // 'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                                 'isPhoneNumberEdit'=>false,'newPhone'=>array('phoneNumber'=>'+33611223344'),
+           //                                                 'isValidData'=>true,'isSmsEnabled'=>false,
+           //                                                 'expectedMessages'=>$validCodeMsg
+           //                                             )),
 
-            'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                          'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
-                                                          'isValidData'=>false,'isSmsEnabled'=>false,
-                                                          'expectedMessages'=>'Format du numéro'
-                                                      )),
+           // 'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                               'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
+           //                                               'isValidData'=>false,'isSmsEnabled'=>false,
+           //                                               'expectedMessages'=>'Format du numéro'
+           //                                           )),
+
+           // 'admin changes phonenumber'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+           //                                                     'isExpectedForm'=>true,'isPhoneNumberEdit'=>true,
+           //                                                     'expectedMessages'=>$validCodeMsg)),
 
             'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
                                                                 'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
                                                                 'expectedMessages'=>$validCodeMsg)),
 
-            'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
-                                                                  'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
-                                                                  'expectedMessages'=>$validCodeMsg)),
+           // 'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
+           //                                                       'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
+           //                                                       'expectedMessages'=>$validCodeMsg)),
 
-            'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                            'isPhoneNumberEdit'=>true,
-                                                            'isValidData'=>true,'isSmsEnabled'=>false,
-                                                            'expectedMessages'=>$validCodeMsg
-                                                        )),
+           // 'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                                 'isPhoneNumberEdit'=>true,
+           //                                                 'isValidData'=>true,'isSmsEnabled'=>false,
+           //                                                 'expectedMessages'=>$validCodeMsg
+           //                                             )),
 
-            'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-                                            'expectedMessages'=>'déjà utilisé')),
+           // 'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                 'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+           //                                 'expectedMessages'=>'déjà utilisé')),
 
-            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                        'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-                                                        'expectedMessages'=>'déjà utilisé')),
+           // 'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+           //                                             'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
+           //                                             'expectedMessages'=>'déjà utilisé')),
 
-            'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                                        'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-                                                        'expectedMessages'=>'déjà utilisé')),
+           // 'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
+           //                                             'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
+           //                                             'expectedMessages'=>'déjà utilisé')),
 
-            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
-                                            'newPhone'=>array('phoneNumber'=>'+33644332211'),
-                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+           // 'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
+           //                                 'newPhone'=>array('phoneNumber'=>'+33644332211'),
+           //                                                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+           //                                                 )),
 
-            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-                                            'newPhone'=>array('phoneNumber'=>'+33611223344'),
-                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+           // 'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
+           //                                 'newPhone'=>array('phoneNumber'=>'+33611223344'),
+           //                                                   'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+           //                                                 )),
 
-            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-                                                            )),
+           // 'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+           //                                                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+           //                                                 )),
 
-            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-                                                                'isValidCode'=>false, 'code'=>'2222',
-                                                                'expectedMessages'=>'compte a été bloqué')),
+           // 'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+           //                                                     'isValidCode'=>false, 'code'=>'2222',
+           //                                                     'expectedMessages'=>'compte a été bloqué')),
 
-            
-            '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
-                                                        'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
-                                                            )),
+           // 
+           // '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
+           //                                             'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
+           //                                                 )),
         );
     }
 
