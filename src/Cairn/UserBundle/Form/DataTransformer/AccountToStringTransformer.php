@@ -59,7 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new \Exception('No creditor account provided',400);
+            throw new InvalidArgumentException('No creditor account provided');
             return;
         }
 

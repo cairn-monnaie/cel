@@ -1023,6 +1023,10 @@ class Commands
         $beneficiary->addSource($debitor);
         echo 'INFO: OK !'."\n";
 
+        //user has never logged in
+        $user = $userRepo->findOneByUsername('Claire_Dode'); 
+        $user->setFirstLogin(true);
+
         //user has requested a removal and has null account balance on Cyclos-side
         $user = $userRepo->findOneByUsername('Biocoop'); 
         $user->setEnabled(false);

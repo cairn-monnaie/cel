@@ -167,7 +167,7 @@ class OperationValidator extends ConstraintValidator
 
         //************ Specific validation, anything but SMS payment ************//
         if(! $operation->isSmsPayment()){
-            $array_transaction_types = array(Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
+            $array_transaction_types = array(Operation::TYPE_MOBILE_APP,Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_TRANSACTION_SCHEDULED);
  
             if(in_array($operation->getType(),Operation::getDebitOperationTypes()) || in_array($operation->getType(), $array_transaction_types)){
 
