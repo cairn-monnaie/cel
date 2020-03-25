@@ -216,6 +216,10 @@ class UserController extends Controller
             throw new AccessDeniedException('Réserver aux comptes adhérents');
         }
 
+        if(! $user->isEnabled() ){
+            throw new AccessDeniedException('Utilisateur bloqué');
+        }
+
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
         if(!$user->getSmsData()){

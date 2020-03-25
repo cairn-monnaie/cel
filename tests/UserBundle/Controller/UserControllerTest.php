@@ -98,6 +98,7 @@ class UserControllerTest extends BaseControllerTest
             $formCode['cairn_userbundle_phone[activationCode]']->setValue($code);
             $crawler = $this->client->submit($formCode);
 
+            $this->em->refresh($currentUser);
             $this->em->refresh($targetUser);
             $nbPhonesAfter = count($targetUser->getPhones());
 
@@ -109,7 +110,6 @@ class UserControllerTest extends BaseControllerTest
                 $newPhone = $targetUser->getPhones()[$nbPhonesAfter - 1];
                 $this->assertEquals($newPhone->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
 
-                $this->assertContains('Règles d\'utilisation',$this->client->getResponse()->getContent());
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms','ACTIVE');
@@ -139,7 +139,7 @@ class UserControllerTest extends BaseControllerTest
                     $this->assertUserIsDisabled($currentUser,true);
 
                     $this->assertTrue($this->client->getRequest()->getRequestUri() == '/login');
-                    $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+                    $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
                 }else{
                     $this->assertTrue($this->client->getRequest()->getRequestUri() == $url);
@@ -147,7 +147,7 @@ class UserControllerTest extends BaseControllerTest
 
                     $this->assertUserIsEnabled($currentUser, false);
 
-                    $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
+                    $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
 
                 }
             }
@@ -173,7 +173,11 @@ class UserControllerTest extends BaseControllerTest
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
-            'admin adds number for disabled user' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore')),
+            'admin adds number for disabled user with sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+                                            'expectedMessages'=>'bloqué','isExpectedForm'=>false)),
+
+            'admin adds number for disabled user without sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'Biocoop',
+                                            'isExpectedForm'=>false,'expectedMessages'=>'bloqué')),
 
             'admin not referent' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
 
@@ -333,9 +337,7 @@ class UserControllerTest extends BaseControllerTest
 
                         $this->assertEquals($phoneBefore->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
 
-                        if($isPhoneNumberEdit){
-                            $this->assertContains('Règles d\'utilisation',$this->client->getResponse()->getContent());
-                        }else{
+                        if(! $isPhoneNumberEdit){
                             $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                             $crawler = $this->client->followRedirect();
                             $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
@@ -380,7 +382,6 @@ class UserControllerTest extends BaseControllerTest
                 }
             }else{ //phone number did not change
                 if($isValidData){
-                    var_dump($this->client->getResponse()->getContent());
                     $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
                     $crawler = $this->client->followRedirect();
                     $this->assertContains($expectedMessages,$this->client->getResponse()->getContent());
@@ -408,6 +409,17 @@ class UserControllerTest extends BaseControllerTest
         $admin = $this->testAdmin;
         $baseData = array('login'=>'','target'=>'',
             'isExpectedForm'=>true,
+            'newPhone'=>array('phoneNumber'=>'+33699999999'),
+            'isValidData'=>true,
+            'isPhoneNumberEdit'=>true,
+            'code'=>'1111',
+            'isValidCode'=>true,
+            'isPaymentEnabled'=>true,
+            'expectedMessages'=>array('')
+        );
+
+    $baseAdminData = array('login'=>$admin,'target'=>'',
+            'isExpectedForm'=>true,
             'newPhone'=>array('phoneNumber'=>'+33699999999','identifier'=>'IDSMS'),
             'isValidData'=>true,
             'isPhoneNumberEdit'=>true,
@@ -420,9 +432,9 @@ class UserControllerTest extends BaseControllerTest
         $validDataMsg = 'Un code vous a été envoyé';
         $validCodeMsg = 'enregistré';
         return array(
-            'admin changes number for disabled user' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore')),
+            'admin changes number for disabled user' => array_replace($baseAdminData, array('target'=>'la_mandragore')),
 
-            'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
+            'not referent'=>array_replace($baseAdminData, array('target'=>'stuart_andrew', 'isValidData'=>false,
                                                                      'isPhoneNumberEdit'=>false
              )),
 
@@ -448,15 +460,17 @@ class UserControllerTest extends BaseControllerTest
                                                           'expectedMessages'=>'Format du numéro'
                                                       )),
 
-            'admin changes phonenumber'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+            'admin changes phonenumber'=>array_replace($baseAdminData, array('target'=>'la_mandragore',
                                                                 'isExpectedForm'=>true,'isPhoneNumberEdit'=>true,
                                                                 'expectedMessages'=>$validCodeMsg)),
 
-            'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+            'admin enables sms'=>array_replace_recursive($baseAdminData, array('target'=>'la_mandragore',
+                                                                'newPhone'=>array('phoneNumber'=>'+33744444444'),
                                                                 'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
                                                                 'expectedMessages'=>$validCodeMsg)),
 
-            'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
+            'admin disables sms'=>array_replace_recursive($baseAdminData, array('target'=>'maltobar','isExpectedForm'=>true,
+                                                                  'newPhone'=>array('phoneNumber'=>'+33611223344'),
                                                                   'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
                                                                   'expectedMessages'=>$validCodeMsg)),
 
