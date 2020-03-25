@@ -425,7 +425,9 @@ class UserController extends Controller
             $currentUser->setPhoneNumberActivationTries(0);
 
 
-            $this->setSmsAccessClient($user);
+            if(! $user->getSmsData()->getSmsClient()){
+                $this->setSmsAccessClient($user);
+            }
 
             
             //we check if the new number was associated to a personal and professional account

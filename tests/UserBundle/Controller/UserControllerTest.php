@@ -173,6 +173,8 @@ class UserControllerTest extends BaseControllerTest
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
+            'admin adds number for disabled user' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore')),
+
             'admin not referent' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
 
             'admin is referent' => array_replace($baseData, array('login'=>$admin, 'target'=>'mazmax')),
@@ -418,84 +420,86 @@ class UserControllerTest extends BaseControllerTest
         $validDataMsg = 'Un code vous a été envoyé';
         $validCodeMsg = 'enregistré';
         return array(
-           // 'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
-           //                                                          'isPhoneNumberEdit'=>false
-           //  )),
+            'admin changes number for disabled user' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore')),
 
-           // 'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
-           //                                                         'isExpectedForm'=>false,
-           //                                                         'expectedMessages'=>'3 demandes de changement')),
+            'not referent'=>array_replace($baseData, array('login'=>$admin,'target'=>'stuart_andrew', 'isValidData'=>false,
+                                                                     'isPhoneNumberEdit'=>false
+             )),
 
-           // 'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                                   'isPhoneNumberEdit'=>false,
-           //                                                   'newPhone'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
-           //                                                   'expectedMessages'=>$validCodeMsg
-           //                                               )),
+            'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
+                                                                    'isExpectedForm'=>false,
+                                                                    'expectedMessages'=>'3 demandes de changement')),
 
-           // 'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                                 'isPhoneNumberEdit'=>false,'newPhone'=>array('phoneNumber'=>'+33611223344'),
-           //                                                 'isValidData'=>true,'isSmsEnabled'=>false,
-           //                                                 'expectedMessages'=>$validCodeMsg
-           //                                             )),
+            'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                              'isPhoneNumberEdit'=>false,
+                                                              'newPhone'=>array('phoneNumber'=>'+33611223344'),'isValidData'=>true,
+                                                              'expectedMessages'=>$validCodeMsg
+                                                          )),
 
-           // 'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                               'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
-           //                                               'isValidData'=>false,'isSmsEnabled'=>false,
-           //                                               'expectedMessages'=>'Format du numéro'
-           //                                           )),
+            'current number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                            'isPhoneNumberEdit'=>false,'newPhone'=>array('phoneNumber'=>'+33611223344'),
+                                                            'isValidData'=>true,'isSmsEnabled'=>false,
+                                                            'expectedMessages'=>$validCodeMsg
+                                                        )),
 
-           // 'admin changes phonenumber'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
-           //                                                     'isExpectedForm'=>true,'isPhoneNumberEdit'=>true,
-           //                                                     'expectedMessages'=>$validCodeMsg)),
+            'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                          'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
+                                                          'isValidData'=>false,'isSmsEnabled'=>false,
+                                                          'expectedMessages'=>'Format du numéro'
+                                                      )),
+
+            'admin changes phonenumber'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
+                                                                'isExpectedForm'=>true,'isPhoneNumberEdit'=>true,
+                                                                'expectedMessages'=>$validCodeMsg)),
 
             'admin enables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
                                                                 'isExpectedForm'=>true,'isPhoneNumberEdit'=>false,
                                                                 'expectedMessages'=>$validCodeMsg)),
 
-           // 'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
-           //                                                       'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
-           //                                                       'expectedMessages'=>$validCodeMsg)),
+            'admin disables sms'=>array_replace($baseData, array('login'=>$admin,'target'=>'maltobar','isExpectedForm'=>true,
+                                                                  'isPhoneNumberEdit'=>false,'isSmsEnabled'=>false,
+                                                                  'expectedMessages'=>$validCodeMsg)),
 
-           // 'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                                 'isPhoneNumberEdit'=>true,
-           //                                                 'isValidData'=>true,'isSmsEnabled'=>false,
-           //                                                 'expectedMessages'=>$validCodeMsg
-           //                                             )),
+            'new number, disable sms'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                            'isPhoneNumberEdit'=>true,
+                                                            'isValidData'=>true,'isSmsEnabled'=>false,
+                                                            'expectedMessages'=>$validCodeMsg
+                                                        )),
 
-           // 'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                 'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-           //                                 'expectedMessages'=>'déjà utilisé')),
+            'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                            'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
+                                            'expectedMessages'=>'déjà utilisé')),
 
-           // 'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-           //                                             'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-           //                                             'expectedMessages'=>'déjà utilisé')),
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
+                                                        'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
+                                                        'expectedMessages'=>'déjà utilisé')),
 
-           // 'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-           //                                             'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-           //                                             'expectedMessages'=>'déjà utilisé')),
+            'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
+                                                        'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
+                                                        'expectedMessages'=>'déjà utilisé')),
 
-           // 'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
-           //                                 'newPhone'=>array('phoneNumber'=>'+33644332211'),
-           //                                                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-           //                                                 )),
+            'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
+                                            'newPhone'=>array('phoneNumber'=>'+33644332211'),
+                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
 
-           // 'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
-           //                                 'newPhone'=>array('phoneNumber'=>'+33611223344'),
-           //                                                   'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-           //                                                 )),
+            'person request : used by pro'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
+                                            'newPhone'=>array('phoneNumber'=>'+33611223344'),
+                                                              'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
 
-           // 'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-           //                                                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
-           //                                                 )),
+            'last remaining try : valid code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                                                            )),
 
-           // 'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
-           //                                                     'isValidCode'=>false, 'code'=>'2222',
-           //                                                     'expectedMessages'=>'compte a été bloqué')),
+            'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
+                                                                'isValidCode'=>false, 'code'=>'2222',
+                                                                'expectedMessages'=>'compte a été bloqué')),
 
-           // 
-           // '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
-           //                                             'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
-           //                                                 )),
+            
+            '2 accounts associated before: valid code'=>array_replace($baseData,array('login'=>'nico_faus_perso','target'=>'nico_faus_perso',
+                                                        'expectedMessages'=>array($validDataMsg,'peut désormais réaliser')
+                                                            )),
         );
     }
 

@@ -239,6 +239,7 @@ class SecurityListener
         }
     }
 
+    
     /**
      *Deals with maintenance of the application
      *
@@ -264,24 +265,37 @@ class SecurityListener
         }
 
         if($apiService->isMobileCall()){
-            $parsedHeader = $this->container->get('cairn_user.security')->parseAuthorizationHeader($request->headers->get('Authorization'));
+            $authHeader = $request->headers->get('authorization');
+            
+            if(! $authHeader){
+                $authHeader = $request->server->get('HTTP_AUTHORIZATION');
+
+                if(! $authHeader){
+                    $event->setResponse($apiService->getErrorResponse(array('Missing Authorization header with Signature'),Response::HTTP_UNAUTHORIZED));
+                    return;
+                }
+            }
+
+            $parsedHeader = $this->container->get('cairn_user.security')->parseAuthorizationHeader($authHeader);
 
             if(! $parsedHeader){
-                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Format'),Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Header Format'),Response::HTTP_UNAUTHORIZED));
                 return;
             }
 
             $data = $parsedHeader['timestamp'].$request->getMethod().$request->getRequestURI();
-            $hashPostContent = hash('md5',json_encode($request->getContent(),true)); 
 
-            if($request->isMethod('POST')){
-                $data .= $hashPostContent;
+            $body = $request->getContent();
+            if($body){
+                $bodyString = preg_replace('/\s+/','',$apiService->fromArrayToStringDeterministicOrder(json_decode($body,true)));
+
+                $data .= hash('md5',$bodyString);
             }
             
             $rightKey = hash_hmac($parsedHeader['algo'],trim($data),$this->container->getParameter('api_secret'));
 
             if($rightKey != $parsedHeader['signature']){
-                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization provided'),Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Header provided'),Response::HTTP_UNAUTHORIZED));
                 return;
             }
         }
