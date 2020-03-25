@@ -106,8 +106,9 @@ class Api
              $toSort = [];
              foreach($arr as $key=>$item){
                  $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
-                 sort($toSort);
+     
              }
+             sort($toSort);
              $res .= implode($toSort);
          }
 

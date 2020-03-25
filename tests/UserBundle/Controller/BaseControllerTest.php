@@ -188,7 +188,7 @@ class BaseControllerTest extends WebTestCase
 
         if($bodyContent){
             $payloadAsString = $this->container->get('cairn_user.api')->fromArrayToStringDeterministicOrder($bodyContent);
-            $data .= hash('md5', $payloadAsString) ; 
+            $data .= hash('md5',preg_replace('/\s+/','', $payloadAsString)) ; 
         }
         $key = hash_hmac('sha256',$data,$this->container->getParameter('api_secret'));
 

@@ -268,7 +268,7 @@ class UserController extends Controller
                     $this->sendActivationCode(true,$session, $phone);
 
                     if($_format == 'json'){
-                        $validationUrl = $this->generateUrl('cairn_user_api_phone_add',array('remote'=>'mobile'));
+                        $validationUrl = $this->generateUrl('cairn_user_api_phone_add',array('remote'=>'mobile','username'=>$user->getUsername()));
                         return $apiService->getOkResponse(array('validation_url'=>$validationUrl,'phone'=>$phone),Response::HTTP_OK);
                     }
 

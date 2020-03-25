@@ -396,7 +396,7 @@ class ApiControllerTest extends BaseControllerTest
         $this->mobileLogin($current,'@@bbccdd');
 
         $formSubmit = array('phoneNumber'=> $newPhoneSubmit['phoneNumber'], 'paymentEnabled'=> 'true');
-        $uri = '/mobile/phones'.$target;
+        $uri = '/mobile/phones/'.$target;
 
         $crawler = $this->client->request(
             'POST',
@@ -480,49 +480,49 @@ class ApiControllerTest extends BaseControllerTest
         return array(
             'admin not referent' => array_replace($baseAdminData, array('target'=>'stuart_andrew','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            //'admin is referent' => array_replace($baseAdminData, array('target'=>'hirundo_archi')),
+            'admin is referent' => array_replace($baseAdminData, array('target'=>'hirundo_archi')),
 
-            //'user not referent' => array_replace($baseData, array('current'=>'mazmax', 'isExpectedForm'=>false,'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            'user not referent' => array_replace($baseData, array('current'=>'mazmax', 'isExpectedForm'=>false,'httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            //'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
+            'too many requests'=>array_replace($baseData, array('current'=>'crabe_arnold','httpPhoneStatusCode'=>Response::HTTP_FORBIDDEN)),
 
-            //'current number'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-            //        ),
+            'current number'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+                    ),
 
-            //'current number, disable sms'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
-            //        ),
+            'current number, disable sms'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33743434343'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST)
+                    ),
 
-            //'used by pro & person'=>array_replace_recursive($baseData, array(
-            //            'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //            )),
+            'used by pro & person'=>array_replace_recursive($baseData, array(
+                        'newPhone'=>array('phoneNumber'=>'+33612345678'),'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                        )),
 
-            //'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar',
-            //        'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //        )),
+            'pro request : used by pro'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar',
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                    )),
 
-            //'person request : used by person'=>array_replace_recursive($baseData, array(
-            //        'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
-            //    )),
+            'person request : used by person'=>array_replace_recursive($baseData, array(
+                    'newPhone'=>array('phoneNumber'=>'+33612345678'),  'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                )),
 
-            //'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar',
-            //        'newPhone'=>array('phoneNumber'=>'+33644332211')
-            //    )),
+            'pro request : used by person'=>array_replace_recursive($baseData,array('current'=>'maltobar','target'=>'maltobar',
+                    'newPhone'=>array('phoneNumber'=>'+33644332211')
+                )),
 
-            //'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso',
-            //        'newPhone'=>array('phoneNumber'=>'+33611223344')
-            //        )),
+            'person request : used by pro'=>array_replace_recursive($baseData, array('current'=>'benoit_perso','target'=>'benoit_perso',
+                    'newPhone'=>array('phoneNumber'=>'+33611223344')
+                    )),
 
-            //'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi'
-            //    )),
+            'last remaining try : valid code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi',
+                )),
 
-            //'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi',
-            //        'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
-            //        )),
+            'last remaining try : wrong code'=>array_replace($baseData, array('current'=>'hirundo_archi','target'=>'hirundo_archi',
+                    'httpValidationStatusCode'=>Response::HTTP_BAD_REQUEST, 'code'=>'2222'
+                    )),
 
-            //'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss'
-            //    )),
+            'user with no phone number'=>array_replace($baseData, array('current'=>'noire_aliss','target'=>'noire_aliss'
+                )),
 
         );
     }

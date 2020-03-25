@@ -285,11 +285,12 @@ class SecurityListener
 
             $data = $parsedHeader['timestamp'].$request->getMethod().$request->getRequestURI();
 
-            $body = $request->getContent();
+            $body = preg_replace('/\s+/','',$request->getContent());
             if($body){
-                $bodyString = preg_replace('/\s+/','',$apiService->fromArrayToStringDeterministicOrder(json_decode($body,true)));
+                $deterBody = $apiService->fromArrayToStringDeterministicOrder(json_decode($body,true));
 
-                $data .= hash('md5',$bodyString);
+                $digest = hash('md5',$deterBody);
+                $data .= $digest;
             }
             
             $rightKey = hash_hmac($parsedHeader['algo'],trim($data),$this->container->getParameter('api_secret'));
