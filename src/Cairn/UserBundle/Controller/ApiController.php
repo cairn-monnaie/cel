@@ -73,11 +73,21 @@ class ApiController extends Controller
             $userRepo->whereAdherent($ub)
                 ->whereConfirmed($ub);
 
-            //if(empty(array_values($jsonRequest['roles']))){
-            //    $userRepo->whereAdherent($ub);
-            //}else{
+            $currentUser =  $this->get('cairn_user.security')->getCurrentUser();
+
+            if(! $currentUser){ //logout request
                 $userRepo->whereRole($ub,'ROLE_PRO');
-            //}
+            }else{
+                if(! $currentUser->isAdmin()){
+                    $userRepo->whereRole($ub,'ROLE_PRO');
+                }else{// let admin choose according to POST sent
+                    if(empty(array_values($jsonRequest['roles']))){
+                        $userRepo->whereAdherent($ub);
+                    }else{
+                        $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
+                    }
+                }
+            }
 
             $boundingValues = array_values($jsonRequest['bounding_box']);
             if( (! in_array('', $boundingValues)) && !empty($boundingValues) ){

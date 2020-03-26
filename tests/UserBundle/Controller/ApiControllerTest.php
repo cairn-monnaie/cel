@@ -128,11 +128,16 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForUsers
      */
-    public function testGetUsersAction($formSubmit, $httpResponse, $nbUsers)
+    public function testGetUsersAction($login,$doesLogin,$formSubmit, $httpResponse, $nbUsers)
     {
-        $this->mobileLogin('gjanssens','@@bbccdd');
-
-        $uri = '/mobile/users';
+        if($doesLogin){
+            $this->mobileLogin($login,'@@bbccdd');
+            $uri = '/mobile/users';
+        }else{
+            $uri = '/mapUsers';
+        }
+        
+        
         $crawler = $this->client->request(
             'POST',
             $uri,
@@ -164,31 +169,45 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForUsers()
     {
         $limit = 20;
+        $limitPersons = 14;
         $baseSubmit = array(
                     'limit'=>$limit,
                     'offset'=>0,
                     'orderBy'=> array('key'=>'name','order'=>'ASC') ,
                     'name'=>'',
+                    'roles'=>array('0'=>'ROLE_PRO','1'=>'ROLE_PERSON'),
                     'bounding_box'=>array('minLon'=>'','maxLon'=>'','minLat'=>'','maxLat'=>'')
             );
 
 
         return array(
-            'offset too high' =>array( array_replace($baseSubmit,array('offset'=>250)),Response::HTTP_OK,0),
-            'invalid offset' =>array(array_replace($baseSubmit,array('offset'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
-            'invalid limit' =>array(array_replace($baseSubmit,array('limit'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
-            'order by creationDate' =>array(array_replace_recursive($baseSubmit,array('orderBy'=>array('key'=>'creationDate'))),Response::HTTP_OK,$limit),
-            'base request' => array($baseSubmit,Response::HTTP_OK,$limit),
-            'precise name' =>array(array_replace($baseSubmit,array('name'=>'maltobar')),Response::HTTP_OK,1),
-            'unprecise name' =>array(array_replace($baseSubmit,array('name'=>'test')),Response::HTTP_OK,$limit),
-            'empty bounding box' =>array(array_replace($baseSubmit,array('bounding_box'=>[])),Response::HTTP_OK,$limit),
-            'inconsistent bounding box data' =>array(
+            'offset too high' =>array('gjanssens',true, array_replace($baseSubmit,array('offset'=>250)),Response::HTTP_OK,0),
+            'invalid offset' =>array('gjanssens',true,array_replace($baseSubmit,array('offset'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
+            'invalid limit' =>array('gjanssens',true,array_replace($baseSubmit,array('limit'=>-5)),Response::HTTP_INTERNAL_SERVER_ERROR,0),
+            'order by creationDate' =>array('gjanssens',true,array_replace_recursive($baseSubmit,array('orderBy'=>array('key'=>'creationDate'))),
+                                                                                    Response::HTTP_OK,$limit),
+            'base request with login' => array('gjanssens',true,$baseSubmit,Response::HTTP_OK,$limit),
+            'precise name' =>array('gjanssens',true,array_replace($baseSubmit,array('name'=>'maltobar')),Response::HTTP_OK,1),
+            'unprecise name' =>array('gjanssens',true,array_replace($baseSubmit,array('name'=>'test')),Response::HTTP_OK,$limit),
+            'empty bounding box' =>array('gjanssens',true,array_replace($baseSubmit,array('bounding_box'=>[])),Response::HTTP_OK,$limit),
+            'inconsistent bounding box data' =>array('gjanssens',true,
                             array_replace_recursive($baseSubmit,array('bounding_box'=>['minLon'=>'1','maxLon'=>'2','minLat'=>'1','maxLat'=>'2'])),
                             Response::HTTP_OK,0),
-            'valid bounding box data' =>array(
+            'valid bounding box data' =>array('gjanssens',true,
                             array_replace_recursive($baseSubmit,array('bounding_box'=>['minLon'=>'4','maxLon'=>'6','minLat'=>'44','maxLat'=>'46'])),
                             Response::HTTP_OK,
-                            20)
+                            $limit),
+            'base request without login, pros & persons' => array('',false,$baseSubmit,Response::HTTP_OK,$limit),
+            'base request without login, persons only' => array('',false,array_replace($baseSubmit, array('roles'=>['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limit),
+
+            'base request as an admin, pro & persons' => array('admin_network',true,$baseSubmit,Response::HTTP_OK,$limit),
+            'base request as an admin, persons only' => array('admin_network',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),
+                                                                                        Response::HTTP_OK,$limitPersons),
+            'base request as a person, persons only' => array('gjanssens',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),
+                                                                                        Response::HTTP_OK,$limit),
+            'base request as a pro, persons only' => array('maltobar',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limit),
+
+
         );
     }
 
@@ -412,7 +431,7 @@ class ApiControllerTest extends BaseControllerTest
 
         
         $response = $this->client->getResponse();
-
+        
         $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
         $this->assertJson($response->getContent());
         $this->assertEquals($httpPhoneStatusCode, $response->getStatusCode());
@@ -435,7 +454,6 @@ class ApiControllerTest extends BaseControllerTest
             );
 
             $response = $this->client->getResponse();
-
             
             $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
             $this->assertJson($response->getContent());
@@ -642,7 +660,7 @@ class ApiControllerTest extends BaseControllerTest
                                                     )),
 
             'invalid number'=>array_replace_recursive($baseData, array('current'=>'maltobar','target'=>'maltobar',
-                                                            'newPhone'=>array('phoneNumber'=>'+33811223344'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
+                                                            'newPhone'=>array('phoneNumber'=>'+33911223344'), 'httpPhoneStatusCode'=>Response::HTTP_BAD_REQUEST
                                                     )),
 
             'admin enables sms'=>array_replace_recursive($baseAdminData, array('target'=>'la_mandragore','isPhoneNumberEdit'=>false,

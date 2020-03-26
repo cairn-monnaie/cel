@@ -92,7 +92,12 @@ cairn_accounts_ajax:
     defaults: { _controller: CairnUserBundle:Default:accounts, _format: json }
 
 cairn_accounts_mobile_ajax:
-    path:    mobile/users
+    path:    /mobile/users
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:users, _format: json }
+
+cairn_accounts_mobile_map_users:
+    path:    /mapUsers
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:users, _format: json }
 

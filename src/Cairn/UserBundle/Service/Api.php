@@ -92,7 +92,7 @@ class Api
         $request = $this->requestStack->getCurrentRequest();                     
 
         return ( (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
-            ($request->get('_route') == 'cairn_user_api_get_tokens'));
+            (in_array($request->get('_route'),array('cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
     }
 
      public function fromArrayToStringDeterministicOrder($arr)
@@ -189,6 +189,14 @@ class Api
                          'id'=>$child->getID()
                      );
         }
+        if($child instanceOf Phone){
+            return array(
+                'id'=>$child->getID(),
+                'phoneNumber'=>$child->getPhoneNumber(),
+                'identifier'=>$child->getIdentifier(),
+            );
+        }
+
 
     }
 
@@ -198,12 +206,11 @@ class Api
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phones','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('phones','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
-                        'identityDocument'=> function ($child) {return $this->objectCallback($child);},
                         'image'=> function ($child) {return $this->objectCallback($child);},
+                        //'phones'=> function ($child) {return $this->objectCallback($child);},
             ));
-
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
@@ -232,10 +239,9 @@ class Api
         }
 
         if($object instanceOf Phone){
-            $defaultIgnoredAttributes = array('user');
+            $defaultIgnoredAttributes = array('user','dailyAmountThreshold','dailyNumberPaymentsThreshold');
             $normalizer->setCallbacks(array(
-                        'smsData'=> function ($child) {return $this->objectCallback($child);},
-                        'user'=> function ($child) {return $this->objectCallback($child);},
+                        'smsData'=> function ($child) {return $this->objectCallback($child);}
            ));
         }
 
