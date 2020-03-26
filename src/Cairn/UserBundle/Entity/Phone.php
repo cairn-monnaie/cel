@@ -193,7 +193,7 @@ class Phone
      */
     public function setPhoneNumber($phoneNumber)
     {
-        $this->phoneNumber = self::cleanPhoneNumber($phoneNumber);
+        $this->phoneNumber = preg_replace('/^(\+33|0033|0)/','+33',self::cleanPhoneNumber($phoneNumber));
 
         return $this;
     }

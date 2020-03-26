@@ -37,9 +37,8 @@ class PhoneValidator extends ConstraintValidator
 
         $phoneNumber = Phone::cleanPhoneNumber($phoneNumber);
 
-        preg_match('#^\+33(6|7)\d{8}$#',$phoneNumber,$matches_number);
 
-        if(! $matches_number){
+        if(! preg_match('#^(\+33|0|0033)[6-8]\d{8}$#',$phoneNumber,$matches_number)){
             $this->context->buildViolation("Format du numéro de téléphone invalide")
                 ->atPath('phoneNumber')
                 ->addViolation();

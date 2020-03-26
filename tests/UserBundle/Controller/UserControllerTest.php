@@ -108,8 +108,8 @@ class UserControllerTest extends BaseControllerTest
                 $this->assertEquals($nbPhonesBefore + 1, $nbPhonesAfter);
 
                 $newPhone = $targetUser->getPhones()[$nbPhonesAfter - 1];
-                $this->assertEquals($newPhone->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
-
+                $this->assertEquals(substr($newPhone->getPhoneNumber(),-8),substr($newPhoneSubmit['phoneNumber'],-8));
+                $this->assertEquals(1,preg_match('#^\+33#',$newPhone->getPhoneNumber()));
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms','ACTIVE');
@@ -233,6 +233,18 @@ class UserControllerTest extends BaseControllerTest
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                 )),
 
+            'format with 06'=>array_replace_recursive($baseData,array('newPhone'=>array('phoneNumber'=>'0699999999'),
+                                        'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                    )),
+
+            'format with 07'=>array_replace_recursive($baseData,array('newPhone'=>array('phoneNumber'=>'0799999999'),
+                                        'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                    )),
+
+            'format with 0033'=>array_replace_recursive($baseData,array('newPhone'=>array('phoneNumber'=>'0033799999999'),
+                                        'expectedMessages'=>array($validDataMsg,$validCodeMsg)
+                    )),
+
         );
     }
 
@@ -335,7 +347,8 @@ class UserControllerTest extends BaseControllerTest
                         $this->assertEquals($currentUser->getPhoneNumberActivationTries(),0);
                         $this->assertEquals($currentUser->getNbPhoneNumberRequests(),0);
 
-                        $this->assertEquals($phoneBefore->getPhoneNumber(),$newPhoneSubmit['phoneNumber']);
+                        $this->assertEquals(substr($phoneBefore->getPhoneNumber(),-8),substr($newPhoneSubmit['phoneNumber'],-8));
+                        $this->assertEquals(1,preg_match('/^\+33/',$phoneBefore->getPhoneNumber()));
 
                         if(! $isPhoneNumberEdit){
                             $this->assertTrue($this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername()));
@@ -455,7 +468,7 @@ class UserControllerTest extends BaseControllerTest
                                                         )),
 
             'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
-                                                          'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33811223344'),
+                                                          'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33911223344'),
                                                           'isValidData'=>false,'isSmsEnabled'=>false,
                                                           'expectedMessages'=>'Format du numéro'
                                                       )),

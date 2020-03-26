@@ -108,13 +108,14 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('phoneNumber', $entity);
             $this->assertArrayHasKey('identifier', $entity);
             $this->assertArrayHasKey('paymentEnabled', $entity);
-            $this->assertArrayHasKey('dailyAmountThreshold', $entity);
-            $this->assertArrayHasKey('dailyNumberPaymentsThreshold', $entity);
             $this->assertArrayHasKey('smsData', $entity);
 
+            
+            $this->assertArrayNotHasKey('dailyAmountThreshold', $entity);
+            $this->assertArrayNotHasKey('dailyNumberPaymentsThreshold', $entity);
             $this->assertArrayNotHasKey('user', $entity);
 
-            $this->assertEquals(7,count($entity));
+            $this->assertEquals(5,count($entity));
             break;
 
         case 'beneficiary':
