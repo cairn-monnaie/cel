@@ -199,7 +199,7 @@ class Api
         if($child instanceOf Phone){
             $phoneInfos = array('id'=>$child->getID(),'identifier'=>$child->getIdentifier());
 
-            if($currentUser && $currentUser->isAdmin()){
+            if(($currentUser && $currentUser->isAdmin()) || ($currentUser === $child->getUser()) ){
                 $phoneInfos['phoneNumber'] = $child->getPhoneNumber();
             }
             return $phoneInfos;
