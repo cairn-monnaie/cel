@@ -62,6 +62,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('lastLogin', $entity);
             $this->assertArrayHasKey('roles', $entity);
             $this->assertArrayHasKey('adherent', $entity);
+            $this->assertArrayHasKey('phones', $entity);
 
             $this->assertArrayNotHasKey('creationDate', $entity);
             $this->assertArrayNotHasKey('cyclosID', $entity);
@@ -76,7 +77,6 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('removalRequest', $entity);
             $this->assertArrayNotHasKey('nbPhoneNumberRequests', $entity);
             $this->assertArrayNotHasKey('phoneNumbers', $entity);
-            $this->assertArrayNotHasKey('phones', $entity);
             $this->assertArrayNotHasKey('referents', $entity);
             $this->assertArrayNotHasKey('beneficiaries', $entity);
             $this->assertArrayNotHasKey('card', $entity);
@@ -100,7 +100,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('groupNames', $entity);
 
 
-            $this->assertEquals(15,count($entity));
+            $this->assertEquals(16,count($entity));
             break;
 
         case 'phone':

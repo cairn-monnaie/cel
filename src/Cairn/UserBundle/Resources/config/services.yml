@@ -45,6 +45,7 @@ services:
         class: Cairn\UserBundle\Service\Api
         arguments:
             - "@request_stack"
+            - "@cairn_user.security"
 
     cairn_user.geolocalization:
         public: true
@@ -174,7 +175,7 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
 
-
+              
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener
         arguments:

@@ -20,6 +20,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Form\FormInterface;
 
+use Cairn\UserBundle\Service\Security;
+
 /**
  * This class contains all useful services to build an API
  *
@@ -28,9 +30,12 @@ class Api
 {
     protected $requestStack;
 
-    public function __construct(RequestStack $requestStack)
+    protected $security;
+
+    public function __construct(RequestStack $requestStack, Security $security)
     {
         $this->requestStack = $requestStack;
+        $this->security = $security;
     }
 
     /**
@@ -161,6 +166,8 @@ class Api
 
     function objectCallback($child)
     {
+        $currentUser = $this->security->getCurrentUser();
+
         if($child instanceOf User){
             return array('name'=>$child->getName(),
                          'address'=>$child->getAddress(),
@@ -190,11 +197,12 @@ class Api
                      );
         }
         if($child instanceOf Phone){
-            return array(
-                'id'=>$child->getID(),
-                'phoneNumber'=>$child->getPhoneNumber(),
-                'identifier'=>$child->getIdentifier(),
-            );
+            $phoneInfos = array('id'=>$child->getID(),'identifier'=>$child->getIdentifier());
+
+            if($currentUser->isAdmin()){
+                $phoneInfos['phoneNumber'] = $child->getPhoneNumber();
+            }
+            return $phoneInfos;
         }
 
 
@@ -206,10 +214,16 @@ class Api
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('phones','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                         'image'=> function ($child) {return $this->objectCallback($child);},
-                        //'phones'=> function ($child) {return $this->objectCallback($child);},
+                        'phones'=> function ($child) {
+                            $phones = [];
+                            foreach($child as $item){
+                                $phones[] = $this->objectCallback($item);
+                            }
+                            return $phones;
+                        },
             ));
         }
         if($object instanceOf Beneficiary){
