@@ -416,7 +416,8 @@ class ApiControllerTest extends BaseControllerTest
 
         $formSubmit = array('phoneNumber'=> $newPhoneSubmit['phoneNumber'], 'paymentEnabled'=> 'true');
 
-        $uri = '/mobile/phones/'.$targetUser;
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
+        $uri = '/mobile/phones/add/'.$targetUser->getID();
 
         $crawler = $this->client->request(
             'POST',
@@ -1177,7 +1178,8 @@ class ApiControllerTest extends BaseControllerTest
                 return;
             }
             $file2 = new UploadedFile($copyPath2, $originalName, 'image/png',123);
-            $files['cairn_user_profile_edit'][] = ['image' => ['file'=>$file2]];
+            $files['cairn_user_profile_edit']['image'] =  ['file'=>$file2];
+
         }
 
         $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
@@ -1196,7 +1198,6 @@ class ApiControllerTest extends BaseControllerTest
         );
 
         $response = $this->client->getResponse();
-        //var_dump($response);
 
         $this->assertEquals($httpStatusCode, $response->getStatusCode());
 
@@ -1227,8 +1228,8 @@ class ApiControllerTest extends BaseControllerTest
             'admin is not referent'=>array('admin_network',$person,$this->getNewSubmit(true),false,false,Response::HTTP_FORBIDDEN),
             'admin is person referent, no id doc upload'=>array('admin_network','noire_aliss',$this->getNewSubmit(true),false,false,Response::HTTP_OK),
             'admin is person referent, id doc uploaded'=>array('admin_network','noire_aliss',$this->getNewSubmit(true),true,false,Response::HTTP_OK),
-            'logged in as admin for pro'=>array('admin_network',$pro,$this->getNewSubmit(true),true,true,Response::HTTP_OK),
-            'pro for himself with logo'=>array($pro,$pro,$this->getNewSubmit(false),false,true,Response::HTTP_OK),
+            'logged in as admin for pro'=>array('admin_network',$pro,$this->getNewSubmit(true),false,true,Response::HTTP_OK),
+            'pro for himself with logo'=>array($pro,$pro,$this->getNewSubmit(false),false,false,Response::HTTP_OK),
             'invalid pro for himself with id doc'=>array($pro,$pro,$this->getNewSubmit(false),true,true,Response::HTTP_BAD_REQUEST),
             'invalid address'=>[$pro,$pro,array_replace_recursive($this->getNewSubmit(false), ['address'=>['street1'=>'7']]),false,true,Response::HTTP_BAD_REQUEST],
             'email already in use'=>array($pro,$pro,array_replace($this->getNewSubmit(false),['email'=>'labonnepioche@test.fr']),false,true,Response::HTTP_BAD_REQUEST),

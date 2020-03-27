@@ -57,6 +57,7 @@ class RegistrationListener
 
         if($this->container->get('cairn_user.api')->isRemoteCall()){
             $event->setResponse($this->container->get('cairn_user.api')->getOkResponse($user,Response::HTTP_OK));
+            return;
         }else{
             $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
             $event->setResponse(new RedirectResponse($profileUrl));
