@@ -109,7 +109,6 @@ class AdminController extends Controller
         return $this->render('CairnUserBundle:Admin:edit_profile_content.html.twig',
             array('form'=>$form->createView(),'user'=>$user)
             );
-
     }
 
     /**

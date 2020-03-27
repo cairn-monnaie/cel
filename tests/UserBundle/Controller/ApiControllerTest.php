@@ -415,7 +415,8 @@ class ApiControllerTest extends BaseControllerTest
         $this->mobileLogin($current,'@@bbccdd');
 
         $formSubmit = array('phoneNumber'=> $newPhoneSubmit['phoneNumber'], 'paymentEnabled'=> 'true');
-        $uri = '/mobile/phones/'.$target;
+
+        $uri = '/mobile/phones/'.$targetUser;
 
         $crawler = $this->client->request(
             'POST',
@@ -1041,9 +1042,9 @@ class ApiControllerTest extends BaseControllerTest
 
     /**
      *
-     *@dataProvider provideDataForNewUser
+     *@dataProvider provideDataForCreateUser
      */
-    public function testCreateNewUser($login,$formSubmit,$type,$hasUploadedFile,$httpStatusCode)
+    public function testRemoteCreateUser($login,$formSubmit,$type,$hasUploadedFile,$httpStatusCode)
     {
         if($login){
             $this->mobileLogin($login,'@@bbccdd');
@@ -1053,13 +1054,13 @@ class ApiControllerTest extends BaseControllerTest
         $absolutePath = $absoluteWebDir.$originalName;
 
         if($hasUploadedFile){
-            $copyPath1 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
+            $copyPath1 =$absoluteWebDir.rand(1000,10000).'.png'; 
             //copy 
             if(! copy($absolutePath,$copyPath1 )){
                 echo "Failed to copy";
                 return;
             }
-            $file1 = new UploadedFile($copyPath1, $originalName, 'application/pdf',123);
+            $file1 = new UploadedFile($copyPath1, $originalName, 'image/png',123);
             $files = [
                 'fos_user_registration_form'=> [
                     'identityDocument'=> ['file'=>$file1]
@@ -1109,7 +1110,7 @@ class ApiControllerTest extends BaseControllerTest
         }
     }
 
-    public function provideDataForNewUser()
+    public function provideDataForCreateUser()
     {
         $formSubmit =[
             'email'=>'newuser@test.fr',
@@ -1136,71 +1137,129 @@ class ApiControllerTest extends BaseControllerTest
         );
     }
 
-    ///**
-    // *
-    // *@dataProvider provideDataForEditProfile
-    // */
-    //public function testRemoteEditProfile($current, $email,$hasUploadedFile,$httpStatusCode)
-    //{
-    //    $this->mobileLogin($current,'@@bbccdd');
+    
+    /**
+     *
+     *@dataProvider provideDataForEditProfile
+     */
+    public function testRemoteEditProfile($login,$target,$formSubmit,$hasUploadedIdDoc,$hasUploadedLogo,$httpStatusCode)
+    {
+        $this->mobileLogin($login,'@@bbccdd');
 
-    //    $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
-    //    $originalName = 'john-doe-id.png';                                 
-    //    $absolutePath = $absoluteWebDir.$originalName;
+        $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
+        $originalName = 'john-doe-id.png';                                 
+        $absolutePath = $absoluteWebDir.$originalName;
 
-    //    if($hasUploadedFile){
-    //        $file = new UploadedFile($absolutePath,$originalName,null,null,null, true);
-    //    }else{
-    //        $file = '';
-    //    }
+        if($hasUploadedIdDoc){
+            $copyPath1 =$absoluteWebDir.rand(1000,10000).'.png'; 
+            //copy 
+            if(! copy($absolutePath,$copyPath1 )){
+                echo "Failed to copy";
+                return;
+            }
+            $file1 = new UploadedFile($copyPath1, $originalName, 'image/png',123);
+            $files = [
+                'cairn_user_profile_edit'=> [
+                    'identityDocument'=> ['file'=>$file1]
+                ]
+            ];
+        }else{
+            $files = [
+                'cairn_user_profile_edit'=> []
+            ];
+        }
 
-    //    $crawler = $this->client->request(
-    //        'POST',
-    //        '/mobile/users/profile',
-    //        array(
-    //            'fos_user_profile_form'=>
-    //            array(
-    //                'email'=>$email,
-    //                'name'=>"New User",
-    //                'address'=>array(
-    //                    'street1'=>'10 rue du test',
-    //                    'street2'=>'',
-    //                    'zipCity'=>'38000 Grenoble'
-    //                ),
-    //                'description'=>'test',
-    //                //ONLY ADMIN
-    //                //'identityDocument'=>array(
-    //                //    'file'=>$file
-    //                //)
+        if($hasUploadedLogo){
+            $copyPath2 =$absoluteWebDir.rand(1000,10000).'.png'; 
+            //copy 
+            if(! copy($absolutePath,$copyPath2 )){
+                echo "Failed to copy";
+                return;
+            }
+            $file2 = new UploadedFile($copyPath2, $originalName, 'image/png',123);
+            $files['cairn_user_profile_edit'][] = ['image' => ['file'=>$file2]];
+        }
 
-    //            )
-    //        ),
-    //        [],
-    //        ['Content-Type' => 'multipart/formdata']
-    //    );
+        $targetUser = $this->em->getRepository('CairnUserBundle:User')->findOneByUsername($target);
 
-    //    $response = $this->client->getResponse();
+        $uri = '/mobile/users/profile/'.$targetUser->getID();
+        
+        $crawler = $this->client->request(
+            'POST',
+            $uri,
+            ['cairn_user_profile_edit' => $formSubmit],
+            $files,
+            [
+                'Content-Type' => 'multipart/formdata',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri)
+            ]
+        );
 
-    //    $this->assertEquals($httpStatusCode, $response->getStatusCode());
+        $response = $this->client->getResponse();
+        //var_dump($response);
 
-    //    $responseData = json_decode($response->getContent(),true);
+        $this->assertEquals($httpStatusCode, $response->getStatusCode());
 
-    //    if($response->isSuccessful()){
-    //        $this->assertSerializedEntityContent($responseData,'user');
-    //        $this->assertNotNull($responseData['id']);
-    //    }
+        $responseData = json_decode($response->getContent(),true);
 
-    //}
+        if($response->isSuccessful()){
+            $this->assertSerializedEntityContent($responseData,'user');
+            $this->assertNotNull($responseData['id']);
+        }else{
+            if($hasUploadedIdDoc){
+                unlink($copyPath1);
+            }
+            if($hasUploadedLogo){
+                unlink($copyPath2);
+            }
 
-    //public function provideDataForEditProfile()
-    //{
-    //    return array(
-    //        'email already in use'=>array('comblant_michel','labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST),
-    //        'invalid email : no @'=>array('comblant_michel','test.com',true,Response::HTTP_BAD_REQUEST),
-    //        'invalid email : not enough characters'=>array('comblant_michel','test@t.c',true,Response::HTTP_BAD_REQUEST),
-    //        'valid, no document file'=>array('comblant_michel','newuser@test.fr',false,Response::HTTP_OK),
-    //        'valid registration'=>array('comblant_michel','newuser@test.fr',true,Response::HTTP_OK),
-    //    );
-    //}
+        }
+    }
 
+    public function provideDataForEditProfile()
+    {
+        $person = 'stuart_andrew';
+        $pro = 'maltobar';
+
+        return array(
+            'adherent for himself'=>array($person,$person,$this->getNewSubmit(false),false,false,Response::HTTP_OK),
+            'adherent for himself1'=>array('gjanssens','gjanssens',$this->getNewSubmit(false),false,false,Response::HTTP_OK),
+            'adherent for someone else'=>array($person,'gjanssens',$this->getNewSubmit(false),false,false,Response::HTTP_FORBIDDEN),
+            //'admin is not referent'=>array('admin_network',$person,$this->getNewSubmit(true),false,false,Response::HTTP_FORBIDDEN),
+            //'admin is person referent, no id doc upload'=>array('admin_network','noire_aliss',$this->getNewSubmit(true),false,false,Response::HTTP_OK),
+            //'admin is person referent, id doc uploaded'=>array('admin_network','noire_aliss',$this->getNewSubmit(true),true,false,Response::HTTP_OK),
+            //'logged in as admin for pro'=>array('admin_network',$pro,$this->getNewSubmit(true),true,true,Response::HTTP_OK),
+            //'pro for himself with logo'=>array($pro,$pro,$this->getNewSubmit(false),false,true,Response::HTTP_OK),
+            //'invalid pro for himself with id doc'=>array($pro,$pro,$this->getNewSubmit(false),true,true,Response::HTTP_BAD_REQUEST),
+            //'invalid address'=>[$pro,$pro,array_replace_recursive($this->getNewSubmit(false), ['address'=>['street1'=>'7']]),false,true,Response::HTTP_BAD_REQUEST],
+            //'email already in use'=>array($pro,$pro,array_replace($this->getNewSubmit(false),['email'=>'labonnepioche@test.fr']),false,true,Response::HTTP_BAD_REQUEST),
+            //'invalid email: no @'=>array($pro,$pro,array_replace($this->getNewSubmit(false),['email'=>'test.com']),false,true,Response::HTTP_BAD_REQUEST),
+            //'invalid email : not enough characters'=>array($pro,$pro,array_replace($this->getNewSubmit(false),['email'=>'test@t.c']),
+            //                                                        false,true,Response::HTTP_BAD_REQUEST),
+            //'person tries to add logo'=>array($person,$person,$this->getNewSubmit(false),false,true,Response::HTTP_BAD_REQUEST),
+            //'person tries to add id doc'=>array($person,$person,$this->getNewSubmit(false),true,false,Response::HTTP_BAD_REQUEST),
+        );
+    }
+
+    private function getNewSubmit($isAdmin){
+        $id = rand(1,99999);
+        $username = 'newprofileuser'.$id;
+        $name = "New User".$id;
+
+        $formSubmit =[
+            'email'=>$username.'@test.fr',
+            'address'=>array(
+                'street1'=>'7 rue Très Cloitres',
+                'street2'=>'',
+                'zipCity'=>'38000 Grenoble'
+            ),
+            'description'=>'test'
+        ];
+
+        if($isAdmin){
+            $formSubmit['username'] = $username;
+            $formSubmit['name'] = $name;
+        }
+        return $formSubmit;
+    }
 }
