@@ -28,7 +28,6 @@ class ApiControllerTest extends BaseControllerTest
      */
     public function testApiSecureAction($beneficiaryValue,$isValidFormat,$isValidKey, $httpResponse,$expectedMessage)
     {
-       
         $this->mobileLogin('gjanssens','@@bbccdd');
 
         $uri = '/mobile/beneficiaries';

@@ -499,7 +499,7 @@ class UserController extends Controller
      *
      * This action permits to change current user's sms data, such as phone number, or status enabled/disabled
      */
-    public function editPhoneAction(Request $request, Phone $phone, $_format)
+    public function editPhoneAction(Request $request, Phone $phone)
     {
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
@@ -511,6 +511,7 @@ class UserController extends Controller
         $encoder = $this->get('security.encoder_factory')->getEncoder($user);
 
         $apiService = $this->get('cairn_user.api');
+        $isRemoteCall = $apiService->isRemoteCall();
 
         //****************** All cases where edit sms is not allowed ****************//
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
@@ -532,7 +533,7 @@ class UserController extends Controller
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
 
             $errorMessage = 'Vous avez déjà effectué 3 demandes de changement de numéro de téléphone sans validation... Cette action vous est désormais inaccessible';
-            if( $apiService->isRemoteCall()){
+            if( $isRemoteCall){
                 return $apiService->getErrorResponse(array($errorMessage) ,Response::HTTP_BAD_REQUEST);
             }
 
@@ -545,7 +546,7 @@ class UserController extends Controller
         $formPhone = $this->createForm(PhoneType::class, $phone);
 
         if($request->isMethod('POST')){
-            if($_format == 'json'){
+            if($isRemoteCall){
                 $formPhone->submit(json_decode($request->getContent(), true));
             }else{
                 $formPhone->handleRequest($request);
@@ -566,7 +567,7 @@ class UserController extends Controller
                     //    throw new AccessDeniedException('Action réservée à '.$user->getName());
                     //}
                     $this->sendActivationCode(false,$session, $phone);
-                    if($_format == 'json'){
+                    if($isRemoteCall){
                         $validationUrl = $this->generateUrl('cairn_user_api_phone_edit',array('remote'=>'mobile','id'=>$phone->getID()));
 
                         return $apiService->getOkResponse(array('validation_url'=>$validationUrl,'phone'=>$phone),Response::HTTP_OK);
@@ -585,7 +586,7 @@ class UserController extends Controller
                     }
 
                    
-                    if($_format == 'json'){
+                    if($isRemoteCall){
                          return $apiService->getOkResponse(array('message'=>$message,'phone'=>$phone),Response::HTTP_OK);
                     }
 
@@ -595,7 +596,7 @@ class UserController extends Controller
                 }
 
             }else{
-                if( $apiService->isRemoteCall()){
+                if($isRemoteCall){
                     return $apiService->getFormErrorResponse($formPhone);
                 }
             }

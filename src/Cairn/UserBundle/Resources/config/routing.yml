@@ -298,7 +298,7 @@ cairn_user_users_phone_edit:
         id: \d+
 
 cairn_user_api_phone_edit:
-    path:     /{remote}/phones/{id}.{_format}
+    path:     /{remote}/phones/{id}
     methods: POST
     defaults: { _controller: CairnUserBundle:User:editPhone, _format: json}
     requirements: 
