@@ -46,9 +46,11 @@ cairn_user_api_users_post:
     defaults: { _controller: FOSUserBundle:Registration:register, _format: json }
 
 cairn_user_api_users_put:
-    path: mobile/users/profile
+    path: /mobile/users/profile/{id}
     methods: POST
     defaults: { _controller: CairnUserBundle:Profile:edit, _format: json }
+    requirements:
+        id: \d+
 
 #cairn_user_api_users_delete:
 #    path: api/users/delete/{id}
@@ -282,7 +284,7 @@ cairn_user_users_phone_add: #finishing the route name with phone_add is importan
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: html}
 
 cairn_user_api_phone_add: #finishing the route name with phone_add is important for validation process
-    path:     /{remote}/phones/{username}
+    path:     /{remote}/phones/{username}.{_format}
     methods: POST
     defaults: { _controller: CairnUserBundle:User:addPhone, _format: json}
     requirements: 
@@ -311,7 +313,7 @@ cairn_user_users_phone_delete:
         id: \d+
 
 cairn_user_api_phone_delete:
-    path:     /{remote}/phones/{id}.{_format}
+    path:     /{remote}/phones/{id}
     methods: DELETE
     defaults: { _controller: CairnUserBundle:User:deletePhone, _format: json}
     requirements: 
@@ -602,75 +604,4 @@ cairn_user_accountscore_confirm:
     path:     account-score/confirm/{token}
     defaults: { _controller: CairnUserBundle:AccountScore:confirmAccountScoreEmail, _format: html  }
 
-#cairn_user_bankconnection_deposit_index:
-#    path:     deposit/index
-#    defaults: { _controller: CairnUserBundle:BankConnection:index }
-#
-#cairn_user_bankconnection_envelope_new:
-#    path:     envelope/new
-#    defaults: { _controller: CairnUserBundle:BankConnection:newEnvelope }
-#
-#cairn_user_bankconnection_deposit_new:
-#    path:     deposit/new
-#    defaults: { _controller: CairnUserBundle:BankConnection:newDeposit }
-#
-#cairn_user_bankconnection_deposit_confirm:
-#    path:     deposit/confirm
-#    defaults: { _controller: CairnUserBundle:BankConnection:confirmDeposit }
-#
-#cairn_user_bankconnection_deposit_view:
-#    path:     deposit/view/{id}
-#    defaults: { _controller: CairnUserBundle:BankConnection:viewDeposit }
-#
-#cairn_user_bankconnection_deposit_edit:
-#    path:     deposit/edit/{id}
-#    defaults: { _controller: CairnUserBundle:BankConnection:editDeposit }
-#
-#cairn_user_bankconnection_withdrawal_index:
-#    path:     withdrawal/index
-#    defaults: { _controller: CairnUserBundle:BankConnection:index }
-#
-#cairn_user_bankconnection_withdrawal_new:
-#    path:     withdrawal/new
-#    defaults: { _controller: CairnUserBundle:BankConnection:newWithdrawal }
-#
-#cairn_user_bankconnection_withdrawal_confirm:
-#    path:     withdrawal/confirm
-#    defaults: { _controller: CairnUserBundle:BankConnection:confirmWithdrawal }
-#
-#cairn_user_bankconnection_withdrawal_view:
-#    path:     withdrawal/view/{id}
-#    defaults: { _controller: CairnUserBundle:BankConnection:viewWithdrawal }
-#
-#cairn_user_bankconnection_withdrawal_edit:
-#    path:     withdrawal/edit/{id}
-#    defaults: { _controller: CairnUserBundle:BankConnection:editWithdrawal }
-#
-#cairn_user_banknotes_home:
-#    path:     banknote/home
-#    defaults: { _controller: CairnUserBundle:Banknote:index }
-#
-#cairn_user_multiform:
-#    path:    banknote/test
-#    defaults: { _controller: CairnUserBundle:Banknote:multiform }
-#
-#cairn_user_banknote_add:
-#    path:     /banknote/add
-#    defaults: { _controller: CairnUserBundle:Banknote:addBanknote }
-#
-#cairn_user_banknote_edit:
-#    path:     /banknote/edit/{id}
-#    defaults: { _controller: CairnUserBundle:Banknote:editBanknote }
-#
-#cairn_user_banknote_view:
-#    path:     /banknote/view/{id}
-#    defaults: { _controller: CairnUserBundle:Banknote:viewBanknote }
-#
-#cairn_user_banknote_search:
-#    path:     /banknote/search
-#    defaults: { _controller: CairnUserBundle:Banknote:searchBanknotes }
-#
-#cairn_user_banknote_remove:
-#    path:     /banknote/remove/{id}
-#    defaults: { _controller: CairnUserBundle:Banknote:removeBanknote }
-#
+

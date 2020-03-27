@@ -43,11 +43,13 @@ class ProfileType extends AbstractType
     {
         //The only data that do not depend on the user role are current user's passsword and address
         $builder
-            ->add('current_password', PasswordType::class,array(
-                'label'=>'Mot de passe actuel',
-                'mapped'=>false,
-                'constraints'=>new UserPassword() ))
-            ->add('address' , AddressType::class);
+            //->add('current_password', PasswordType::class,array(
+            //    'label'=>'Mot de passe actuel',
+            //    'mapped'=>false,
+            //    'constraints'=>new UserPassword() 
+            //))
+            ->add('address' , AddressType::class)
+            ->remove('current_password');
 
         $builder->add('username',TextType::class,array('label'=>'Nom d\'utilisateur'));
         $builder->addEventListener(
@@ -58,9 +60,9 @@ class ProfileType extends AbstractType
                 if(null === $user){
                     return;
                 }
-                if($this->apiService->isRemoteCall()){
-                    $form->remove('current_password');
-                }
+                //if($this->apiService->isRemoteCall()){
+                //    $form->remove('current_password');
+                //}
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
                         ->add('description',TextareaType::class,array('label'=>'Description d\'activité en quelques mots (150 car.)'))
@@ -119,7 +121,6 @@ class ProfileType extends AbstractType
 
     public function getParent()
     {
-        //        return 'FOS\UserBundle\Form\Type\ProfileFormType';
         return ProfileFormType::class;
     }
 

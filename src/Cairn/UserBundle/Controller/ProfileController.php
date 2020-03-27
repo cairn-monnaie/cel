@@ -102,11 +102,11 @@ class ProfileController extends Controller
                 $eventDispatcher->dispatch(FOSUserEvents::PROFILE_EDIT_COMPLETED, new FilterUserResponseEvent($user, $request, $response));
 
                 return $response;
-            }//else{
-             //   if( $apiService->isRemoteCall()){
-             //       return $apiService->getFormErrorResponse($form);
-             //   }
-             //}
+            }else{
+                if( $apiService->isRemoteCall()){
+                    return $apiService->getFormErrorResponse($form);
+                }
+             }
         }
 
         return $this->render('@FOSUser/Profile/edit.html.twig', array(
