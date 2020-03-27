@@ -109,9 +109,22 @@ class RegistrationListener
         $request = $event->getRequest();
         $session = $request->getSession();
 
-        $type = $session->get('registration_type');
+        $type = NULL;
+        $apiService = $this->container->get('cairn_user.api');
+
+        $isRemoteCall = $apiService->isRemoteCall();
+        $type = ($isRemoteCall) ? $request->query->get('type') :  $session->get('registration_type');
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
+
+        if($currentUser && !$currentUser->isAdmin()){
+        
+            if($isRemoteCall){
+                $response = $apiService->getErrorResponse(array('Un adhérent ne peut créer un compte'),Response::HTTP_UNAUTHORIZED);
+                $event->setResponse($response);
+                return;
+            }
+        }
 
         if(!$currentUser && ($type != 'person') && ($type != 'pro')  ){
             $session->set('registration_type','person');

@@ -1043,48 +1043,45 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForNewUser
      */
-    public function testCreateNewUser($email,$hasUploadedFile,$httpStatusCode)
+    public function testCreateNewUser($login,$formSubmit,$type,$hasUploadedFile,$httpStatusCode)
     {
+        if($login){
+            $this->mobileLogin($login,'@@bbccdd');
+        }
         $absoluteWebDir = $this->container->getParameter('kernel.project_dir').'/web/';
         $originalName = 'john-doe-id.png';                                 
         $absolutePath = $absoluteWebDir.$originalName;
 
         if($hasUploadedFile){
-            $copyPath =$absoluteWebDir.rand(1000,10000).'.png'; 
+            $copyPath1 =$absoluteWebDir.rand(1000,10000).'.pdf'; 
             //copy 
-            if(! copy($absolutePath,$copyPath )){
+            if(! copy($absolutePath,$copyPath1 )){
                 echo "Failed to copy";
                 return;
-             }
-
-            $file = new UploadedFile($copyPath,'test_register.png',null,null,null, true);
+            }
+            $file1 = new UploadedFile($copyPath1, $originalName, 'application/pdf',123);
+            $files = [
+                'fos_user_registration_form'=> [
+                    'identityDocument'=> ['file'=>$file1]
+                ]
+            ];
         }else{
-            $file = array();
+            $files = [];
         }
 
+
+        $uri = '/mobile/users/registration?type='.$type;
+        
         $crawler = $this->client->request(
             'POST',
-            '/mobile/users/registration',
-            array(
-                'fos_user_registration_form'=>
-                array(
-                    'email'=>$email,
-                    'name'=>"New User",
-                    'address'=>array(
-                        'street1'=>'10 rue du test',
-                        'street2'=>'',
-                        'zipCity'=>'38000 Grenoble'
-                    ),
-                    'description'=>'test',
-                    'identityDocument'=>array(
-                        'file'=>$file
-                    )
-                )
-            ),
-            [],
-            ['Content-Type' => 'multipart/formdata']
+            $uri,
+            ['fos_user_registration_form' => $formSubmit],
+            $files,
+            [
+                'Content-Type' => 'multipart/formdata',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri)
+            ]
         );
-
 
         $response = $this->client->getResponse();
 
@@ -1095,21 +1092,47 @@ class ApiControllerTest extends BaseControllerTest
         if($response->isSuccessful()){
             $this->assertSerializedEntityContent($responseData,'user');
             $this->assertNull($responseData['id']);
+
+            if($type == 'pro'){
+                $this->assertContains('ROLE_PRO',array_values($responseData['roles']));
+                $this->assertNotContains('ROLE_PERSON',array_values($responseData['roles']));
+            }else{
+                $this->assertContains('ROLE_PERSON',array_values($responseData['roles']));
+                $this->assertNotContains('ROLE_PRO',array_values($responseData['roles']));
+            }
         }else{
+
             if($hasUploadedFile){
-                unlink($copyPath);
-             }
+                unlink($copyPath1);
+            }
+
         }
     }
 
     public function provideDataForNewUser()
     {
+        $formSubmit =[
+            'email'=>'newuser@test.fr',
+            'name'=>"New User",
+            'address'=>array(
+                'street1'=>'7 rue Très Cloitres',
+                'street2'=>'',
+                'zipCity'=>'38000 Grenoble'
+            ),
+            'description'=>'test'
+        ];
+
         return array(
-            'email already in use'=>array('labonnepioche@test.fr',true,Response::HTTP_BAD_REQUEST),
-            'invalid email : no @'=>array('test.com',true,Response::HTTP_BAD_REQUEST),
-            'invalid email : not enough characters'=>array('test@t.c',true,Response::HTTP_BAD_REQUEST),
-            'no document file'=>array('newuser@test.fr',false,Response::HTTP_BAD_REQUEST),
-            'valid registration'=>array('newuser@test.fr',true,Response::HTTP_CREATED),
+            'logged in as adherent'=>array('gjanssens',$formSubmit,'person',true,Response::HTTP_UNAUTHORIZED),
+            'logged in as pro'=>array('nico_faus_prod',$formSubmit,'person',true,Response::HTTP_UNAUTHORIZED),
+            'logged in as admin'=>array('admin_network',$formSubmit,'person',true,Response::HTTP_CREATED),
+            'create pro'=>array('',$formSubmit,'pro',true,Response::HTTP_CREATED),
+            'invalid address'=>['',array_replace_recursive($formSubmit, ['address'=>['street1'=>'7']]),'pro',true,Response::HTTP_BAD_REQUEST],
+            'email already in use'=>array('',array_replace($formSubmit,['email'=>'labonnepioche@test.fr']),'pro',true,Response::HTTP_BAD_REQUEST),
+            'invalid email: no @'=>array('',array_replace($formSubmit,['email'=>'test.com']),'person',true,Response::HTTP_BAD_REQUEST),
+            'invalid email : not enough characters'=>array('',array_replace($formSubmit,['email'=>'test@t.c']),'person',true,Response::HTTP_BAD_REQUEST),
+            'no document file'=>array('',$formSubmit,'pro',false,Response::HTTP_BAD_REQUEST),
+            'create person'=>array('',$formSubmit,'person',true,Response::HTTP_CREATED),
         );
     }
 
