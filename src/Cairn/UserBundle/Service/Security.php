@@ -51,8 +51,9 @@ class Security
 
     protected $smsDailyThresholds;
 
+    protected $mobileDailyThresholds;
 
-    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret, array $smsDailyThresholds)
+    public function __construct(UserRepository $userRepo,OperationRepository $operationRepo, CardRepository $cardRepo, TokenStorageInterface $tokenStorage, EncoderFactory $encoderFactory,UserIdentificationInfo $userIdentificationInfo,string $secret, array $smsDailyThresholds, array $mobileDailyThresholds)
     {
         $this->userRepo = $userRepo;
         $this->operationRepo = $operationRepo;
@@ -62,6 +63,7 @@ class Security
         $this->userIdentificationInfo= $userIdentificationInfo;
         $this->secret = $secret;
         $this->smsDailyThresholds = $smsDailyThresholds; 
+        $this->mobileDailyThresholds = $mobileDailyThresholds; 
     }
 
     /**
@@ -299,88 +301,73 @@ class Security
         return NULL;
     }
 
-
+    
     /**
-     *Beware, input Operation is not persisted, and is relevant only for sms payments
+     * Returns true if the SMS/Mobile APP payment is suspicious, false otherwise
      *
+     * A payment is considered as suspicious if the payment amount is greater than a custom limit, or if the number of payments executed 
+     * the same day by the same person reaches a custom limit
+     *
+     * @param Operation $operation  Payment by SMS or Mobile app
+     * @return array
      */
-    public function paymentNeedsValidation(Operation $operation, Phone $debitorPhone)
+    public function paymentValidationState(Operation $operation)
     {
-        if(! $operation->isSmsPayment()){ return false; }
+        $res = ['validation'=>false,'suspicious'=>false];
+        if($operation->isSmsPayment()){
+            $thresholds = $this->smsDailyThresholds;
+        }elseif($operation->getType() == Operation::TYPE_MOBILE_APP){
+            $thresholds = $this->mobileDailyThresholds;
+        }else{
+            return $res;
+        }
 
         $debitor = $operation->getDebitor();
-    //    //criteria 1 : second payment to the same pro in the same day
-    //    $ob = $this->operationRepo->createQueryBuilder('o');
-    //    $this->operationRepo
-    //        ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-    //        ->whereDebitor($ob,$debitor)
-    //        ->whereCreditor($ob,$operation->getCreditor())
-    //        ->whereCurrentDay($ob);
 
-    //    $operations = $ob->getQuery()->getResult();
-
-    //    if(count($operations) > 0){ return true; }
-
-        //criteria 2 : threshold of amount spent in one day
         $ob = $this->operationRepo->createQueryBuilder('o');
         $this->operationRepo
-            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
+            ->whereType($ob, $operation->getType())
             ->whereDebitor($ob,$debitor)
             ->whereCurrentDay($ob);
+
+        $operations = $ob->getQuery()->getResult();
+        $nbOperations = count($operations) + 1;
 
         $totalDayAmount = $this->operationRepo->countTotalAmount($ob);
 
         $totalDayAmount = (!$totalDayAmount) ? 0 : $totalDayAmount;
         $totalDayAmount += $operation->getAmount();
 
-        if($totalDayAmount > $this->smsDailyThresholds['amount']['cumulated']){
-           return true; 
+
+        //FIRST, CHECK THE BLOCK STATEMENTS
+        if( $operation->getAmount() >= $thresholds['amount']['block'] ){
+            $res['suspicious'] = true;
+            return $res;
         }
-        
-        //criteria 3 : amount in a single payment
-        if( $operation->getAmount() >= $this->smsDailyThresholds['amount']['unique'] ){return true;}
+        if($totalDayAmount >= $thresholds['amount']['block']){
+            $res['suspicious'] = true;
+            return $res;
+        }
+        if($nbOperations >= $thresholds['qty']['block']){ 
+            $res['suspicious'] = true;
+            return $res;
+        }
 
-       //criteria 4 : number of current day payments (lower than threshold ?)
-        $ob = $this->operationRepo->createQueryBuilder('o');
-        $this->operationRepo
-            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$debitor)
-//            ->whereAmountComparedWith($ob, $debitorPhone->getDailyAmountThreshold(), 'lt')
-            ->whereCurrentDay($ob);
+        //THEN, CHECK THE VALIDATION STATEMENTS
+        if($operation->getAmount() >= $thresholds['amount']['unique'] ){
+            $res['validation'] = true;
+            return $res;
+        }
+        if($totalDayAmount >= $thresholds['amount']['cumulated']){
+            $res['validation'] = true;
+            return $res;
+        }
+        if($nbOperations >= $thresholds['qty']['step']){
+            $res['validation'] = true;
+            return $res;
+        }
 
-        $operations = $ob->getQuery()->getResult();
-        if(count($operations) > $this->smsDailyThresholds['qty']['step']){ return true; }
-
-        return false;
-    }
-
-    /**
-     * Returns true if the SMS payment is suspicious, false otherwise
-     *
-     * A payment is considered as suspicious if the payment amount is greater than a custom limit, or if the number of payments executed 
-     * the same day by the same person reaches a custom limit
-     *
-     * @param Operation $operation  Payment by SMS
-     * @return boolean
-     */
-    public function paymentIsSuspicious(Operation $operation)
-    {
-        if(! $operation->isSmsPayment()){ return false; }
-
-        $debitor = $operation->getDebitor();
-
-        if( $operation->getAmount() >= $this->smsDailyThresholds['amount']['block'] ){return true;}
-
-        $ob = $this->operationRepo->createQueryBuilder('o');
-        $this->operationRepo
-            ->whereType($ob, Operation::TYPE_SMS_PAYMENT)
-            ->whereDebitor($ob,$debitor)
-            ->whereCurrentDay($ob);
-
-        $operations = $ob->getQuery()->getResult();
-        if(count($operations) >= $this->smsDailyThresholds['qty']['block']){ return true; }
-
-        return false;
+        return $res;
     }
 
 

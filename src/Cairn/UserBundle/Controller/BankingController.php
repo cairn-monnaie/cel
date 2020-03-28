@@ -524,6 +524,7 @@ class BankingController extends Controller
         $currentUser = $this->getUser();
 
         $apiService = $this->get('cairn_user.api');
+        $securityService = $this->get('cairn_user.security');
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -592,19 +593,24 @@ class BankingController extends Controller
                 $operation->setToAccountNumber($res->toAccount->number);
                 $operation->setCreditor($creditorUser);
                 $operation->setDebitor($currentUser);
+
+                $validationState = $securityService->paymentValidationState($operation);
+                if($validationState['suspicious']){
+                    return $apiService->getErrorResponse(array('Too many operations for today'),Response::HTTP_UNAUTHORIZED);
+                }
+
                 $em->persist($operation);
                 $em->flush();
 
-       
                 $redirectUrl = $this->generateUrl(
                     'cairn_user_api_transaction_confirm',
                     array(
-                        'id'=>$operation->getID(),
+                        'id'=>$operation->getID()
                     )
                 );
 
-                $redirectOperation = array('confirmation_url' => $redirectUrl,
-                    'operation' => $operation);
+                $redirectOperation = array('operation' => $operation,'confirmation_url' => $redirectUrl,
+                   'secure_validation'=>$validationState['validation']);
 
                 return $apiService->getOkResponse($redirectOperation,Response::HTTP_CREATED);
 

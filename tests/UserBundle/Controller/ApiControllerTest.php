@@ -742,11 +742,7 @@ class ApiControllerTest extends BaseControllerTest
         );
     }
 
-    /**
-     *
-     *@dataProvider provideDataForRemotePayment
-     */
-    public function testRemotePayment($debitor, $formSubmit, $httpStatusCode,$confirmCode)
+    private function atomicRemotePayment($debitor,$formSubmit,$httpStatusCode)
     {
         $this->mobileLogin($debitor,'@@bbccdd');
 
@@ -754,18 +750,18 @@ class ApiControllerTest extends BaseControllerTest
 
         $uri ='/mobile/payment/request' ;
         $form =  array_merge(array('fromAccount'=>$debitorUser->getMainICC()), $formSubmit);
-        
+
         $crawler = $this->client->request(
-                'POST',
-                $uri,
-                [],
-                [],
-                [
-                    'CONTENT-TYPE' => 'application/json',
-                    'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
-                ],
-                json_encode($form)
-            );
+            'POST',
+            $uri,
+            [],
+            [],
+            [
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
+            ],
+            json_encode($form)
+        );
 
         $response = $this->client->getResponse();
 
@@ -773,17 +769,32 @@ class ApiControllerTest extends BaseControllerTest
         $this->assertJson($response->getContent());
         $this->assertEquals($httpStatusCode, $response->getStatusCode());
 
+        return $response;
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForRemotePayment
+     */
+    public function testRemotePayment($debitor, $formSubmit,$needsValidation,$isSuspicious, $httpStatusCode)
+    {
+        $response = $this->atomicRemotePayment($debitor,$formSubmit,$httpStatusCode);
         $responseData = json_decode($response->getContent(),true);
 
         if($response->isSuccessful()){
             $this->assertSerializedEntityContent($responseData['operation'],'operation');
-
             $this->assertNull($responseData['operation']['paymentID']);
+
+            if($needsValidation){
+                $this->assertTrue($responseData['secure_validation']);
+            }else{
+                $this->assertFalse($responseData['secure_validation']);
+            }
 
             $this->mobileLogin($debitor,'@@bbccdd');
 
             $uri ='/mobile/transaction/confirm/'.$responseData['operation']['id'] ;
-            $form = array("confirmationCode"=> $confirmCode,'save'=>"");
+            $form = array("confirmationCode"=> '1111','save'=>"");
 
             $crawler = $this->client->request(
                 'POST',
@@ -802,16 +813,16 @@ class ApiControllerTest extends BaseControllerTest
             $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
             $this->assertJson($response->getContent());
 
-            if($confirmCode == '1111'){
-                $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
+            $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
 
-                 $responseData = json_decode($response->getContent(),true);
+            $responseData = json_decode($response->getContent(),true);
 
-                 $this->assertNotNull($responseData['paymentID']);
-                 $this->assertSerializedEntityContent($responseData,'operation');
+            $this->assertNotNull($responseData['paymentID']);
+            $this->assertSerializedEntityContent($responseData,'operation');
                  
-            }else{
-                 $this->assertEquals(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        }else{
+            if($isSuspicious){
+                $this->assertContains('Too many operations',$responseData[0]['error']);
             }
         }
     }
@@ -827,34 +838,107 @@ class ApiControllerTest extends BaseControllerTest
         $timestampNow = 1000*time($nowFormat);
         $timestampAfter = 1000*time($later);
 
+        $uniqueAmount = $this->container->getParameter('mobile_daily_thresholds')['amount']['unique'];
+        $maxAmount = $this->container->getParameter('mobile_daily_thresholds')['amount']['block'];
+
         $validLogin = 'benoit_perso';
         $baseSubmit = array(
                     'toAccount'=>'labonnepioche@test.fr',
-                    'amount'=>25,
+                    'amount'=>$uniqueAmount - 1,
+                    'reason'=>'Test reason',
+                    'description'=>'Test description',
+                    'executionDate'=> $timestampNow,
+            );
+
+        
+        return array(
+            'invalid amount too low'=>array($validLogin,array_replace($baseSubmit, array('amount'=>0.0001)),false,false,Response::HTTP_BAD_REQUEST),
+            'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),false,false,Response::HTTP_BAD_REQUEST),
+            'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),false,false,Response::HTTP_BAD_REQUEST),
+            'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
+                                                        array('toAccount'=>$validLogin.'@test.fr')),false,false,Response::HTTP_UNAUTHORIZED),
+            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),false,false,Response::HTTP_INTERNAL_SERVER_ERROR),
+            //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED),
+            'valid now'=>array($validLogin,$baseSubmit,false,false,Response::HTTP_CREATED),
+            'valid now + validation amount'=>array($validLogin,array_replace($baseSubmit, 
+                                    array('amount'=>$uniqueAmount + 1)),true,false, Response::HTTP_CREATED),
+            'invalid suspicious amount'=>array($validLogin,array_replace($baseSubmit, 
+                                    array('amount'=>$maxAmount + 1)),false,true, Response::HTTP_UNAUTHORIZED),
+            'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),false,false,Response::HTTP_BAD_REQUEST),
+            'valid after'=>array($validLogin,array_replace($baseSubmit, 
+                                    array('executionDate'=>$timestampAfter)),false,false, Response::HTTP_CREATED),
+            'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),false,false,Response::HTTP_BAD_REQUEST),
+            'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),false,false,Response::HTTP_BAD_REQUEST),
+        );
+
+    }
+
+    /**
+     *
+     *@dataProvider provideDataForThresholds
+     */
+    public function testRemoteThresholds($debitor,$formSubmit,$nbOpsBeforeValidation,$nbOpsBeforeBlock)
+    {
+        //ALL ops that do not need validation
+        for($i = 0; $i < $nbOpsBeforeValidation; $i++){
+            $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_CREATED);
+            $responseData = json_decode($response->getContent(),true);
+            $this->assertSerializedEntityContent($responseData['operation'],'operation');
+            $this->assertNull($responseData['operation']['paymentID']);
+
+            $this->assertFalse($responseData['secure_validation']);
+        }
+
+        //FROM NOW ON, validation required
+        for($j = $nbOpsBeforeValidation; $j < $nbOpsBeforeBlock; $j++){
+            $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_CREATED);
+            $responseData = json_decode($response->getContent(),true);
+            $this->assertSerializedEntityContent($responseData['operation'],'operation');
+            $this->assertNull($responseData['operation']['paymentID']);
+            $this->assertTrue($responseData['secure_validation']);
+        }
+
+         $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_UNAUTHORIZED);
+
+    }
+
+    public function provideDataForThresholds()
+    {
+        $now = new \Datetime();
+        $nowFormat = date('Y-m-d');
+        $later = $now->modify('+2 days')->format('Y-m-d');
+        $before = $now->modify('-10 days')->format('Y-m-d');
+        $inconsistent = $now->modify('+4 years')->format('Y-m-d');
+
+        $timestampNow = 1000*time($nowFormat);
+        $timestampAfter = 1000*time($later);
+
+        $uniqueAmount = $this->container->getParameter('mobile_daily_thresholds')['amount']['unique'];
+        $maxAmount = $this->container->getParameter('mobile_daily_thresholds')['amount']['block'];
+
+        $stepQty = $this->container->getParameter('mobile_daily_thresholds')['qty']['step'];
+        $maxQty = $this->container->getParameter('mobile_daily_thresholds')['qty']['block'];
+
+        $validLogin = 'benoit_perso';
+        $baseSubmit = array(
+                    'toAccount'=>'labonnepioche@test.fr',
+                    'amount'=> 1,
                     'reason'=>'Test reason',
                     'description'=>'Test description',
                     'executionDate'=> $timestampNow,
             );
 
         return array(
-            'invalid amount too low'=>array($validLogin,array_replace($baseSubmit, array('amount'=>0.0001)),Response::HTTP_BAD_REQUEST,'1111'),
-            'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),Response::HTTP_BAD_REQUEST,'1111'),
-            'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),Response::HTTP_BAD_REQUEST,'1111'),
-            'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
-                                                        array('toAccount'=>$validLogin.'@test.fr')),Response::HTTP_UNAUTHORIZED,'1111'),
-            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),Response::HTTP_INTERNAL_SERVER_ERROR,'1111'),
-            //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED,'1111'),
-            'valid now'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'1111'),
-            'invalid confirm code'=>array($validLogin,$baseSubmit,Response::HTTP_CREATED,'2222'),
-            'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),Response::HTTP_BAD_REQUEST,'1111'),
-            'valid after'=>array($validLogin,array_replace($baseSubmit, 
-                                    array('executionDate'=>$timestampAfter)), Response::HTTP_CREATED,'1111'),
-            'invalid before'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$before)),Response::HTTP_BAD_REQUEST,'1111'),
-            'invalid inconsistent'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$inconsistent)),Response::HTTP_BAD_REQUEST,'1111'),
+            'limit by quantity of payments'=>array($validLogin,$baseSubmit,3,9),
+            'limit by cumulated amount 1'=> array($validLogin,array_replace($baseSubmit,array('amount'=>100)),0,4),
+            'limit by cumulated amount 2'=>array($validLogin,array_replace($baseSubmit,array('amount'=>60)),0,8),
+            'limit by cumulated amount 3'=>array($validLogin,array_replace($baseSubmit,array('amount'=>10)),3,9),
+            'limit by cumulated amount 4'=>array($validLogin,array_replace($baseSubmit,array('amount'=>5)),3,9),
+            'limit by max amount'=> array($validLogin,array_replace($baseSubmit,array('amount'=>1500)),0,0)
         );
-
     }
 
+    
     /**
      *
      *@dataProvider provideDataForAccountOperations

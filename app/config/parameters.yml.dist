@@ -67,6 +67,14 @@ parameters:
         qty:
             step: 4 #no card key required to execute SMS payment
             block: 10 #SMS payment is automatically disabled
+    mobile_daily_thresholds:
+        amount:
+            unique: 30
+            cumulated: 100
+            block: 500
+        qty:
+            step: 4
+            block: 10
 
     helloasso_campaign_id: '0000011111122222'
     helloasso_api_login : login

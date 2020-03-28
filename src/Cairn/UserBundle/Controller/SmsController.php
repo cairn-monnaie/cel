@@ -500,8 +500,8 @@ class SmsController extends Controller
 
         $operation->setDebitor($debitorUser);
 
-        $isSuspicious = $securityService->paymentIsSuspicious($operation);
-        if($isSuspicious) {
+        $validationState = $securityService->paymentValidationState($operation);
+        if($validationState['suspicious']) {
             $smsPaymentRequest = new Sms($debitorPhoneNumber, $parsedSms->content,Sms::STATE_SUSPICIOUS,NULL );
 
             //notify user and admin by email
@@ -647,8 +647,7 @@ class SmsController extends Controller
 
             //the state of SMS paymentRequest can be WAITING_KEY, SUSPICIOUS or PROCESSED
 
-            $needsValidation = $securityService->paymentNeedsValidation($operation,$debitorPhone);
-            if($needsValidation){
+            if($validationState['validation'] && !($validationState['suspicious'])){
                 $this->setUpSmsValidation($em, $debitorUser, $parsedSms->content, $debitorPhone);
                 $em->flush();
                 return true;
