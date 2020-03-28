@@ -52,16 +52,11 @@ cairn_user_api_users_put:
     requirements:
         id: \d+
 
-#cairn_user_api_users_delete:
-#    path: api/users/delete/{id}
-#    methods: DELETE
-#    defaults: { _controller: CairnUserBundle:User:delete, _format: json }
-#
-#cairn_user_api_users_change_password:
-#    path: api/users/change-password
-#    methods: POST
-#    defaults: { _controller: FOSUserBundle:ChangePassword:changePassword, _format: json }
-#
+cairn_user_api_users_change_password:
+    path: mobile/users/change-password
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Profile:changePassword, _format: json }
+
 #cairn_user_api_users_card_association:
 #    path: api/users/{id}/associate-card
 #    methods: POST

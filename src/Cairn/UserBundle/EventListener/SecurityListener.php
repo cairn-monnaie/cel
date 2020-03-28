@@ -156,19 +156,19 @@ class SecurityListener
         $form = $event->getForm();
         $user = $form->getData();
 
+        $apiService = $this->container->get('cairn_user.api');
+
         $templating = $this->container->get('templating');          
         $router = $this->container->get('router');
 
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        if($this->container->get('cairn_user.api')->isApiCall()){
+        if($apiService->isRemoteCall()){
             if($user->isFirstLogin()){
                 $user->setFirstLogin(false);
             }
 
-            $response = new Response('Change password : ok !');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
+            $response = $apiService->getOkResponse(array('Password updated successfully'),Response::HTTP_OK);
             $event->setResponse($response);
         }else{
              if($user->isFirstLogin()){

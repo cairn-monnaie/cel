@@ -621,7 +621,6 @@ class UserControllerTest extends BaseControllerTest
         }else{
             $this->assertSame(1, $crawler->filter('input#fos_user_change_password_form_current_password')->count());    
             $this->assertContains($expectedMessage,$this->client->getResponse()->getContent());
-
         }
     }
 
@@ -690,10 +689,10 @@ class UserControllerTest extends BaseControllerTest
             'valid $'                       => array_replace($baseData, array('new'=>'$bcdefgh','confirm'=>'$bcdefgh')),          
             'valid %'                       => array_replace($baseData, array('new'=>'%bcdefgh','confirm'=>'%bcdefgh')),          
             'valid &'                       => array_replace($baseData, array('new'=>'&bcdefgh','confirm'=>'&bcdefgh')),          
-            'valid \''                       => array_replace($baseData, array('new'=>'\'bcdefgh','confirm'=>'\'bcdefgh')),          
-            'valid ()'                       => array_replace($baseData, array('new'=>'(bcdefgh)','confirm'=>'(bcdefgh)')),          
-            'valid {}'                       => array_replace($baseData, array('new'=>'{bcdefgh}','confirm'=>'{bcdefgh}')),          
-            'valid []'                       => array_replace($baseData, array('new'=>'[bcdefgh]','confirm'=>'[bcdefgh]')),          
+            'valid \''                      => array_replace($baseData, array('new'=>'\'bcdefgh','confirm'=>'\'bcdefgh')),          
+            'valid ()'                      => array_replace($baseData, array('new'=>'(bcdefgh)','confirm'=>'(bcdefgh)')),          
+            'valid {}'                      => array_replace($baseData, array('new'=>'{bcdefgh}','confirm'=>'{bcdefgh}')),          
+            'valid []'                      => array_replace($baseData, array('new'=>'[bcdefgh]','confirm'=>'[bcdefgh]')),          
             'valid *'                       => array_replace($baseData, array('new'=>'*bcdefgh','confirm'=>'*bcdefgh')),          
             'valid +'                       => array_replace($baseData, array('new'=>'+bcdefgh','confirm'=>'+bcdefgh')),          
             'valid ,'                       => array_replace($baseData, array('new'=>',bcdefgh','confirm'=>',bcdefgh')),          
