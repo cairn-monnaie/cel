@@ -73,7 +73,7 @@ class ProfileController extends Controller
         // $form = $formFactory->createForm();
         $form = $this->createForm(CairnProfileType::class, $user);
 
-        //$form->setData($user);
+        $form->setData($user);
 
 
         $apiService = $this->get('cairn_user.api');
@@ -86,7 +86,7 @@ class ProfileController extends Controller
                 $event = new FormEvent($form, $request);
                 $eventDispatcher->dispatch(FOSUserEvents::PROFILE_EDIT_SUCCESS, $event);
 
-                //                $userManager->updateUser($user);
+                $userManager->updateUser($user);
                 //if($form->get('initialize_parameters')->getData()){
                 //    $user->setNbPhoneNumberRequests(0);
                 //    $user->setPhoneNumberActivationTries(0);
