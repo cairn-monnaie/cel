@@ -122,7 +122,7 @@ class ExceptionListener
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
                     $errorMessage = 'Vous n\'avez pas les droits nécessaires';
-                    $this->sendException($event, $errorMessage, Response::HTTP_UNAUTHORIZED, $welcomeUrl);
+                    $this->sendException($event, $errorMessage, Response::HTTP_FORBIDDEN, $welcomeUrl);
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){//cyclos session token expired before Symfony
 

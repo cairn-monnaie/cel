@@ -121,7 +121,7 @@ class RegistrationListener
         if($currentUser && !$currentUser->isAdmin()){
         
             if($isRemoteCall){
-                $response = $apiService->getErrorResponse(array('Un adhérent ne peut créer un compte'),Response::HTTP_UNAUTHORIZED);
+                $response = $apiService->getErrorResponse(array('Un adhérent ne peut créer un compte'),Response::HTTP_FORBIDDEN);
                 $event->setResponse($response);
                 return;
             }

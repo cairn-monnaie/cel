@@ -856,14 +856,14 @@ class ApiControllerTest extends BaseControllerTest
             'invalid negative amount'=>array($validLogin,array_replace($baseSubmit, array('amount'=>-5)),false,false,Response::HTTP_BAD_REQUEST),
             'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),false,false,Response::HTTP_BAD_REQUEST),
             'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
-                                                        array('toAccount'=>$validLogin.'@test.fr')),false,false,Response::HTTP_UNAUTHORIZED),
+                                                        array('toAccount'=>$validLogin.'@test.fr')),false,false,Response::HTTP_FORBIDDEN),
             'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),false,false,Response::HTTP_INTERNAL_SERVER_ERROR),
             //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED),
             'valid now'=>array($validLogin,$baseSubmit,false,false,Response::HTTP_CREATED),
             'valid now + validation amount'=>array($validLogin,array_replace($baseSubmit, 
                                     array('amount'=>$uniqueAmount + 1)),true,false, Response::HTTP_CREATED),
             'invalid suspicious amount'=>array($validLogin,array_replace($baseSubmit, 
-                                    array('amount'=>$maxAmount + 1)),false,true, Response::HTTP_UNAUTHORIZED),
+                                    array('amount'=>$maxAmount + 1)),false,true, Response::HTTP_FORBIDDEN),
             'invalid execution date format'=>array($validLogin,array_replace($baseSubmit, array('executionDate'=>$later)),false,false,Response::HTTP_BAD_REQUEST),
             'valid after'=>array($validLogin,array_replace($baseSubmit, 
                                     array('executionDate'=>$timestampAfter)),false,false, Response::HTTP_CREATED),
@@ -898,7 +898,7 @@ class ApiControllerTest extends BaseControllerTest
             $this->assertTrue($responseData['secure_validation']);
         }
 
-         $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_UNAUTHORIZED);
+         $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_FORBIDDEN);
 
     }
 
@@ -1208,8 +1208,8 @@ class ApiControllerTest extends BaseControllerTest
         ];
 
         return array(
-            'logged in as adherent'=>array('gjanssens',$formSubmit,'person',true,Response::HTTP_UNAUTHORIZED),
-            'logged in as pro'=>array('nico_faus_prod',$formSubmit,'person',true,Response::HTTP_UNAUTHORIZED),
+            'logged in as adherent'=>array('gjanssens',$formSubmit,'person',true,Response::HTTP_FORBIDDEN),
+            'logged in as pro'=>array('nico_faus_prod',$formSubmit,'person',true,Response::HTTP_FORBIDDEN),
             'logged in as admin'=>array('admin_network',$formSubmit,'person',true,Response::HTTP_CREATED),
             'create pro'=>array('',$formSubmit,'pro',true,Response::HTTP_CREATED),
             'invalid address'=>['',array_replace_recursive($formSubmit, ['address'=>['street1'=>'7']]),'pro',true,Response::HTTP_BAD_REQUEST],

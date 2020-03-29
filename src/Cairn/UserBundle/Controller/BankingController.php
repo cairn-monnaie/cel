@@ -596,7 +596,7 @@ class BankingController extends Controller
 
                 $validationState = $securityService->paymentValidationState($operation);
                 if($validationState['suspicious']){
-                    return $apiService->getErrorResponse(array('Too many operations for today'),Response::HTTP_UNAUTHORIZED);
+                    return $apiService->getErrorResponse(array('Too many operations for today'),Response::HTTP_FORBIDDEN);
                 }
 
                 $em->persist($operation);
@@ -648,7 +648,7 @@ class BankingController extends Controller
         if( count($currentUser->getPhones()) == 0){
             $message = 'Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement';
             if($apiService->isRemoteCall()){
-                return $apiService->getErrorResponse(array($message),Response::HTTP_UNAUTHORIZED);
+                return $apiService->getErrorResponse(array($message),Response::HTTP_FORBIDDEN);
             }
             $session->getFlashBag()->add('info',$message);
             return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$currentUser->getUsername()));

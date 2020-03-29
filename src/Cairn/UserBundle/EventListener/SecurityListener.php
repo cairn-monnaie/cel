@@ -63,7 +63,6 @@ class SecurityListener
             $event->setResponse(new RedirectResponse($logoutUrl));
             return;
         }
-
     }
 
     public function changeCyclosPassword($old, $new, $user)
@@ -107,6 +106,7 @@ class SecurityListener
         $session = $event->getRequest()->getSession();
         $templating = $this->container->get('templating');          
 
+        $apiService = $this->container->get('cairn_user.api');
         $router = $this->container->get('router');          
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
         $smsUrl = $router->generate('cairn_user_sms_presentation');
@@ -133,10 +133,8 @@ class SecurityListener
             $session->set('is_first_connection',true); 
         }
         
-        if($this->container->get('cairn_user.api')->isApiCall()){
-            $response = new Response('Change password : ok !');
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
+        if($apiService->isRemoteCall()){
+            $response = $apiService->getOkResponse(array('Password resetted successfully'),Response::HTTP_OK);
             $event->setResponse($response);
         }else{
             if($session->get('is_first_connection')){
@@ -257,7 +255,7 @@ class SecurityListener
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
             if($apiService->isRemoteCall()){
-                $event->setResponse($apiService->getErrorResponse(array('Server in maintenance state'),Response::HTTP_INTERNAL_SERVER_ERROR));
+                $event->setResponse($apiService->getErrorResponse(array('Server in maintenance state'),Response::HTTP_SERVICE_UNAVAILABLE));
                 return;
             }
             $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));

@@ -141,7 +141,7 @@ class ApiController extends Controller
         }
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            return $apiService->getErrorResponse(array('Access denied') ,Response::HTTP_UNAUTHORIZED);
+            return $apiService->getErrorResponse(array('Access denied') ,Response::HTTP_FORBIDDEN);
         }
 
         if(! $creditorUser->getApiClient()){
