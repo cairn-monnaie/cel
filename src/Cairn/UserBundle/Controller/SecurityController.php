@@ -49,17 +49,22 @@ class SecurityController extends Controller
 
             try{
                 $oauth_token_data = $this->get('fos_oauth_server.server')->grantAccessToken($grantRequest);
+
+                //send user id
+                $em = $this->getDoctrine()->getManager();
+                $userRepo = $em->getRepository('CairnUserBundle:User');
+                $currentUser = $userRepo->findOneByUsername($params['username']);
+
+                if(! $currentUser->isEnabled()){
+                    return $apiService->getErrorResponse(array("User account is disabled"),Response::HTTP_UNAUTHORIZED);
+                }
             }catch(\Exception $e){
                 return $apiService->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
             }
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
-            //send user id
-            $em = $this->getDoctrine()->getManager();
-            $userRepo = $em->getRepository('CairnUserBundle:User');
-            $currentUser = $userRepo->findOneByUsername($params['username']);
-
+            
             $array_oauth['user_id'] =  $currentUser->getID();
 
             if(! $currentUser->getAppData()){
@@ -101,7 +106,7 @@ class SecurityController extends Controller
 
             //validate access token
             if($userVO->shortDisplay != $params['username']){
-                return $apiService->getErrorResponse(array('Access denied'),Response::HTTP_UNAUTHORIZED);
+                return $apiService->getErrorResponse(array('Access denied'),Response::HTTP_FORBIDDEN);
             }
 
 
