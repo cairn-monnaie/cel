@@ -17,7 +17,7 @@ use Cairn\UserCyclosBundle\Service\UserInfo;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Exception\TransformationFailedException;
-use Symfony\Component\Form\Exception\InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class AccountToStringTransformer implements DataTransformerInterface
 {
@@ -59,8 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new InvalidArgumentException('No creditor account provided');
-            return;
+            throw new BadRequestHttpException('No creditor account provided');
         }
 
         $userRepo = $this->entityManager
@@ -85,10 +84,7 @@ class AccountToStringTransformer implements DataTransformerInterface
         }
 
         if (null === $toUserVO) {
-            throw new TransformationFailedException(sprintf(
-                'User with data "%s" not found!',
-                $autocomplete
-            ));
+            throw new BadRequestHttpException('No creditor account found for '.$autocomplete);
         }
 
 //        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));

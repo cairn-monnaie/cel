@@ -857,9 +857,11 @@ class ApiControllerTest extends BaseControllerTest
             'invalid insufficient balance'=>array($validLogin,array_replace($baseSubmit, array('amount'=>1000000000)),false,false,Response::HTTP_BAD_REQUEST),
             'invalid : identical creditor & debitor'=>array($validLogin,array_replace($baseSubmit, 
                                                         array('toAccount'=>$validLogin.'@test.fr')),false,false,Response::HTTP_FORBIDDEN),
-            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),false,false,Response::HTTP_INTERNAL_SERVER_ERROR),
+            'invalid : no creditor data'=>array($validLogin,array_replace($baseSubmit, array('toAccount'=>'')),false,false,Response::HTTP_BAD_REQUEST),
             //'invalid : no phone number associated'=>array('gjanssens',$baseSubmit,Response::HTTP_UNAUTHORIZED),
             'valid now'=>array($validLogin,$baseSubmit,false,false,Response::HTTP_CREATED),
+            'valid now : user has no card'=>array('episol',$baseSubmit,false,false,Response::HTTP_CREATED),
+
             'valid now + validation amount'=>array($validLogin,array_replace($baseSubmit, 
                                     array('amount'=>$uniqueAmount + 1)),true,false, Response::HTTP_CREATED),
             'invalid suspicious amount'=>array($validLogin,array_replace($baseSubmit, 
