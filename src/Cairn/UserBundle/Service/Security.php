@@ -325,6 +325,8 @@ class Security
         $debitor = $operation->getDebitor();
 
         $ob = $this->operationRepo->createQueryBuilder('o');
+        $ob->andWhere('o.paymentID is not NULL');
+
         $this->operationRepo
             ->whereType($ob, $operation->getType())
             ->whereDebitor($ob,$debitor)

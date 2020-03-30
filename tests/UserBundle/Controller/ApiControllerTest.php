@@ -742,7 +742,7 @@ class ApiControllerTest extends BaseControllerTest
         );
     }
 
-    private function atomicRemotePayment($debitor,$formSubmit,$httpStatusCode)
+    private function atomicRemotePaymentCreation($debitor,$formSubmit,$httpStatusCode)
     {
         $this->mobileLogin($debitor,'@@bbccdd');
 
@@ -772,13 +772,45 @@ class ApiControllerTest extends BaseControllerTest
         return $response;
     }
 
+    private function atomicRemotePaymentValidation($debitor,$responseData)
+    {
+        $this->mobileLogin($debitor,'@@bbccdd');
+
+        $uri ='/mobile/transaction/confirm/'.$responseData['operation']['id'] ;
+        $form = array("confirmationCode"=> '1111','save'=>"");
+
+        $crawler = $this->client->request(
+            'POST',
+            $uri,
+            [],
+            [],
+            [
+                'CONTENT-TYPE' => 'application/json',
+                'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
+            ],
+            json_encode($form)
+        );
+
+        $response = $this->client->getResponse();
+
+        $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
+        $this->assertJson($response->getContent());
+
+        $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
+
+        $responseData = json_decode($response->getContent(),true);
+
+        $this->assertNotNull($responseData['paymentID']);
+        $this->assertSerializedEntityContent($responseData,'operation');
+    }
+
     /**
      *
      *@dataProvider provideDataForRemotePayment
      */
     public function testRemotePayment($debitor, $formSubmit,$needsValidation,$isSuspicious, $httpStatusCode)
     {
-        $response = $this->atomicRemotePayment($debitor,$formSubmit,$httpStatusCode);
+        $response = $this->atomicRemotePaymentCreation($debitor,$formSubmit,$httpStatusCode);
         $responseData = json_decode($response->getContent(),true);
 
         if($response->isSuccessful()){
@@ -790,36 +822,9 @@ class ApiControllerTest extends BaseControllerTest
             }else{
                 $this->assertFalse($responseData['secure_validation']);
             }
+            $this->atomicRemotePaymentValidation($debitor,$responseData);
 
-            $this->mobileLogin($debitor,'@@bbccdd');
-
-            $uri ='/mobile/transaction/confirm/'.$responseData['operation']['id'] ;
-            $form = array("confirmationCode"=> '1111','save'=>"");
-
-            $crawler = $this->client->request(
-                'POST',
-                $uri,
-                [],
-                [],
-                [
-                    'CONTENT-TYPE' => 'application/json',
-                    'HTTP_Authorization' => $this->generateApiAuthorizationHeader(time(date('Y-m-d')),'POST',$uri,$form)
-                ],
-                json_encode($form)
-            );
-
-            $response = $this->client->getResponse();
-
-            $this->assertTrue($response->headers->contains('Content-Type', 'application/json'));
-            $this->assertJson($response->getContent());
-
-            $this->assertEquals(Response::HTTP_CREATED, $response->getStatusCode());
-
-            $responseData = json_decode($response->getContent(),true);
-
-            $this->assertNotNull($responseData['paymentID']);
-            $this->assertSerializedEntityContent($responseData,'operation');
-                 
+                             
         }else{
             if($isSuspicious){
                 $this->assertContains('Too many operations',$responseData[0]['error']);
@@ -883,25 +888,25 @@ class ApiControllerTest extends BaseControllerTest
     {
         //ALL ops that do not need validation
         for($i = 0; $i < $nbOpsBeforeValidation; $i++){
-            $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_CREATED);
+            $response = $this->atomicRemotePaymentCreation($debitor,$formSubmit,Response::HTTP_CREATED);
             $responseData = json_decode($response->getContent(),true);
             $this->assertSerializedEntityContent($responseData['operation'],'operation');
             $this->assertNull($responseData['operation']['paymentID']);
-
             $this->assertFalse($responseData['secure_validation']);
+            $this->atomicRemotePaymentValidation($debitor,$responseData);
         }
 
         //FROM NOW ON, validation required
         for($j = $nbOpsBeforeValidation; $j < $nbOpsBeforeBlock; $j++){
-            $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_CREATED);
+            $response = $this->atomicRemotePaymentCreation($debitor,$formSubmit,Response::HTTP_CREATED);
             $responseData = json_decode($response->getContent(),true);
             $this->assertSerializedEntityContent($responseData['operation'],'operation');
             $this->assertNull($responseData['operation']['paymentID']);
             $this->assertTrue($responseData['secure_validation']);
+            $this->atomicRemotePaymentValidation($debitor,$responseData);
         }
 
-         $response = $this->atomicRemotePayment($debitor,$formSubmit,Response::HTTP_FORBIDDEN);
-
+         $response = $this->atomicRemotePaymentCreation($debitor,$formSubmit,Response::HTTP_FORBIDDEN);
     }
 
     public function provideDataForThresholds()
