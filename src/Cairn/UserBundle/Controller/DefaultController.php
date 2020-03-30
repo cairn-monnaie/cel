@@ -102,16 +102,32 @@ class DefaultController extends Controller
      *
      */
     public function zipCitiesAction(Request $request){
-        if ($request->isXmlHttpRequest()){
+        if ($this->get('cairn_user.api')->isRemoteCall()){
             $em = $this->getDoctrine()->getManager();
-            $zipCities = $em->getRepository(ZipCity::class)->findAll();
+            $zcRepo = $em->getRepository(ZipCity::class);
+
+            if($search = $request->query->get('search')){
+                $zb = $zcRepo->createQueryBuilder('z');
+
+                $zb->andWhere(
+                    $zb->expr()->orX(
+                        "z.zipCode LIKE '%".$search."%'"
+                        ,
+                        "z.city LIKE '%".$search."%'"
+                    )
+                )
+                ->orderBy('z.zipCode');
+                $zipCities = $zb->getQuery()->getResult();
+            }else{
+                $zipCities = $zcRepo->findAll();
+            }
             $returnArray = array();
             foreach ($zipCities as $zipCity){
                 $returnArray[] = $zipCity->getName();
             }
             return new JsonResponse($returnArray);
         }
-        return new Response("Ajax only",400);
+        return new Response("JSON only",400);
     }
 
     /**
