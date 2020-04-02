@@ -204,7 +204,12 @@ class File
 
     public function getWebPath($env = NULL)
     {
-        return $this->getUploadDir($env).'/'.$this->getId().'.'.$this->getUrl();
+        if($this->getId()){
+            return $this->getUploadDir($env).'/'.$this->getId().'.'.$this->getUrl();
+            
+        }else{
+            return NULL;
+        }
     }
 
     /**
