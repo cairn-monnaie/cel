@@ -97,12 +97,12 @@ class Api
         $request = $this->requestStack->getCurrentRequest();                     
 
         return ( (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
-            (in_array($request->get('_route'),array('cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
+            (in_array($request->get('_route'),array('cairn_zipcities_mobile','cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
     }
 
      public function fromArrayToStringDeterministicOrder($arr)
      {
-         if( is_string($arr)){
+         if( is_scalar($arr)){
              return $arr;
          }
 
@@ -232,7 +232,6 @@ class Api
             ));
         }
         if($object instanceOf Operation){
-
             $defaultIgnoredAttributes = array('fromAccount','toAccount','mandate');
             $normalizer->setCallbacks(array(
                         'creditor'=> function ($child) {return $this->objectCallback($child);},
