@@ -596,7 +596,7 @@ class BankingController extends Controller
 
                 $validationState = $securityService->paymentValidationState($operation);
                 if($validationState['suspicious']){
-                    return $apiService->getErrorResponse(array('Too many operations for today'),Response::HTTP_FORBIDDEN);
+                    return $apiService->getErrorResponse(array('Threshold reached'),Response::HTTP_FORBIDDEN);
                 }
 
                 $em->persist($operation);
@@ -874,7 +874,6 @@ class BankingController extends Controller
 
         return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
             'form'=>$form->createView()));
-
     }
 
 
@@ -988,6 +987,7 @@ class BankingController extends Controller
                             }
                         }
 
+                        $operation->setExecutionDate( new \Datetime() );
                         $em->flush();
                         $session->remove($confirmationCodeAttr);
                         $session->remove('confirmationTries');
