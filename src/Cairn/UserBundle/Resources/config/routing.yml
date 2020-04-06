@@ -214,8 +214,14 @@ cairn_user_pros_list:
 cairn_user_users_block:
     path:     user/block/{username}
     defaults: { _controller: CairnUserBundle:User:blockUser, _format: html }
-#    requirements:
-#        id: \d+
+
+cairn_user_api_users_block:
+    path:     /{remote}/users/block/{id}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:User:blockUser, _format: json}
+    requirements: 
+        remote: mobile|api
+        id: \d+
 
 cairn_user_apiclient_token_generate:
     path:     admin/api-client/generate

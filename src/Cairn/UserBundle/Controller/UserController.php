@@ -1033,6 +1033,7 @@ class UserController extends Controller
         $session = $request->getSession();
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
+        $apiService = $this->get('cairn_user.api');
 
         $currentUser = $this->getUser();
 
@@ -1040,24 +1041,37 @@ class UserController extends Controller
             throw new AccessDeniedException('Pas les droits nécessaires');
         }elseif(!$user->isEnabled()){
             $session->getFlashBag()->add('info','L\'espace membre de ' . $user->getName() . ' est déjà bloqué.');
+
+            if( $apiService->isRemoteCall()){
+                return $apiService->getErrorResponse(array('account_already_blocked'),Response::HTTP_BAD_REQUEST);
+            }
+
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
 
         $form = $this->createForm(ConfirmationType::class);
 
-        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+        if ($request->isMethod('POST')){
+           
             if($form->get('save')->isClicked()){
-
+                if($apiService->isRemoteCall()){
+                    $jsonRequest = json_decode($request->getContent(), true);
+                    $form->submit($jsonRequest);
+                }else{
+                    $form->handleRequest($request);
+                }
                 $subject = 'Opposition de compte [e]-Cairn';
 
                 $reason = ($user === $currentUser) ? 'self' : 'admin';
                 $this->get('cairn_user.access_platform')->disable(array($user),$reason,$subject);
                 $session->getFlashBag()->add('success','L\'opposition du compte de ' . $user->getName() . ' a été effectuée avec succès. Il ne peut plus accéder à la plateforme.');
                 $em->flush();
+
+                if( $apiService->isRemoteCall()){
+                    return $apiService->getOkResponse(array('User account has been disabled successfully'),Response::HTTP_OK);
+                }
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
             }
-
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
-
         }
 
         $responseArray = array('user' => $user,'form'=> $form->createView());
