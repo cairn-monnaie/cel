@@ -1310,7 +1310,7 @@ class ApiControllerTest extends BaseControllerTest
     public function provideDataForEditProfile()
     {
         $person = 'stuart_andrew';
-        $pro = 'maltobar';
+        $pro = 'mon_vrac';
 
         return array(
             'adherent for himself'=>array($person,$person,$this->getNewSubmit(false),false,false,Response::HTTP_OK),
@@ -1357,9 +1357,9 @@ class ApiControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForChangePassword
      */
-    public function testRemoteChangePassword($currentPwd,$newPwd,$confirmPwd,$httpStatusCode)
+    public function testRemoteChangePassword($login,$currentPwd,$newPwd,$confirmPwd,$httpStatusCode)
     {
-        $this->mobileLogin('denis_ketels','@@bbccdd');
+        $this->mobileLogin($login,'@@bbccdd');
 
         $uri = '/mobile/users/change-password';
         
@@ -1390,7 +1390,7 @@ class ApiControllerTest extends BaseControllerTest
         $responseData = json_decode($response->getContent(),true);
 
         if($response->isSuccessful()){
-            $this->mobileLogin('denis_ketels',$newPwd);
+            $this->mobileLogin($login,$newPwd);
         }
     }
 
@@ -1400,45 +1400,46 @@ class ApiControllerTest extends BaseControllerTest
         $newBasePwd = 'bcdefgh';
         
         return array(
-            'invalid current password'=> array('@bcdef','@'.$newBasePwd,'@'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'new != confirm'=> array($currentPwd,'@'.$newBasePwd,'<'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'invalid : too short new'=> array($currentPwd,'@bcde','@bcde',Response::HTTP_BAD_REQUEST),
-            'invalid: no special chars'=> array($currentPwd,'a'.$newBasePwd,'a'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'pseudo included in pwd'=> array($currentPwd,'@denis_ketels@','@denis_ketels@',Response::HTTP_BAD_REQUEST),
-            'invalid é' =>  array($currentPwd,'é'.$newBasePwd,'é'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'invalid é' =>  array($currentPwd,'ä'.$newBasePwd,'ä'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'invalid ù' =>  array($currentPwd,'ù'.$newBasePwd,'ù'.$newBasePwd,Response::HTTP_BAD_REQUEST),
-            'invalid §' =>  array($currentPwd,'§'.$newBasePwd,'§'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'invalid current password'=> array('denis_ketels','@bcdef','@'.$newBasePwd,'@'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'new != confirm'=> array('denis_ketels',$currentPwd,'@'.$newBasePwd,'<'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'invalid : too short new'=> array('denis_ketels',$currentPwd,'@bcde','@bcde',Response::HTTP_BAD_REQUEST),
+            'invalid: no special chars'=> array('denis_ketels',$currentPwd,'a'.$newBasePwd,'a'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'pseudo included in pwd'=> array('denis_ketels',$currentPwd,'@denis_ketels@','@denis_ketels@',Response::HTTP_BAD_REQUEST),
+            'invalid é' =>  array('denis_ketels',$currentPwd,'é'.$newBasePwd,'é'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'invalid é' =>  array('denis_ketels',$currentPwd,'ä'.$newBasePwd,'ä'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'invalid ù' =>  array('denis_ketels',$currentPwd,'ù'.$newBasePwd,'ù'.$newBasePwd,Response::HTTP_BAD_REQUEST),
+            'invalid §' =>  array('denis_ketels',$currentPwd,'§'.$newBasePwd,'§'.$newBasePwd,Response::HTTP_BAD_REQUEST),
 
-            'new = current'=> array($currentPwd,$currentPwd,$currentPwd,Response::HTTP_OK),
-            'valid classic'=> array($currentPwd,$currentPwd,$currentPwd,Response::HTTP_OK),
-            'valid >' =>  array($currentPwd,'>'.$newBasePwd,'>'.$newBasePwd,Response::HTTP_OK),
-            'valid <' =>  array($currentPwd,'<'.$newBasePwd,'<'.$newBasePwd,Response::HTTP_OK),
-            'valid `' =>  array($currentPwd,'`'.$newBasePwd,'`'.$newBasePwd,Response::HTTP_OK),
-            'valid @' =>  array($currentPwd,'@'.$newBasePwd,'@'.$newBasePwd,Response::HTTP_OK),
-            'valid !' =>  array($currentPwd,'!'.$newBasePwd,'!'.$newBasePwd,Response::HTTP_OK),
-            'valid "' =>  array($currentPwd,'"'.$newBasePwd,'"'.$newBasePwd,Response::HTTP_OK),
-            'valid #' =>  array($currentPwd,'#'.$newBasePwd,'#'.$newBasePwd,Response::HTTP_OK),
-            'valid $' =>  array($currentPwd,'$'.$newBasePwd,'$'.$newBasePwd,Response::HTTP_OK),
-            'valid %' =>  array($currentPwd,'%'.$newBasePwd,'%'.$newBasePwd,Response::HTTP_OK),
-            'valid &' =>  array($currentPwd,'&'.$newBasePwd,'&'.$newBasePwd,Response::HTTP_OK),
-            'valid \''=>  array($currentPwd,'\''.$newBasePwd,'\''.$newBasePwd,Response::HTTP_OK),
-            'valid ()'=>  array($currentPwd,'('.$newBasePwd.')','('.$newBasePwd.')',Response::HTTP_OK),
-            'valid {}'=>  array($currentPwd,'{'.$newBasePwd.'}','{'.$newBasePwd.'}',Response::HTTP_OK),
-            'valid []'=>  array($currentPwd,'['.$newBasePwd.']','['.$newBasePwd.']',Response::HTTP_OK),
-            'valid *' =>  array($currentPwd,'*'.$newBasePwd,'*'.$newBasePwd,Response::HTTP_OK),
-            'valid +' =>  array($currentPwd,'+'.$newBasePwd,'+'.$newBasePwd,Response::HTTP_OK),
-            'valid ,' =>  array($currentPwd,','.$newBasePwd,','.$newBasePwd,Response::HTTP_OK),
-            'valid -' =>  array($currentPwd,'-'.$newBasePwd,'-'.$newBasePwd,Response::HTTP_OK),
-            'valid .' =>  array($currentPwd,'.'.$newBasePwd,'.'.$newBasePwd,Response::HTTP_OK),
-            'valid /' =>  array($currentPwd,'/'.$newBasePwd,'/'.$newBasePwd,Response::HTTP_OK),
-            'valid :' =>  array($currentPwd,':'.$newBasePwd,':'.$newBasePwd,Response::HTTP_OK),
-            'valid ;' =>  array($currentPwd,';'.$newBasePwd,';'.$newBasePwd,Response::HTTP_OK),
-            'valid =' =>  array($currentPwd,'='.$newBasePwd,'='.$newBasePwd,Response::HTTP_OK),
-            'valid ?' =>  array($currentPwd,'?'.$newBasePwd,'?'.$newBasePwd,Response::HTTP_OK),
-            'valid ^' =>  array($currentPwd,'^'.$newBasePwd,'^'.$newBasePwd,Response::HTTP_OK),
-            'valid _' =>  array($currentPwd,'_'.$newBasePwd,'_'.$newBasePwd,Response::HTTP_OK),
-            'valid ~' =>  array($currentPwd,'~'.$newBasePwd,'~'.$newBasePwd,Response::HTTP_OK),
+            'first login change pwd'=> array('Claire_Dode',$currentPwd,$currentPwd,$currentPwd,Response::HTTP_OK),
+            'new = current'=> array('denis_ketels',$currentPwd,$currentPwd,$currentPwd,Response::HTTP_OK),
+            'valid classic'=> array('denis_ketels',$currentPwd,$currentPwd,$currentPwd,Response::HTTP_OK),
+            'valid >' =>  array('denis_ketels',$currentPwd,'>'.$newBasePwd,'>'.$newBasePwd,Response::HTTP_OK),
+            'valid <' =>  array('denis_ketels',$currentPwd,'<'.$newBasePwd,'<'.$newBasePwd,Response::HTTP_OK),
+            'valid `' =>  array('denis_ketels',$currentPwd,'`'.$newBasePwd,'`'.$newBasePwd,Response::HTTP_OK),
+            'valid @' =>  array('denis_ketels',$currentPwd,'@'.$newBasePwd,'@'.$newBasePwd,Response::HTTP_OK),
+            'valid !' =>  array('denis_ketels',$currentPwd,'!'.$newBasePwd,'!'.$newBasePwd,Response::HTTP_OK),
+            'valid "' =>  array('denis_ketels',$currentPwd,'"'.$newBasePwd,'"'.$newBasePwd,Response::HTTP_OK),
+            'valid #' =>  array('denis_ketels',$currentPwd,'#'.$newBasePwd,'#'.$newBasePwd,Response::HTTP_OK),
+            'valid $' =>  array('denis_ketels',$currentPwd,'$'.$newBasePwd,'$'.$newBasePwd,Response::HTTP_OK),
+            'valid %' =>  array('denis_ketels',$currentPwd,'%'.$newBasePwd,'%'.$newBasePwd,Response::HTTP_OK),
+            'valid &' =>  array('denis_ketels',$currentPwd,'&'.$newBasePwd,'&'.$newBasePwd,Response::HTTP_OK),
+            'valid \''=>  array('denis_ketels',$currentPwd,'\''.$newBasePwd,'\''.$newBasePwd,Response::HTTP_OK),
+            'valid ()'=>  array('denis_ketels',$currentPwd,'('.$newBasePwd.')','('.$newBasePwd.')',Response::HTTP_OK),
+            'valid {}'=>  array('denis_ketels',$currentPwd,'{'.$newBasePwd.'}','{'.$newBasePwd.'}',Response::HTTP_OK),
+            'valid []'=>  array('denis_ketels',$currentPwd,'['.$newBasePwd.']','['.$newBasePwd.']',Response::HTTP_OK),
+            'valid *' =>  array('denis_ketels',$currentPwd,'*'.$newBasePwd,'*'.$newBasePwd,Response::HTTP_OK),
+            'valid +' =>  array('denis_ketels',$currentPwd,'+'.$newBasePwd,'+'.$newBasePwd,Response::HTTP_OK),
+            'valid ,' =>  array('denis_ketels',$currentPwd,','.$newBasePwd,','.$newBasePwd,Response::HTTP_OK),
+            'valid -' =>  array('denis_ketels',$currentPwd,'-'.$newBasePwd,'-'.$newBasePwd,Response::HTTP_OK),
+            'valid .' =>  array('denis_ketels',$currentPwd,'.'.$newBasePwd,'.'.$newBasePwd,Response::HTTP_OK),
+            'valid /' =>  array('denis_ketels',$currentPwd,'/'.$newBasePwd,'/'.$newBasePwd,Response::HTTP_OK),
+            'valid :' =>  array('denis_ketels',$currentPwd,':'.$newBasePwd,':'.$newBasePwd,Response::HTTP_OK),
+            'valid ;' =>  array('denis_ketels',$currentPwd,';'.$newBasePwd,';'.$newBasePwd,Response::HTTP_OK),
+            'valid =' =>  array('denis_ketels',$currentPwd,'='.$newBasePwd,'='.$newBasePwd,Response::HTTP_OK),
+            'valid ?' =>  array('denis_ketels',$currentPwd,'?'.$newBasePwd,'?'.$newBasePwd,Response::HTTP_OK),
+            'valid ^' =>  array('denis_ketels',$currentPwd,'^'.$newBasePwd,'^'.$newBasePwd,Response::HTTP_OK),
+            'valid _' =>  array('denis_ketels',$currentPwd,'_'.$newBasePwd,'_'.$newBasePwd,Response::HTTP_OK),
+            'valid ~' =>  array('denis_ketels',$currentPwd,'~'.$newBasePwd,'~'.$newBasePwd,Response::HTTP_OK),
         );
     }
 }

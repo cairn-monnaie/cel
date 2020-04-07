@@ -155,17 +155,17 @@ class SecurityListener
         $user = $form->getData();
 
         $apiService = $this->container->get('cairn_user.api');
+        $isRemoteCall = $apiService->isRemoteCall();
 
         $templating = $this->container->get('templating');          
         $router = $this->container->get('router');
 
         $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
 
-        if($apiService->isRemoteCall()){
+        if($isRemoteCall){
             if($user->isFirstLogin()){
                 $user->setFirstLogin(false);
             }
-
             $response = $apiService->getOkResponse(array('Password updated successfully'),Response::HTTP_OK);
             $event->setResponse($response);
         }else{
@@ -312,7 +312,7 @@ class SecurityListener
         $currentUser = $security->getCurrentUser();
 
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
-            if($currentUser->isFirstLogin() && ($event->getRequest()->get('_route') != 'fos_user_change_password')){
+            if($currentUser->isFirstLogin() && (!in_array($event->getRequest()->get('_route'),['fos_user_change_password','cairn_user_api_users_change_password']))){
                 $session = $event->getRequest()->getSession();
 
                 $session->set('is_first_connection',true);

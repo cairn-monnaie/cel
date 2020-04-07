@@ -64,7 +64,6 @@ class SecurityController extends Controller
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
-            
             $array_oauth['user_id'] =  $currentUser->getID();
 
             if(! $currentUser->getAppData()){
@@ -73,7 +72,7 @@ class SecurityController extends Controller
                 $appData->setUser($currentUser);
             }
 
-            $array_oauth['first_login'] =  (! $currentUser->getAppData()->getPinCode());
+            $array_oauth['first_login'] =  $currentUser->isFirstLogin();
 
             if($currentUser->getAppData()->isFirstLogin()){
                 $currentUser->getAppData()->setFirstLogin(false);
