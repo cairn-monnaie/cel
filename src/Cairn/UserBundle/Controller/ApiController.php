@@ -39,6 +39,14 @@ class ApiController extends Controller
         return $this->get('cairn_user.api')->getOkResponse($phones,Response::HTTP_OK);
     }
 
+    public function setFirstLoginAction(Request $request)
+    {
+        $this->getUser()->setFirstLogin(true);
+        $this->getDoctrine()->getManager()->flush();
+
+        return $this->get('cairn_user.api')->getOkResponse($this->getUser(),Response::HTTP_OK);
+    }
+
     public function usersAction(Request $request)
     {
         if($request->isMethod('POST')){

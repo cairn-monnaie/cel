@@ -267,6 +267,13 @@ cairn_user_users_smsdata:
     path:     user/smsdata
     defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
 
+cairn_user_api_first_login:
+    path:     /{remote}/first-login
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:setFirstLogin, _format: json}
+    requirements: 
+        remote: mobile|api
+
 cairn_user_api_smsdata:
     path:     /{remote}/phones
     methods: GET
