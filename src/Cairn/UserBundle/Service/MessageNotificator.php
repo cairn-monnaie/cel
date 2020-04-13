@@ -9,6 +9,7 @@ use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Repository\SmsRepository;
 use Cairn\UserBundle\Entity\Sms;
 
+use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Cairn\UserBundle\Entity\User;
 
 use Minishlink\WebPush\WebPush;
@@ -67,7 +68,60 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendNotification(User $user, $title, $content)
+    public function sendAppNotification(User $user,$type,$title, $content)
+    {
+        if(! $user->getAppData()){
+            return;
+        }
+
+        //From User, get registration ids
+        //$registrationIDs = $user->getAppData()->getActiveRegistrationIds(); 
+
+        $pushConsts = $this->consts['mobilepush'];
+        $androidConsts = $pushConsts['android'];
+
+        if(! in_array($type, array_values($pushConsts) )){
+            throw new InvalidArgumentException('Unexpected notification type');
+        }
+
+        // Message to be sent
+        $push = array(
+            'to'=>'token',
+            'notification'=>array(
+                'title'=>$title,
+                'body'=>$content
+            ),
+            'collapse_key'=> 'unique_tag',
+            'android'=>array(
+                'ttl'=> $pushConsts[$type]['ttl'],
+                'priority'=> $pushConsts[$type]['priority'],
+            )
+        );
+
+        $headers = array(
+            'Authorization: key=' . $androidConsts['api_key'],
+            'Content-Type: application/json'
+        );
+
+        // Open connection
+        $ch = curl_init();
+
+        // Set the URL, number of POST vars, POST data
+        curl_setopt( $ch, CURLOPT_URL, $androidConsts['api_url']);
+        curl_setopt( $ch, CURLOPT_POST, true);
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env == 'test'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
+
+        // Execute post
+        $result = curl_exec($ch);
+
+        // Close connection
+        curl_close($ch);
+    }
+
+    public function sendWebNotification(User $user, $title, $content)
     {
         $auth = array(
             'GCM' => 'MY_GCM_API_KEY',
@@ -120,6 +174,7 @@ class MessageNotificator
             } else {
                 if($report->isSubscriptionExpired()){
                     $user->getSmsData()->removeWebPushSubscription($endpoint);
+                    var_dump($user->getSmsData()->getWebPushSubscriptions());
                 }
                 echo "[x] Message failed to sent for subscription {$endpoint}: {$report->getReason()}";
             }

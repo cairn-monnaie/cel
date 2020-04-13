@@ -676,7 +676,7 @@ class SmsController extends Controller
             $this->persistSMS($smsSuccessCreditor);
         }
         if($notifPermission->isWebPushEnabled()){
-            $messageNotificator->sendNotification($creditorUser,'Paiement SMS [e]-Cairn',$messageCreditor);
+            $messageNotificator->sendWebNotification($creditorUser,'Paiement SMS [e]-Cairn',$messageCreditor);
         }
 
         if($notifPermission->isEmailEnabled()){

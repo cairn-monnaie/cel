@@ -132,7 +132,7 @@ class SecurityController extends Controller
 
             $em->flush();
 
-            $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
+            $this->get('cairn_user.message_notificator')->sendWebNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
 
             return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
         }else{

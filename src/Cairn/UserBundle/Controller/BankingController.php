@@ -982,7 +982,7 @@ class BankingController extends Controller
                                         $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
 
                                 }else{//MOBILE APP PAYMENT --> send push to receiver ?
-                                    ;
+                                    $messageNotificator->sendAppNotification($operation->getCreditor(),'payment','Paiement App mobile','OOOOK MA GUEULE!!');
                                 }
                             }
                         }

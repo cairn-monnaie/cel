@@ -41,6 +41,13 @@ class AppData
      */
     private $user;
 
+    /**
+     * @var array
+     *
+     * @ORM\Column(name="mobilePush_subscriptions", type="array")
+     */
+    private $mobilePushSubscriptions;
+
 
     public function __construct()
     {
@@ -129,5 +136,50 @@ class AppData
     {
         return $this->user;
     }
+
+    /**
+     * Add mobilePush subscription
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function addMobilePushSubscription(array $subscription)
+    {
+        $this->mobilePushSubscriptions[] = $subscription;
+
+        return $this;
+    }
+
+    /**
+     * Remove subscription
+     *
+     * @param 
+     *
+     * @return User
+     */
+    public function removeMobilePushSubscription(string $endpoint)
+    {
+        $subscriptions = $this->mobilePushSubscriptions;
+
+        foreach($subscriptions as $key=>$subscription){
+            if($subscription['endpoint'] == $endpoint){
+                array_splice($this->mobilePushSubscriptions,$key,1);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get mobilePushSubscriptions
+     *
+     * @return array
+     */
+    public function getMobilePushSubscriptions()
+    {
+        return $this->mobilePushSubscriptions;
+    }
+
 
 }
