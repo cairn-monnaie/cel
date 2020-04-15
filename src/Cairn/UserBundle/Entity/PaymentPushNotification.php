@@ -6,6 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 use Cairn\UserBundle\Entity\PushNotification;
+use Operation;
 
 /**
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\PaymentPushNotificationRepository")
@@ -27,6 +28,7 @@ class PaymentPushNotification extends PushNotification
      */
     private $minAmount;
 
+    const TITLE_KEY = 'push_received_paiement';
 
     public function __construct(string $deviceToken = '', array $types = [],$minAmount = 0)
     {
@@ -35,6 +37,15 @@ class PaymentPushNotification extends PushNotification
         $this->setMinAmount($minAmount);
     }
 
+    public static function getPushData(Operation $operation)
+    {
+        return [
+            'type'=>$operation->getType(),
+            'amount'=>$operation->getAmount(),
+            'debitor'=>$operation->getDebitorName(),
+            'done_at'=>$operation->getExecutionDate()->format('H:i')
+        ];
+    }
     
     /**
      * Set types.

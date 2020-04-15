@@ -15,6 +15,7 @@ use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\AccountScore;
 use Cairn\UserBundle\Entity\PushNotification;
+use Cairn\UserBundle\Entity\PaymentPushNotification;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -989,7 +990,9 @@ class BankingController extends Controller
                                             array($creditorAppData->getId()), array($operation->getType()),$operation->getAmount()
                                         );
 
-                                        $messageNotificator->sendAppPushNotification($tokens,$notifKeyword,PushNotification::TTL_PAYMENT,PushNotification::PRIORITY_HIGH,'Paiement App mobile','OOOOK MA GUEULE!!');
+                                        $data = PaymentPushNotification::getPushData($operation);
+                                        $title = PaymentPushNotification::TITLE_KEY;
+                                        $messageNotificator->sendAppPushNotification($tokens,$notifKeyword,PushNotification::TTL_PAYMENT,PushNotification::PRIORITY_HIGH,$title,$data);
 
                                     }
                                 }

@@ -6,6 +6,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 use Cairn\UserBundle\Entity\PushNotification;
+use Cairn\UserBundle\Entity\User;
+
 
 /**
  * RegistrationPushNotification
@@ -21,6 +23,15 @@ class RegistrationPushNotification extends PushNotification
      * @ORM\Column(name="radius", type="integer", nullable=true)
      */
     private $radius;
+
+    const TITLE_KEY = 'pro_registration';
+
+    public static function getPushData(User $user)
+    {
+        return [
+            'id'=>$user->getId()
+        ];
+    }
 
     public function __construct(string $deviceToken = '', $radius = 1000000)
     {

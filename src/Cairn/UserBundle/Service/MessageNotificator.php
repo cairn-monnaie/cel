@@ -69,7 +69,7 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendAppPushNotification(array $tokens = [], $keyword, $ttl, $priority, $title, $content)
+    public function sendAppPushNotification(array $tokens = [], $keyword, $ttl, $priority, $title, $data)
     {
         if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
@@ -79,9 +79,9 @@ class MessageNotificator
         $push = array(
             'registration_ids'=>$tokens,
             'notification'=>array(
-                'title'=>$title,
-                'body'=>$content
+                'title'=>$title
             ),
+            'data'=> $data,
             'collapse_key'=> $keyword,
             'android'=>array(
                 'ttl'=> $ttl,
