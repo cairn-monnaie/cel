@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\AccountScore;
+use Cairn\UserBundle\Entity\PushNotification;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -982,7 +983,15 @@ class BankingController extends Controller
                                         $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
 
                                 }else{//MOBILE APP PAYMENT --> send push to receiver ?
-                                    $messageNotificator->sendAppNotification($operation->getCreditor(),'payment','Paiement App mobile','OOOOK MA GUEULE!!');
+                                    if($creditorAppData = $operation->getCreditor()->getAppData()){
+                                        $notifKeyword = PushNotification::KEYWORD_PAYMENT;
+                                        $tokens = $em->getRepository('CairnUserBundle:PaymentPushNotification')->getPaymentTokensAsArray(
+                                            array($creditorAppData->getId()), array($operation->getType()),$operation->getAmount()
+                                        );
+
+                                        $messageNotificator->sendAppPushNotification($tokens,$notifKeyword,PushNotification::TTL_PAYMENT,PushNotification::PRIORITY_HIGH,'Paiement App mobile','OOOOK MA GUEULE!!');
+
+                                    }
                                 }
                             }
                         }

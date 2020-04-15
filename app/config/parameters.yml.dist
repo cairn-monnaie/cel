@@ -89,13 +89,9 @@ parameters:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
         mobilepush:
-            payment:
-                ttl: 86400
-                priority: high
-                collapsible: false
             android:
                 api_key: 'FuckYouGoddamnCoronavirus'
-                api_url: 'https://android.googleapis.com/gcm/send'
+                api_url: 'https://fcm.googleapis.com/fcm/send'
             ios:
                 api_url: 'gateway.push.apple.com'
     online_payment_hosts: 'localhost$|domain.com$'

@@ -14,6 +14,7 @@ use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
 use Cairn\UserBundle\Entity\AppData;
 use Cairn\UserBundle\Entity\Phone;
+use Cairn\UserBundle\Entity\PushNotification;
 use Cairn\UserBundle\Entity\File as CairnFile;
 
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -100,6 +101,14 @@ class Api
             (in_array($request->get('_route'),array('cairn_zipcities_mobile','cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
     }
 
+    public function is_assoc($array) {
+        foreach (array_keys($array) as $k => $v) {
+            if ($k !== $v)
+                return true;
+        }
+        return false;
+    }
+
      public function fromArrayToStringDeterministicOrder($arr)
      {
          if( is_scalar($arr)){
@@ -108,13 +117,19 @@ class Api
 
          $res = '';
          if( is_array($arr) ){
-             $toSort = [];
-             foreach($arr as $key=>$item){
-                 $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
-     
+             if(! $this->is_assoc($arr)){
+                sort($arr);
+                $res = implode($arr);
+             }else{
+                 $toSort = [];
+                 foreach($arr as $key=>$item){
+                     $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
+
+                 }
+                 sort($toSort);
+                 $res .= implode($toSort);
+
              }
-             sort($toSort);
-             $res .= implode($toSort);
          }
 
          return $res;
@@ -196,6 +211,14 @@ class Api
                          'id'=>$child->getID()
                      );
         }
+
+        if($child instanceOf PushNotification){
+            return array('device_token'=>$child->getDeviceToken(),
+                         'keyword'=>$child->getKeyword(),
+                         'id'=>$child->getID()
+                     );
+        }
+
         if($child instanceOf Phone){
             $phoneInfos = array('id'=>$child->getID(),'identifier'=>$child->getIdentifier());
 
@@ -204,8 +227,7 @@ class Api
             }
             return $phoneInfos;
         }
-
-
+        
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
@@ -247,7 +269,19 @@ class Api
         }
         if($object instanceOf AppData){
             $normalizer->setCallbacks(array(
+                        'pushNotifications'=> function ($child) {
+                            $notifs = [];
+                            foreach($child as $item){
+                                $notifs[] = $this->objectCallback($item);
+                            }
+                            return $notifs;
+                        },
                         'user'=> function ($child) {return $this->objectCallback($child);},
+           ));
+        }
+        if($object instanceOf PushNotification){
+            $normalizer->setCallbacks(array(
+                        'appData'=> function ($child) {return $this->objectCallback($child);},
            ));
         }
 

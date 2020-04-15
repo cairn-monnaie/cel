@@ -41,12 +41,12 @@ class AppData
      */
     private $user;
 
-    /**
-     * @var array
-     *
-     * @ORM\Column(name="mobilePush_subscriptions", type="array")
-     */
-    private $mobilePushSubscriptions;
+    ///**
+    // * @var ArrayCollection
+    // *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\PushNotification", mappedBy="appData" , cascade={"persist","remove"},orphanRemoval=true)
+    // *@ORM\JoinColumn(nullable=false)
+    // */
+    //private $pushNotifications;
 
 
     public function __construct()
@@ -136,50 +136,46 @@ class AppData
     {
         return $this->user;
     }
-
-    /**
-     * Add mobilePush subscription
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function addMobilePushSubscription(array $subscription)
-    {
-        $this->mobilePushSubscriptions[] = $subscription;
-
-        return $this;
-    }
-
-    /**
-     * Remove subscription
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function removeMobilePushSubscription(string $endpoint)
-    {
-        $subscriptions = $this->mobilePushSubscriptions;
-
-        foreach($subscriptions as $key=>$subscription){
-            if($subscription['endpoint'] == $endpoint){
-                array_splice($this->mobilePushSubscriptions,$key,1);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get mobilePushSubscriptions
-     *
-     * @return array
-     */
-    public function getMobilePushSubscriptions()
-    {
-        return $this->mobilePushSubscriptions;
-    }
-
+    
+//    /**
+//     * Add pushNotification
+//     *
+//     * @param \Cairn\UserBundle\Entity\PushNotification $pushNotification
+//     *
+//     * @return AppData
+//     */
+//    public function addPushNotification(\Cairn\UserBundle\Entity\PushNotification $pushNotification)
+//    {
+//        $this->pushNotifications[] = $pushNotification;
+//
+//        $pushNotification->setAppData($this);
+//
+//        return $this;
+//    }
+//
+//    /**
+//     * Remove pushNotification
+//     *
+//     * @param \Cairn\UserBundle\Entity\PushNotification $pushNotification
+//     *
+//     * @return AppData
+//     */
+//    public function removePushNotification(\Cairn\UserBundle\Entity\PushNotification $pushNotification)
+//    {
+//        $this->pushNotifications->removeElement($pushNotification);
+//
+//        return $this;
+//    }
+//
+//    
+//    /**
+//     * Get pushNotifications.
+//     *
+//     * @return ArrayCollection
+//     */
+//    public function getPushNotifications()
+//    {
+//        return $this->pushNotifications;
+//    }
 
 }

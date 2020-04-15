@@ -8,6 +8,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Repository\SmsRepository;
 use Cairn\UserBundle\Entity\Sms;
+use Cairn\UserBundle\Entity\PushNotification;
 
 use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Cairn\UserBundle\Entity\User;
@@ -68,33 +69,23 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendAppNotification(User $user,$type,$title, $content)
+    public function sendAppPushNotification(array $tokens = [], $keyword, $ttl, $priority, $title, $content)
     {
-        if(! $user->getAppData()){
-            return;
-        }
-
-        //From User, get registration ids
-        //$registrationIDs = $user->getAppData()->getActiveRegistrationIds(); 
-
+        if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
         $androidConsts = $pushConsts['android'];
 
-        if(! in_array($type, array_values($pushConsts) )){
-            throw new InvalidArgumentException('Unexpected notification type');
-        }
-
         // Message to be sent
         $push = array(
-            'to'=>'token',
+            'to'=>$tokens,
             'notification'=>array(
                 'title'=>$title,
                 'body'=>$content
             ),
-            'collapse_key'=> 'unique_tag',
+            'collapse_key'=> $keyword,
             'android'=>array(
-                'ttl'=> $pushConsts[$type]['ttl'],
-                'priority'=> $pushConsts[$type]['priority'],
+                'ttl'=> $ttl,
+                'priority'=> $priority,
             )
         );
 
@@ -111,7 +102,7 @@ class MessageNotificator
         curl_setopt( $ch, CURLOPT_POST, true);
         curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env == 'test'));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
 
         // Execute post
