@@ -77,7 +77,7 @@ class MessageNotificator
 
         // Message to be sent
         $push = array(
-            'to'=>$tokens,
+            'registration_ids'=>$tokens,
             'notification'=>array(
                 'title'=>$title,
                 'body'=>$content
