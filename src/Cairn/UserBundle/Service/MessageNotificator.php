@@ -5,10 +5,11 @@ namespace Cairn\UserBundle\Service;
 
 use Symfony\Bundle\TwigBundle\TwigEngine;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Cairn\UserBundle\Repository\UserRepository;
-use Cairn\UserBundle\Repository\SmsRepository;
 use Cairn\UserBundle\Entity\Sms;
-use Cairn\UserBundle\Entity\PushNotification;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
+                         
+use Doctrine\ORM\EntityManager;
 
 use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Cairn\UserBundle\Entity\User;
@@ -23,14 +24,9 @@ use Minishlink\WebPush\Subscription;
 class MessageNotificator
 {
     /**
-     *@var UserRepository $userRepo
+     *@var EntityManager $em
      */
-    protected $userRepo;
-
-    /**
-     *@var SmsRepository $smsRepo
-     */
-    protected $smsRepo;
+    protected $em;
 
      /**
      * Service dealing with emails
@@ -56,10 +52,9 @@ class MessageNotificator
 
     protected $consts;
 
-    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
+    public function __construct(EntityManager $em,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
     {
-        $this->userRepo = $userRepo;
-        $this->smsRepo = $smsRepo;
+        $this->em = $em;
 
         $this->mailer = $mailer;
         $this->templating = $templating;
@@ -69,7 +64,49 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendAppPushNotification(array $tokens = [], $keyword, $ttl, $priority, $title, $data)
+    public function sendPaymentNotifications($operation, $phoneNumber = NULL)
+    {
+        $nfKeyword = BaseNotification::KEYWORD_PAYMENT;
+        $nfData = $operation->getCreditor()->getNotificationData();
+
+        
+        $paymentNotification = $this->em->getRepository('CairnUserBundle:PaymentNotification')->findPaymentNotification($nfData,[$operation->getType()],$operation->getAmount());
+        if( $paymentNotification){
+            $targets = $paymentNotification->getTargetData($operation->getType(),$phoneNumber);
+            $payload = PaymentNotification::getPushData($operation);
+
+            $data = array(
+                'title'=> 'Vous avez reçu un paiement !',
+                'body' => $operation->getCreditorContent(),
+                'payload'=>$payload
+            );
+
+            if($targets['email']){
+                $body = $this->templating->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                    array('operation'=>$operation));
+
+                $this->notifyByEmail('Vous avez reçu un virement',
+                    $this->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
+            }
+
+            if($targets['phone']){
+                $this->sendSMS($targets['phone'],$operation->getCreditorContent());
+            }
+
+            $this->sendPushNotifications(
+                $targets['deviceTokens'],$targets['webSubscriptions'],
+                $nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH,$data
+            );
+        }
+    }
+
+    public function sendPushNotifications(array $deviceTokens=[], $webSubscriptions=[], $keyword, $ttl, $priority, $data)
+    {
+        $this->sendAppPushNotifications($deviceTokens, $keyword, $ttl, $priority, $data);
+        $this->sendWebPushNotifications($webSubscriptions, $data);
+    }
+
+    public function sendAppPushNotifications(array $tokens = [], $keyword, $ttl, $priority, $data)
     {
         if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
@@ -78,10 +115,7 @@ class MessageNotificator
         // Message to be sent
         $push = array(
             'registration_ids'=>$tokens,
-            'notification'=>array(
-                'title'=>$title
-            ),
-            'data'=> $data,
+            'data'=> $data['payload'],
             'collapse_key'=> $keyword,
             'android'=>array(
                 'ttl'=> $ttl,
@@ -107,12 +141,23 @@ class MessageNotificator
 
         // Execute post
         $result = curl_exec($ch);
+        file_put_contents('test1.txt',$result);
+
+        //get DEPRECATED RESULTS HERE
+        //$failedTokens = [];
+        //$nfDataList = $this->em->getRepository('CairnUserBundle:NotificationData')->findByDeviceTokens($failedTokens);
+
+        //foreach($nfDataList as $nfData)
+        //{
+        //    $nfData->removeDeviceToken($endpoint);
+        //}
+
 
         // Close connection
         curl_close($ch);
     }
 
-    public function sendWebNotification(User $user, $title, $content)
+    public function sendWebPushNotifications($subscriptions, $data)
     {
         $auth = array(
             'GCM' => 'MY_GCM_API_KEY',
@@ -134,42 +179,41 @@ class MessageNotificator
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        if($user->getWebPushSubscriptions() && count($user->getWebPushSubscriptions()) > 0){
-            foreach($user->getWebPushSubscriptions() as $subscription){
-                $notification = array(
-                    'subscription'=> Subscription::create(
-                        array(
-                            'endpoint' => $subscription['endpoint'],
-                            'keys'=>array(
-                                'p256dh' => $subscription['keys']['p256dh'],
-                                'auth' => $subscription['keys']['auth']
-                            )
-                        )
-                    ),
-                    'payload'=>json_encode( array(
-                        'title' => $title,
-                        'body'=> $content,
-                    ))
-                );
-                
-                $webPush->sendNotification($notification['subscription'],$notification['payload']);
-            }
+        foreach($subscriptions as $subscription){
+            $notification = array(
+                'subscription'=> Subscription::create(
+                    array(
+                        'endpoint' => $subscription->getEndpoint(),
+                        'keys'=>$subscription->getEncryptionKeys()
+                    )
+                ),
+                'payload'=>json_encode( array(
+                    'title' => $data['title'],
+                    'body'=> $data['body'],
+                ))
+            );
+
+            $webPush->sendNotification($notification['subscription'],$notification['payload']);
         }
 
+        $failedEndpoints = [];
         ////check sent results
         foreach ($webPush->flush() as $report) {
             $endpoint = $report->getEndPoint();
 
-            if ($report->isSuccess()) {
-                echo "[v] Message sent successfully for subscription {$endpoint}.";
-            } else {
-                if($report->isSubscriptionExpired()){
-                    $user->getSmsData()->removeWebPushSubscription($endpoint);
-                    var_dump($user->getSmsData()->getWebPushSubscriptions());
-                }
-                echo "[x] Message failed to sent for subscription {$endpoint}: {$report->getReason()}";
+            if($report->isSubscriptionExpired()){ //TODO : FIND CASES WHERE SUBSCRIPTION SHOULD BE REMOVED
+                $failedEndpoints[] = $endpoint;
             }
         }
+
+        //$webPushSubsList = $this->em->getRepository('CairnUserBundle:NotificationData')->findSubsByWebEndpoints($failedEndpoints,false);
+
+        //foreach($webPushSubsList as $sub)
+        //{
+        //    $this->em->remove($sub);
+        //}
+
+
     }
 
     protected function listOfIds($minID,$maxID)
@@ -408,7 +452,7 @@ class MessageNotificator
      */
     public function notifyRolesByEmail($roles, $subject,$from,$body)
     {
-        $users = $this->userRepo->myFindByRole($roles);
+        $users = $this->em->getRepository('CairnUserBundle:User')->myFindByRole($roles);
         foreach($users as $user){
             $to = $user->getEmail();
             $this->notifyByEmail($subject,$from,$to,$body);
@@ -447,13 +491,14 @@ class MessageNotificator
      */
     protected function getNumberOfTodaySms($phoneNumber,$state,$content = NULL)
     {
-        $sb = $this->smsRepo->createQueryBuilder('s'); 
-        $this->smsRepo
+        $smsRepo = $this->em->getRepository('CairnUserBundle:Sms');
+        $sb = $smsRepo->createQueryBuilder('s'); 
+        $smsRepo
             ->whereCurrentDay($sb)
             ->wherePhoneNumbers($sb,$phoneNumber)
             ->whereState($sb, $state);
         if($content){
-            $this->smsRepo->whereContentContains($sb,$content);
+            $smsRepo->whereContentContains($sb,$content);
         }
 
         $nbSms = $sb->select('count(s.id)')->getQuery()->getSingleScalarResult();

@@ -7,9 +7,11 @@ namespace Cairn\UserBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 use Cairn\UserBundle\Entity\User;
-use Cairn\UserBundle\Entity\PushNotification;
-use Cairn\UserBundle\Entity\PaymentPushNotification;
-use Cairn\UserBundle\Entity\RegistrationPushNotification;
+use Cairn\UserBundle\Entity\NotificationData;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
+use Cairn\UserBundle\Entity\RegistrationNotification;
+use Cairn\UserBundle\Entity\WebPushSubscription;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -19,8 +21,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 //manage Forms
 use Cairn\UserBundle\Form\ConfirmationType;
-use Cairn\UserBundle\Form\PaymentPushNotificationType;
-use Cairn\UserBundle\Form\RegistrationPushNotificationType;
+use Cairn\UserBundle\Form\NotificationDataType;
 
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -37,73 +38,131 @@ use Symfony\Component\Security\Core\Exception\LogicException;
 class NotificationController extends Controller
 {   
 
-    public function registerTokenAction(Request $request)
+    public function tokenSubscriptionAction(Request $request, $from)
     {
-        if($request->isMethod('POST')){ 
-            $currentUser = $this->getUser();
+        $em = $this->getDoctrine()->getManager();
+        $apiService = $this->get('cairn_user.api');
 
-            $em = $this->getDoctrine()->getManager();
-            $apiService = $this->get('cairn_user.api');
+        $currentUser = $this->getUser();
 
-            $jsonRequest = json_decode($request->getContent(), true);
+        $notificationData = $currentUser->getNotificationData();
 
-            $pRepo = $em->getRepository('CairnUserBundle:PushNotification');
-            $pushNotif = $pRepo->findByTokenAndKeyword($jsonRequest['device_token'],$jsonRequest['keyword'],$currentUser->getAppData());
+        if($notificationData->getBaseNotifications()->count() == 0){
+            $ppNotif = new PaymentNotification();
+            $rpNotif = new RegistrationNotification();
 
-            if($jsonRequest['keyword'] == PushNotification::KEYWORD_PAYMENT){
-                $form = $this->createForm(PaymentPushNotificationType::class,$pushNotif);
-            }elseif($jsonRequest['keyword'] == PushNotification::KEYWORD_REGISTER){
-                $form = $this->createForm(RegistrationPushNotificationType::class,$pushNotif);
+            $ppNotif->setNotificationData($notificationData);
+            $rpNotif->setNotificationData($notificationData);
+
+            $notificationData->addBaseNotification($ppNotif);
+            $notificationData->addBaseNotification($rpNotif);
+
+            $em->persist($ppNotif);
+            $em->persist($rpNotif);
+        }
+
+        
+        $jsonRequest = json_decode($request->getContent(), true);
+
+        if($from == 'mobile'){
+            $deviceToken = $jsonRequest['device_token'];
+
+            if($request->isMethod('POST')){
+                $notificationData->addDeviceToken($deviceToken);
+
+                $em->flush();
+                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
             }else{
-                return $apiService->getErrorResponse(array('invalid_push_keyword'),Response::HTTP_BAD_REQUEST);
+                $notificationData->removeDeviceToken($jsonRequest['device_token']);
+                $em->flush();
+                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
             }
+        }else{
+            $subscription = $jsonRequest['subscription'];
 
-            $form->submit($jsonRequest);
+             //validate endpoint exists
+             if(! array_key_exists('endpoint',$subscription)){
+                 return $apiService->getErrorResponse(array('Subscription must have an endpoint'),Response::HTTP_BAD_REQUEST);
+             }
+
+             //validate keys because we need payload support
+             if(! array_key_exists('keys',$subscription)){
+                 return $apiService->getErrorResponse(array('Subscription must have encryption keys'),Response::HTTP_BAD_REQUEST);
+             }else{
+                 if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
+                     return $apiService->getErrorResponse(array('Subscription must have valid encryption keys'),Response::HTTP_BAD_REQUEST);
+                 }
+             }
+
+             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys']);
+             $pushSubscription->setNotificationData($notificationData);
+             $notificationData->addWebPushSubscription($pushSubscription);
+
+             $data = array(
+                'title'=>'Notifications [e]-Cairn',
+                'body'=>'Ce navigateur est désormais enregistré comme destinataire des notifications',
+                'payload'=>''
+             );
+            $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data);
+
+             $em->flush();
+
+             
+             return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
+
+
+        }
+    }
+
+    public function editNotificationParamsAction(Request $request, User $user)
+    {
+        $currentUser = $this->getUser();
+
+        $em = $this->getDoctrine()->getManager();
+        $apiService = $this->get('cairn_user.api');
+        $isRemoteCall = $apiService->isRemoteCall();
+
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
+
+        $notificationData = $user->getNotificationData();
+
+        if($notificationData->getBaseNotifications()->count() == 0){
+            $ppNotif = new PaymentNotification();
+            $rpNotif = new RegistrationNotification();
+
+            $ppNotif->setNotificationData($notificationData);
+            $rpNotif->setNotificationData($notificationData);
+
+            $notificationData->addBaseNotification($ppNotif);
+            $notificationData->addBaseNotification($rpNotif);
+
+            $em->persist($ppNotif);
+            $em->persist($rpNotif);
+        }
+
+        $form = $this->createForm(NotificationDataType::class,$notificationData);
+
+        if($request->isMethod('POST')){
+            if($isRemoteCall){
+                $jsonRequest = json_decode($request->getContent(), true);
+                $form->submit($jsonRequest);
+            }else{
+                $form->handleRequest($request);
+            }
             if($form->isValid()){
-                $newPushNotif = $form->getData();
-
-                $appData = $currentUser->getAppData();
-                $newPushNotif->setAppData($appData);
-
-                $em->persist($newPushNotif);
                 $em->flush();
 
-                return $apiService->getOkResponse($newPushNotif,Response::HTTP_CREATED);
+                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
             }else{
                 return $apiService->getFormErrorResponse($form);
             }
         }
 
-        throw new NotFoundHttpException('POST Method required !');
-
+        return $this->render('CairnUserBundle:Notification:_form.html.twig',array('form' => $form->createView(),'user'=>$user));
     }
 
-    public function unregisterTokenAction(Request $request)
-    {
-        if($request->isMethod('DELETE')){ 
-            $currentUser = $this->getUser();
-
-            $em = $this->getDoctrine()->getManager();
-            $apiService = $this->get('cairn_user.api');
-
-            $jsonRequest = json_decode($request->getContent(), true);
-
-            $pRepo = $em->getRepository('CairnUserBundle:PushNotification');
-
-            $pushNotif = $pRepo->findByTokenAndKeyword($jsonRequest['device_token'],$jsonRequest['keyword'],$currentUser->getAppData());
-
-            if($pushNotif){
-                $em->remove($pushNotif);
-                $em->flush();
-
-                return $apiService->getOkResponse('OK',Response::HTTP_OK);
-            }
-
-            return $apiService->getErrorResponse(array('push_registration_not_found'),Response::HTTP_BAD_REQUEST);
-        }
-
-        throw new NotFoundHttpException('DELETE Method required !');
-    }
 
     public function configNotificationsAction(Request $request, User $user)
     {

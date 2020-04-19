@@ -5,16 +5,16 @@ namespace Cairn\UserBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use Cairn\UserBundle\Entity\PushNotification;
+use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\User;
 
 
 /**
- * RegistrationPushNotification
+ * RegistrationNotification
  *
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\RegistrationNotificationRepository")
  */
-class RegistrationPushNotification extends PushNotification
+class RegistrationNotification extends BaseNotification
 {
     
     /**
@@ -29,13 +29,14 @@ class RegistrationPushNotification extends PushNotification
     public static function getPushData(User $user)
     {
         return [
+            'key'=> self::TITLE_KEY,
             'id'=>$user->getId()
         ];
     }
 
-    public function __construct(string $deviceToken = '', $radius = 1000000)
+    public function __construct($radius = 5)
     {
-        parent::__construct($deviceToken, self::KEYWORD_REGISTER, self::PRIORITY_NORMAL, self::TTL_REGISTER, true);
+        parent::__construct(self::KEYWORD_REGISTER, self::PRIORITY_NORMAL, self::TTL_REGISTER, true);
         $this->setRadius($radius);
     }
 
@@ -45,7 +46,7 @@ class RegistrationPushNotification extends PushNotification
      *
      * @param int|null $radius
      *
-     * @return RegistrationPushNotification
+     * @return RegistrationNotification
      */
     public function setRadius($radius = null)
     {

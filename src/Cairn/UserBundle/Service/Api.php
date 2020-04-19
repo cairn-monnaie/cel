@@ -12,9 +12,10 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
-use Cairn\UserBundle\Entity\AppData;
+use Cairn\UserBundle\Entity\NotificationData;
 use Cairn\UserBundle\Entity\Phone;
-use Cairn\UserBundle\Entity\PushNotification;
+use Cairn\UserBundle\Entity\BaseNotification;
+
 use Cairn\UserBundle\Entity\File as CairnFile;
 
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -112,24 +113,28 @@ class Api
      public function fromArrayToStringDeterministicOrder($arr)
      {
          if( is_scalar($arr)){
-             return $arr;
+             if (is_bool($arr)) {
+                 return $arr ? 'true' : 'false';
+             }
+             return strval($arr);
          }
 
          $res = '';
          if( is_array($arr) ){
              if(! $this->is_assoc($arr)){
-                sort($arr);
-                $res = implode($arr);
+                 $toSort = [];
+                 foreach($arr as $item){
+                     $toSort[] = $this->fromArrayToStringDeterministicOrder($item);
+                 }
              }else{
                  $toSort = [];
                  foreach($arr as $key=>$item){
                      $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
 
                  }
-                 sort($toSort);
-                 $res .= implode($toSort);
-
              }
+             sort($toSort,SORT_STRING);
+             $res .= implode($toSort);
          }
 
          return $res;
@@ -206,17 +211,14 @@ class Api
                      );
         }
 
-        if($child instanceOf AppData){
+        if($child instanceOf NotificationData){
             return array('user'=>$this->objectCallback($child->getUser()),
                          'id'=>$child->getID()
                      );
         }
 
-        if($child instanceOf PushNotification){
-            return array('device_token'=>$child->getDeviceToken(),
-                         'keyword'=>$child->getKeyword(),
-                         'id'=>$child->getID()
-                     );
+        if($child instanceOf BaseNotification){
+            return json_decode($this->serialize($child),true);
         }
 
         if($child instanceOf Phone){
@@ -236,7 +238,7 @@ class Api
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                         'image'=> function ($child) {return $this->objectCallback($child);},
                         'phones'=> function ($child) {
@@ -254,7 +256,7 @@ class Api
             ));
         }
         if($object instanceOf Operation){
-            $defaultIgnoredAttributes = array('fromAccount','toAccount','mandate');
+            $defaultIgnoredAttributes = array('creditorContent','fromAccount','toAccount','mandate');
             $normalizer->setCallbacks(array(
                         'creditor'=> function ($child) {return $this->objectCallback($child);},
                         'debitor'=>  function ($child) {return $this->objectCallback($child);}
@@ -267,9 +269,10 @@ class Api
                         'user'=> function ($child) {return $this->objectCallback($child);},
            ));
         }
-        if($object instanceOf AppData){
+        if($object instanceOf NotificationData){
+            $defaultIgnoredAttributes = array('deviceTokens','webPushSubscriptions','pinCode');
             $normalizer->setCallbacks(array(
-                        'pushNotifications'=> function ($child) {
+                        'baseNotifications'=> function ($child) {
                             $notifs = [];
                             foreach($child as $item){
                                 $notifs[] = $this->objectCallback($item);
@@ -279,10 +282,8 @@ class Api
                         'user'=> function ($child) {return $this->objectCallback($child);},
            ));
         }
-        if($object instanceOf PushNotification){
-            $normalizer->setCallbacks(array(
-                        'appData'=> function ($child) {return $this->objectCallback($child);},
-           ));
+        if($object instanceOf BaseNotification){
+            $defaultIgnoredAttributes = array('targetData','timeToLive','priority','collapsible','notificationData');
         }
 
         if($object instanceOf Phone){

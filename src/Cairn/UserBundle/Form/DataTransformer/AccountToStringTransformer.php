@@ -59,7 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new BadRequestHttpException('No creditor account provided');
+            throw new TransformationFailedException('No user input');
         }
 
         $userRepo = $this->entityManager
@@ -84,7 +84,10 @@ class AccountToStringTransformer implements DataTransformerInterface
         }
 
         if (null === $toUserVO) {
-            throw new BadRequestHttpException('No creditor account found for '.$autocomplete);
+            throw new TransformationFailedException(sprintf(
+                'No account found for "%s"',
+                $autocomplete
+            ));
         }
 
 //        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));

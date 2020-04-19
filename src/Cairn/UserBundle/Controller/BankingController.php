@@ -14,8 +14,8 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\AccountScore;
-use Cairn\UserBundle\Entity\PushNotification;
-use Cairn\UserBundle\Entity\PaymentPushNotification;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -974,33 +974,17 @@ class BankingController extends Controller
                             }else{
                                 $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                                 $operation->setPaymentID($paymentVO->transferId);
-
-                                if($operation->getType() == Operation::TYPE_TRANSACTION_EXECUTED){
-                                    //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                                    $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                                        array('operation'=>$operation,'type'=>'transaction'));
-
-                                    $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                                        $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
-
-                                }else{//MOBILE APP PAYMENT --> send push to receiver ?
-                                    if($creditorAppData = $operation->getCreditor()->getAppData()){
-                                        $notifKeyword = PushNotification::KEYWORD_PAYMENT;
-                                        $tokens = $em->getRepository('CairnUserBundle:PaymentPushNotification')->getPaymentTokensAsArray(
-                                            array($creditorAppData->getId()), array($operation->getType()),$operation->getAmount()
-                                        );
-
-                                        $data = PaymentPushNotification::getPushData($operation);
-                                        $title = PaymentPushNotification::TITLE_KEY;
-                                        $messageNotificator->sendAppPushNotification($tokens,$notifKeyword,PushNotification::TTL_PAYMENT,PushNotification::PRIORITY_HIGH,$title,$data);
-
-                                    }
-                                }
                             }
                         }
 
                         $operation->setExecutionDate( new \Datetime() );
+
+                        //send notifications
+                        $messageNotificator->sendPaymentNotifications($operation);
+
                         $em->flush();
+
+                        
                         $session->remove($confirmationCodeAttr);
                         $session->remove('confirmationTries');
 

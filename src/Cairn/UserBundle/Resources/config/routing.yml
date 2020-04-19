@@ -12,14 +12,21 @@ cairn_user_api_notifications_subscription:
     defaults: { _controller: CairnUserBundle:Security:webPushSubscription, _format: json }
 
 cairn_user_api_mobilepush_subscription:
-    path: mobile/push-subscription
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Notification:registerToken, _format: json }
+    path: /{from}/token-subscription
+    methods: POST|DELETE
+    defaults: { _controller: CairnUserBundle:Notification:tokenSubscription, _format: json }
+    requirements:
+        from: web|mobile
+        _format: html|json
 
-cairn_user_api_mobilepush_unsubscription:
-    path: mobile/push-unregister
-    methods: DELETE
-    defaults: { _controller: CairnUserBundle:Notification:unregisterToken, _format: json }
+cairn_user_api_notification_data_edit:
+    path: mobile/notifications/{id}
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Notification:editNotificationParams, _format: json }
+
+cairn_user_notification_data_edit:
+    path: /notifications/{id}
+    defaults: { _controller: CairnUserBundle:Notification:editNotificationParams, _format: html }
 
 cairn_user_online_payment_execute:
     path: online-payment/confirm/{suffix}

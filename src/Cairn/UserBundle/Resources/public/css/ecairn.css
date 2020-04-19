@@ -235,4 +235,10 @@ img.member_card{
   max-width: 30% !important;
 }
 
+p#notif_icons > th {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
 /*# sourceMappingURL=ecairn.css.map */

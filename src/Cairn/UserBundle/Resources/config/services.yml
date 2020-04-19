@@ -15,6 +15,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\User]
 
+    cairn_user.repository_payment_notification: 
+        class: UserRepository
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\PaymentNotification]
+
     cairn_user.repository_operation: 
         class: OperationRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
@@ -94,8 +99,7 @@ services:
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:
-            - "@cairn_user.repository_user"
-            - "@cairn_user.repository_sms"
+            - "@doctrine.orm.entity_manager"
             - "@mailer" 
             - "@templating"
             - "%cairn_email_technical_services%"
@@ -176,7 +180,7 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
 
-              
+
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener
         arguments:

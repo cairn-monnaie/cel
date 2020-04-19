@@ -27,7 +27,6 @@ class SmsDataType extends AbstractType
                 ],
                 'disabled'=>true,
             ))
-            ->add('notificationPermission', NotificationPermissionType::class)
             ->add('save', SubmitType::class, array('label' => 'Suivant'));
     }
 

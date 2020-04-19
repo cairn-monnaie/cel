@@ -38,18 +38,6 @@ class SmsData
      */
     private $phones;
 
-    /**
-     * @var array
-     *
-     * @ORM\Column(name="webPush_subscriptions", type="array")
-     */
-    private $webPushSubscriptions;
-
-    /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationPermission", cascade={"persist","remove"})
-     *@Assert\Valid()
-     */ 
-    private $notificationPermission;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\User", inversedBy="smsData", cascade={"persist"})
@@ -62,7 +50,6 @@ class SmsData
     {
         $this->setUser($user);
         $this->phones = new ArrayCollection();
-        $this->notificationPermission = new NotificationPermission();
     }
 
 
@@ -125,75 +112,7 @@ class SmsData
         return $this->user;
     }
 
-    /**
-     * Set notificationPermission
-     *
-     * @param string $notificationPermission
-     *
-     * @return User
-     */
-    public function setNotificationPermission($notificationPermission)
-    {
-        $this->notificationPermission = $notificationPermission;
-
-        return $this;
-    }
-
-    /**
-     * Get notificationPermission
-     *
-     * @return string
-     */
-    public function getNotificationPermission()
-    {
-        return $this->notificationPermission;
-    }
-
-    /**
-     * Add webPush subscription
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function addWebPushSubscription(array $subscription)
-    {
-        $this->webPushSubscriptions[] = $subscription;
-
-        return $this;
-    }
-
-    /**
-     * Remove subscription
-     *
-     * @param 
-     *
-     * @return User
-     */
-    public function removeWebPushSubscription(string $endpoint)
-    {
-        $subscriptions = $this->webPushSubscriptions;
-
-        foreach($subscriptions as $key=>$subscription){
-            if($subscription['endpoint'] == $endpoint){
-                array_splice($this->webPushSubscriptions,$key,1);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get webPushSubscriptions
-     *
-     * @return array
-     */
-    public function getWebPushSubscriptions()
-    {
-        return $this->webPushSubscriptions;
-    }
-
-    /**
+       /**
      * Add phone
      *
      * @param \Cairn\UserBundle\Entity\Phone $phone

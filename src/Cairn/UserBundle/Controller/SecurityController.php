@@ -14,7 +14,10 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Deposit;
 use Cairn\UserBundle\Entity\HelloassoConversion;
-use Cairn\UserBundle\Entity\AppData;
+use Cairn\UserBundle\Entity\NotificationData;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
+use Cairn\UserBundle\Entity\RegistrationNotification;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
@@ -66,80 +69,13 @@ class SecurityController extends Controller
 
             $array_oauth['user_id'] =  $currentUser->getID();
 
-            if(! $currentUser->getAppData()){
-                $appData = new AppData();
-                $currentUser->setAppData($appData);
-                $appData->setUser($currentUser);
-            }
-
-            $array_oauth['first_login'] =  $currentUser->isFirstLogin();
-
-            if($currentUser->getAppData()->isFirstLogin()){
-                $currentUser->getAppData()->setFirstLogin(false);
-                $em->flush();
-            }
-
             return $apiService->getOkResponse($array_oauth,Response::HTTP_OK);
         }else{
             throw new NotFoundHttpException('POST Method required !');
         }
     }
 
-
-    public function webPushSubscriptionAction(Request $request)
-    {
-        $apiService = $this->get('cairn_user.api');
-
-        if($request->isMethod('POST')){
-
-            $em = $this->getDoctrine()->getManager();
-            $userRepo = $em->getRepository('CairnUserBundle:User');
-
-            $params = json_decode($request->getContent(),true);
-
-            try{
-                $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
-            }catch(\Exception $e){
-                return $apiService->getErrorResponse(array('Invalid authentication'),Response::HTTP_UNAUTHORIZED);
-            }
-
-            //validate access token
-            if($userVO->shortDisplay != $params['username']){
-                return $apiService->getErrorResponse(array('Access denied'),Response::HTTP_FORBIDDEN);
-            }
-
-
-            //validate endpoint exists
-            if(! array_key_exists('endpoint',$params['subscription'])){
-                return $apiService->getErrorResponse(array('Subscription must have an endpoint'),Response::HTTP_BAD_REQUEST);
-            }
-
-            $subscription = $params['subscription'];
-
-            //validate keys because we need payload support
-            if(! array_key_exists('keys',$params['subscription'])){
-                return $apiService->getErrorResponse(array('Subscription must have encryption keys'),Response::HTTP_BAD_REQUEST);
-            }else{
-                if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                    return $apiService->getErrorResponse(array('Subscription must have valid encryption keys'),Response::HTTP_BAD_REQUEST);
-                }
-            }
-
-
-            $user = $userRepo->findOneByUsername($params['username']);
-
-            $user->getSmsData()->addWebPushSubscription($params['subscription']);
-
-            $em->flush();
-
-            $this->get('cairn_user.message_notificator')->sendWebNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
-
-            return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
-        }else{
-            return $apiService->getErrorResponse(array('POST method required'),Response::HTTP_METHOD_NOT_ALLOWED);
-        }
-    }
-
+    
     /**
      * Creates symfony equivalent for changes, deposits and withdrawals made in BDC app
      *
@@ -183,7 +119,6 @@ class SecurityController extends Controller
                     $operation->setAmount($data['amount']);
                     $operation->setPaymentID($data['paymentID']);
 
-
                     switch ($type){
                     case "conversion":
                         $operation->setCreditor($em->getRepository('CairnUserBundle:User')->findOneByMainICC($data['toAccountNumber']));
@@ -210,13 +145,6 @@ class SecurityController extends Controller
                         $operation->setRecurringID($data['transactionID']);
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
 
-                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                            array('operation'=>$operation,'type'=>'transaction'));
-
-                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
-
                         break;
                     case "scheduled":
                         $existingOperation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID'],'type'=>Operation::TYPE_TRANSACTION_SCHEDULED));
@@ -227,13 +155,6 @@ class SecurityController extends Controller
 
                         $operation->setExecutionDate(new \Datetime($cyclosTransfer->date));
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
-
-                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                            array('operation'=>$operation,'type'=>'transaction'));
-
-                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
 
                         break;
 
@@ -250,8 +171,13 @@ class SecurityController extends Controller
 
 
                     $em->persist($operation);
+
+                    //send notifications
+                    $messageNotificator->sendPaymentNotifications($operation);
+
                     $em->flush();
 
+                    
                     return $apiService->getOkResponse(array('Operation synchronized !'),Response::HTTP_CREATED);
                 }
             }else{ //there is a failed payment to notify

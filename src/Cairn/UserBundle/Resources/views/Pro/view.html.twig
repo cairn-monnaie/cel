@@ -79,33 +79,6 @@
 
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
-                        
-
-                        {% if (user.hasRole('ROLE_PRO')) and (user.smsData) %}
-                        <div class="container">
-
-                            <div class="smsdata_notification">
-                            <table class="striped smsdata_notification hoverable">
-                                <caption>Recevoir une notification de paiement SMS</caption>
-                                <tbody>
-                                  <tr>
-                                    <td>Notification sur ce navigateur </td>
-                                    <td><i class="material-icons tiny permission"></i></td>
-                                  </tr>
-                                  <tr>
-                                    <td>Email à {{user.email}}</td>
-                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.emailEnabled ? 'check' : 'cancel'}}</i></td>
-                                  </tr>
-                                  <tr>
-                                    <td>SMS</td>
-                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.smsEnabled ? 'check' : 'cancel'}}</i></td>
-                                  </tr>
-                                </tbody>
-                            </table>
-                            </div>
-                        </div>
-                        {% endif %}
-
                         {% if user.smsData %}
                             {% for phone in user.smsData.phones %}
                             <div class="smsdata">
@@ -170,6 +143,10 @@
                     </div>
                 </div>
             </li>
+            <li>
+                <div class="collapsible-header"><i class="material-icons">notifications</i><a href="{{path('cairn_user_notification_data_edit',{'id': user.id})}}">Paramètres de notifications</a></div>
+            </li>
+
             {% endif %}
             <li>
                 <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
@@ -256,51 +233,10 @@
     </div>
 
 
-        {% if (app.user == user) and user.hasRole('ROLE_PRO') and user.smsData %}
-            <div class="js-smsdata-id" data-get-smsdataid="{{user.smsData.id}}">
-
-            {% set nP = user.smsData.notificationPermission %}            
-            <div class="js-user-webpush" data-get-wp="{{nP.webPushEnabled}}">
-        {% endif %}
-
 {% endblock %}              
 
 
 {% block javascripts %}
     {{parent()}}
-
-<script type="text/javascript">
-    $(function (){
-
-        var containerNotifTable = $('table.smsdata_notification');
-
-        if (containerNotifTable){
-            var containerID = $('.js-smsdata-id');
-
-            if(containerID){
-                var smsDataID = containerID.data('getSmsdataid');
-
-                containerNotifTable.click(function() {
-                   url = "{{ path('cairn_user_users_smsdata') }}"
-                   window.location.href = url;
-                });
-            }
-
-            var containerWP = $('.js-user-webpush');
-            var webPushEnabled = containerWP.data('getWp');
-
-            var containerNotifCell = $('.permission');
-
-            if( (Notification.permission == 'granted') && webPushEnabled){
-                var isNotifAuthorized = 'check';
-            }else{
-                var isNotifAuthorized = 'cancel';
-            }
-
-            containerNotifCell.html(isNotifAuthorized);
-        }
-    });
-    </script>
-
 {% endblock %}
 

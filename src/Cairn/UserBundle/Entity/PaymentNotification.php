@@ -5,34 +5,34 @@ namespace Cairn\UserBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use Cairn\UserBundle\Entity\PushNotification;
-use Operation;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\Operation;
 
 /**
- * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\PaymentPushNotificationRepository")
+ * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\PaymentNotificationRepository")
  */
-class PaymentPushNotification extends PushNotification
+class PaymentNotification extends BaseNotification
 {
     
     /**
      * @var array|null
      *
-     * @ORM\Column(name="types", type="array")
+     * @ORM\Column(name="types", type="array", nullable=true)
      */
     private $types;
 
     /**
      * @var int
      * @Assert\GreaterThanOrEqual( value = 0)
-     * @ORM\Column(name="min_amount", type="integer")
+     * @ORM\Column(name="min_amount", type="integer", nullable=true)
      */
     private $minAmount;
 
     const TITLE_KEY = 'push_received_paiement';
 
-    public function __construct(string $deviceToken = '', array $types = [],$minAmount = 0)
+    public function __construct(array $types = [],$minAmount = 0)
     {
-        parent::__construct($deviceToken, self::KEYWORD_PAYMENT, self::PRIORITY_HIGH, self::TTL_PAYMENT, false);
+        parent::__construct(self::KEYWORD_PAYMENT, self::PRIORITY_HIGH, self::TTL_PAYMENT, false);
         $this->setTypes($types);
         $this->setMinAmount($minAmount);
     }
@@ -40,19 +40,22 @@ class PaymentPushNotification extends PushNotification
     public static function getPushData(Operation $operation)
     {
         return [
+            'key'=> self::TITLE_KEY,
             'type'=>$operation->getType(),
             'amount'=>$operation->getAmount(),
             'debitor'=>$operation->getDebitorName(),
             'done_at'=>$operation->getExecutionDate()->format('H:i')
         ];
     }
+
+        
     
     /**
      * Set types.
      *
      * @param array|null $types
      *
-     * @return PaymentPushNotification
+     * @return PaymentNotification
      */
     public function setTypes($types = null)
     {
@@ -76,7 +79,7 @@ class PaymentPushNotification extends PushNotification
      *
      * @param int $minAmount
      *
-     * @return PaymentPushNotification
+     * @return PaymentNotification
      */
     public function setMinAmount($minAmount)
     {

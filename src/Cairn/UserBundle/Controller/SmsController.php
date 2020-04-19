@@ -668,26 +668,8 @@ class SmsController extends Controller
         $smsSuccessDebitor = $messageNotificator->sendSMS($debitorPhoneNumber,$messageDebitor);
 
 
-        $messageCreditor = 'Vous avez reçu un paiement de '.$operation->getAmount().' de la part de '.$debitorUser->getName() ;
-
-        $notifPermission = $creditorUser->getSmsData()->getNotificationPermission();
-        if($notifPermission->isSmsEnabled()){
-            $smsSuccessCreditor = $messageNotificator->sendSMS($creditorPhoneNumber,$messageCreditor);
-            $this->persistSMS($smsSuccessCreditor);
-        }
-        if($notifPermission->isWebPushEnabled()){
-            $messageNotificator->sendWebNotification($creditorUser,'Paiement SMS [e]-Cairn',$messageCreditor);
-        }
-
-        if($notifPermission->isEmailEnabled()){
-            $subject = 'Paiement SMS [e]-Cairn';
-            $from = $messageNotificator->getNoReplyEmail();
-            $to = $creditorUser->getEmail();
-            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'phone'=>$creditorPhone,'type'=>'sms'));
+        $messageNotificator->sendPaymentNotifications($operation,$creditorPhoneNumber);
         
-            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-        }
-
         $em->persist($operation);
         $this->persistSMS($smsSuccessDebitor);
 

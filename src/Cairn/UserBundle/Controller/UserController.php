@@ -179,11 +179,6 @@ class UserController extends Controller
 
                 $session->getFlashBag()->add('success','Vos systèmes de notification de paiement ont été mis à jour avec succès');
 
-                $nP = $smsData->getNotificationPermission();
-                if(! ($nP->isEmailEnabled() || $nP->isSmsEnabled() || $nP->isWebPushEnabled()) ){
-                    $session->getFlashBag()->add('error','Attention ! Vous n\'avez séléctionné aucun système de notification. En cas de réception de paiement par SMS, vous ne pourrez pas vérifier l\'exécution du paiement en dehors de votre compte [e]-Cairn');
-                }
-
                 return $this->redirectToRoute('cairn_user_profile_view',array('username' => $currentUser->getUsername()));
             }
 
@@ -449,10 +444,6 @@ class UserController extends Controller
             $phone->setSmsData($smsData);
             $smsData->addPhone($phone);
 
-//            if($currentUser->hasRole('ROLE_PRO') && !$currentUser->getNotificationPermission()){
-//                $notificationPermission = new NotificationPermission();
-//                $em->persist($notificationPermission);
-//            }
             $em->flush();
             $session->getFlashBag()->add('success','Nouvelles données SMS enregistrées ! ');
 

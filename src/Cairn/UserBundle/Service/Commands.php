@@ -14,8 +14,7 @@ use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
-use Cairn\UserBundle\Entity\AppData;
-use Cairn\UserBundle\Entity\NotificationPermission;
+use Cairn\UserBundle\Entity\NotificationData;
 use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
@@ -631,12 +630,12 @@ class Commands
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
 
-                //$appData = new AppData();
-                //$doctrineUser->setAppData($appData);
-                //$appData->setUser($doctrineUser);
+                //$notificationData = new NotificationData();
+                //$doctrineUser->setNotificationData($notificationData);
+                //$notificationData->setUser($doctrineUser);
 
-                //$appData->setPinCode(1111);
-                //$appData->setFirstLogin(false);
+                //$notificationData->setPinCode(1111);
+                //$notificationData->setFirstLogin(false);
 
             }
 
@@ -772,10 +771,6 @@ class Commands
     public function createSmsData(User $user, $phoneNumber, $identifier = NULL)
     {
         $smsData = new SmsData($user);
-        $nP = $smsData->getNotificationPermission();
-        $nP->setEmailEnabled(false);
-        $nP->setWebPushEnabled(true);
-        $nP->setSmsEnabled(true);
 
         $phone1 = new Phone($smsData);
         $phone1->setPhoneNumber($phoneNumber);

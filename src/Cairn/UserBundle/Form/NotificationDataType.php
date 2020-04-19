@@ -2,31 +2,32 @@
 
 namespace Cairn\UserBundle\Form;
 
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
-
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-use NotificationPushType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Cairn\UserBundle\Form\BaseNotificationType;
 
-class RegistrationPushNotificationType extends AbstractType
+class NotificationDataType extends AbstractType
 {
     /**
      * {@inheritdoc}
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder
-            ->add('radius', IntegerType::class);
+        $builder->add('baseNotifications', CollectionType::class,[
+            'entry_type' => BaseNotificationType::class]
+        )
+        ->add('save', SubmitType::class, array('label'=>'Enregistrer'));
     }/**
      * {@inheritdoc}
      */
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults(array(
-            'data_class' => 'Cairn\UserBundle\Entity\RegistrationPushNotification'
+            'data_class' => 'Cairn\UserBundle\Entity\NotificationData'
         ));
     }
 
@@ -35,12 +36,8 @@ class RegistrationPushNotificationType extends AbstractType
      */
     public function getBlockPrefix()
     {
-        return 'cairn_userbundle_registrationpushnotification';
+        return 'cairn_userbundle_notificationdata';
     }
 
-    public function getParent()
-    {
-        return PushNotificationType::class;
-    }
 
 }

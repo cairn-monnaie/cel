@@ -12,6 +12,10 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use FOS\UserBundle\Model\User as BaseUser;
 
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\ApiClient;
+use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\NotificationData;
+
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
@@ -114,9 +118,9 @@ class User extends BaseUser
     private $smsData;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\AppData", mappedBy="user", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationData", mappedBy="user", cascade={"persist","remove"})
      */
-    private $appData;
+    private $notificationData;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist"})
@@ -167,6 +171,8 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
+
+        $this->setNotificationData(new NotificationData($this));
     }
 
     public function __toString()
@@ -697,27 +703,27 @@ class User extends BaseUser
     }
 
     /**
-     * Set appData
+     * Set notificationData
      *
-     * @param \Cairn\UserBundle\Entity\AppData $appData
+     * @param \Cairn\UserBundle\Entity\NotificationData $notificationData
      *
      * @return User
      */
-    public function setAppData(\Cairn\UserBundle\Entity\AppData $appData = null)
+    public function setNotificationData(\Cairn\UserBundle\Entity\NotificationData $notificationData = null)
     {
-        $this->appData = $appData;
+        $this->notificationData = $notificationData;
 
         return $this;
     }
 
     /**
-     * Get appData
+     * Get notificationData
      *
-     * @return \Cairn\UserBundle\Entity\AppData
+     * @return \Cairn\UserBundle\Entity\NotificationData
      */
-    public function getAppData()
+    public function getNotificationData()
     {
-        return $this->appData;
+        return $this->notificationData;
     }
 
     /**
