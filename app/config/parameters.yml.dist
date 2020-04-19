@@ -94,6 +94,7 @@ parameters:
                 api_url: 'https://fcm.googleapis.com/fcm/send'
             ios:
                 api_url: 'gateway.push.apple.com'
+    webpush_public_key: '%notificator_consts.webpush.public_key%'
     online_payment_hosts: 'localhost$|domain.com$'
     api_secret: FuckYouCoronavirus
 

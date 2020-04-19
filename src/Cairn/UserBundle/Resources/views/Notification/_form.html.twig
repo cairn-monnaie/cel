@@ -190,6 +190,7 @@
     
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
         <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
+        <div class="js-notif-key" data-notif-key="{{webpush_public_key}}">
     {% endif %}
   </div>
 </div>
@@ -202,6 +203,7 @@
 
         const checkboxContainers = document.querySelectorAll('tr.checkboxes');
 
+        
         var checkboxes = document.querySelectorAll('input[type=checkbox]');
         for (const checkbox of checkboxes){
             checkbox.addEventListener('change', function() {
@@ -216,11 +218,11 @@
                             noChecked = false;
                         }
                     }
-                    if(noChecked){
-                        instance.close(0);
-                    }else{
-                        instance.open(0);
-                    }
+                    //if(noChecked){
+                    //    instance.close(0);
+                    //}else{
+                    //    instance.open(0);
+                    //}
                 }
                 
             });
@@ -266,6 +268,7 @@
         }
 
         function checkNotification() {
+             
             getNotificationPermissionState().then(function(permission) {
                 if(Notification.permission !== 'granted'){
                     askPermission().then(function(permission) {
@@ -276,10 +279,13 @@
                             .then(function(reg) {
                                 navigator.serviceWorker.ready
                                 .then(function(reg) {
+                                    const containerKey = document.querySelector('.js-notif-key');
+                                    const publicKey = containerKey.dataset.notifKey;
+
                                     var subscribeOptions = {
                                         userVisibleOnly: true,
                                         applicationServerKey: urlBase64ToUint8Array(
-                                                'BO9K_IB1z_5V01itri-Zg9j_K91rqScOuDO8YImfDioxTZSswSAmanSkX25QeU4THYqSA8naQ68EEMJWJS1pg-Y'
+                                            publicKey
                                         )
                                     };
                                     return reg.pushManager.subscribe(subscribeOptions);
