@@ -45,23 +45,8 @@ class NotificationController extends Controller
 
         $currentUser = $this->getUser();
 
-        $notificationData = $currentUser->getNotificationData();
+        $notificationData = $this->initNotificationData($currentUser);
 
-        if($notificationData->getBaseNotifications()->count() == 0){
-            $ppNotif = new PaymentNotification();
-            $rpNotif = new RegistrationNotification();
-
-            $ppNotif->setNotificationData($notificationData);
-            $rpNotif->setNotificationData($notificationData);
-
-            $notificationData->addBaseNotification($ppNotif);
-            $notificationData->addBaseNotification($rpNotif);
-
-            $em->persist($ppNotif);
-            $em->persist($rpNotif);
-        }
-
-        
         $jsonRequest = json_decode($request->getContent(), true);
 
         if($from == 'mobile'){
@@ -114,19 +99,15 @@ class NotificationController extends Controller
         }
     }
 
-    public function editNotificationParamsAction(Request $request, User $user)
+    private function initNotificationData (User $user)
     {
-        $currentUser = $this->getUser();
-
         $em = $this->getDoctrine()->getManager();
-        $apiService = $this->get('cairn_user.api');
-        $isRemoteCall = $apiService->isRemoteCall();
-
-        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
-        }
-
         $notificationData = $user->getNotificationData();
+
+        if(! $notificationData){
+            $notificationData = new NotificationData($user);
+            $em->persist($notificationData);
+        }
 
         if($notificationData->getBaseNotifications()->count() == 0){
             $ppNotif = new PaymentNotification();
@@ -142,6 +123,23 @@ class NotificationController extends Controller
             $em->persist($rpNotif);
         }
 
+        return $notificationData;
+    }
+
+    public function editNotificationParamsAction(Request $request, User $user)
+    {
+        $currentUser = $this->getUser();
+
+        $em = $this->getDoctrine()->getManager();
+        $apiService = $this->get('cairn_user.api');
+        $isRemoteCall = $apiService->isRemoteCall();
+
+        if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
+            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+        }
+
+        $notificationData = $this->initNotificationData($user);
+        
         $form = $this->createForm(NotificationDataType::class,$notificationData);
 
         if($request->isMethod('POST')){
