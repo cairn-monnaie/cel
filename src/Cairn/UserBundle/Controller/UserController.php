@@ -1043,14 +1043,15 @@ class UserController extends Controller
         $form = $this->createForm(ConfirmationType::class);
 
         if ($request->isMethod('POST')){
+            if($apiService->isRemoteCall()){
+                $jsonRequest = json_decode($request->getContent(), true);
+                $form->submit($jsonRequest);
+            }else{
+                $form->handleRequest($request);
+            }
            
             if($form->get('save')->isClicked()){
-                if($apiService->isRemoteCall()){
-                    $jsonRequest = json_decode($request->getContent(), true);
-                    $form->submit($jsonRequest);
-                }else{
-                    $form->handleRequest($request);
-                }
+                
                 $subject = 'Opposition de compte [e]-Cairn';
 
                 $reason = ($user === $currentUser) ? 'self' : 'admin';

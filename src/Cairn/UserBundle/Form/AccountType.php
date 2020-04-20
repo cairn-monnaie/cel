@@ -32,7 +32,7 @@ class AccountType extends AbstractType
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([
-            'invalid_message' => 'The selected data does not match any active user account',
+            'invalid_message' => 'Aucun compte ne correspond à votre saisie',
         ]);
     }
 

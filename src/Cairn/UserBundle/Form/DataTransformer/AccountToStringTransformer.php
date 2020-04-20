@@ -59,7 +59,10 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new TransformationFailedException('No user input');
+            throw new TransformationFailedException(sprintf(
+                'No account found for "%s"',
+                $autocomplete
+            ));
         }
 
         $userRepo = $this->entityManager
