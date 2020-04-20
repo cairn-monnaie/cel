@@ -187,7 +187,7 @@ class Operation
 
     public function getCreditorContent()
     {
-        return 'Vous avez reçu un paiement de '.$this->getAmount().' de la part de '.$this->getDebitorName(). ' à '.$this->getExecutionDate()->format('H:i');
+        return 'Votre compte '.$this->getCreditorName().' a reçu '.$this->getAmount().' cairns de la part de '.$this->getDebitorName(). ' à '.$this->getExecutionDate()->format('H:i');
     }
 
     public static function getTypeIndex($typeName)

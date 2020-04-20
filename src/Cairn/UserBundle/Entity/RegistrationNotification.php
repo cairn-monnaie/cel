@@ -24,6 +24,7 @@ class RegistrationNotification extends BaseNotification
      */
     private $radius;
 
+    //IF YOU CHANGE THIS VALUE, CHANGE web/service-worker.js !!!
     const TITLE_KEY = 'pro_registration';
 
     public static function getPushData(User $user)

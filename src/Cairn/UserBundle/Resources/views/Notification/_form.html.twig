@@ -291,7 +291,6 @@
                                     return reg.pushManager.subscribe(subscribeOptions);
                                 })
                                 .then(function(subscription) {
-                                    console.log(subscription);
                                     sendSubscriptionToBackEnd(subscription);
                                 })
                                 .catch(function(err) {
@@ -377,21 +376,17 @@
         }
 
         function onIncompatibleBrowser(){
-            var containerNotifInput = document.querySelector('input#cairn_userbundle_smsdata_notificationPermission_webPushEnabled');
             const containerWebPushBoxes = getWebPushBoxes();
 
             for(const webPushBox of containerWebPushBoxes){
                 webPushBox.disabled = true;
+
+                webPushBox.addEventListener('click', function() {
+                    M.toast({html: 'Votre navigateur est incompatible avec notre fonctionnalité web Push', displayLength: 5000});
+                });
             }
-            
-
-            var containerNotifRow = document.querySelector('h1#notif_title');
-
-            containerNotifRow.addEventListener('click', function() {
-               M.toast({html: 'Votre navigateur est incompatible avec la fonctionnalité web Push', displayLength: 5000});
-            });
         }
-
+            
     </script>
 
 {% endblock %}

@@ -28,6 +28,7 @@ class PaymentNotification extends BaseNotification
      */
     private $minAmount;
 
+    //IF YOU CHANGE THIS VALUE, CHANGE web/service-worker.js !!!
     const TITLE_KEY = 'push_received_paiement';
 
     public function __construct(array $types = [],$minAmount = 0)
@@ -40,7 +41,7 @@ class PaymentNotification extends BaseNotification
     public static function getPushData(Operation $operation)
     {
         return [
-            'key'=> self::TITLE_KEY,
+            'tag'=> self::TITLE_KEY,
             'type'=>$operation->getType(),
             'amount'=>$operation->getAmount(),
             'debitor'=>$operation->getDebitorName(),

@@ -83,12 +83,42 @@ class NotificationController extends Controller
              $pushSubscription->setNotificationData($notificationData);
              $notificationData->addWebPushSubscription($pushSubscription);
 
+
+             //ADD MOZILLA, CHROME, ... TO THE MESSAGE
+             $endpoint = $subscription['endpoint'];
+             $navigator = '';
+
+             if(strpos($endpoint,'mozilla') !== false){
+                $navigator = 'Mozilla Firefox';
+             }elseif(strpos($endpoint,'googleapis') !== false){
+                $navigator = '(Chrome ou Opera)';
+             }
+             //switch ($status){
+             //case "0":
+             //    return 'revoked';
+             //    break;
+             //case "1":
+             //    return 'up-to-date';
+             //    break;
+             //case "2":
+             //    return 'overdue';
+             //    break;
+             //case "3":
+             //    return 'honoured';
+             //    break;
+             //case "4":
+             //    return 'scheduled';
+             //    break;
+             //default:
+             //    return NULL;
+             //}
+
              $data = array(
                 'title'=>'Notifications [e]-Cairn',
-                'body'=>'Ce navigateur est désormais enregistré comme destinataire des notifications',
-                'payload'=>''
+                'body'=>'Ce navigateur '.$navigator.' est désormais enregistré comme destinataire des notifications',
+                'payload'=>['tag'=>'subscription']
              );
-            $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data);
+            $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data,'subscription',600,'normal');
 
              $em->flush();
 

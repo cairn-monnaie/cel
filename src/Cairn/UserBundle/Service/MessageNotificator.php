@@ -69,7 +69,6 @@ class MessageNotificator
         $nfKeyword = BaseNotification::KEYWORD_PAYMENT;
         $nfData = $operation->getCreditor()->getNotificationData();
 
-        
         $paymentNotification = $this->em->getRepository('CairnUserBundle:PaymentNotification')->findPaymentNotification($nfData,[$operation->getType()],$operation->getAmount());
         if( $paymentNotification){
             $targets = $paymentNotification->getTargetData($operation->getType(),$phoneNumber);
@@ -77,15 +76,18 @@ class MessageNotificator
 
             $data = array(
                 'title'=> 'Vous avez reçu un paiement !',
-                'body' => $operation->getCreditorContent(),
-                'payload'=>$payload
+                'payload'=>array(
+                    'body' => $operation->getCreditorContent(),
+                    'tag' => $payload['tag'], 
+                    'data'=>$payload
+                )
             );
 
             if($targets['email']){
                 $body = $this->templating->render('CairnUserBundle:Emails:payment_notification.html.twig',
                     array('operation'=>$operation));
 
-                $this->notifyByEmail('Vous avez reçu un virement',
+                $this->notifyByEmail('Vous avez reçu des cairns',
                     $this->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
             }
 
@@ -102,20 +104,24 @@ class MessageNotificator
 
     public function sendPushNotifications(array $deviceTokens=[], $webSubscriptions=[], $keyword, $ttl, $priority, $data)
     {
-        $this->sendAppPushNotifications($deviceTokens, $keyword, $ttl, $priority, $data);
-        $this->sendWebPushNotifications($webSubscriptions, $data);
+        $this->sendAppPushNotifications($deviceTokens, $data, $keyword, $ttl, $priority);
+        $this->sendWebPushNotifications($webSubscriptions, $data, $keyword, $ttl, $priority);
     }
 
-    public function sendAppPushNotifications(array $tokens = [], $keyword, $ttl, $priority, $data)
+    public function sendAppPushNotifications(array $tokens = [], $data, $keyword, $ttl, $priority)
     {
         if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
         $androidConsts = $pushConsts['android'];
 
+        if(! isset($data['data'])){
+            $data['data'] = [];
+        }
+
         // Message to be sent
         $push = array(
             'registration_ids'=>$tokens,
-            'data'=> $data['payload'],
+            'data'=> $data['data'],
             'collapse_key'=> $keyword,
             'android'=>array(
                 'ttl'=> $ttl,
@@ -157,10 +163,17 @@ class MessageNotificator
         curl_close($ch);
     }
 
-    public function sendWebPushNotifications($subscriptions, $data)
+    public function sendWebPushNotifications($subscriptions, $data, $keyword, $ttl, $priority)
     {
+        if(! isset($data['title'])){
+            throw new InvalidArgumentException('WebPush title field required !');
+        }
+        if(! isset($data['payload'])){
+            throw new InvalidArgumentException('WebPush payload filed required !');
+        }
+
         $auth = array(
-            'GCM' => 'MY_GCM_API_KEY',
+            'GCM' => 'MY_GCM_API_KEY',// deprecated and optional, it's here only for compatibility reasons
             'VAPID'=>array(
                 'subject' => 'https://moncompte.cairn-monnaie.com',
                 'publicKey' => $this->consts['webpush']['public_key'],
@@ -169,10 +182,10 @@ class MessageNotificator
         );
 
         $defaultOptions = [
-            'TTL' => 7200, // 2h 
-            'urgency' => 'high', // protocol defaults to "normal"
-            'topic' => 'new_event', // not defined by default,
-            'batchSize' => 20, // defaults to 1000
+            'TTL' => $ttl, // 2h 
+            'urgency' => $priority, // protocol defaults to "normal"
+            //'topic' => 'new_event', // not defined by default,
+            'batchSize' => 200, // defaults to 1000
         ];
 
         $webPush = new WebPush($auth);
@@ -187,10 +200,7 @@ class MessageNotificator
                         'keys'=>$subscription->getEncryptionKeys()
                     )
                 ),
-                'payload'=>json_encode( array(
-                    'title' => $data['title'],
-                    'body'=> $data['body'],
-                ))
+                'payload'=>json_encode($data)
             );
 
             $webPush->sendNotification($notification['subscription'],$notification['payload']);
@@ -201,17 +211,19 @@ class MessageNotificator
         foreach ($webPush->flush() as $report) {
             $endpoint = $report->getEndPoint();
 
-            if($report->isSubscriptionExpired()){ //TODO : FIND CASES WHERE SUBSCRIPTION SHOULD BE REMOVED
-                $failedEndpoints[] = $endpoint;
+            if(! $report->isSuccess()){
+                if($report->isSubscriptionExpired()){ //TODO : FIND CASES WHERE SUBSCRIPTION SHOULD BE REMOVED
+                    $failedEndpoints[] = $endpoint;
+                }
             }
         }
 
-        //$webPushSubsList = $this->em->getRepository('CairnUserBundle:NotificationData')->findSubsByWebEndpoints($failedEndpoints,false);
+        $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,false);
 
-        //foreach($webPushSubsList as $sub)
-        //{
-        //    $this->em->remove($sub);
-        //}
+        foreach($webPushSubsList as $sub)
+        {
+            $this->em->remove($sub);
+        }
 
 
     }

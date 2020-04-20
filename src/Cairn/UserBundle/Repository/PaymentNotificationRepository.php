@@ -28,6 +28,13 @@ class PaymentNotificationRepository extends BaseNotificationRepository
          return $pb->getQuery()->getOneOrNullResult();
     }
 
+    public function whereKeyword(QueryBuilder $pb, $keyword)
+    {
+        $pb->andWhere('p INSTANCE OF '.BaseNotification::mapKeywordToClass($keyword));
+
+        return $this;
+    }
+
     public function whereMinAmount(QueryBuilder $pb, $amount)
     {
         $pb->andWhere('p.minAmount <= :amount')

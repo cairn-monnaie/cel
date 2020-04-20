@@ -38,30 +38,6 @@ class NotificationDataRepository extends \Doctrine\ORM\EntityRepository
         return $this;
     }
 
-    public function findSubsByWebEndpoints(array $endpoints, bool $selectRoot=false)
-    {
-        $nb = $this->createQueryBuilder('n');
-        $this->whereWebEndpoints($nb,$endpoints);
-
-        if($selectRoot){
-            $nb->addSelect('w');
-        }else{
-            $nb->select('w');
-        }
-
-        return $nb->getQuery()->getResult();
-    }
-
-    public function whereWebEndpoints(QueryBuilder $nb,$endpoints)
-    {
-        $nb->andWhere('n')->leftJoin('n.webPushSubscriptions','w')
-            ->andWhere('w.endpoint IN (:endpoints)')
-            ->setParameter('endpoints',$endpoints);
-
-        return $this;
-    }
-
-    
     public function whereNotificationDataIsIn(QueryBuilder $nb,array $notificationDataIds)
     {
         $nb->andWhere('n.id IN (:ids)')
