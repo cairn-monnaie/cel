@@ -2,6 +2,8 @@
 
 namespace Cairn\UserBundle\Repository;
 
+use Doctrine\ORM\QueryBuilder;                                                 
+
 /**
  * WebPushSubscriptionRepository
  *
@@ -10,4 +12,25 @@ namespace Cairn\UserBundle\Repository;
  */
 class WebPushSubscriptionRepository extends \Doctrine\ORM\EntityRepository
 {
+    public function findSubsByWebEndpoints(array $endpoints, bool $selectRoot=false)
+    {
+        $wb = $this->createQueryBuilder('w');
+
+        if($selectRoot){
+            $wb->leftJoin('w.notificationData','n')->addSelect('n')->leftJoin('n.baseNotifications','b')->addSelect('b');
+        }
+
+        $this->whereWebEndpoints($wb,$endpoints);
+        
+        return $wb->getQuery()->getResult();
+    }
+
+    public function whereWebEndpoints(QueryBuilder $wb,$endpoints)
+    {
+        $wb->andWhere('w.endpoint IN (:endpoints)')
+            ->setParameter('endpoints',$endpoints);
+
+        return $this;
+    }
+
 }

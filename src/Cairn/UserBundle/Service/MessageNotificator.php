@@ -213,15 +213,27 @@ class MessageNotificator
 
             if(! $report->isSuccess()){
                 if($report->isSubscriptionExpired()){ //TODO : FIND CASES WHERE SUBSCRIPTION SHOULD BE REMOVED
-                    $failedEndpoints[] = $endpoint;
+                  $failedEndpoints[] = $endpoint;
                 }
             }
         }
 
-        $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,false);
+        $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,true);
 
         foreach($webPushSubsList as $sub)
         {
+            $nfData = $sub->getNotificationData();
+            $nfData->removeWebPushSubscription($sub);
+
+            $collectionWebPushSubs = $nfData->getWebPushSubscriptions();
+
+            if($collectionWebPushSubs->count() == 0){//IF no more web push subscription, consider web push disabled for all notifications
+                foreach($nfData->getBaseNotifications() as $notification)
+                {
+                    $notification->setWebPushEnabled(false);
+                }
+            }
+            
             $this->em->remove($sub);
         }
 
