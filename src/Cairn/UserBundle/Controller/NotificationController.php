@@ -50,6 +50,9 @@ class NotificationController extends Controller
         $jsonRequest = json_decode($request->getContent(), true);
 
         if($from == 'mobile'){
+            if(! isset($jsonRequest['device_token'])){
+                return $apiService->getErrorResponse(array('Body field device_token not found'),Response::HTTP_BAD_REQUEST);
+            }
             $deviceToken = $jsonRequest['device_token'];
 
             if($request->isMethod('POST')){

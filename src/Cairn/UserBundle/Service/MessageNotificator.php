@@ -69,7 +69,10 @@ class MessageNotificator
         $nfKeyword = BaseNotification::KEYWORD_PAYMENT;
         $nfData = $operation->getCreditor()->getNotificationData();
 
-        if(! $nfData){ return ; }
+        if( (! $nfData) && $phoneNumber){ 
+            $this->sendSMS($phoneNumber,$operation->getCreditorContent());
+            return ; 
+        }
 
         $paymentNotification = $this->em->getRepository('CairnUserBundle:PaymentNotification')->findPaymentNotification($nfData,[$operation->getType()],$operation->getAmount());
         if( $paymentNotification){
