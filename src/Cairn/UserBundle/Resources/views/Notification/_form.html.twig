@@ -4,7 +4,7 @@
                                                                                
 {% form_theme form 'form/materialize_form_theme.html.twig' %}
 
-{% block title %}{% endblock %}                                                                 
+{% block title %}Paramètres des notifications - Cairn{% endblock %}                                                                 
                                                                                
 {%block stylesheets %}
 {% endblock %}
@@ -14,15 +14,16 @@
 
 <div class="row">
     <div class="container">
-        <h1 id="notif_title">Paramètres de notifications</h1>
 
     {{ form_start(form) }}
     <div class="notification">
-        <table class="responsive-table">
+        <table class="notifications responsive-table">
             <thead>
                 <tr>
-                    <div class="col l6 s12"><th>Type de notifs</th></div>
-                    <div id="notif_icons" class="col l6 s12">
+                    <div class="col l6 s12">
+                        <th id="notif_types">Types de notifications</th>
+                    </div>
+                    <div id="notif_icons" class="col l6 s12 valign-wrapper">
                         <th>
                             <p><i class="material-icons">laptop</i></p>
                             <p><span>Web Push</span></p>
@@ -50,9 +51,9 @@
                         {% set index = 1 %}
                     {% endif %}
                     <div class="col l6 s12">
-                        <td>
+                        <td class="notif_cell_label">
                             <p class="notif_row_title">Nouveau Professionnel</p>
-                            <p class="description">Via ces différents canaux, vous pouvez être informé(e) de l'arrivée d'un nouveau pro dans le réseau à moins de X (kms) de chez vous !
+                            <p class="description">Soyez informé(e) de l'arrivée d'un nouveau pro dans le réseau à moins de X kilomètres de chez vous !
                             </p>
                         </td>
                     </div>
@@ -101,8 +102,8 @@
         </div>
     </div>
     <div class="notification">
-        <table class="responsive-table">
-            <thead style="visibility: hidden">
+        <table class="notifications responsive-table">
+            {#<thead style="visibility: hidden">
                 <tr>
                     <div class="col l6 s12"><th>Type de notifs</th></div>
                     <div id="notif_icons" class="col l6 s12">
@@ -121,11 +122,12 @@
                     </div>
                 </tr>
             </thead>
+            #}
             <tbody>
                 <tr>
                     {% set index = (index == 0) ? 1 : 0 %}
                     <div class="col l6 s12">
-                        <td>
+                        <td class="notif_cell_label">
                             <p class="notif_row_title">Nouveaux paiements</p>
                             <p class="description">Vous avez reçu des cairns. Paramétrez les types de paiements pour lesquels vous souhaitez être notifié(e) ainsi que leur montant minimum.
                             </p>
@@ -181,7 +183,7 @@
     </div>
 
                         
-    <div>
+    <div class="col l5 offset-l8 s12">
         {{ form_widget(form.save) }}                                         
         <a href="{{path('cairn_user_profile_view', {'username' : user.username })}}" class="btn red">Annuler</a>
     </div>

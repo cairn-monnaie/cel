@@ -55,7 +55,7 @@ class BaseNotificationType extends AbstractType
                     ->add('minAmount', IntegerType::class,array('label'=>'Montant minimum'));
                     
                 }else{
-                    $form->add('radius', RangeType::class,array('label'=>'Dans un rayon(km)','attr'=>array('min'=>'0')));
+                    $form->add('radius', RangeType::class,array('label'=>'Rayon autour de chez vous(km)','attr'=>array('min'=>'0')));
                 }
                
             }

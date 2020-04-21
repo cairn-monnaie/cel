@@ -150,13 +150,19 @@ class MessageNotificator
         file_put_contents('test1.txt',$result);
 
         //get DEPRECATED RESULTS HERE
-        //$failedTokens = [];
-        //$nfDataList = $this->em->getRepository('CairnUserBundle:NotificationData')->findByDeviceTokens($failedTokens);
+        $failedTokens = [];
+        $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
+        
+        //first version: simple foreach loop, not scalable...
+        foreach($failedTokens as $failedToken){
+            $nfDataList = $nfDataRepo->findByDeviceTokens($failedTokens);
 
-        //foreach($nfDataList as $nfData)
-        //{
-        //    $nfData->removeDeviceToken($endpoint);
-        //}
+            foreach($nfDataList as $nfData){
+                $nfData->removeDeviceToken($failedToken);
+            }
+        }
+
+        //TODO : better version : less requests
 
 
         // Close connection

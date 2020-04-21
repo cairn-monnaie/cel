@@ -8,13 +8,16 @@ conversion: conversion
 sms payment: paiement SMS
 transaction: virement
 scheduled transaction: virement programmé
-online payment: paiement en ligne
+online payment: achat en ligne
 payment order: ordre de paiement
+mobile app: application mobile
 up-to-date: à jour
 scheduled: programmé
 revoked: révoqué
 overdue: en retard
 honoured: honoré
+PROCESSED: exécuté
+FAILED: échoué
 Feb: Fév
 Mar: Mar
 Apr: Avr
