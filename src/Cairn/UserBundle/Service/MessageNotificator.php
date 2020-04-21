@@ -74,7 +74,7 @@ class MessageNotificator
             $targets = $paymentNotification->getTargetData($operation->getType(),$phoneNumber);
             $payload = PaymentNotification::getPushData($operation);
 
-            $data = array(
+            $webPushData = array(
                 'title'=> 'Vous avez reçu un paiement !',
                 'payload'=>array(
                     'body' => $operation->getCreditorContent(),
@@ -82,6 +82,8 @@ class MessageNotificator
                     'data'=>$payload
                 )
             );
+
+            $appPushData = $payload;
 
             if($targets['email']){
                 $body = $this->templating->render('CairnUserBundle:Emails:payment_notification.html.twig',
@@ -95,39 +97,41 @@ class MessageNotificator
                 $this->sendSMS($targets['phone'],$operation->getCreditorContent());
             }
 
-            $this->sendPushNotifications(
-                $targets['deviceTokens'],$targets['webSubscriptions'],
-                $nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH,$data
+            $this->sendAppPushNotifications(
+                $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
             );
+            $this->sendWebPushNotifications(
+                $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
+            );
+
         }
     }
 
-    public function sendPushNotifications(array $deviceTokens=[], $webSubscriptions=[], $keyword, $ttl, $priority, $data)
-    {
-        $this->sendAppPushNotifications($deviceTokens, $data, $keyword, $ttl, $priority);
-        $this->sendWebPushNotifications($webSubscriptions, $data, $keyword, $ttl, $priority);
-    }
-
+    /**
+     *
+     *@see https://firebase.google.com/docs/cloud-messaging/http-server-ref?hl=fr#send-downstream
+     */
     public function sendAppPushNotifications(array $tokens = [], $data, $keyword, $ttl, $priority)
     {
         if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
         $androidConsts = $pushConsts['android'];
 
-        if(! isset($data['data'])){
-            $data['data'] = [];
-        }
-
         // Message to be sent
         $push = array(
-            'registration_ids'=>$tokens,
-            'data'=> $data['data'],
+            'data'=> $data,
             'collapse_key'=> $keyword,
             'android'=>array(
                 'ttl'=> $ttl,
                 'priority'=> $priority,
             )
         );
+
+        if(count($tokens) == 1){
+            $push['to'] = $tokens[0];
+        }else{
+            $push['registration_ids'] = $tokens;
+        }
 
         $headers = array(
             'Authorization: key=' . $androidConsts['api_key'],
@@ -146,22 +150,35 @@ class MessageNotificator
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
 
         // Execute post
-        $result = curl_exec($ch);
-        file_put_contents('test1.txt',$result);
+        $jsonResponse = curl_exec($ch);
+        file_put_contents('test1.txt',json_encode($jsonResponse));
 
-        //get DEPRECATED RESULTS HERE
-        $failedTokens = [];
-        $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
-        
-        //first version: simple foreach loop, not scalable...
-        foreach($failedTokens as $failedToken){
-            $nfDataList = $nfDataRepo->findByDeviceTokens($failedTokens);
+        $response = json_decode($jsonResponse,true);
+        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            foreach($nfDataList as $nfData){
-                $nfData->removeDeviceToken($failedToken);
+        if($code == 200){//messages have been sent, but maybe with errors
+            //get DEPRECATED RESULTS HERE
+            $possibleErrors = array('InvalidRegistration','NotRegistered');
+            $failedTokens = [];
+            foreach($response['results'] as $index=>$result){
+                if(isset($result['error']) && in_array($result['error'],$possibleErrors) ){
+                    $failedTokens[] = $tokens[$index];
+                }
             }
-        }
+            
+            $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
 
+            //first version: simple foreach loop, not scalable...
+            foreach($failedTokens as $failedToken){
+                $nfDataList = $nfDataRepo->findByDeviceTokens($failedTokens);
+
+                foreach($nfDataList as $nfData){
+                    $nfData->removeDeviceToken($failedToken);
+                }
+            }
+
+        } // else messages not sent
+        
         //TODO : better version : less requests
 
 
@@ -218,7 +235,7 @@ class MessageNotificator
             $endpoint = $report->getEndPoint();
 
             if(! $report->isSuccess()){
-                if($report->isSubscriptionExpired()){ //TODO : FIND CASES WHERE SUBSCRIPTION SHOULD BE REMOVED
+                if($report->isSubscriptionExpired()){
                   $failedEndpoints[] = $endpoint;
                 }
             }
@@ -242,8 +259,6 @@ class MessageNotificator
             
             $this->em->remove($sub);
         }
-
-
     }
 
     protected function listOfIds($minID,$maxID)

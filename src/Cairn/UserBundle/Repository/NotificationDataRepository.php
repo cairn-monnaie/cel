@@ -19,7 +19,7 @@ class NotificationDataRepository extends \Doctrine\ORM\EntityRepository
     public function findByDeviceTokens(array $deviceTokens = [])
     {
         $nb = $this->createQueryBuilder('n');
-        $this->whereDeviceTokens($deviceTokens);
+        $this->whereDeviceTokens($nb,$deviceTokens);
 
         return $nb->getQuery()->getResult();
     }

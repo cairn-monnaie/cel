@@ -93,37 +93,19 @@ class NotificationController extends Controller
              }elseif(strpos($endpoint,'googleapis') !== false){
                 $navigator = '(Chrome ou Opera)';
              }
-             //switch ($status){
-             //case "0":
-             //    return 'revoked';
-             //    break;
-             //case "1":
-             //    return 'up-to-date';
-             //    break;
-             //case "2":
-             //    return 'overdue';
-             //    break;
-             //case "3":
-             //    return 'honoured';
-             //    break;
-             //case "4":
-             //    return 'scheduled';
-             //    break;
-             //default:
-             //    return NULL;
-             //}
+             
 
              $data = array(
                 'title'=>'Notifications [e]-Cairn',
                 'body'=>'Ce navigateur '.$navigator.' est désormais enregistré comme destinataire des notifications',
                 'payload'=>['tag'=>'subscription']
              );
-            $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data,'subscription',600,'normal');
+            $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data,'subscription',0,'normal');
 
              $em->flush();
 
              
-             return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
+             return $apiService->getOkResponse(array('OK'),Response::HTTP_CREATED);
 
 
         }

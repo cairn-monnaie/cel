@@ -95,6 +95,7 @@ self.addEventListener('push', function(event) {
             return self.registration.showNotification(notificationTitle, newOptions);
         })
     }else{
+        //IMAGE FIELD NOT SUPPORTED IN FIREFOX
         event.waitUntil(
             self.registration.showNotification(initPushData.title, {
                 body: initPushData.body,
