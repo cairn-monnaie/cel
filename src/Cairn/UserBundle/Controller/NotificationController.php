@@ -167,7 +167,11 @@ class NotificationController extends Controller
             if($form->isValid()){
                 $em->flush();
 
-                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
+                if($isRemoteCall){
+                    return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);        
+                }else{
+                    return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+                }
             }else{
                 return $apiService->getFormErrorResponse($form);
             }
