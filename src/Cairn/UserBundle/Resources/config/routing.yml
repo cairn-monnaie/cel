@@ -21,8 +21,8 @@ cairn_user_api_mobilepush_subscription:
 
 cairn_user_api_notification_data_edit:
     path: mobile/notifications/{id}
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Notification:editNotificationParams, _format: json }
+    methods: GET|POST
+    defaults: { _controller: CairnUserBundle:Notification:notificationParams, _format: json }
 
 cairn_user_notification_data_edit:
     path: /notifications/{id}
