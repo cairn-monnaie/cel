@@ -8,11 +8,14 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\PaymentNotification;
-                         
+use Cairn\UserBundle\Entity\RegistrationNotification;
+
+use Cairn\UserBundle\Entity\User;                       
+
 use Doctrine\ORM\EntityManager;
 
 use Symfony\Component\Form\Exception\InvalidArgumentException;
-use Cairn\UserBundle\Entity\User;
+
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
@@ -62,6 +65,37 @@ class MessageNotificator
         $this->noreply = $noreply;
         $this->env = $env;
         $this->consts = $consts;
+    }
+
+    public function sendRegisterNotifications(User $user)
+    {
+        //if(! $user->hasRole('ROLE_PRO')){
+        //    return;
+        //}
+
+        $payload = RegistrationNotification::getPushData($user);
+        $nfKeyword = BaseNotification::KEYWORD_REGISTER;
+
+        $webPushData = array(
+            'title'=> 'Nouveau pro !',
+            'payload'=>array(
+                'body' => 'Nouveau pro dans le réseau pouloulou',
+                'tag' => $payload['tag'], 
+                'data'=>$payload
+            )
+        );
+
+        $appPushData = $payload;
+
+        $targets = $this->em->getRepository('CairnUserBundle:RegistrationNotification')->findTargetsAround($user->getAddress()->getLatitude(),$user->getAddress()->getLongitude());
+
+        $this->sendAppPushNotifications(
+            $targets['device_tokens'],$appPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
+        );
+        $this->sendWebPushNotifications(
+            $targets['web_endpoints'],$webPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
+        );
+
     }
 
     public function sendPaymentNotifications($operation, $phoneNumber = NULL)
@@ -200,6 +234,7 @@ class MessageNotificator
             throw new InvalidArgumentException('WebPush payload filed required !');
         }
 
+        // ------------------- SEND NON APPLE PUSH -------------------//
         $auth = array(
             'GCM' => 'MY_GCM_API_KEY',// deprecated and optional, it's here only for compatibility reasons
             'VAPID'=>array(
@@ -220,7 +255,7 @@ class MessageNotificator
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        foreach($subscriptions as $subscription){
+        foreach($subscriptions['mozilla'] as $subscription){
             $notification = array(
                 'subscription'=> Subscription::create(
                     array(
@@ -246,6 +281,7 @@ class MessageNotificator
             }
         }
 
+        
         $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,true);
 
         foreach($webPushSubsList as $sub)

@@ -29,15 +29,24 @@ class RegistrationNotification extends BaseNotification
 
     public static function getPushData(User $user)
     {
-        return [
-            'key'=> self::TITLE_KEY,
-            'id'=>$user->getId()
+        $data = [
+            'tag'=> self::TITLE_KEY,
+            'id'=>$user->getId(),
+            'username'=>$user->getUsername(),
+            'name'=>$user->getName(),
+            'address'=>$user->getAddress()->__toString()
         ];
+
+        if($logo = $user->getImage()){
+            $data['image'] = $logo->getWebPath(); 
+        }
+
+        return $data;
     }
 
     public function __construct($radius = 5)
     {
-        parent::__construct(self::KEYWORD_REGISTER, self::PRIORITY_NORMAL, self::TTL_REGISTER, true);
+        parent::__construct(self::KEYWORD_REGISTER, self::PRIORITY_VERY_LOW, self::TTL_REGISTER, true);
         $this->setRadius($radius);
     }
 

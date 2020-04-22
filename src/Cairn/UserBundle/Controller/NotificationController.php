@@ -145,6 +145,8 @@ class NotificationController extends Controller
     {
         $currentUser = $this->getUser();
 
+        $this->get('cairn_user.message_notificator')->sendRegisterNotifications($currentUser);
+
         $em = $this->getDoctrine()->getManager();
         $apiService = $this->get('cairn_user.api');
         $isRemoteCall = $apiService->isRemoteCall();
@@ -170,6 +172,7 @@ class NotificationController extends Controller
                 if($isRemoteCall){
                     return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);        
                 }else{
+                    $request->getSession()->getFlashBag()->add('success','Les paramètres des notifications ont été mis à jour');
                     return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
                 }
             }else{
@@ -180,10 +183,31 @@ class NotificationController extends Controller
         return $this->render('CairnUserBundle:Notification:_form.html.twig',array('form' => $form->createView(),'user'=>$user));
     }
 
-
-    public function configNotificationsAction(Request $request, User $user)
+    /**
+     * Send Push Notification regarding user as @param
+     *
+     * @param  User $user  Must have role ROLE_PRO
+     * @Security("has_role('ROLE_SUPER_ADMIN')")
+     */
+    public function sendProPushAction(Request $request,User $user)
     {
+        $session = $request->getSession();
+        $messageNotificator = $this->get('cairn_user.message_notificator');
 
+        if(! $user->hasRole('ROLE_PRO')){
+             $session->getFlashBag()->add('error',$user->getName().' n est pas un professionnel');
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+         }
+
+        $form = $this->createForm(ConfirmationType::class);
+
+        if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
+            if($form->get('save')->isClicked()){
+                $messageNotificator->sendRegisterNotifications($user);
+            }else{//push not sent, redirect to profile
+                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+            }
+        }
     }
 
 }

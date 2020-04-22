@@ -15,4 +15,12 @@ use Doctrine\ORM\QueryBuilder;
  */
 class BaseNotificationRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function whereKeyword(QueryBuilder $pb, $keyword)
+    {
+        $pb->andWhere('p INSTANCE OF '.BaseNotification::mapKeywordToClass($keyword));
+
+        return $this;
+    }
+
 }

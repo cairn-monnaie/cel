@@ -79,6 +79,7 @@ class BaseNotification
 
     const PRIORITY_HIGH = 'high';
     const PRIORITY_NORMAL = 'normal';
+    const PRIORITY_VERY_LOW = 'very_low';
 
     const KEYWORD_PAYMENT = 'payment';
     const KEYWORD_REGISTER = 'register';

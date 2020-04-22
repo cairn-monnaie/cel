@@ -23,17 +23,11 @@ class PaymentNotificationRepository extends BaseNotificationRepository
          $pb = $this->createQueryBuilder('p')->andWhere('p.notificationData = :notificationDataId')
                 ->setParameter('notificationDataId',$nD->getId());
 
-         $this->whereKeyword($pb,BaseNotification::KEYWORD_PAYMENT)->whereTypes($pb,$types)->whereMinAmount($pb,$amount);
+         $this->whereTypes($pb,$types)->whereMinAmount($pb,$amount);
 
          return $pb->getQuery()->getOneOrNullResult();
     }
 
-    public function whereKeyword(QueryBuilder $pb, $keyword)
-    {
-        $pb->andWhere('p INSTANCE OF '.BaseNotification::mapKeywordToClass($keyword));
-
-        return $this;
-    }
 
     public function whereMinAmount(QueryBuilder $pb, $amount)
     {
