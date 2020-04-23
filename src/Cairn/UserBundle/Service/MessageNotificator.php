@@ -10,6 +10,7 @@ use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\PaymentNotification;
                          
 use Doctrine\ORM\EntityManager;
+use Cairn\UserBundle\Service\Security;
 
 use Symfony\Component\Form\Exception\InvalidArgumentException;
 use Cairn\UserBundle\Entity\User;
@@ -17,12 +18,19 @@ use Cairn\UserBundle\Entity\User;
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
 
+
 /**
  * This class contains services related to the notifications/mailing.
  *
  */
 class MessageNotificator
 {
+
+    /**
+     *@var Security $security
+     */
+    protected $security;
+
     /**
      *@var EntityManager $em
      */
@@ -52,8 +60,9 @@ class MessageNotificator
 
     protected $consts;
 
-    public function __construct(EntityManager $em,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
+    public function __construct(Security $security, EntityManager $em,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
     {
+        $this->security = $security;
         $this->em = $em;
 
         $this->mailer = $mailer;
@@ -83,8 +92,8 @@ class MessageNotificator
                 'title'=> 'Vous avez reçu un paiement !',
                 'payload'=>array(
                     'body' => $operation->getCreditorContent(),
-                    'tag' => $payload['tag'], 
-                    'data'=>$payload
+                    'tag' => $payload['android']['body_loc_key'], //we could have used ios data too. 
+                    'data'=>$payload['android']['body_loc_args']
                 )
             );
 
@@ -121,34 +130,40 @@ class MessageNotificator
         if( empty($tokens) ){ return; }
         $pushConsts = $this->consts['mobilepush'];
         $androidConsts = $pushConsts['android'];
+        $iosConsts = $pushConsts['ios'];
 
+        // --------------------- SEND ANDROID PUSH -----------------------//
         // Message to be sent
-        $push = array(
-            'data'=> $data,
+        $push = [
+            "notification" => $data['android'],
             'collapse_key'=> $keyword,
             'android'=>array(
                 'ttl'=> $ttl,
                 'priority'=> $priority,
             )
-        );
+        ];
+        
+        $androidTokens = $tokens['android'];
 
-        if(count($tokens) == 1){
-            $push['to'] = $tokens[0];
+        if(count($androidTokens) == 1){
+            $push['to'] = $androidTokens[0];
         }else{
-            $push['registration_ids'] = $tokens;
+            $push['registration_ids'] = $androidTokens;
         }
 
         $headers = array(
-            'Authorization: key=' . $androidConsts['api_key'],
+            'Authorization: key=' . $androidConsts['private_key'],
             'Content-Type: application/json'
         );
 
         // Open connection
         $ch = curl_init();
 
+        
         // Set the URL, number of POST vars, POST data
         curl_setopt( $ch, CURLOPT_URL, $androidConsts['api_url']);
         curl_setopt( $ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
         curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
@@ -156,7 +171,6 @@ class MessageNotificator
 
         // Execute post
         $jsonResponse = curl_exec($ch);
-        file_put_contents('test1.txt',json_encode($jsonResponse));
 
         $response = json_decode($jsonResponse,true);
         $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -164,28 +178,76 @@ class MessageNotificator
         if($code == 200){//messages have been sent, but maybe with errors
             //get DEPRECATED RESULTS HERE
             $possibleErrors = array('InvalidRegistration','NotRegistered');
-            $failedTokens = [];
+            $notRegisteredTokens = [];
             foreach($response['results'] as $index=>$result){
                 if(isset($result['error']) && in_array($result['error'],$possibleErrors) ){
-                    $failedTokens[] = $tokens[$index];
+                    $notRegisteredTokens[] = $tokens[$index];
                 }
             }
-            
-            $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
-
-            //first version: simple foreach loop, not scalable...
-            foreach($failedTokens as $failedToken){
-                $nfDataList = $nfDataRepo->findByDeviceTokens($failedTokens);
-
-                foreach($nfDataList as $nfData){
-                    $nfData->removeDeviceToken($failedToken);
-                }
-            }
-
-        } // else messages not sent
+        }
         
-        //TODO : better version : less requests
+        // --------------------- SEND IOS PUSH -----------------------//
 
+        $jwtHeaders = [
+            'alg'=>'ES256',
+            'kid'=>$iosConsts['kid']
+        ];
+        $jwtPayload = [
+            'iat' => time(),
+            'iss' => $iosConsts['iss']
+        ];
+
+        $authToken = $this->security->generateJWT($iosConsts['iss'],time(),$iosConsts['kid'],$iosConsts['private_key']);
+
+        $headers = array(
+            'Authorization: Bearer ' . $authToken,
+            'Content-Type: application/json'
+        );
+
+        // Create the payload body
+        $push = [
+            "aps" => [
+                "alert" => $data['ios']
+            ],
+        ];
+
+        // Open connection
+        $ch = curl_init();
+
+        // Set the BASE POST DATA
+        curl_setopt( $ch, CURLOPT_POST, true);
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt( $ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
+
+        $apiUrl = ($this->env == 'prod') ? $iosConsts['api_prod_url'] : $iosConsts['api_dev_url'];
+        //foreach device token, send a request (a single connection is opened)
+        foreach($tokens['ios'] as $deviceToken){
+            curl_setopt( $ch, CURLOPT_URL, $apiUrl.'/3/device/'.$deviceToken);
+            // Execute post
+            $jsonResponse = curl_exec($ch);
+
+            $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if($code == 410){
+                $notRegisteredTokens[] = $deviceToken;
+            }
+        }
+        
+        // -------------------- REMOVE EXPIRED TOKENS ---------------//
+        $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
+
+        //first version: simple foreach loop, not scalable...
+        foreach($notRegisteredTokens as $failedToken){
+            //TODO : better version : less requests
+            $nfDataList = $nfDataRepo->findByDeviceTokens($notRegisteredTokens);
+
+            foreach($nfDataList as $nfData){
+                $nfData->removeDeviceToken($failedToken);
+            }
+        }
 
         // Close connection
         curl_close($ch);
@@ -200,6 +262,7 @@ class MessageNotificator
             throw new InvalidArgumentException('WebPush payload filed required !');
         }
 
+        // ---------------------SEND NON APPLE PUSH -----------------------------//
         $auth = array(
             'GCM' => 'MY_GCM_API_KEY',// deprecated and optional, it's here only for compatibility reasons
             'VAPID'=>array(
@@ -245,6 +308,8 @@ class MessageNotificator
                 }
             }
         }
+
+        // ---------------------SEND NON APPLE PUSH -----------------------------//
 
         $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,true);
 

@@ -28,6 +28,13 @@ class WebPushSubscription
      */
     private $endpoint;
 
+    
+    /**
+     * @var bool
+     * @ORM\Column(name="is_apple_os", type="boolean", unique=false, nullable=false)
+     */
+    private $isAppleOS;
+
     /**
      * @var array
      *
@@ -43,10 +50,12 @@ class WebPushSubscription
      */
     private $notificationData;
 
-    public function __construct(string $endpoint,array $keys)
+    
+    public function __construct(string $endpoint,array $keys = [],bool $appleOS)
     {
         $this->endpoint = $endpoint;
         $this->encryptionKeys = $keys;
+        $this->isAppleOS = $appleOS;
     }
 
     /**
@@ -129,5 +138,30 @@ class WebPushSubscription
     public function getNotificationData()
     {
         return $this->notificationData;
+    }
+
+
+    /**
+     * Set isAppleOS.
+     *
+     * @param bool $isAppleOS
+     *
+     * @return WebPushSubscription
+     */
+    public function setIsAppleOS($isAppleOS)
+    {
+        $this->isAppleOS = $isAppleOS;
+
+        return $this;
+    }
+
+    /**
+     * Get isAppleOS.
+     *
+     * @return bool
+     */
+    public function isAppleOS()
+    {
+        return $this->isAppleOS;
     }
 }

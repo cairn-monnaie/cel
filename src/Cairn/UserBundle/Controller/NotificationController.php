@@ -87,7 +87,9 @@ class NotificationController extends Controller
                  }
              }
 
-             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys']);
+             //TODO : DEAL WITH MACOS ENDPOINTS
+             $isMacOSEndpoint = false;
+             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys'],$isMacOSEndpoint );
              $pushSubscription->setNotificationData($notificationData);
              $notificationData->addWebPushSubscription($pushSubscription);
 

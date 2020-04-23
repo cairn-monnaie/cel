@@ -99,6 +99,7 @@ services:
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:
+            - "@cairn_user.security"
             - "@doctrine.orm.entity_manager"
             - "@mailer" 
             - "@templating"
@@ -179,7 +180,6 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
-
 
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener

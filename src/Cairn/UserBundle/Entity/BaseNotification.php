@@ -102,15 +102,17 @@ class BaseNotification
 
     public function getTargetData($phoneNumber = NULL)
     {
+        $notificationData = $this->getNotificationData() ;
+
         $res = ['webSubscriptions'=>[], 'deviceTokens'=>[],'email'=>'','phone'=>''];
         if($this->isWebPushEnabled()){
-            $res['webSubscriptions'] = $this->getNotificationData()->getWebPushSubscriptions();
+            $res['webSubscriptions'] = $notificationData->getWebPushSubscriptions();
         }
         if($this->isAppPushEnabled()){
-            $res['deviceTokens'] = $this->getNotificationData()->getDeviceTokens();
+            $res['deviceTokens'] = array('android'=>$notificationData->getAndroidDeviceTokens(),'ios'=>$notificationData->getIosDeviceTokens());
         }
         if($this->isEmailEnabled()){
-            $res['email'] = $this->getNotificationData()->getUser()->getEmail();
+            $res['email'] = $notificationData->getUser()->getEmail();
         }
         if($this->isSmsEnabled() && $phoneNumber){
             $res['phone'] = $phoneNumber ;

@@ -90,10 +90,14 @@ parameters:
             public_key: 'ThisTokenIsNotSoSecret'
         mobilepush:
             android:
-                api_key: 'FuckYouGoddamnCoronavirus'
+                private_key: 'FuckYouGoddamnCoronavirus'
                 api_url: 'https://fcm.googleapis.com/fcm/send'
             ios:
-                api_url: 'gateway.push.apple.com'
+                api_prod_url: 'api.push.apple.com:443'
+                api_dev_url: 'api.sandbox.push.apple.com:443'
+                private_key: 'XXXX'
+                kid: '1234'
+                iss: 'My Team ID'
     webpush_public_key: '%notificator_consts.webpush.public_key%'
     online_payment_hosts: 'localhost$|domain.com$'
     api_secret: FuckYouCoronavirus
