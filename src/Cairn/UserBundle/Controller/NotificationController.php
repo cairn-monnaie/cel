@@ -53,17 +53,22 @@ class NotificationController extends Controller
             if(! isset($jsonRequest['device_token'])){
                 return $apiService->getErrorResponse(array('Body field device_token not found'),Response::HTTP_BAD_REQUEST);
             }
+            if(! isset($jsonRequest['platform'])){
+                return $apiService->getErrorResponse(array('Body field platform not found'),Response::HTTP_BAD_REQUEST);
+            }
+
             $deviceToken = $jsonRequest['device_token'];
+            $platform = $jsonRequest['platform'];
 
             if($request->isMethod('POST')){
-                $notificationData->addDeviceToken($deviceToken);
+                $notificationData->addDeviceToken($deviceToken,$platform);
 
                 $em->flush();
                 return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
             }else{
-                $notificationData->removeDeviceToken($jsonRequest['device_token']);
+                $notificationData->removeDeviceToken($deviceToken,$platform);
                 $em->flush();
-                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
+                return $apiService->getOkResponse($notificationData,Response::HTTP_OK);
             }
         }else{
             $subscription = $jsonRequest['subscription'];
@@ -82,7 +87,9 @@ class NotificationController extends Controller
                  }
              }
 
-             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys']);
+             //TODO : DEAL WITH MACOS ENDPOINTS
+             $isMacOSEndpoint = false;
+             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys'],$isMacOSEndpoint );
              $pushSubscription->setNotificationData($notificationData);
              $notificationData->addWebPushSubscription($pushSubscription);
 

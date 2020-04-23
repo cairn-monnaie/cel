@@ -28,7 +28,7 @@ class NotificationDataRepository extends \Doctrine\ORM\EntityRepository
     {
         $conditions = array();
         foreach($deviceTokens as $deviceToken){
-            $conditions[] = "n.deviceTokens LIKE '%".$deviceToken."%'";
+            $conditions[] = "n.androidDeviceTokens LIKE '%".$deviceToken."%' OR n.iosDeviceTokens LIKE '%".$deviceToken."%'  ";
         }
 
         $orX = $nb->expr()->orX();

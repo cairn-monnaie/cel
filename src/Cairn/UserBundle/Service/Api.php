@@ -270,7 +270,7 @@ class Api
            ));
         }
         if($object instanceOf NotificationData){
-            $defaultIgnoredAttributes = array('deviceTokens','webPushSubscriptions','pinCode');
+            $defaultIgnoredAttributes = array('deviceTokens','androidDeviceTokens','iosDeviceTokens','webPushSubscriptions','pinCode');
             $normalizer->setCallbacks(array(
                         'baseNotifications'=> function ($child) {
                             $notifs = [];

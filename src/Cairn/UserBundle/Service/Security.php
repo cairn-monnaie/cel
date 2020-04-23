@@ -20,6 +20,11 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
 use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Ecdsa\Sha256;
+use Lcobucci\JWT\Configuration;
+
 /**
  * This class contains services related to security
  *
@@ -372,6 +377,20 @@ class Security
         return $res;
     }
 
+
+    public function generateJWT($iss,$time,$kid,$p8file)
+    {
+        $signer = new Sha256();
+        $privateKey = new Key('file://'.$p8file);
+        // Step 3: Generate a JWT Token.
+        $token = (new Builder())
+            ->issuedBy($iss) // (iss claim) // teamId
+            ->issuedAt($time) // time the token was issuedAt
+            ->withHeader('kid', $kid)
+            ->getToken($signer,$privateKey); // get the generated token 
+
+        return $token;
+    }
 
     public function parseAuthorizationHeader(string $authorizationHeader)
     {
