@@ -283,7 +283,7 @@ class Api
            ));
         }
         if($object instanceOf BaseNotification){
-            $defaultIgnoredAttributes = array('targetData','timeToLive','priority','collapsible','notificationData');
+            $defaultIgnoredAttributes = array('id','keyword','targetData','timeToLive','priority','collapsible','notificationData');
         }
 
         if($object instanceOf Phone){
