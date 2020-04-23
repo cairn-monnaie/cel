@@ -37,7 +37,6 @@ self.addEventListener('push', function(event) {
                 // We have an open notification, let's do something with it.
                 newOptions.body = `Dernier paiement : ${payload.data.amount} cairns reçus à ${payload.data.done_at} de ${payload.data.debitor} `;
                 newOptions.data.newMessageCount = messageCount;
-                newOptions.image = defaultProIcon;
 
                 notificationTitle = `Vous avez reçu ${messageCount} nouveaux paiements`;
 
@@ -46,7 +45,6 @@ self.addEventListener('push', function(event) {
             } else {
                 newOptions.body = payload.body;
                 newOptions.data.newMessageCount = 1;
-                newOptions.image = defaultProIcon;
                 notificationTitle = initPushData.title;
             }
 

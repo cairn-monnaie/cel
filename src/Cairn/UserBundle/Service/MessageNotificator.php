@@ -80,8 +80,8 @@ class MessageNotificator
             'title'=> 'Nouveau pro !',
             'payload'=>array(
                 'body' => 'Nouveau pro dans le réseau pouloulou',
-                'tag' => $payload['tag'], 
-                'data'=>$payload
+                'tag' => $payload['android']['body_loc_key'], 
+                'data'=>$payload['android']['body_loc_args']
             )
         );
 
