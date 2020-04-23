@@ -36,9 +36,16 @@ class NotificationData
     /**
      * @var array
      *
-     * @ORM\Column(name="device_tokens", type="array")
+     * @ORM\Column(name="android_device_tokens", type="array")
      */
-    private $deviceTokens;
+    private $androidDeviceTokens;
+
+    /**
+     * @var array
+     *
+     * @ORM\Column(name="ios_device_tokens", type="array")
+     */
+    private $iosDeviceTokens;
 
     /**
      * @var ArrayCollection
@@ -67,7 +74,8 @@ class NotificationData
         $this->baseNotifications = new ArrayCollection();
         $this->webPushSubscriptions = new ArrayCollection();
 
-        $this->setDeviceTokens([]);
+        $this->setAndroidDeviceTokens([]);
+        $this->setIosDeviceTokens([]);
         $this->setUser($user);
     }
 
@@ -107,15 +115,15 @@ class NotificationData
     }
 
     /**
-     * Set deviceTokens.
+     * Set androidDeviceTokens.
      *
      * @param array $deviceTokens
      *
      * @return NotificationData
      */
-    public function setDeviceTokens($deviceTokens)
+    public function setAndroidDeviceTokens($deviceTokens)
     {
-        $this->deviceTokens = $deviceTokens;
+        $this->androidDeviceTokens = $deviceTokens;
 
         return $this;
     }
@@ -125,23 +133,66 @@ class NotificationData
      *
      * @return array
      */
-    public function getDeviceTokens()
+    public function getAndroidDeviceTokens()
     {
-        return $this->deviceTokens;
+        return $this->androidDeviceTokens;
     }
 
-    public function addDeviceToken(string $token)
+    /**
+     * Set iosDeviceTokens.
+     *
+     * @param array $deviceTokens
+     *
+     * @return NotificationData
+     */
+    public function setIosDeviceTokens($deviceTokens)
     {
-        if(! in_array($token,$this->deviceTokens)){
-            $this->deviceTokens[] = $token;
-        }
+        $this->iosDeviceTokens = $deviceTokens;
 
         return $this;
     }
 
-    public function removeDeviceToken(string $token)
+    /**
+     * Get deviceTokens.
+     *
+     * @return array
+     */
+    public function getIosDeviceTokens()
     {
-        $this->deviceTokens = array_diff($this->deviceTokens,array($token));
+        return $this->iosDeviceTokens;
+    }
+
+    public function getDeviceTokens()
+    {
+        return array('android'=>$this->androidDeviceTokens,'ios'=>$this->iosDeviceTokens);
+    }
+
+
+    public function addDeviceToken(string $token,$platform)
+    {
+        if($platform == 'ios'){
+            if(! in_array($token,$this->iosDeviceTokens)){
+                $this->iosDeviceTokens[] = $token;
+            }
+        }else{
+            if(! in_array($token,$this->androidDeviceTokens)){
+                $this->androidDeviceTokens[] = $token;
+            }
+        }
+        
+        return $this;
+    }
+
+    public function removeDeviceToken(string $token,$platform = NULL)
+    {
+        if($platform == 'ios'){
+            $this->iosDeviceTokens = array_diff($this->iosDeviceTokens,array($token));
+        }elseif($platform == 'android'){
+            $this->androidDeviceTokens = array_diff($this->androidDeviceTokens,array($token));
+        }else{
+            $this->removeDeviceTokens($token,'ios');
+            $this->removeDeviceTokens($token,'android');
+        }
 
         return $this;
     }

@@ -270,7 +270,7 @@ class Api
            ));
         }
         if($object instanceOf NotificationData){
-            $defaultIgnoredAttributes = array('deviceTokens','webPushSubscriptions','pinCode');
+            $defaultIgnoredAttributes = array('deviceTokens','androidDeviceTokens','iosDeviceTokens','webPushSubscriptions','pinCode');
             $normalizer->setCallbacks(array(
                         'baseNotifications'=> function ($child) {
                             $notifs = [];
@@ -283,7 +283,7 @@ class Api
            ));
         }
         if($object instanceOf BaseNotification){
-            $defaultIgnoredAttributes = array('targetData','timeToLive','priority','collapsible','notificationData');
+            $defaultIgnoredAttributes = array('id','keyword','targetData','timeToLive','priority','collapsible','notificationData');
         }
 
         if($object instanceOf Phone){

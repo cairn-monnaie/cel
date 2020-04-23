@@ -51,7 +51,7 @@ class ApiController extends Controller
     {
         if($request->isMethod('POST')){
 
-            $jsonRequest = json_decode($request->getContent(), true);
+            $jsonRequest = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
 
             $em = $this->getDoctrine()->getManager();
             $userRepo = $em->getRepository(User::class);
@@ -67,6 +67,10 @@ class ApiController extends Controller
             }
 
             if($jsonRequest['name']){
+
+                $matchEmail = preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',$jsonRequest['name']);
+                $matchICC = preg_match('#^\d{9}$#',$jsonRequest['name']);
+
                 $ub->andWhere(
                     $ub->expr()->orX(
                         "u.name LIKE '%".$jsonRequest['name']."%'"
@@ -74,8 +78,12 @@ class ApiController extends Controller
                         "u.username LIKE '%".$jsonRequest['name']."%'"
                         ,
                         "u.email LIKE '%".$jsonRequest['name']."%'"
+                        ,
+                        "u.mainICC = :name"
                     )
-                );
+                )
+                ->setParameter('name',$jsonRequest['name'])
+                ;
             }
 
             $userRepo->whereAdherent($ub)
@@ -87,7 +95,13 @@ class ApiController extends Controller
                 $userRepo->whereRole($ub,'ROLE_PRO');
             }else{
                 if(! $currentUser->isAdmin()){
-                    $userRepo->whereRole($ub,'ROLE_PRO');
+                    
+                    if($matchEmail || $matchICC){//mail exact ou n° de compte exact
+                        $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
+                    }else{
+                        $userRepo->whereRole($ub,'ROLE_PRO');
+                    } 
+                    
                 }else{// let admin choose according to POST sent
                     if(empty(array_values($jsonRequest['roles']))){
                         $userRepo->whereAdherent($ub);
@@ -113,6 +127,14 @@ class ApiController extends Controller
                 
             $users = $ub->getQuery()->getResult();
 
+            if( ($matchEmail || $matchICC) && (count($users) == 1) && $users[0]->hasRole('ROLE_PERSON')){
+                $res = [
+                    'name' => $users[0]->getName(),
+                    'account_number' => $users[0]->getMainICC()
+                ];
+
+                return $this->get('cairn_user.api')->getOkResponse($res,Response::HTTP_OK);
+            }
             return $this->get('cairn_user.api')->getOkResponse($users,Response::HTTP_OK);
         }else{
             throw new NotFoundHttpException('POST Method required !');
