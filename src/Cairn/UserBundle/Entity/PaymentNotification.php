@@ -40,22 +40,20 @@ class PaymentNotification extends BaseNotification
 
     public static function getPushData(Operation $operation)
     {
+        $data =  [
+            'amount'=>$operation->getAmount(),
+            'debitor'=>$operation->getDebitorName(),
+            'done_at'=>$operation->getExecutionDate()->format('H:i')
+        ];
+
         return [
             'ios' => [
                 'loc-key' => self::TITLE_KEY,
-                'loc-args' => [
-                    'amount'=>$operation->getAmount(),
-                    'debitor'=>$operation->getDebitorName(),
-                    'done_at'=>$operation->getExecutionDate()->format('H:i')
-                ]
+                'loc-args' => $data
             ],
             'android' => [
                 'body_loc_key'=> self::TITLE_KEY,
-                'body_loc_args'=>  [
-                    'amount'=>$operation->getAmount(),
-                    'debitor'=>$operation->getDebitorName(),
-                    'done_at'=>$operation->getExecutionDate()->format('H:i')
-                ],
+                'body_loc_args'=> $data,
                 'title_loc_key'=>'received_paiement_title'
             ]
         ];
