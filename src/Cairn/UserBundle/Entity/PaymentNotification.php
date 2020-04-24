@@ -29,7 +29,7 @@ class PaymentNotification extends BaseNotification
     private $minAmount;
 
     //IF YOU CHANGE THIS VALUE, CHANGE web/service-worker.js !!!
-    const TITLE_KEY = 'push_received_paiement';
+    const TITLE_KEY = 'received_paiement_body';
 
     public function __construct(array $types = [],$minAmount = 0)
     {
@@ -48,13 +48,18 @@ class PaymentNotification extends BaseNotification
 
         return [
             'ios' => [
-                'loc-key' => 'received_paiement_body',
-                'loc-args' => $data
+                'loc-key' => self::TITILE_KEY,
+                'loc-args' => array_values($data)
             ],
             'android' => [
                 'body_loc_key'=> self::TITLE_KEY,
                 'body_loc_args'=> array_values($data),
                 'title_loc_key'=>'received_paiement_title'
+            ],
+            'web' => [
+                'body'=> $operation->getCreditorContent(),
+                'tag'=> self::TITLE_KEY,
+                'data'=> $data
             ]
         ];
     }

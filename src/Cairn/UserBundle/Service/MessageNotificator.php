@@ -124,11 +124,7 @@ class MessageNotificator
 
             $webPushData = array(
                 'title'=> 'Vous avez reçu un paiement !',
-                'payload'=>array(
-                    'body' => $operation->getCreditorContent(),
-                    'tag' => $payload['android']['body_loc_key'], //we could have used ios data too. 
-                    'data'=>$payload['android']['body_loc_args']
-                )
+                'payload'=> $payload
             );
 
             $appPushData = $payload;
