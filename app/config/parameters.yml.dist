@@ -89,12 +89,13 @@ parameters:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
         mobilepush:
+            app_id: 'app.id.mobile'
             android:
                 private_key: 'FuckYouGoddamnCoronavirus'
                 api_url: 'https://fcm.googleapis.com/fcm/send'
             ios:
-                api_prod_url: 'api.push.apple.com:443'
-                api_dev_url: 'api.sandbox.push.apple.com:443'
+                api_prod_url: 'https://api.push.apple.com:443'
+                api_dev_url: 'https://api.sandbox.push.apple.com:443'
                 private_key: 'XXXX'
                 kid: '1234'
                 iss: 'My Team ID'

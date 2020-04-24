@@ -48,12 +48,12 @@ class PaymentNotification extends BaseNotification
 
         return [
             'ios' => [
-                'loc-key' => self::TITLE_KEY,
+                'loc-key' => 'received_paiement_body',
                 'loc-args' => $data
             ],
             'android' => [
                 'body_loc_key'=> self::TITLE_KEY,
-                'body_loc_args'=> $data,
+                'body_loc_args'=> array_values($data),
                 'title_loc_key'=>'received_paiement_title'
             ]
         ];

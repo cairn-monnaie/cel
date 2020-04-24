@@ -148,9 +148,9 @@ class MessageNotificator
             $this->sendAppPushNotifications(
                 $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
             );
-            $this->sendWebPushNotifications(
-                $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
-            );
+            //$this->sendWebPushNotifications(
+            //    $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
+            //);
 
         }
     }
@@ -165,6 +165,8 @@ class MessageNotificator
         $pushConsts = $this->consts['mobilepush'];
         $androidConsts = $pushConsts['android'];
         $iosConsts = $pushConsts['ios'];
+
+        $notRegisteredTokens = [];
 
         // --------------------- SEND ANDROID PUSH -----------------------//
         // Message to be sent
@@ -182,7 +184,7 @@ class MessageNotificator
         if(count($androidTokens) == 1){
             $push['to'] = $androidTokens[0];
         }else{
-            $push['registration_ids'] = $androidTokens;
+            $push['registration_ids'] = array_values($androidTokens);
         }
 
         $headers = array(
@@ -192,16 +194,14 @@ class MessageNotificator
 
         // Open connection
         $ch = curl_init();
-
         
         // Set the URL, number of POST vars, POST data
         curl_setopt( $ch, CURLOPT_URL, $androidConsts['api_url']);
-        curl_setopt( $ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+        curl_setopt( $ch, CURLOPT_POST, true); 
         curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $push));
 
         // Execute post
         $jsonResponse = curl_exec($ch);
@@ -212,10 +212,10 @@ class MessageNotificator
         if($code == 200){//messages have been sent, but maybe with errors
             //get DEPRECATED RESULTS HERE
             $possibleErrors = array('InvalidRegistration','NotRegistered');
-            $notRegisteredTokens = [];
+            
             foreach($response['results'] as $index=>$result){
                 if(isset($result['error']) && in_array($result['error'],$possibleErrors) ){
-                    $notRegisteredTokens[] = $tokens[$index];
+                    $notRegisteredTokens[] = $androidTokens[$index];
                 }
             }
         }
@@ -235,7 +235,9 @@ class MessageNotificator
 
         $headers = array(
             'Authorization: Bearer ' . $authToken,
-            'Content-Type: application/json'
+            'Content-Type: application/json',
+            'apns-push-type: background',
+            'apns-topic: '.$pushConsts['app_id']
         );
 
         // Create the payload body
@@ -262,7 +264,6 @@ class MessageNotificator
             curl_setopt( $ch, CURLOPT_URL, $apiUrl.'/3/device/'.$deviceToken);
             // Execute post
             $jsonResponse = curl_exec($ch);
-
             $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
             if($code == 410){

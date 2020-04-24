@@ -186,12 +186,12 @@ class NotificationData
     public function removeDeviceToken(string $token,$platform = NULL)
     {
         if($platform == 'ios'){
-            $this->iosDeviceTokens = array_diff($this->iosDeviceTokens,array($token));
+            $this->iosDeviceTokens = array_values( array_diff($this->iosDeviceTokens,array($token)) );
         }elseif($platform == 'android'){
-            $this->androidDeviceTokens = array_diff($this->androidDeviceTokens,array($token));
+            $this->androidDeviceTokens = array_values(array_diff($this->androidDeviceTokens,array($token)) );
         }else{
-            $this->removeDeviceTokens($token,'ios');
-            $this->removeDeviceTokens($token,'android');
+            $this->removeDeviceToken($token,'ios');
+            $this->removeDeviceToken($token,'android');
         }
 
         return $this;
