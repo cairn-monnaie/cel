@@ -29,19 +29,27 @@ class RegistrationNotification extends BaseNotification
 
     public static function getPushData(User $user)
     {
-        $data = [
-            'tag'=> self::TITLE_KEY,
-            'id'=>$user->getId(),
-            'username'=>$user->getUsername(),
+        $data =  [
             'name'=>$user->getName(),
-            'address'=>$user->getAddress()->__toString()
+            'address'=>$user->getAddress()->__toString(),
+            'description'=>$user->getDescription()
         ];
 
-        if($logo = $user->getImage()){
-            $data['image'] = $logo->getWebPath(); 
+        if($image = $user->getImage()){
+            $data['image'] = $image->getWebPath();
         }
 
-        return $data;
+        return [
+            'ios' => [
+                'loc-key' => self::TITLE_KEY,
+                'loc-args' => $data
+            ],
+            'android' => [
+                'body_loc_key'=> self::TITLE_KEY,
+                'body_loc_args'=> $data,
+                'title_loc_key'=>'received_paiement_title'
+            ]
+        ];
     }
 
     public function __construct($radius = 5)
