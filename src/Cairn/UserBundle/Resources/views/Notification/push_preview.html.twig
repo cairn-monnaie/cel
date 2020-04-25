@@ -1,0 +1,48 @@
+{# src/Cairn/UserBundle/Resources/views/Notification/push_preview.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}Push Message - Preview{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+<div class="row">
+    <div class="container">
+        <h2> Preview du push à envoyer </h2>
+        {#             {% if user.image is not null %}
+                {% if user.image.url is not null %}
+                    {% set logoIsDefined = true %}
+                {% else %}
+                    {% set logoIsDefined = false %}
+                {% endif %}
+            {% else %}
+                {% set logoIsDefined = false %}
+            {% endif %}
+
+            <div class="row">
+                {% if logoIsDefined %}
+                    <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="responsive-img">
+                {% else %}
+                    <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo pro" class="circle responsive-img">
+                {% endif %}
+            </div>
+            #}
+
+        <div>                                                                          
+            {{ form_start(form) }}
+                <div class="input-field col s12 m6">
+                    {{ form_row(form.save, {'method': 'post','label' : 'Push NOW'} ) }}
+                    {{ form_row(form.cancel, {'method': 'post','label' : 'Push LATER'} ) }}
+                </div>
+
+            {{form_end(form) }}
+        </div>                                                                         
+
+
+    </div>
+</div>
+{% endblock %}
