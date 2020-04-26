@@ -20,6 +20,8 @@ class PaymentNotificationRepository extends BaseNotificationRepository
 
     public function findPaymentNotification(NotificationData $nD,array $types = [],$amount)
     {
+        if(! $nD){return NULL;}
+
          $pb = $this->createQueryBuilder('p')->andWhere('p.notificationData = :notificationDataId')
                 ->setParameter('notificationDataId',$nD->getId());
 
