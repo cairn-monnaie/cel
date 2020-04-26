@@ -82,7 +82,7 @@ class MessageNotificator
             return;
         }
 
-        $payload = RegistrationNotification::getPushData($user);
+        $appPushData = RegistrationNotification::getPushData($user);
         $nfKeyword = BaseNotification::KEYWORD_REGISTER;
 
         $webPushData = array(
@@ -91,17 +91,23 @@ class MessageNotificator
                 'tag' => 'pro_registration',
                 'body' => $pushTemplate->getContent(),
                 'actions' => [
-                    'action' => 'pro-website-action',
-                    'icon' => '/images/demos/action-3-128x128.png',
-                    'title' => $pushTemplate->getActionTitle()
+                    [
+                        'action' => 'pro-website-action',
+                        'icon' => '/images/demos/action-3-128x128.png',
+                        'title' => $pushTemplate->getActionTitle()
+                    ]
                 ]
             ]
         );
+        if($image = $user->getImage()){
+             $webPushData['payload']['image'] = $image->getWebPath();
+        }
 
-        $appPushData = $payload;
 
         $targets = $this->em->getRepository('CairnUserBundle:RegistrationNotification')->findTargetsAround($user->getAddress()->getLatitude(),$user->getAddress()->getLongitude());
 
+        //var_dump($targets);
+        //$it=$it2;
         $this->sendAppPushNotifications(
             $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
         );

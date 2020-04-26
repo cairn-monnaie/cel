@@ -28,7 +28,7 @@ class PushTemplate
     /**
      * @var string
      */
-    private $redirection;
+    private $redirectionUrl;
 
 
     /**
@@ -105,26 +105,26 @@ class PushTemplate
 
 
     /**
-     * Set redirection.
+     * Set redirectionUrl.
      *
-     * @param string $redirection
+     * @param string $redirectionUrl
      *
      * @return PushTemplate
      */
-    public function setRedirection($redirection)
+    public function setRedirectionUrl($redirectionUrl)
     {
-        $this->redirection = $redirection;
+        $this->redirectionUrl = $redirectionUrl;
 
         return $this;
     }
 
     /**
-     * Get redirection.
+     * Get redirectionUrl.
      *
      * @return string
      */
-    public function getRedirection()
+    public function getRedirectionUrl()
     {
-        return $this->redirection;
+        return $this->redirectionUrl;
     }
 }

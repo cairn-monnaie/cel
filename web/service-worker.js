@@ -66,30 +66,26 @@ self.addEventListener('push', function(event) {
         }).then((currentNotification) => {
             let notificationTitle;
 
-            const newOptions = {};
-            newOptions.data = requestedOptions.data;
+            const newOptions = requestedOptions;
 
             if (currentNotification) {
                 const messageCount = currentNotification.data.newMessageCount + 1;
                 // We have an open notification, let's do something with it.
                 newOptions.body = `${messageCount} nouveaux pros près de chez vous`;
                 newOptions.data.newMessageCount = messageCount;
-                newOptions.image = defaultProIcon;
+                newOptions.image = requestedOptions.image ? requestedOptions.image : defaultProIcon;
 
                 notificationTitle = 'Le réseau du Cairn s\'agrandit !';
 
                 // Remember to close the old notification.
                 currentNotification.close();
             } else {
-                newOptions.body = requestedOptions.body;
                 newOptions.data.newMessageCount = 1;
                 newOptions.image = requestedOptions.image ? requestedOptions.image : defaultProIcon;
                 notificationTitle = requestedPush.title;
             }
 
-            event.waitUntil(
-                self.registration.showNotification(notificationTitle, editOptions(newOptions))
-            );
+            self.registration.showNotification(notificationTitle, editOptions(newOptions));
         })
     }else{
         event.waitUntil(
