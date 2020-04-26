@@ -194,7 +194,8 @@ class Api
                          'image'=>$child->getImage(),
                          'email'=>$child->getEmail(),
                          'description'=>$child->getDescription(),
-                         'id'=>$child->getID()
+                         'id'=>$child->getID(),
+                         'roles'=>$child->getRoles()
                      );
         }
 
