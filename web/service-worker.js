@@ -1,8 +1,11 @@
+//The requested push data must be available in several event listeners
+var requestedPush;
+
 self.addEventListener('push', function(event) {
 
     //this code logic may change the requested push data according to browser available features
     //therefore, requested will prefix any variable containing initial sent data
-    const requestedPush = event.data ? event.data.json() : 'Pas de donnée transmise';
+    requestedPush = event.data ? event.data.json() : 'Pas de donnée transmise';
     const requestedOptions = requestedPush.payload;
 
     const paymentTag = 'received_paiement_body';
@@ -46,9 +49,7 @@ self.addEventListener('push', function(event) {
                 notificationTitle = requestedPush.title;
             }
 
-            event.waitUntil(
-                self.registration.showNotification(notificationTitle, editOptions(newOptions))
-            );
+            self.registration.showNotification(notificationTitle, editOptions(newOptions));
         })
     }else if(requestedOptions.tag === registerTag){// IF several pros...
         const promiseChain = self.registration.getNotifications()
@@ -99,8 +100,10 @@ self.addEventListener('notificationclick', function(event) {
     const clickedNotification = event.notification;
 
     // IF actions is supported: display as an action. Otherwise, use open window on most priority action
-    if (!("actions" in Notification) && clickedNotification.actions) {
-        switch(clickedNotification.actions[0].action){
+    // IF actions is not supported, the field "action" is cleaned from the notification object once it is displayed
+    // For this reason, we cannot use clickedNotification to know the initial requested behaviour regarding actions
+    if ( (!("actions" in Notification)) && requestedPush.payload.actions) {
+        switch(requestedPush.payload.actions[0].action){
             case 'pro-website-action':
                 onProRegisterNotificationClick(clickedNotification);
                 break;
@@ -131,8 +134,7 @@ function onProRegisterNotificationClick(notification){
         throw new Error('no website key provided in payload data');
     }
     const proPage = notification.data.website;
-    const promiseChain = clients.openWindow(proPage);
-    event.waitUntil(promiseChain);
+    clients.openWindow(proPage);
     notification.close();
 }
 
