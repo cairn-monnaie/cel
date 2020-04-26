@@ -19,6 +19,10 @@ cairn_user_api_mobilepush_subscription:
         from: web|mobile
         _format: html|json
 
+cairn_user_push_registration:
+    path: push/notification/{id}
+    defaults: { _controller: CairnUserBundle:Notification:sendProPushNotification, _format: html }
+
 cairn_user_api_notification_data_edit:
     path: mobile/notifications/{id}
     methods: GET|POST

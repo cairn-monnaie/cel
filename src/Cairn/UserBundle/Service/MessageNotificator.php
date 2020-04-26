@@ -9,7 +9,7 @@ use Cairn\UserBundle\Entity\Sms;
 use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\PaymentNotification;
 use Cairn\UserBundle\Entity\RegistrationNotification;
-
+use Cairn\UserBundle\Entity\PushTemplate;                       
 use Cairn\UserBundle\Entity\User;                       
 
 use Doctrine\ORM\EntityManager;
@@ -76,33 +76,43 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendRegisterNotifications(User $user)
+    public function sendRegisterNotifications(User $user, PushTemplate $pushTemplate)
     {
-        //if(! $user->hasRole('ROLE_PRO')){
-        //    return;
-        //}
+        if(! $user->hasRole('ROLE_PRO')){
+            return;
+        }
 
-        $payload = RegistrationNotification::getPushData($user);
+        $appPushData = RegistrationNotification::getPushData($user);
         $nfKeyword = BaseNotification::KEYWORD_REGISTER;
 
         $webPushData = array(
-            'title'=> 'Nouveau pro !',
-            'payload'=>array(
-                'body' => 'Nouveau pro dans le réseau pouloulou',
-                'tag' => $payload['android']['body_loc_key'], 
-                'data'=>$payload['android']['body_loc_args']
-            )
+            'title'=> $pushTemplate->getTitle(),
+            'payload'=> [
+                'tag' => 'pro_registration',
+                'body' => $pushTemplate->getContent(),
+                'actions' => [
+                    [
+                        'action' => 'pro-website-action',
+                        'icon' => '/images/demos/action-3-128x128.png',
+                        'title' => $pushTemplate->getActionTitle()
+                    ]
+                ]
+            ]
         );
+        if($image = $user->getImage()){
+             $webPushData['payload']['image'] = $image->getWebPath();
+        }
 
-        $appPushData = $payload;
 
         $targets = $this->em->getRepository('CairnUserBundle:RegistrationNotification')->findTargetsAround($user->getAddress()->getLatitude(),$user->getAddress()->getLongitude());
 
+        //var_dump($targets);
+        //$it=$it2;
         $this->sendAppPushNotifications(
-            $targets['device_tokens'],$appPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
+            $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
         );
         $this->sendWebPushNotifications(
-            $targets['web_endpoints'],$webPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
+            $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
         );
 
     }
@@ -124,7 +134,7 @@ class MessageNotificator
 
             $webPushData = array(
                 'title'=> 'Vous avez reçu un paiement !',
-                'payload'=> $payload
+                'payload'=> $payload['web']
             );
 
             $appPushData = $payload;
@@ -144,9 +154,9 @@ class MessageNotificator
             $this->sendAppPushNotifications(
                 $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
             );
-            //$this->sendWebPushNotifications(
-            //    $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
-            //);
+            $this->sendWebPushNotifications(
+                $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
+            );
 
         }
     }
@@ -314,12 +324,22 @@ class MessageNotificator
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        foreach($subscriptions['mozilla'] as $subscription){
+        foreach($subscriptions as $subscription){
+            $encKeys =  $subscription->getEncryptionKeys();
+            if(is_string($encKeys)){
+                $keys = unserialize($encKeys);
+            }else{
+                $keys = $encKeys;
+            }
+
             $notification = array(
                 'subscription'=> Subscription::create(
                     array(
                         'endpoint' => $subscription->getEndpoint(),
-                        'keys'=>$subscription->getEncryptionKeys()
+                        'keys'=> [
+                            'p256dh' => $keys['p256dh'] ,
+                            'auth' => $keys['auth']
+                        ]
                     )
                 ),
                 'payload'=>json_encode($data)

@@ -1,0 +1,107 @@
+{# src/Cairn/UserBundle/Resources/views/Notification/push_preview.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% block title %}Push Message - Preview{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+ 
+{% block body %}
+    {{parent()}} 
+
+{% if user.image is not null %}
+    {% if user.image.url is not null %}
+        {% set logoIsDefined = true %}
+    {% else %}
+        {% set logoIsDefined = false %}
+    {% endif %}
+{% else %}
+    {% set logoIsDefined = false %}
+{% endif %}
+
+<div class="row">
+    <div class="container">
+        <h2> Preview de la notification Push </h2>
+        <div class="col s12 m6">                                         
+            {{ form_start(form) }}
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.title) }}
+                    {{ form_label(form.title) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    {{ form_widget(form.actionTitle) }}
+                    {{ form_label(form.actionTitle) }}
+                </div>
+                <div class="input-field col s12">
+                    {{ form_widget(form.content) }}
+                    {{ form_label(form.content) }}
+                </div>
+                <div class="input-field col s12">
+                    {{ form_widget(form.redirectionUrl) }}
+                    {{ form_label(form.redirectionUrl) }}
+                </div>
+                <div class="input-field col s12 m6">
+                    <p>
+                    {{ form_widget(form.save) }}
+                    {{ form_label(form.save) }}
+                    </p><p>
+                    {{ form_widget(form.cancel) }}
+                    {{ form_label(form.cancel) }}
+                    </p>
+                </div>
+            {{form_end(form) }}
+        </div>                                                                         
+
+        <div class="col s12 m6">
+            <div class="card small">
+                <div class="card-image">
+                    {% if logoIsDefined %}
+                        <img src="{{asset('uploads/img/' ~ user.image.id ~ '.' ~ user.image.url)}}" alt="{{user.image.alt}}" class="responsive-img">
+                    {% else %}
+                        <img src="{{asset('bundles/cairnuser/img/pro.png')}}"alt="Logo utilisateur" class="circle responsive-img">
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <p id="content-title"><span></span></p>
+                    <p id="content-content"></p>
+                </div>
+                <div class="card-action">
+                    <a href="#"></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{parent()}}
+
+    <script>
+       const containerInputNotifTitle = document.querySelector('input#cairn_userbundle_pushtemplate_title'); 
+       const containerInputActionTitle = document.querySelector('input#cairn_userbundle_pushtemplate_actionTitle'); 
+        const containerInputNotifContent = document.querySelector('textarea#cairn_userbundle_pushtemplate_content'); 
+
+        const cardAction = document.querySelector('div.card-action').firstElementChild;
+        const cardTitle = document.querySelector('p#content-title').firstElementChild;
+        const cardContent = document.querySelector('p#content-content');
+
+        containerInputNotifTitle.addEventListener('input',function(e){
+            cardTitle.innerHTML = this.value; 
+        });
+
+        containerInputActionTitle.addEventListener('input',function(){
+            cardAction.innerHTML = this.value; 
+
+        });
+
+        containerInputNotifContent.addEventListener('input',function(){
+            cardContent.innerHTML = this.value; 
+        });
+
+    </script>
+{% endblock %}
+

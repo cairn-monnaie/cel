@@ -40,7 +40,7 @@ class WebPushSubscription
      *
      * @ORM\Column(name="encryption_keys", type="array")
      */
-    private $encryptionKeys;
+    private $encryption_keys;
 
     /**
      * @var \Cairn\UserBundle\Entity\NotificationData
@@ -51,10 +51,10 @@ class WebPushSubscription
     private $notificationData;
 
     
-    public function __construct(string $endpoint,array $keys = [],bool $appleOS)
+    public function __construct(string $endpoint = '',bool $appleOS = false,array $encryption_keys = [])
     {
         $this->endpoint = $endpoint;
-        $this->encryptionKeys = $keys;
+        $this->encryption_keys = $encryption_keys;
         $this->isAppleOS = $appleOS;
     }
 
@@ -93,27 +93,27 @@ class WebPushSubscription
     }
 
     /**
-     * Set encryptionKeys.
+     * Set encryption_keys.
      *
-     * @param array $encryptionKeys
+     * @param array $encryption_keys
      *
      * @return WebPushSubscription
      */
-    public function setEncryptionKeys($encryptionKeys)
+    public function setEncryption_keys($encryption_keys)
     {
-        $this->encryptionKeys = $encryptionKeys;
+        $this->encryption_keys = $encryption_keys;
 
         return $this;
     }
 
     /**
-     * Get encryptionKeys.
+     * Get encryption_keys.
      *
      * @return array
      */
     public function getEncryptionKeys()
     {
-        return $this->encryptionKeys;
+        return $this->encryption_keys;
     }
 
     /**

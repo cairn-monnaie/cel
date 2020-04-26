@@ -12,6 +12,7 @@ use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\PaymentNotification;
 use Cairn\UserBundle\Entity\RegistrationNotification;
 use Cairn\UserBundle\Entity\WebPushSubscription;
+use Cairn\UserBundle\Entity\PushTemplate;
 
 //manage HTTP format
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +23,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 //manage Forms
 use Cairn\UserBundle\Form\ConfirmationType;
 use Cairn\UserBundle\Form\NotificationDataType;
+use Cairn\UserBundle\Form\PushTemplateType;
 
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
@@ -89,35 +91,23 @@ class NotificationController extends Controller
 
              //TODO : DEAL WITH MACOS ENDPOINTS
              $isMacOSEndpoint = false;
-             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$subscription['keys'],$isMacOSEndpoint );
+             $pushSubscription = new WebPushSubscription($subscription['endpoint'],$isMacOSEndpoint,$subscription['keys'] );
              $pushSubscription->setNotificationData($notificationData);
              $notificationData->addWebPushSubscription($pushSubscription);
 
 
-             //ADD MOZILLA, CHROME, ... TO THE MESSAGE
-             $endpoint = $subscription['endpoint'];
-             $navigator = '';
-
-             if(strpos($endpoint,'mozilla') !== false){
-                $navigator = 'Mozilla Firefox';
-             }elseif(strpos($endpoint,'googleapis') !== false){
-                $navigator = '(Chrome ou Opera)';
-             }
-             
-
              $data = array(
-                'title'=>'Notifications [e]-Cairn',
-                'body'=>'Ce navigateur '.$navigator.' est désormais enregistré comme destinataire des notifications',
-                'payload'=>['tag'=>'subscription']
+                 'title'=>'Notifications [e]-Cairn',
+                 'payload' => [
+                    'tag' => 'subscription',
+                    'body' => 'Ce navigateur est désormais enregistré comme destinataire des notifications'
+                 ]
              );
             $this->get('cairn_user.message_notificator')->sendWebPushNotifications(array($pushSubscription),$data,'subscription',0,'normal');
 
              $em->flush();
-
              
              return $apiService->getOkResponse(array('OK'),Response::HTTP_CREATED);
-
-
         }
     }
 
@@ -150,10 +140,9 @@ class NotificationController extends Controller
 
     public function notificationParamsAction(Request $request, User $user)
     {
-        $currentUser = $this->getUser();
+        $currentUser = $this->getUser(); 
 
-        $this->get('cairn_user.message_notificator')->sendRegisterNotifications($currentUser);
-
+        
         $em = $this->getDoctrine()->getManager();
         $apiService = $this->get('cairn_user.api');
         $isRemoteCall = $apiService->isRemoteCall();
@@ -200,8 +189,10 @@ class NotificationController extends Controller
      * @param  User $user  Must have role ROLE_PRO
      * @Security("has_role('ROLE_SUPER_ADMIN')")
      */
-    public function sendProPushAction(Request $request,User $user)
+    public function sendProPushNotificationAction(Request $request,User $user)
     {
+        $em = $this->getDoctrine()->getManager();
+
         $session = $request->getSession();
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
@@ -210,15 +201,24 @@ class NotificationController extends Controller
             return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
          }
 
-        $form = $this->createForm(ConfirmationType::class);
+        $pushTemplate = new PushTemplate();
+
+        $form = $this->createForm(PushTemplateType::class,$pushTemplate);
 
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('save')->isClicked()){
-                $messageNotificator->sendRegisterNotifications($user);
-            }else{//push not sent, redirect to profile
-                return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+                $messageNotificator->sendRegisterNotifications($user, $pushTemplate);
+                $session->getFlashBag()->add('success','Push message has been sent');
+
+                $em->flush();
+            }else{
+                $session->getFlashBag()->add('info','Push message has been canceled');
             }
+            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
         }
+
+        return $this->render('CairnUserBundle:Notification:push_preview.html.twig',array('form' => $form->createView(),'user'=>$user));
+
     }
 
 }
