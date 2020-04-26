@@ -284,10 +284,6 @@ cairn_user_users_remove_pending:
     path:     user/remove-pending
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
 
-cairn_user_users_smsdata:
-    path:     user/smsdata
-    defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
-
 cairn_user_api_first_login:
     path:     /{remote}/first-login
     methods: POST

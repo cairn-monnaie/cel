@@ -18,23 +18,23 @@ class RegistrationNotificationRepository extends \Doctrine\ORM\EntityRepository
     {
         $conn = $this->getEntityManager()->getConnection();                                          
 
-        //$sql = '
-        //    SELECT *
-        //     FROM web_push_subscription w
-        //     INNER JOIN notification_data n ON w.notification_data_id = n.id
-        //     INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "register" AND b.web_push_enabled = 1)
-        //     INNER JOIN cairn_user u ON u.id = n.user_id
-        //     INNER JOIN address a ON a.id = u.address_id
-        //     WHERE st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 < b.radius  
-        //       ';
+        $sql = '
+            SELECT w.id,w.endpoint,w.encryption_keys
+             FROM web_push_subscription w
+             INNER JOIN notification_data n ON w.notification_data_id = n.id
+             INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "register" AND b.web_push_enabled = 1)
+             INNER JOIN cairn_user u ON u.id = n.user_id
+             INNER JOIN address a ON a.id = u.address_id
+             WHERE st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 < b.radius  
+               ';
 
-        //$stmt = $conn->prepare($sql);                         
-        //$stmt->execute(
-        //    array(
-        //        'lon' => $posLon,
-        //        'lat'=>$posLat
-        //    ));
-        //$webPushEndpoints =  $stmt->fetchAll(\PDO::FETCH_CLASS,WebPushSubscription::class);
+        $stmt = $conn->prepare($sql);                         
+        $stmt->execute(
+            array(
+                'lon' => $posLon,
+                'lat'=>$posLat
+            ));
+        $webPushSubscriptions =  $stmt->fetchAll(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE,WebPushSubscription::class);
 
         $sql = '
             SELECT android_device_tokens AS android,ios_device_tokens AS ios
@@ -51,11 +51,12 @@ class RegistrationNotificationRepository extends \Doctrine\ORM\EntityRepository
                 'lon' => $posLon,
                 'lat'=>$posLat
             ));
-        $res = $stmt->fetchAll();
-        $appPushEndpoints =  array_merge($res);
 
-        return ['web_endpoints'=>$webPushEndpoints,'device_tokens'=>$appPushEndpoints];
+        $res = $stmt->fetchAll(\PDO::FETCH_NUM );
+        
+        $appPushEndpoints = ['android' => array_column($res,0),'ios'=> array_column($res,1)];
 
+        return ['webSubscriptions'=>$webPushSubscriptions,'deviceTokens'=>$appPushEndpoints];
 
     }
 }

@@ -93,9 +93,11 @@ class MessageNotificator
                 'actions' => [
                     [
                         'action' => 'pro-website-action',
-                        'icon' => '/images/demos/action-3-128x128.png',
                         'title' => $pushTemplate->getActionTitle()
                     ]
+                ],
+                'data'=>[
+                    'website'=> $pushTemplate->getRedirectionUrl()
                 ]
             ]
         );

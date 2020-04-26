@@ -586,6 +586,10 @@ class CardController extends Controller
                 $em->flush();
 
                 $session->getFlashBag()->add('success', $successMessage);
+
+                if($user->hasReferent($currentUser) && $user->isFirstLogin() && (! $user->getLastLogin()) && $user->hasRole('ROLE_PRO')){ //user first login
+                    return $this->redirectToRoute('cairn_user_push_registration',array('id'=>$user->getID()));
+                }
                 return $this->redirectToRoute('cairn_user_profile_view',array('username'=>$user->getUsername()));
             }
         }

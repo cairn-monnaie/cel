@@ -42,13 +42,14 @@ class RegistrationNotification extends BaseNotification
         return [
             'ios' => [
                 'loc-key' => self::TITLE_KEY,
-                'loc-args' => $data
+                'loc-args' => array_values($data)
             ],
             'android' => [
                 'body_loc_key'=> self::TITLE_KEY,
-                'body_loc_args'=> $data,
-                'title_loc_key'=>'received_paiement_title'
+                'body_loc_args'=> array_values($data),
+                'title_loc_key'=>'new_pro_title'
             ]
+
         ];
     }
 

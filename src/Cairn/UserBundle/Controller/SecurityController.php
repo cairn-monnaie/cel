@@ -68,6 +68,7 @@ class SecurityController extends Controller
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
             $array_oauth['user_id'] =  $currentUser->getID();
+            $array_oauth['first_login'] =  $currentUser->isFirstLogin();
 
             return $apiService->getOkResponse($array_oauth,Response::HTTP_OK);
         }else{

@@ -22,8 +22,8 @@ class PushTemplateType extends AbstractType
             ->add('content', TextareaType::class,array('label'=>'Contenu'))
             ->add('actionTitle', TextType::class,array('label'=>'Action'))
             ->add('redirectionUrl', UrlType::class,array('label'=>'Redirection web','data'=>'https://'))
-            ->add('save', SubmitType::class,array('label'=>'Push NOW'))
-            ->add('cancel', SubmitType::class,array('label'=>'Push LATER'));
+            ->add('save', SubmitType::class,array('label'=>'Envoyer maintenant'))
+            ->add('cancel', SubmitType::class,array('label'=>'Annuler'));
     }/**
      * {@inheritdoc}
      */
