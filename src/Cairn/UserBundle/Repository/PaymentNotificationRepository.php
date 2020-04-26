@@ -18,7 +18,7 @@ use Doctrine\ORM\QueryBuilder;
 class PaymentNotificationRepository extends BaseNotificationRepository
 {
 
-    public function findPaymentNotification(NotificationData $nD,array $types = [],$amount)
+    public function findPaymentNotification(NotificationData $nD = NULL,array $types = [],$amount)
     {
         if(! $nD){return NULL;}
 
