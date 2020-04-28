@@ -213,9 +213,11 @@ class MessageNotificator
 
         // Execute post
         $jsonResponse = curl_exec($ch);
-
+        
         $response = json_decode($jsonResponse,true);
         $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
 
         if($code == 200){//messages have been sent, but maybe with errors
             //get DEPRECATED RESULTS HERE

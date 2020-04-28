@@ -41,7 +41,7 @@ class PaymentNotification extends BaseNotification
     public static function getPushData(Operation $operation)
     {
         $data =  [
-            'amount'=>$operation->getAmount(),
+            'amount'=>strval($operation->getAmount()),
             'debitor'=>$operation->getDebitorName(),
             'done_at'=>$operation->getExecutionDate()->format('H:i')
         ];
