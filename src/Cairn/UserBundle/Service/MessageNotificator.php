@@ -157,22 +157,13 @@ class MessageNotificator
 
         // --------------------- SEND ANDROID PUSH -----------------------//
         // Message to be sent
-        $push = [
-            "notification" => $data['android'],
-            'collapse_key'=> $keyword,
-            'android'=>array(
-                'ttl'=> $ttl,
-                'priority'=> $priority,
-            ),
-            "data"=>['type' => $keyword]
-        ];
-        
         $androidTokens = $tokens['android'];
+        $androidData = $data['android'];
 
         if(count($androidTokens) == 1){
-            $push['to'] = $androidTokens[0];
+            $androidData['to'] = $androidTokens[0];
         }else{
-            $push['registration_ids'] = array_values($androidTokens);
+            $androidData['registration_ids'] = array_values($androidTokens);
         }
 
         $headers = array(
@@ -189,7 +180,7 @@ class MessageNotificator
         curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
-        curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $push));
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $androidData));
 
         // Execute post
         $jsonResponse = curl_exec($ch);
@@ -230,14 +221,6 @@ class MessageNotificator
             'apns-topic: '.$pushConsts['app_id']
         );
 
-        // Create the payload body
-        $push = [
-            "aps" => [
-                "alert" => $data['ios']
-            ],
-            "type" => $keyword
-        ];
-
         // Open connection
         $ch = curl_init();
 
@@ -247,7 +230,7 @@ class MessageNotificator
         curl_setopt( $ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $push));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $data['ios']));
 
         $apiUrl = ($this->env == 'prod') ? $iosConsts['api_prod_url'] : $iosConsts['api_dev_url'];
         //foreach device token, send a request (a single connection is opened)
