@@ -29,32 +29,54 @@ class RegistrationNotification extends BaseNotification
 
     public static function getPushData(User $user, PushTemplate $pushTemplate)
     {
-        $data =  [
-            'name'=>$user->getName(),
-            'address'=>$user->getAddress()->__toString(),
-            'description'=>$user->getDescription(),
-            'type' => self::KEYWORD_REGISTER
-        ];
-
-        if($image = $user->getImage()){
-            $data['image'] = $image->getWebPath();
-        }
-
-        return [
-            'ios' => [
-                'title'=>$pushTemplate->getTitle(),
-                'body'=>$pushTemplate->getContent(),
-                'loc-key' => self::TITLE_KEY,
-                'loc-args' => array_values($data)
-            ],
-            'android' => [
-                'title'=>$pushTemplate->getTitle(),
-                'body'=>$pushTemplate->getContent(),
-                'body_loc_key'=> self::TITLE_KEY,
-                'body_loc_args'=> array_values($data)
+        $ios =  [
+            "aps" => [
+                "alert" =>[
+                    'title'=>$pushTemplate->getTitle(),
+                    'body'=>$pushTemplate->getContent(),
+                ],
+                "type" => self::KEYWORD_REGISTER,
+                "id" => strval($user->getID())
             ]
-
         ];
+
+        $android = [
+            "notification" => [
+                'title'=>$pushTemplate->getTitle(),
+                'body'=>$pushTemplate->getContent(),
+            ],
+            'collapse_key'=>  self::KEYWORD_REGISTER,
+            //'android'=>array(
+            //    'ttl'=> $ttl,
+            //    'priority'=> $priority,
+            //),
+            "data"=>[
+                'type' =>  self::KEYWORD_REGISTER,
+                'id' => strval($user->getID())
+            ]
+        ];
+
+        $web = array(
+             'title'=> $pushTemplate->getTitle(),
+             'payload'=> [
+                 'tag' => self::KEYWORD_REGISTER,
+                 'body' => $pushTemplate->getContent(),
+                 'actions' => [
+                     [
+                         'action' => 'pro-website-action',
+                         'title' => $pushTemplate->getActionTitle()
+                     ]
+                 ],
+                 'data'=>[
+                     'website'=> $pushTemplate->getRedirectionUrl()
+                 ]
+             ]
+         );
+         if($image = $user->getImage()){
+              $web['payload']['image'] = $image->getWebPath();
+         }
+
+        return ['android'=>$android,'ios'=>$ios,'web'=>$web];
     }
 
     public function __construct($radius = 50)

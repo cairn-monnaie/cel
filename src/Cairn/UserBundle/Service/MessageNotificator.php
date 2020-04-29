@@ -82,39 +82,18 @@ class MessageNotificator
             return;
         }
 
-        $appPushData = RegistrationNotification::getPushData($user,$pushTemplate);
+        $pushData = RegistrationNotification::getPushData($user,$pushTemplate);
         $nfKeyword = BaseNotification::KEYWORD_REGISTER;
-
-        $webPushData = array(
-            'title'=> $pushTemplate->getTitle(),
-            'payload'=> [
-                'tag' => $nfKeyword,
-                'body' => $pushTemplate->getContent(),
-                'actions' => [
-                    [
-                        'action' => 'pro-website-action',
-                        'title' => $pushTemplate->getActionTitle()
-                    ]
-                ],
-                'data'=>[
-                    'website'=> $pushTemplate->getRedirectionUrl()
-                ]
-            ]
-        );
-        if($image = $user->getImage()){
-             $webPushData['payload']['image'] = $image->getWebPath();
-        }
-
 
         $targets = $this->em->getRepository('CairnUserBundle:RegistrationNotification')->findTargetsAround($user->getAddress()->getLatitude(),$user->getAddress()->getLongitude());
 
         //var_dump($targets);
         //$it=$it2;
         $this->sendAppPushNotifications(
-            $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
+            $targets['deviceTokens'],$pushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
         );
         $this->sendWebPushNotifications(
-            $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
+            $targets['webSubscriptions'],$pushData['web'],$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
         );
 
     }

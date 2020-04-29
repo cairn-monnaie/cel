@@ -42,26 +42,44 @@ class PaymentNotification extends BaseNotification
         $data =  [
             'amount'=>strval($operation->getAmount()),
             'debitor'=>$operation->getDebitorName(),
-            'done_at'=>$operation->getExecutionDate()->format('H:i'),
-            'type' => self::KEYWORD_PAYMENT
+            'done_at'=>$operation->getExecutionDate()->format('H:i')
         ];
 
-        return [
-            'ios' => [
-                'loc-key' => self::TITLE_KEY,
-                'loc-args' => array_values($data)
-            ],
-            'android' => [
+        $ios =  [
+            "aps" => [
+                "alert" =>[
+                    'loc-key' => self::TITLE_KEY,
+                    'loc-args' => array_values($data)
+                ],
+                "type" => self::KEYWORD_PAYMENT,
+                "id" => $operation->getID()
+            ]
+        ];
+
+        $android = [
+            "notification" => [
                 'body_loc_key'=> self::TITLE_KEY,
                 'body_loc_args'=> array_values($data),
                 'title_loc_key'=>'received_paiement_title'
             ],
-            'web' => [
-                'body'=> $operation->getCreditorContent(),
-                'tag'=> self::KEYWORD_PAYMENT,
-                'data'=> $data
+            'collapse_key'=>  self::KEYWORD_PAYMENT,
+            //'android'=>array(
+            //    'ttl'=> $ttl,
+            //    'priority'=> $priority,
+            //),
+            "data"=>[
+                'type' =>  self::KEYWORD_PAYMENT,
+                'id' => strval($operation->getID())
             ]
         ];
+
+        $web = [
+            'body'=> $operation->getCreditorContent(),
+            'tag'=> self::KEYWORD_PAYMENT,
+            'data'=> $data
+        ];
+
+        return ['android'=>$android,'ios'=>$ios,'web'=>$web];
     }
 
         
