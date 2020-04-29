@@ -10,7 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\BaseNotificationRepository")
  * @ORM\InheritanceType("SINGLE_TABLE")
  * @ORM\DiscriminatorColumn(name="discr", type="string")
- * @ORM\DiscriminatorMap({"push" = "Cairn\UserBundle\Entity\BaseNotification", "payment" = "Cairn\UserBundle\Entity\PaymentNotification", "register" = "Cairn\UserBundle\Entity\RegistrationNotification" })
+ * @ORM\DiscriminatorMap({"push" = "Cairn\UserBundle\Entity\BaseNotification", "payment" = "Cairn\UserBundle\Entity\PaymentNotification", "newpro" = "Cairn\UserBundle\Entity\RegistrationNotification" })
  */
 class BaseNotification
 {
@@ -81,8 +81,9 @@ class BaseNotification
     const PRIORITY_NORMAL = 'normal';
     const PRIORITY_VERY_LOW = 'very_low';
 
+    //IF YOU CHANGE THESE VALUES, CHANGE web/service-worker.js !!!
     const KEYWORD_PAYMENT = 'payment';
-    const KEYWORD_REGISTER = 'register';
+    const KEYWORD_REGISTER = 'newpro';
 
     const TTL_PAYMENT = 86400;
     const TTL_REGISTER = 86400;
@@ -124,8 +125,8 @@ class BaseNotification
 
     public function __construct($keyword, $priority, $timeToLive, $collapsible)
     {
-        $this->setWebPushEnabled(false); 
-        $this->setAppPushEnabled(false);
+        $this->setWebPushEnabled(true); 
+        $this->setAppPushEnabled(true);
         $this->setEmailEnabled(false);
         $this->setSmsEnabled(false);
 

@@ -22,7 +22,7 @@ class RegistrationNotificationRepository extends \Doctrine\ORM\EntityRepository
             SELECT w.id,w.endpoint,w.encryption_keys
              FROM web_push_subscription w
              INNER JOIN notification_data n ON w.notification_data_id = n.id
-             INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "register" AND b.web_push_enabled = 1)
+             INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "newpro" AND b.web_push_enabled = 1)
              INNER JOIN cairn_user u ON u.id = n.user_id
              INNER JOIN address a ON a.id = u.address_id
              WHERE st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 < b.radius  
@@ -39,7 +39,7 @@ class RegistrationNotificationRepository extends \Doctrine\ORM\EntityRepository
         $sql = '
             SELECT android_device_tokens AS android,ios_device_tokens AS ios
              FROM notification_data n
-             INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "register" AND b.app_push_enabled = 1)
+             INNER JOIN base_notification b ON (n.id = b.notification_data_id AND b.discr = "newpro" AND b.app_push_enabled = 1)
              INNER JOIN cairn_user u ON u.id = n.user_id
              INNER JOIN address a ON a.id = u.address_id
              WHERE st_distance_sphere(point(:lon, :lat),point(a.longitude, a.latitude))/1000 < b.radius  
@@ -53,8 +53,20 @@ class RegistrationNotificationRepository extends \Doctrine\ORM\EntityRepository
             ));
 
         $res = $stmt->fetchAll(\PDO::FETCH_NUM );
+
+        $androidFetched = array_column($res,0);
+        foreach($androidFetched as $key=>$fetch){
+            $androidFetched[$key] = unserialize($fetch);
+        }
         
-        $appPushEndpoints = ['android' => array_column($res,0),'ios'=> array_column($res,1)];
+        $iosFetched = array_column($res,1);
+        foreach($iosFetched as $key=>$fetch){
+            $iosFetched[$key] = unserialize($fetch);
+        }
+        $appPushEndpoints = [
+            'android' => array_unique(call_user_func_array('array_merge', $androidFetched)),
+            'ios'=> array_unique(call_user_func_array('array_merge', $iosFetched))
+        ];
 
         return ['webSubscriptions'=>$webPushSubscriptions,'deviceTokens'=>$appPushEndpoints];
 

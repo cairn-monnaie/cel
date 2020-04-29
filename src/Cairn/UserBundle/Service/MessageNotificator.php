@@ -88,7 +88,7 @@ class MessageNotificator
         $webPushData = array(
             'title'=> $pushTemplate->getTitle(),
             'payload'=> [
-                'tag' => 'pro_registration',
+                'tag' => $nfKeyword,
                 'body' => $pushTemplate->getContent(),
                 'actions' => [
                     [
@@ -184,7 +184,8 @@ class MessageNotificator
             'android'=>array(
                 'ttl'=> $ttl,
                 'priority'=> $priority,
-            )
+            ),
+            "data"=>['type' => $keyword]
         ];
         
         $androidTokens = $tokens['android'];
@@ -255,6 +256,7 @@ class MessageNotificator
             "aps" => [
                 "alert" => $data['ios']
             ],
+            "type" => $keyword
         ];
 
         // Open connection
@@ -270,13 +272,15 @@ class MessageNotificator
 
         $apiUrl = ($this->env == 'prod') ? $iosConsts['api_prod_url'] : $iosConsts['api_dev_url'];
         //foreach device token, send a request (a single connection is opened)
+        
         foreach($tokens['ios'] as $deviceToken){
             curl_setopt( $ch, CURLOPT_URL, $apiUrl.'/3/device/'.$deviceToken);
             // Execute post
             $jsonResponse = curl_exec($ch);
             $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            if($code == 410){
+            $response = json_decode($jsonResponse,true);
+            if(($code == 410) || (($code == 400) && $response['reason'] == 'BadDeviceToken')){
                 $notRegisteredTokens[] = $deviceToken;
             }
         }

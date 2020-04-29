@@ -24,15 +24,15 @@ class RegistrationNotification extends BaseNotification
      */
     private $radius;
 
-    //IF YOU CHANGE THIS VALUE, CHANGE web/service-worker.js !!!
-    const TITLE_KEY = 'pro_registration';
+    const TITLE_KEY = 'received_pro_body';
 
     public static function getPushData(User $user)
     {
         $data =  [
             'name'=>$user->getName(),
             'address'=>$user->getAddress()->__toString(),
-            'description'=>$user->getDescription()
+            'description'=>$user->getDescription(),
+            'type' => self::KEYWORD_REGISTER
         ];
 
         if($image = $user->getImage()){
@@ -43,17 +43,19 @@ class RegistrationNotification extends BaseNotification
             'ios' => [
                 'loc-key' => self::TITLE_KEY,
                 'loc-args' => array_values($data)
+                //'category' => ''
             ],
             'android' => [
                 'body_loc_key'=> self::TITLE_KEY,
                 'body_loc_args'=> array_values($data),
                 'title_loc_key'=>'new_pro_title'
+                //'click_action'
             ]
 
         ];
     }
 
-    public function __construct($radius = 5)
+    public function __construct($radius = 50)
     {
         parent::__construct(self::KEYWORD_REGISTER, self::PRIORITY_VERY_LOW, self::TTL_REGISTER, true);
         $this->setRadius($radius);

@@ -8,8 +8,8 @@ self.addEventListener('push', function(event) {
     requestedPush = event.data ? event.data.json() : 'Pas de donnée transmise';
     const requestedOptions = requestedPush.payload;
 
-    const paymentTag = 'received_paiement_body';
-    const registerTag = 'pro_registration';
+    const paymentTag = 'payment';
+    const registerTag = 'newpro';
 
     const defaultProIcon = '/bundles/cairnuser/img/pro.png';
     const defaultCairnIcon = '/bundles/cairnuser/img/favicon.png';
@@ -32,6 +32,7 @@ self.addEventListener('push', function(event) {
 
             const newOptions = {};
             newOptions.data = requestedOptions.data;
+            newOptions.icon = defaultCairnIcon;
 
             if (currentNotification) {
                 const messageCount = currentNotification.data.newMessageCount + 1;
@@ -68,6 +69,7 @@ self.addEventListener('push', function(event) {
             let notificationTitle;
 
             const newOptions = requestedOptions;
+            newOptions.icon = defaultCairnIcon;
 
             if (currentNotification) {
                 const messageCount = currentNotification.data.newMessageCount + 1;
@@ -147,7 +149,6 @@ function editOptions(options){//edit options behaviour according to the brower a
     if (!("image" in Notification) && options.image) {
         options.icon = options.image;
     }
-
     return options;
 }
 

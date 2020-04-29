@@ -28,14 +28,13 @@ class PaymentNotification extends BaseNotification
      */
     private $minAmount;
 
-    //IF YOU CHANGE THIS VALUE, CHANGE web/service-worker.js !!!
     const TITLE_KEY = 'received_paiement_body';
 
-    public function __construct(array $types = [],$minAmount = 0)
+    public function __construct()
     {
         parent::__construct(self::KEYWORD_PAYMENT, self::PRIORITY_HIGH, self::TTL_PAYMENT, false);
-        $this->setTypes($types);
-        $this->setMinAmount($minAmount);
+        $this->setTypes([Operation::TYPE_SMS_PAYMENT,Operation::TYPE_TRANSACTION_EXECUTED,Operation::TYPE_MOBILE_APP]);
+        $this->setMinAmount(0);
     }
 
     public static function getPushData(Operation $operation)
@@ -43,7 +42,8 @@ class PaymentNotification extends BaseNotification
         $data =  [
             'amount'=>strval($operation->getAmount()),
             'debitor'=>$operation->getDebitorName(),
-            'done_at'=>$operation->getExecutionDate()->format('H:i')
+            'done_at'=>$operation->getExecutionDate()->format('H:i'),
+            'type' => self::KEYWORD_PAYMENT
         ];
 
         return [
@@ -58,7 +58,7 @@ class PaymentNotification extends BaseNotification
             ],
             'web' => [
                 'body'=> $operation->getCreditorContent(),
-                'tag'=> self::TITLE_KEY,
+                'tag'=> self::KEYWORD_PAYMENT,
                 'data'=> $data
             ]
         ];
