@@ -7,6 +7,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 use Cairn\UserBundle\Entity\BaseNotification;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\PushTemplate;
 
 
 /**
@@ -26,7 +27,7 @@ class RegistrationNotification extends BaseNotification
 
     const TITLE_KEY = 'received_pro_body';
 
-    public static function getPushData(User $user)
+    public static function getPushData(User $user, PushTemplate $pushTemplate)
     {
         $data =  [
             'name'=>$user->getName(),
@@ -41,15 +42,16 @@ class RegistrationNotification extends BaseNotification
 
         return [
             'ios' => [
+                'title'=>$pushTemplate->getTitle(),
+                'body'=>$pushTemplate->getContent(),
                 'loc-key' => self::TITLE_KEY,
                 'loc-args' => array_values($data)
-                //'category' => ''
             ],
             'android' => [
+                'title'=>$pushTemplate->getTitle(),
+                'body'=>$pushTemplate->getContent(),
                 'body_loc_key'=> self::TITLE_KEY,
-                'body_loc_args'=> array_values($data),
-                'title_loc_key'=>'new_pro_title'
-                //'click_action'
+                'body_loc_args'=> array_values($data)
             ]
 
         ];

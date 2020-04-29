@@ -82,7 +82,7 @@ class MessageNotificator
             return;
         }
 
-        $appPushData = RegistrationNotification::getPushData($user);
+        $appPushData = RegistrationNotification::getPushData($user,$pushTemplate);
         $nfKeyword = BaseNotification::KEYWORD_REGISTER;
 
         $webPushData = array(
