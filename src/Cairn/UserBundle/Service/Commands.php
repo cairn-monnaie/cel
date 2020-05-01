@@ -10,6 +10,7 @@ use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\ZipCity;
 use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
@@ -60,6 +61,138 @@ class Commands
         $this->container = $container;
     }
 
+    public function importDolibarrPros($filePath)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        //SHOW ALL PROS BEFORE EXPORT
+        $qb = $userRepo->createQueryBuilder('u');
+        $qb->innerJoin('u.address','addr')
+            ->innerJoin('addr.zipCity','zp');
+        $userRepo->whereRole($qb,'ROLE_PRO');
+
+        $registeredPros = $qb->getQuery()->getResult();
+        echo "------------- REGISTERED PROS BEFORE IMPORT --------------------"."\n\n\n\n";
+        $msg = '';
+        foreach($registeredPros as $pro){
+            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        //READ EXPORT FILE
+        $duplicates = [];
+        $notLocalized = [];
+
+        $id = 0;
+        if (($handle = fopen($filePath, "r")) !== FALSE) {
+            $line = fgetcsv($handle, 1000, ",");
+            while ($line !== FALSE) {
+                if($line[0] != $id){
+                    $id = $line[0];
+
+                    $doctrineUser = new User();
+
+                    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $line[1])));
+                    $doctrineUser->setUsername($slug);
+                    $doctrineUser->setName($line[1]);
+                    $doctrineUser->setEmail($slug.'@test.fr');
+                    $doctrineUser->setCyclosID(rand(1,1000000000));
+                    $doctrineUser->addRole('ROLE_PRO');   
+                    $doctrineUser->setDescription('Je suis un compte de test !');   
+
+                    $doctrineUser->setPlainPassword(User::randomPassword());
+                    $doctrineUser->setMainICC(null);
+
+                    $address = new Address();
+                    $zipCity = new ZipCity();
+                }
+
+                while($line[0] == $id){
+                    switch ($line[2]){
+                    case 'locate-anything-street':
+                        $street = $line[3];
+                        break;
+                    case 'locate-anything-streetnumber':
+                        $streetNumber = $line[3];
+                        break;
+                    case 'locate-anything-city':
+                        $zipCity->setCity($line[3]);
+                        break;
+                    case 'locate-anything-zip':
+                        $zipCity->setZipCode($line[3]);
+                        break;
+                    case 'url':
+                        $doctrineUser->setUrl($line[3]);
+                        break;
+                    default:
+                        break;
+                    }
+                    $line = fgetcsv($handle, 1000, ",");
+                }
+
+                $address->setStreet1($streetNumber.' '.$street);
+                $address->setZipCity($zipCity); 
+
+                //normalize address street1, postcode && city values with API data responses
+                $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+
+                $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
+                $addrRepository = $this->em->getRepository('CairnUserBundle:Address');
+
+                //find zip entity based on api response data
+                $zip = $zipRepository->findOneBy(array('zipCode'=>$address->getZipCity()->getZipCode(),'city'=> $address->getZipCity()->getCity()));
+                if(! $zip){
+                    $zip = $zipRepository->findOneBy(array('zipCode'=>$address->getZipCity()->getZipCode()));
+                }
+                $address->setZipCity($zip);          
+                $doctrineUser->setAddress($address);
+                
+                if(!$coords['latitude']){ 
+                    $notLocalized[] = $doctrineUser;
+                    $addrCoords = NULL;
+                }else{
+                    $address->setLatitude($coords['latitude']);
+                    $address->setLongitude($coords['longitude']);
+                    $addrCoords = $addrRepository->findOneBy(['latitude'=>$coords['latitude'] ,'longitude'=>$coords['longitude']]);
+                }
+                $addrStreet = $addrRepository->findOneByStreet1($address->getStreet1());
+
+                //find all possible ways to check if a pro has already an account
+                //check by name, email,adresse,coords,
+                $userEmail = $userRepo->findOneByEmail($doctrineUser->getEmail());
+                $userName = $userRepo->findOneByName($doctrineUser->getName());
+
+                if($userEmail || $userName || $addrCoords || $addrStreet){
+                    $duplicates[] = $doctrineUser;
+                }elseif(!$coords['latitude']){
+                    ;
+                }else{
+                    $this->em->persist($doctrineUser);
+                }
+            }
+        }
+
+        fclose($handle);
+        $this->em->flush();
+
+        echo "------------- POSSIBLE DUPLICATES NOT IMPORTED --------------------"."\n";
+        $msg = '';
+        foreach($duplicates as $pro){
+            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        echo "------------- PROS NOT LOCALIZED --------------------"."\n";
+        $msg = '';
+        foreach($notLocalized as $pro){
+            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        //generate localization fails
+        echo "------------- GEOLOCALIZATION --------------------"."\n";
+        return $this->generateLocalizationCoordinates();
+    }
+
     public function generateLocalizationCoordinates($username = NULL)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
@@ -88,7 +221,7 @@ class Commands
             $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
             if(!$coords['latitude']){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['name'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);

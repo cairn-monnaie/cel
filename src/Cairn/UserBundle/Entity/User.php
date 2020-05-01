@@ -45,7 +45,7 @@ class User extends BaseUser
     private $firstname;
 
     /**
-     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @ORM\Column(name="cyclos_id", type="bigint", unique=true)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID;
@@ -59,6 +59,18 @@ class User extends BaseUser
      * @ORM\Column(name="main_icc", type="string", unique=true, nullable=true)
      */
     private $mainICC;
+
+    /**
+     * @ORM\Column(name="url", type="string", nullable=true)
+     */
+    private $url;
+
+    /**
+     * @var array
+     *
+     * @ORM\Column(name="keywords", type="array")
+     */
+    private $keywords;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Address", cascade={"persist","remove"})
@@ -172,6 +184,8 @@ class User extends BaseUser
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
 
+        $this->setKeywords([]);
+
         $this->setNotificationData(new NotificationData($this));
     }
 
@@ -184,8 +198,13 @@ class User extends BaseUser
         }
     }
 
-    public function getAutocompleteLabel(){
-        return $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ('.  $this->getEmail() .')';
+    public function getAutocompleteLabel($addEmail = true){
+        $base = $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ';
+
+        if($addEmail){
+            $base .= ' ('.  $this->getEmail() .')';
+        }
+        return  $base;
     }
 
     public function getCity()
@@ -335,6 +354,30 @@ class User extends BaseUser
     public function getMainICC()
     {
         return $this->mainICC;
+    }
+
+    /**
+     * Set keywords.
+     *
+     * @param array $keywords
+     *
+     * @return User
+     */
+    public function setKeywords(array $keywords)
+    {
+        $this->keywords = $keywords;
+
+        return $this;
+    }
+
+    /**
+     * Get keywords.
+     *
+     * @return array
+     */
+    public function getKeywords()
+    {
+        return $this->keywords;
     }
 
     public function fromEntityToDTO()
@@ -939,5 +982,29 @@ class User extends BaseUser
     public function getFirstLogin()
     {
         return $this->firstLogin;
+    }
+
+    /**
+     * Set url.
+     *
+     * @param string|null $url
+     *
+     * @return User
+     */
+    public function setUrl($url = null)
+    {
+        $this->url = $url;
+
+        return $this;
+    }
+
+    /**
+     * Get url.
+     *
+     * @return string|null
+     */
+    public function getUrl()
+    {
+        return $this->url;
     }
 }

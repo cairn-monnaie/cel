@@ -88,8 +88,15 @@ class ApiController extends Controller
                 ;
             }
 
-            $userRepo->whereAdherent($ub)
-                ->whereConfirmed($ub);
+            if(isset($jsonRequest['keywords']) && $jsonRequest['keywords']){
+                $userRepo->whereKeywords($ub,$jsonRequest['keywords']);
+            }
+
+            if(isset($jsonRequest['payment_context']) && ($jsonRequest['payment_context'] == true) ){
+                $userRepo->whereConfirmed($ub);
+            }
+
+            $userRepo->whereAdherent($ub);
 
             $currentUser =  $this->get('cairn_user.security')->getCurrentUser();
 
