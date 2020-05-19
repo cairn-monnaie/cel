@@ -26,12 +26,35 @@ class Geolocalization
      */
     public function getCoordinates(Address $address)
     {
+        $type = 'housenumber';
+
         //set latitude and longitude of new user
         //remove bis, ter from address street for localization research because it makes the research inaccurate           
+        $base = strtolower(trim($address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity())) ; 
+        
+        //if(preg_match('/^\d+/',$base)){
+        //    $type = 'housenumber';
+        //}elseif(preg_match('/^(place|hameau)/',$base)){
+        //    $type = 'locality';
+        //}elseif(preg_match('/^(allée|allee|rue|impasse|square)/',$base)){
+        //    $type = 'street';
+        //}
+
+        $base = preg_replace('/\s(bis|ter)\s/',' ',$base);
+        $base = preg_replace('/^(\d+)(bis|ter)\s/','${1} ',$base);
+        $base = preg_replace('/\,/',' ',$base);
+        $base = preg_replace('/\s(st)e?\s/','saint',$base);
+        $base = preg_replace('/\s(dr)\s/','docteur',$base);
+        $base = preg_replace('/\s(jo|j\.o)\s/','jeux olympiques',$base);
+        $base = preg_replace('/\s(zi)\s/','zone industrielle',$base);
+        $base = preg_replace('/\s(za)\s/','zone agricole',$base);
+
         $arrayParams = array(                              
-            'q' => preg_replace('/\s(bis|ter)\s/',' ',$address->getStreet1()).' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity(),
+            'q' => $base,
             //'postcode' => $address->getZipCity()->getZipCode(),
-            'type' => 'housenumber',
+            'lat'=>'45.19251',
+            'lon'=>'5.72756',
+            'type' => $type,
             'limit' => 2                                   
         );                                                 
 
@@ -52,9 +75,19 @@ class Geolocalization
                 return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
             } 
 
-            if($location['properties']['score'] <= 0.75){   
+            $score = $location['properties']['score'];
+            if($score <= 0.67){   
+                if($score >= 0.60 && isset($location['properties']['oldcity'])){// if the address matches a former deprecated city name
+                    $address->setStreet1($location['properties']['name']);
+                    $address->getZipCity()->setZipCode($location['properties']['postcode']);
+                    $address->getZipCity()->setCity($location['properties']['oldcity']);
+                    return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
+                }
                 return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']);
             }else{
+        //        $address->setStreet1($location['properties']['name']);
+                $address->getZipCity()->setZipCode($location['properties']['postcode']);
+                $address->getZipCity()->setCity($location['properties']['city']);
                 return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
             }
         }

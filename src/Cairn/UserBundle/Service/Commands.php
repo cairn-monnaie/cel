@@ -106,7 +106,7 @@ class Commands
                     $zipCity = new ZipCity();
                 }
 
-                while($line[0] == $id){
+                while(is_array($line) && $line[0] == $id){
                     switch ($line[2]){
                     case 'locate-anything-street':
                         $street = $line[3];
