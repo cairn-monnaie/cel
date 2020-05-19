@@ -31,7 +31,11 @@
                 </h5>
             </div>
         </div>
-        
+        {% if app.user.hasRole('ROLE_SUPER_ADMIN') and user.isAdherent() %}
+            <div class="row body_wrapper">
+                {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
+            </div>
+        {% endif %}
         <div class="row">
         <ul class="collapsible">
             <li class="">

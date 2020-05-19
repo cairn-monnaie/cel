@@ -202,6 +202,8 @@ class NotificationController extends Controller
          }
 
         $pushTemplate = new PushTemplate();
+        $url = ($user->getUrl()) ? $user->getUrl() : 'https://'; 
+        $pushTemplate->setRedirectionUrl($url);
 
         $form = $this->createForm(PushTemplateType::class,$pushTemplate);
 

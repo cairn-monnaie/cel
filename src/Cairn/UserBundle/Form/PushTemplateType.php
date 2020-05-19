@@ -21,7 +21,7 @@ class PushTemplateType extends AbstractType
         $builder->add('title', TextType::class,array('label'=>'Titre'))
             ->add('content', TextareaType::class,array('label'=>'Contenu'))
             ->add('actionTitle', TextType::class,array('label'=>'Action'))
-            ->add('redirectionUrl', UrlType::class,array('label'=>'Redirection web','data'=>'https://'))
+            ->add('redirectionUrl', UrlType::class,array('label'=>'Redirection web'))
             ->add('save', SubmitType::class,array('label'=>'Envoyer maintenant'))
             ->add('cancel', SubmitType::class,array('label'=>'Annuler'));
     }/**

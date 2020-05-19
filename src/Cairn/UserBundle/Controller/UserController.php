@@ -972,6 +972,11 @@ class UserController extends Controller
             throw new AccessDeniedException('Pas les droits nécessaires pour accéder au profil de cet utilisateur');
         } 
 
+        $accounts = NULL;
+        if($user->hasReferent($currentUser)){
+            $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID());
+        }
+
         if($_format == 'json'){
             $serializedUser = $this->get('cairn_user.api')->serialize($user);
             $response = new Response($serializedUser);
@@ -981,7 +986,7 @@ class UserController extends Controller
 
         $form = $this->createForm(ConfirmationType::class);
 
-        return $this->render('CairnUserBundle:Pro:view.html.twig', array('form'=>$form->createView(), 'user'=>$user));
+        return $this->render('CairnUserBundle:Pro:view.html.twig', array('form'=>$form->createView(), 'user'=>$user,'accounts'=>$accounts));
     }                      
 
     public function downloadUserDocumentAction(Request $request, CairnFile $file)
