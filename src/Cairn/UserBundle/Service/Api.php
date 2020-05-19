@@ -171,7 +171,7 @@ class Api
         if($child instanceOf User){
             return array('name'=>$child->getName(),
                          'address'=>$child->getAddress(),
-                         'image'=>$child->getImage(),
+                         'image'=>$this->objectCallback($child->getImage()),
                          'email'=>$child->getEmail(),
                          'description'=>$child->getDescription(),
                          'id'=>$child->getID()
