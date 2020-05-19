@@ -27,6 +27,21 @@ class UserRepository extends EntityRepository
         return $result;
     }
 
+    public function whereWillBeSerialized(QueryBuilder $qb)
+    {
+        $qb
+            ->leftJoin('u.address','addr')->addSelect('addr')
+            ->leftJoin('addr.zipCity','zc')->addSelect('zc')
+            ->leftJoin('u.smsData','sD')->addSelect('sD')
+            ->leftJoin('sD.phones','p')->addSelect('p')
+            ->leftJoin('u.image','i')->addSelect('i')
+            //->leftJoin('u.notificationData','n')->addSelect('n')
+            //->leftJoin('u.apiClient','a')->addSelect('a')
+            ;
+
+        return $this;
+    }
+
     public function myFindByRole($roles)                                        
     {                                                                          
         $qb = $this->createQueryBuilder('u');                                  
@@ -52,6 +67,23 @@ class UserRepository extends EntityRepository
         $conditions = array();
         foreach($roles as $role){
             $conditions[] = "u.roles LIKE '%".$role."%'";
+        }
+
+        $orX = $qb->expr()->orX();
+        $orX->addMultiple($conditions);
+        $qb->andWhere($orX);
+
+        return $this;
+    }
+
+    public function whereKeywords(QueryBuilder $qb, $keywords)
+    {
+        $conditions = array();
+        foreach($keywords as $keyword){
+            $conditions[] = "u.keywords LIKE '%".$keyword."%'";
+        }
+        foreach($keywords as $keyword){
+            $conditions[] = "u.description LIKE '%".$keyword."%'";
         }
 
         $orX = $qb->expr()->orX();
@@ -91,8 +123,8 @@ class UserRepository extends EntityRepository
 
     public function whereConfirmed(QueryBuilder $qb)
     {
-        $qb->andWhere('u.confirmationToken is NULL')     
-            ->andWhere('u.lastLogin is not NULL'); 
+        $qb->andWhere('u.mainICC is not NULL');
+
         return $this;
     }
 
@@ -181,7 +213,7 @@ class UserRepository extends EntityRepository
      *@param boolean $proOnly Return only users such that role is ROLE_PRO or not     
      *@return array of Users 
      */ 
-    public function getUsersAround($lat, $lon, $dist, $extrema, $proOnly = false)
+    public function getUsersAround($lat, $lon, $dist, $extrema, $proOnly = true)
     {
         $subSql = 'roles LIKE "%ROLE_PRO%"';
         $subSql = ($proOnly) ? $subSql : $subSql.' OR roles LIKE "%ROLE_PERSON%" ';

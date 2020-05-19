@@ -149,7 +149,7 @@ class DefaultController extends Controller
             $ub = $userRepo->createQueryBuilder('u');
 
             if($currentUser->isAdherent()){
-                $userRepo->whereEnabled($ub,true)->whereAdherent($ub)->whereConfirmed($ub);
+                $userRepo->whereEnabled($ub,true)->whereRole($ub,'ROLE_PRO')->whereConfirmed($ub);
             }else{
                 $userRepo->whereReferent($ub, $currentUserID);
             }
@@ -159,7 +159,7 @@ class DefaultController extends Controller
             $returnArray = array();
             foreach ($users as $user){
                 $image = $user->getImage();
-                $returnArray[] = array('id'=>$user->getID(),'username'=> $user->getUsername(), 'name' => $user->getAutocompleteLabel() ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
+                $returnArray[] = array('id'=>$user->getID(),'username'=> $user->getUsername(), 'name' => $user->getAutocompleteLabel(true) ,'icon' => (($image && $image->getId()) ? '/'.$image->getWebPath() : '')) ;
             }
             return new JsonResponse($returnArray);
         }
@@ -173,7 +173,7 @@ class DefaultController extends Controller
             $returnArray = array() ;
             if ($beneficiary && $image = $beneficiary->getUser()->getImage()){
                 $returnArray = array(
-                    'name' => $beneficiary->getUser()->getAutocompleteLabel() ,
+                    'name' => $beneficiary->getUser()->getAutocompleteLabel(false) ,
                     'icon' => (($image && $image->getUrl()) ? '/'.$image->getWebPath() : ''),
                     'alt' => $beneficiary->getUser()->getName()) ;
             }
