@@ -6,14 +6,9 @@ cairn_user_welcome:
     requirements:
         _format: html|json
 
-cairn_user_api_notifications_subscription:
-    path: webpush/subscription
-    methods: POST
-    defaults: { _controller: CairnUserBundle:Security:webPushSubscription, _format: json }
-
 cairn_user_api_mobilepush_subscription:
     path: /{from}/token-subscription
-    methods: POST|DELETE
+    methods: POST
     defaults: { _controller: CairnUserBundle:Notification:tokenSubscription, _format: json }
     requirements:
         from: web|mobile

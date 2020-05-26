@@ -58,19 +58,24 @@ class NotificationController extends Controller
             if(! isset($jsonRequest['platform'])){
                 return $apiService->getErrorResponse(array('Body field platform not found'),Response::HTTP_BAD_REQUEST);
             }
+            if(! isset($jsonRequest['action'])){
+                return $apiService->getErrorResponse(array('Action field not found'),Response::HTTP_BAD_REQUEST);
+            }
 
             $deviceToken = $jsonRequest['device_token'];
             $platform = $jsonRequest['platform'];
+            $action = strtoupper($jsonRequest['action']);
 
-            if($request->isMethod('POST')){
+            if($action == 'POST'){
                 $notificationData->addDeviceToken($deviceToken,$platform);
-
                 $em->flush();
                 return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
-            }else{
+            }elseif($action == 'DELETE'){
                 $notificationData->removeDeviceToken($deviceToken,$platform);
                 $em->flush();
                 return $apiService->getOkResponse($notificationData,Response::HTTP_OK);
+            }else{
+                return $apiService->getErrorResponse(array('Action field must be either DELETE or POST'),Response::HTTP_BAD_REQUEST);
             }
         }else{
             $subscription = $jsonRequest['subscription'];
