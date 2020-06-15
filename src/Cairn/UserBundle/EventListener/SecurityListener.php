@@ -96,6 +96,7 @@ class SecurityListener
 
     /**
      * Reset user password on Cyclos side after it has been changed in our app
+     * Remove all API access tokens related to involved user
      *
      */
     public function onResetPasswordSubmit(FormEvent $event)
@@ -113,6 +114,19 @@ class SecurityListener
 
 
         $anonymous = $this->container->getParameter('cyclos_anonymous_user');
+
+        //remove API tokens related to given user
+        $em = $this->container->get('doctrine.orm.entity_manager');          
+        $accessTokenRepo = $em->getRepository('CairnUserBundle:AccessToken');
+        $refreshTokenRepo = $em->getRepository('CairnUserBundle:RefreshToken');
+
+        $accessTokens = $accessTokenRepo->findByUser($user->getID());
+        $refreshTokens = $refreshTokenRepo->findByUser($user->getID());
+
+        $tokens = array_merge($accessTokens, $refreshTokens);
+        foreach($tokens as $token){
+            $em->remove($token);
+        }
 
         //get username and password from form request
         $credentials = array('username'=>$anonymous,'password'=>$anonymous);
