@@ -56,8 +56,11 @@
                             &nbsp;{{ user.address.zipCity.zipCode}}
                             &nbsp;{{ user.address.zipCity.city}}
                         </div>
+                        
                         <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
-                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
+                            {% if user.identityDocument is not null %}
+                                &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
+                            {% endif %}
                             {% if ( user.hasRole('ROLE_PRO') and logoIsDefined ) %}
                                 &nbsp;<a href="{{path('cairn_user_logo_download',{'id': user.image.id})}}"> Logo</a>
                             {% endif %}

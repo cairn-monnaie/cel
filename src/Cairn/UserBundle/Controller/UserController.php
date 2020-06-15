@@ -974,7 +974,9 @@ class UserController extends Controller
 
         $accounts = NULL;
         if($user->hasReferent($currentUser)){
-            $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID());
+            if($user->getMainICC()){
+                $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($user->getCyclosID());
+            }
         }
 
         if($_format == 'json'){
