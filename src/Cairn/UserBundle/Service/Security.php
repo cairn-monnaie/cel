@@ -349,14 +349,20 @@ class Security
         //FIRST, CHECK THE BLOCK STATEMENTS
         if( $operation->getAmount() >= $thresholds['amount']['block'] ){
             $res['suspicious'] = true;
+            $res['reason'] = 'unique_amount_threshold';
+            $res['threshold_value'] = $thresholds['amount']['block'];
             return $res;
         }
         if($totalDayAmount >= $thresholds['amount']['block']){
             $res['suspicious'] = true;
+            $res['reason'] = 'cumulated_amount_threshold';
+            $res['threshold_value'] = $thresholds['amount']['block'];
             return $res;
         }
         if($nbOperations >= $thresholds['qty']['block']){ 
             $res['suspicious'] = true;
+            $res['reason'] = 'cumulated_quantity_threshold';
+            $res['threshold_value'] = $thresholds['qty']['block'];
             return $res;
         }
 

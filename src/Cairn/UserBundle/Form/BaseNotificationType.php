@@ -34,7 +34,7 @@ class BaseNotificationType extends AbstractType
             ->add('smsEnabled', CheckboxType::class,array('required'=>false));
 
         $builder->addEventListener(
-            FormEvents::PRE_SET_DATA,
+            FormEvents::POST_SET_DATA,
             function (FormEvent $event) {
                 $baseNotif = $event->getData();
                 $form = $event->getForm();

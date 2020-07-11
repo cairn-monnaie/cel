@@ -1,0 +1,9 @@
+# app/Resources/translations/validators.fr.yml
+#
+
+amount_too_high: Montant trop élevé
+amount_too_low: Montant trop faible
+account_not_found: Aucun compte n'a été trouvé
+date_before_today: La date ne peut être antérieure à celle du jour
+
+

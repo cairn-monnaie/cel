@@ -38,7 +38,7 @@ use Cairn\UserBundle\Form\ChangePasswordType as CairnChangePasswordType;
  *
  * @author Christophe Coevoet <stof@notk.org>
  */
-class ProfileController extends Controller
+class ProfileController extends BaseController
 {
 
     /**
@@ -56,11 +56,11 @@ class ProfileController extends Controller
 
         $currentUser = $this->getUser();
         if (!is_object($currentUser) || !$currentUser instanceof UserInterface) {
-            throw new AccessDeniedException('This user does not have access to this section.');
+            throw new AccessDeniedException('not_access_rights');
         }
 
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+            throw new AccessDeniedException('not_referent');
         }
 
         $event = new GetResponseUserEvent($user, $request);
@@ -70,7 +70,7 @@ class ProfileController extends Controller
             return $event->getResponse();
         }
 
-        // $form = $formFactory->createForm();
+        //$form = $formFactory->createForm();
         $form = $this->createForm(CairnProfileType::class, $user);
 
         $form->setData($user);
@@ -104,16 +104,14 @@ class ProfileController extends Controller
                 $eventDispatcher->dispatch(FOSUserEvents::PROFILE_EDIT_COMPLETED, new FilterUserResponseEvent($user, $request, $response));
 
                 return $response;
-            }else{
-                if( $apiService->isRemoteCall()){
-                    return $apiService->getFormErrorResponse($form);
-                }
             }
         }
 
-        return $this->render('@FOSUser/Profile/edit.html.twig', array(
-            'form' => $form->createView(),
-        ));
+        return $this->getFormResponse(
+            '@FOSUser/Profile/edit.html.twig',
+            ['form'=>$form->createView()],
+            $form
+        );
     }
 
 
@@ -134,7 +132,7 @@ class ProfileController extends Controller
 
         $user = $this->getUser();
         if (!is_object($user) || !$user instanceof UserInterface) {
-            throw new AccessDeniedException('This user does not have access to this section.');
+            throw new AccessDeniedException('not_access_rights');
         }
 
         $event = new GetResponseUserEvent($user, $request);
@@ -166,15 +164,14 @@ class ProfileController extends Controller
             $eventDispatcher->dispatch(FOSUserEvents::CHANGE_PASSWORD_COMPLETED, new FilterUserResponseEvent($user, $request, $response));
 
             return $response;
-        }else{
-            if($isRemoteCall){
-                return $apiService->getFormErrorResponse($form);
-            }
         }
 
-        return $this->render('@FOSUser/ChangePassword/change_password.html.twig', array(
-            'form' => $form->createView(),
-        ));
+        return $this->getFormResponse(
+            '@FOSUser/ChangePassword/change_password.html.twig',
+            ['form'=>$form->createView()],
+            $form
+        );
+
     }
 
 }

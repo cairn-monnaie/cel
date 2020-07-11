@@ -63,7 +63,7 @@ class HelloassoControllerTest extends BaseControllerTest
 
         if($isValidID){
             if($isAlreadyHandled){
-                $this->assertEquals(403,$statusCode);
+                $this->assertEquals(400,$statusCode);
                 $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
                 return;
             }
@@ -155,13 +155,12 @@ class HelloassoControllerTest extends BaseControllerTest
                     return;
                 }
             }elseif($symfonyPersistedID){ //synchronization has been done correctly, nothing to sync  
-                $this->assertSame(1,$crawler->filter('html:contains("déjà été traité")')->count());
+                $this->assertSame(1,$crawler->filter('html:contains("déjà été")')->count());
                 return;
             } elseif(! $helloassoPersistedID){ //no helloasso data  
                 $newConversion = $helloassoRepo->findOneByPaymentID($helloassoID);
 
                 $this->assertNull($newConversion);
-                $this->assertSame(1,$crawler->filter('html:contains("Aucun paiement trouvé")')->count());
                 return;
             }
 

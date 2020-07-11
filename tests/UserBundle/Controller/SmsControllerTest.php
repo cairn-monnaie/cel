@@ -213,7 +213,7 @@ class SmsControllerTest extends BaseControllerTest
             'balance : invalid sms'=>array('+33612345678','SOLDEADO',false,'1111',true,array('SMS INVALIDE')),
             'payment : wrong creditor identifier'=>array('+33612345678','PAYER12.5BOOYASHAKA',false,'1111',true,'aucun professionnel'),
 
-            'payment : balance error'=>array('+33722222222','PAYER100MALTOBAR',false,'1111',true,
+            'payment : balance error'=>array('+33722222222','PAYER100000000MALTOBAR',false,'1111',true,
                                                                 array('Solde insuffisant')),
 
             'payment : valid,creditor has payments disabled but reception enabled'=>array('+33612345678','PAYER10AMANSOL',false,'1111',true,

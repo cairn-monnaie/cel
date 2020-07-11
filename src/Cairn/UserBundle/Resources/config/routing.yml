@@ -461,7 +461,7 @@ cairn_user_operation_sync:
 
 cairn_user_helloasso_notification:
     path:     helloasso/notification
-    defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification}
+    defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification, _format: json}
 
 cairn_user_banking_credit_exnihilo:
     path:       banking/credit/exnihilo/{username}

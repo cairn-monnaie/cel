@@ -35,23 +35,30 @@ class OperationValidator extends ConstraintValidator
      */
     private function validateActiveAccount($account,$path)
     {
+        if(! $account){
+            $this->context->buildViolation('account_not_found')
+                ->atPath($path)                                        
+                ->addViolation();                                              
+
+            return;
+        }
 
         $ICC = $account->number;
         if(!$ICC){                                    
-            $this->context->buildViolation('Le compte n\'a pas été sélectionné')
+            $this->context->buildViolation('account_not_found')
                 ->atPath($path)                                        
                 ->addViolation();                                              
         }else{ //ICC provided
             try{
                 $account = $this->accountInfo->getAccountByNumber($ICC);
                 if(!$account){
-                    $this->context->buildViolation('Compte introuvable')
+                    $this->context->buildViolation('account_not_found')
                         ->atPath($path)                                        
                         ->addViolation();                                              
                 }
             }catch(\Exception $e){
                 if($e->errorCode == 'ENTITY_NOT_FOUND' || $e->errorCode == 'NULL_POINTER'){
-                    $this->context->buildViolation('Compte introuvable')
+                    $this->context->buildViolation('account_not_found')
                         ->atPath($path)                                        
                         ->addViolation();                                              
                 }else{
@@ -70,10 +77,18 @@ class OperationValidator extends ConstraintValidator
      *
      */
     private function validatePassiveAccount($account,$path){
+        if(! $account){
+            $this->context->buildViolation('account_not_found')
+                ->atPath($path)                                        
+                ->addViolation();                                              
+
+            return;
+        }
+
         $ICC = $account->number;
 
         if(! $ICC ){ 
-            $this->context->buildViolation('Numéro de compte non renseigné')
+            $this->context->buildViolation('account_not_found')
                 ->atPath($path)                                          
                 ->addViolation();                                              
         }else{
@@ -83,7 +98,7 @@ class OperationValidator extends ConstraintValidator
                 $userVO = $this->userInfo->getUserVOByKeyword($ICC);
 
                 if(!$userVO){
-                    $this->context->buildViolation('Compte introuvable par numéro de compte')
+                    $this->context->buildViolation('account_not_found')
                         ->atPath($path)                                          
                         ->addViolation();                                              
                     return;
@@ -92,7 +107,7 @@ class OperationValidator extends ConstraintValidator
             }
 
             if($user && $user->getRemovalRequest()){
-                $this->context->buildViolation($user->getName().' est en phase de suppression. Vous ne pouvez donc pas effectuer cette opération')
+                $this->context->buildViolation('user_account_disabled')
                     ->atPath($path)                                          
                     ->addViolation();                                              
             }
@@ -113,7 +128,7 @@ class OperationValidator extends ConstraintValidator
                 if($operationType == Operation::TYPE_SMS_PAYMENT){
                     $message = 'Solde insuffisant : Votre solde actuel est de '.$account->status->availableBalance;
                 }else{
-                    $message = 'Montant trop élevé : modifiez-le ou rechargez votre compte.';
+                    $message = 'amount_too_high';
                 }
                 $this->context->buildViolation($message)
                     ->atPath('amount')
@@ -135,7 +150,7 @@ class OperationValidator extends ConstraintValidator
                 $message = 'Montant indiqué trop faible';
                 $this->context->addViolation($message);
             }else{
-                $this->context->buildViolation('Montant trop faible : doit être supérieur à 0.01')
+                $this->context->buildViolation('amount_too_low')
                     ->atPath('amount')
                     ->addViolation();
             }
@@ -147,7 +162,7 @@ class OperationValidator extends ConstraintValidator
          $inconsistentLimitDate = $clone->modify('+1 year');
 
          if($today->diff($operation->getExecutionDate())->invert == 1){
-             $this->context->buildViolation('La date d\'exécution ne peut être antérieure à la date du jour')
+             $this->context->buildViolation('date_before_today')
                  ->atPath('executionDate')
                  ->addViolation();
          }

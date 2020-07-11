@@ -7,7 +7,7 @@
 
     <div class="row">
         <h1>Mes comptes</h1>
-        {% if user.hasRole('ROLE_SUPER_ADMIN') or user.hasRole('ROLE_PRO') %}
+        {% if app.user.hasRole('ROLE_SUPER_ADMIN') or app.user.hasRole('ROLE_PRO') %}
         <div>
             <a href="{{path('cairn_user_banking_accounts_overview_download') }}" class="btn"><i class="material-icons left">file_download</i>Télécharger relevé de compte</a>
         </div>

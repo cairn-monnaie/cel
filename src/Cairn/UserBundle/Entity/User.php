@@ -23,6 +23,8 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
  * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
+ * @UniqueEntity(fields = {"email"},message="Cet email est déjà utilisé") 
+ * @UniqueEntity(fields = {"username"},message="Ce nom d utilisateur est déjà utilisé") 
  */
 class User extends BaseUser
 {
@@ -223,8 +225,8 @@ class User extends BaseUser
 
     public function getWebPushSubscriptions()
     {
-        if($smsData = $this->getSmsData()){
-            return $smsData->getWebPushSubscriptions();
+        if($nfData = $this->getNotificationData()){
+            return $nfData->getWebPushSubscriptions();
         }else{
             return array();
         }

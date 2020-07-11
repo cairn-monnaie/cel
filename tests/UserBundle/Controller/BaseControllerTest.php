@@ -44,6 +44,24 @@ class BaseControllerTest extends WebTestCase
         $this->em = $this->container->get('doctrine.orm.entity_manager');                          
     }
 
+    //a data has been returned and/or created
+    public function isSuccessfulResponse($response)
+    {
+        return (($response->getStatusCode() < 300) && (! array_key_exists('errors',json_decode($response->getContent(),true))));
+    }
+
+    public function errorContains($errors,$expectedMessage)
+    {
+        foreach($errors as $error){
+            $keyContains = strpos($error['key'], $expectedMessage);
+            $messageContains = strpos($error['message'], $expectedMessage);
+            if(($keyContains !== false) || ($messageContains !== false)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function assertSerializedEntityContent($entity,$entityType){
         switch($entityType){
         case 'user':
@@ -63,6 +81,8 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('roles', $entity);
             $this->assertArrayHasKey('adherent', $entity);
             $this->assertArrayHasKey('phones', $entity);
+            $this->assertArrayHasKey('url', $entity);
+            $this->assertArrayHasKey('keywords', $entity);
 
             $this->assertArrayNotHasKey('creationDate', $entity);
             $this->assertArrayNotHasKey('cyclosID', $entity);
@@ -100,7 +120,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayNotHasKey('groupNames', $entity);
 
 
-            $this->assertEquals(16,count($entity));
+            $this->assertEquals(18,count($entity));
             break;
 
         case 'phone':

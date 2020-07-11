@@ -51,6 +51,8 @@ services:
         arguments:
             - "@request_stack"
             - "@cairn_user.security"
+            - "@templating"
+            - "@router"
 
     cairn_user.geolocalization:
         public: true
@@ -169,6 +171,7 @@ services:
         class: Cairn\UserBundle\EventListener\SecurityListener
         arguments:
             - "@service_container"
+            - "@cairn_user.api"
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance, priority: 24 }
             - { name: kernel.event_listener, event: kernel.request, method: onFirstLogin, priority: -1024 }
@@ -180,7 +183,8 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
-
+              
+              
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener
         arguments:
@@ -192,7 +196,7 @@ services:
             - "@cairn_user.api"
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
-    
+              
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:

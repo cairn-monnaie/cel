@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /**
  * This class contains actions related to sms operations 
  */
-class SmsController extends Controller
+class SmsController extends BaseController
 {
 
     /**
@@ -61,16 +61,16 @@ class SmsController extends Controller
         $apiService = $this->get('cairn_user.api');
 
         if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-            return $apiService->getErrorResponse(array('Invalid request'),Response::HTTP_NOT_FOUND);
+            return $apiService->getErrorsResponse(['invalid_field_value'=>['originator']], [] ,Response::HTTP_BAD_REQUEST);
         } 
 
         $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
         $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
         if(! $res){
-            return $apiService->getErrorResponse(array('Request aborted'),Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['cancel_button'=>[]], [] ,Response::HTTP_BAD_REQUEST);
         }else{
-            return $apiService->getOkResponse(array('Request OK !'),Response::HTTP_OK);
+            return $this->getRenderResponse('', [], [], Response::HTTP_OK, ['registered_operation'=>[]]);
         }
     }
 

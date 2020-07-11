@@ -42,7 +42,7 @@ use Cyclos;
 /**
  * This class contains actions that need no role at all. Mostly, those can be done before login as anonymous user, or ajax requests 
  */
-class DefaultController extends Controller
+class DefaultController extends BaseController
 {
     /**
      * Deals with all user management actions to operate on Cyclos-side
@@ -77,21 +77,29 @@ class DefaultController extends Controller
     }
 
     public function registrationByTypeAction(Request $request, string $type, $_format){
-        $apiService = $this->get('cairn_user.api');
-
         if( ($type == 'person') || ($type=='pro') || ($type == 'localGroup') || ($type=='superAdmin')){
             $checker = $this->get('security.authorization_checker');
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
-                throw new AccessDeniedException('Vous n\'avez pas les droits nécessaires.');
+                throw new AccessDeniedException('not_access_rights');
             }
             $session = $request->getSession();
             $session->set('registration_type',$type);
 
-            if($_format == 'json'){
-                return $apiService->getOkResponse(array('Session OK'),Response::HTTP_OK);
-            }
+            return $this->getRedirectionResponse(
+                    'fos_user_registration_register', 
+                    ['type'=>$type],
+                    [], 
+                    Response::HTTP_OK
+                );
 
-            return $this->forward('FOSUserBundle:Registration:register',array('type'=>$type));
+            //return $this->getRenderResponse(
+            //    'FOSUserBundle:Registration:register', 
+            //    ['type' => $type],
+            //    [], 
+            //    Response::HTTP_OK,
+            //    $message
+            //);
+
         }else{
             return $this->redirectToRoute('cairn_user_registration');
         }
@@ -125,7 +133,12 @@ class DefaultController extends Controller
             foreach ($zipCities as $zipCity){
                 $returnArray[] = $zipCity->getName();
             }
-            return new JsonResponse($returnArray);
+            return $this->getRenderResponse(
+                '',
+                [],
+                $returnArray,
+                Response::HTTP_OK
+            );
         }
         return new Response("JSON only",400);
     }

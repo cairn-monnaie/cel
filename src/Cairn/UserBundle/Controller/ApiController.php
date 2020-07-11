@@ -27,7 +27,7 @@ use Cairn\UserBundle\Entity\User;
 /**
  * This class contains actions related to other applications as webhooks and specific API functions 
  */
-class ApiController extends Controller
+class ApiController extends BaseController
 {
 
     public function phonesAction(Request $request)
@@ -36,7 +36,7 @@ class ApiController extends Controller
         $phones = $user->getPhones(); 
         $phones = is_array($phones) ? $phones : $phones->getValues();
 
-        return $this->get('cairn_user.api')->getOkResponse($phones,Response::HTTP_OK);
+        return $this->getRenderResponse('', [], $phones, Response::HTTP_OK);
     }
 
     public function setFirstLoginAction(Request $request)
@@ -44,7 +44,12 @@ class ApiController extends Controller
         $this->getUser()->setFirstLogin(true);
         $this->getDoctrine()->getManager()->flush();
 
-        return $this->get('cairn_user.api')->getOkResponse($this->getUser(),Response::HTTP_OK);
+        return $this->getRenderResponse(
+            '',
+            [],
+            $this->getUser(),
+            Response::HTTP_OK
+        );
     }
 
     public function usersAction(Request $request)
@@ -57,8 +62,8 @@ class ApiController extends Controller
             $userRepo = $em->getRepository(User::class);
 
             $ub = $userRepo->createQueryBuilder('u')
-                ->setMaxResults($jsonRequest['limit'])
-                ->setFirstResult($jsonRequest['offset']);
+                ->setMaxResults(abs($jsonRequest['limit']))
+                ->setFirstResult(abs($jsonRequest['offset']));
 
             if($jsonRequest['orderBy']['key']){
                 $ub->orderBy('u.'.trim($jsonRequest['orderBy']['key']),$jsonRequest['orderBy']['order']);
@@ -104,13 +109,13 @@ class ApiController extends Controller
                 $userRepo->whereRole($ub,'ROLE_PRO');
             }else{
                 if(! $currentUser->isAdmin()){
-                    
+
                     if($matchEmail || $matchICC){//mail exact ou n° de compte exact
                         $userRepo->whereRoles($ub,array_values($jsonRequest['roles']));
                     }else{
                         $userRepo->whereRole($ub,'ROLE_PRO');
                     } 
-                    
+
                 }else{// let admin choose according to POST sent
                     if(empty(array_values($jsonRequest['roles']))){
                         $userRepo->whereAdherent($ub);
@@ -133,18 +138,23 @@ class ApiController extends Controller
                     ->setParameter('maxLat',$jsonRequest['bounding_box']['maxLat'])
                     ;
             }
-                
-            $users = $ub->getQuery()->getResult();
 
             if( ($matchEmail || $matchICC) && (count($users) == 1) && $users[0]->hasRole('ROLE_PERSON')){
-                $res = [
+                $users = [
                     'name' => $users[0]->getName(),
                     'account_number' => $users[0]->getMainICC()
                 ];
-
-                return $this->get('cairn_user.api')->getOkResponse($res,Response::HTTP_OK);
+            }else{
+                $users = $ub->getQuery()->getResult();
             }
-            return $this->get('cairn_user.api')->getOkResponse($users,Response::HTTP_OK);
+
+            return $this->getRenderResponse(
+                '',
+                [],
+                $users,
+                Response::HTTP_OK
+            );
+
         }else{
             throw new NotFoundHttpException('POST Method required !');
         }
@@ -162,11 +172,11 @@ class ApiController extends Controller
 
         $creditorUser = $this->getUser();
         if(! $creditorUser ){
-            return $apiService->getErrorResponse(array('User account not found') ,Response::HTTP_FORBIDDEN);
+            return $this->getErrorsResponse(['data_not_found'=>['user']],[],Response::HTTP_FORBIDDEN);
         }
 
         if(! ($request->headers->get('Content-Type') == 'application/json')){
-            return $apiService->getErrorResponse(array('Invalid JSON') ,Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            return $this->getErrorsResponse(['invalid_field_value'=>['Content-Type',$request->headers->get('Content-Type')]],[],Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
         }
 
         //no possible code injection
@@ -176,19 +186,19 @@ class ApiController extends Controller
 
 
         if($creditorUser->getMainICC() != $postAccountNumber ){
-            return $apiService->getErrorResponse(array('User not found with provided account number') ,Response::HTTP_NOT_FOUND);
+            return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
         }
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            return $apiService->getErrorResponse(array('Access denied') ,Response::HTTP_FORBIDDEN);
+            return $this->getErrorsResponse(['not_pro'=>[$creditorUser->getName()]],[],Response::HTTP_FORBIDDEN);
         }
 
         if(! $creditorUser->getApiClient()){
-            return $apiService->getErrorResponse(array('User has no data to perform online payment') ,Response::HTTP_PRECONDITION_FAILED);
+            return $this->getErrorsResponse(['missing_value'=>['apiClient']],[],Response::HTTP_PRECONDITION_FAILED);
         }
 
         if(! $creditorUser->getApiClient()->getWebhook()){
-            return $apiService->getErrorResponse(array('No webhook defined to perform online payment') ,Response::HTTP_PRECONDITION_FAILED);
+            return $this->getErrorsResponse(['missing_value'=>['webhook']],[],Response::HTTP_PRECONDITION_FAILED);
         }
 
         $oPRepo = $em->getRepository('CairnUserBundle:OnlinePayment');
@@ -206,26 +216,27 @@ class ApiController extends Controller
 
         //validate POST content
         if( (! is_numeric($postParameters['amount']))   ){
-            return $apiService->getErrorResponse(array('No numeric amount') ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['amount'],'amount']], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         $numericalAmount = floatval($postParameters['amount']);
         $numericalAmount = round($numericalAmount,2); 
 
         if( $numericalAmount < 0.01  ){
-            return $apiService->getErrorResponse(array('Amount too low') ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['amount_too_low'=>[$numericalAmount]], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_success'])){
-            return $apiService->getErrorResponse(array('Invalid return_url_success format value') ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['return_url_success'],'return_url_success']], [] ,Response::HTTP_BAD_REQUEST);
+
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_failure'])){
-            return $apiService->getErrorResponse(array('Invalid return_url_failure format value') ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['return_url_failure'],'return_url_failure']], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         if( strlen($postParameters['reason']) > 35){                                  
-            return $apiService->getErrorResponse(array('Reason too long : 35 characters allowed') ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['too_many_chars'=>['reason',35,strlen($postParameters['reason'])]], [] ,Response::HTTP_BAD_REQUEST);
         } 
 
         //finally register new onlinePayment data
@@ -243,7 +254,13 @@ class ApiController extends Controller
             'redirect_url' => $this->generateUrl('cairn_user_online_payment_execute',array('suffix'=>$suffix),UrlGeneratorInterface::ABSOLUTE_URL)
         );
 
-        return $apiService->getOkResponse($payload,Response::HTTP_CREATED);
+        return $this->getRenderResponse(
+            '',
+            [],
+            $payload,
+            Response::HTTP_CREATED,
+            ['registered_operation'=>[]]
+        );
     }
 
 }

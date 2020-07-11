@@ -85,7 +85,7 @@ class AdminControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            'valid + has sms enabled'           => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
+            'valid + has sms enabled' => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
            'already blocked' => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true),
             'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false),
             'adherent for himself'    =>array('referent'=>'apogee_du_vin','target'=>'apogee_du_vin','isReferent'=>true),

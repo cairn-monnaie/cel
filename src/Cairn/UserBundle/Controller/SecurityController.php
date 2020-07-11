@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 /**
  * This class contains actions related to other applications as webhooks 
  */
-class SecurityController extends Controller
+class SecurityController extends BaseController
 {
     /**
      * Deals with all account actions to operate on Cyclos-side
@@ -59,10 +59,12 @@ class SecurityController extends Controller
                 $currentUser = $userRepo->findOneByUsername($params['username']);
 
                 if(! $currentUser->isEnabled()){
-                    return $apiService->getErrorResponse(array("User account is disabled"),Response::HTTP_UNAUTHORIZED);
+                     $errors = ['user_account_disabled'=>[$currentUser->getUsername()]];
+                     return $this->getErrorsResponse($errors,[], Response::HTTP_OK);
                 }
             }catch(\Exception $e){
-                return $apiService->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
+                $errors = ['invalid_authentification'=>[]];
+                return $this->getErrorsResponse($errors, [], Response::HTTP_OK);
             }
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
@@ -70,7 +72,8 @@ class SecurityController extends Controller
             $array_oauth['user_id'] =  $currentUser->getID();
             $array_oauth['first_login'] =  $currentUser->isFirstLogin();
 
-            return $apiService->getOkResponse($array_oauth,Response::HTTP_OK);
+            return $this->getRenderResponse('', [], $array_oauth, Response::HTTP_OK);
+
         }else{
             throw new NotFoundHttpException('POST Method required !');
         }
@@ -178,8 +181,12 @@ class SecurityController extends Controller
 
                     $em->flush();
 
-                    
-                    return $apiService->getOkResponse(array('Operation synchronized !'),Response::HTTP_CREATED);
+                    return $this->getRenderResponse(
+                        '',
+                        [],
+                        $operation,
+                        Response::HTTP_CREATED
+                    );
                 }
             }else{ //there is a failed payment to notify
 
@@ -207,20 +214,22 @@ class SecurityController extends Controller
                             $em->flush();
                         }
 
-                        return $apiService->getOkResponse(array('Notification about failed payment sent !'),Response::HTTP_OK);
-
+                        return $this->getRenderResponse(
+                            '',
+                            [],
+                            [],
+                            Response::HTTP_OK,
+                            ['notif_sent'=>['email']]
+                        );
                     }else{
-                        return $apiService->getErrorResponse(array('Nothing to send !'),Response::HTTP_BAD_REQUEST);
+                        return $this->getErrorsResponse([],[],Response::HTTP_BAD_REQUEST);
                     }
                 }else{
-                    throw new SuspiciousOperationException('Unexpected operation type');
+                    return $this->getErrorsResponse(['invalid_field_value'=>['type']],[],Response::HTTP_BAD_REQUEST);
                 }
             }
-
-
-
         }else{
-            return $apiService->getErrorResponse(array('POST method accepted !'),Response::HTTP_METHOD_NOT_ALLOWED);
+            return $this->getErrorsResponse(['invalid_field_value'=>['method']],[],Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 

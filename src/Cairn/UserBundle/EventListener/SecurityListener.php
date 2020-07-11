@@ -17,6 +17,7 @@ use Cairn\UserCyclosBundle\Entity\PasswordManager;
 
 use Cairn\UserBundle\Entity\User;
 
+use Cairn\UserBundle\Service\Api;
 use Cairn\UserBundle\Event\SecurityEvents;
 use FOS\UserBundle\Event\FormEvent;
 use FOS\UserBundle\Event\GetResponseNullableUserEvent;
@@ -36,9 +37,12 @@ class SecurityListener
 {
     protected $container;
 
-    public function __construct(Container $container)
+    protected $apiService;
+
+    public function __construct(Container $container, Api $apiService)
     {
         $this->container = $container;
+        $this->apiService = $apiService;
     }
 
     /**
@@ -53,14 +57,14 @@ class SecurityListener
         $userManager = new UserManager();
         $user = $event->getUser();
         $session = $event->getRequest()->getSession();
-        $router = $this->container->get('router');          
 
         if(! $user){ return;}
 
         if(! $user->isEnabled()){
-            $session->getFlashBag()->add('error','Ce compte est bloqué. L\'opération ne peut donc être poursuivie.');
-            $logoutUrl = $router->generate('fos_user_security_logout');
-            $event->setResponse(new RedirectResponse($logoutUrl));
+            $messages = ['user_account_disabled'=>[$user->getUsername()]];
+
+            $response = $this->apiService->getRenderResponse('fos_user_security_logout',[], [],Response::HTTP_OK, $messages);
+            $event->setResponse($response);
             return;
         }
     }
@@ -105,13 +109,6 @@ class SecurityListener
         $user = $form->getData();
 
         $session = $event->getRequest()->getSession();
-        $templating = $this->container->get('templating');          
-
-        $apiService = $this->container->get('cairn_user.api');
-        $router = $this->container->get('router');          
-        $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
-        $smsUrl = $router->generate('cairn_user_sms_presentation');
-
 
         $anonymous = $this->container->getParameter('cyclos_anonymous_user');
 
@@ -147,16 +144,15 @@ class SecurityListener
             $session->set('is_first_connection',true); 
         }
         
-        if($apiService->isRemoteCall()){
-            $response = $apiService->getOkResponse(array('Password resetted successfully'),Response::HTTP_OK);
-            $event->setResponse($response);
+        $messages = ['registered_operation'=>[]];
+
+        if($session->get('is_first_connection')){
+            $response = $this->apiService->getRedirectionResponse('cairn_user_sms_presentation',[], [],Response::HTTP_CREATED, $messages);
         }else{
-            if($session->get('is_first_connection')){
-                $event->setResponse(new RedirectResponse($smsUrl));
-            }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-            } 
-        }
+            $response = $this->apiService->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], [],Response::HTTP_CREATED, $messages);
+        } 
+
+        $event->setResponse($response);
     }
 
     /**
@@ -168,28 +164,14 @@ class SecurityListener
         $form = $event->getForm();
         $user = $form->getData();
 
-        $apiService = $this->container->get('cairn_user.api');
-        $isRemoteCall = $apiService->isRemoteCall();
-
-        $templating = $this->container->get('templating');          
-        $router = $this->container->get('router');
-
-        $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
-
-        if($isRemoteCall){
-            if($user->isFirstLogin()){
-                $user->setFirstLogin(false);
-            }
-            $response = $apiService->getOkResponse(array('Password updated successfully'),Response::HTTP_OK);
-            $event->setResponse($response);
+        if($user->isFirstLogin()){
+            $user->setFirstLogin(false);
+            $response = $this->apiService->getRenderResponse('CairnUserBundle:Default:howto_sms_page.html.twig',[], [],Response::HTTP_CREATED);
         }else{
-             if($user->isFirstLogin()){
-                $user->setFirstLogin(false);
-                $event->setResponse($templating->renderResponse('CairnUserBundle:Default:howto_sms_page.html.twig'));
-             }else{
-                $event->setResponse(new RedirectResponse($profileUrl));
-             }
+            $response = $this->apiService->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], [],Response::HTTP_CREATED);
         }
+
+        $event->setResponse($response);
     }
 
     public function createAccessClient(User $currentUser,$username, $password)
@@ -260,30 +242,25 @@ class SecurityListener
      */
     public function onMaintenance(GetResponseEvent $event)
     {
-        $templating = $this->container->get('templating');          
-
         $request = $event->getRequest();
-
-        $apiService = $this->container->get('cairn_user.api');
 
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
-            if($apiService->isRemoteCall()){
-                $event->setResponse($apiService->getErrorResponse(array('Server in maintenance state'),Response::HTTP_SERVICE_UNAVAILABLE));
-                return;
-            }
-            $event->setResponse($templating->renderResponse('CairnUserBundle:Security:maintenance.html.twig'));
+            $messages = ['maintenance_state'=>[]];
+            $response = $this->apiService->getRenderResponse('CairnUserBundle:Security:maintenance.html.twig',[], [],Response::HTTP_SERVICE_UNAVAILABLE,$messages);
+            $event->setResponse($response);
+
             return;
         }
 
-        if($apiService->isMobileCall()){
+        if($this->apiService->isMobileCall()){
             $authHeader = $request->headers->get('authorization');
             
             if(! $authHeader){
                 $authHeader = $request->server->get('HTTP_AUTHORIZATION');
 
                 if(! $authHeader){
-                    $event->setResponse($apiService->getErrorResponse(array('Missing Authorization header with Signature'),Response::HTTP_UNAUTHORIZED));
+                    $event->setResponse($this->apiService->getErrorsResponse(['field_not_found'=>['Authorization']],[],Response::HTTP_UNAUTHORIZED));
                     return;
                 }
             }
@@ -291,7 +268,7 @@ class SecurityListener
             $parsedHeader = $this->container->get('cairn_user.security')->parseAuthorizationHeader($authHeader);
 
             if(! $parsedHeader){
-                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Header Format'),Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($this->apiService->getErrorsResponse(['api_signature_format'=>[]],[],Response::HTTP_UNAUTHORIZED));
                 return;
             }
 
@@ -299,7 +276,7 @@ class SecurityListener
 
             $body = preg_replace('/\s+/','',$request->getContent());
             if($body){
-                $deterBody = $apiService->fromArrayToStringDeterministicOrder(json_decode($body,true));
+                $deterBody = $this->apiService->fromArrayToStringDeterministicOrder(json_decode($body,true));
 
                 $digest = hash('md5',$deterBody);
                 $data .= $digest;
@@ -308,7 +285,7 @@ class SecurityListener
             $rightKey = hash_hmac($parsedHeader['algo'],trim($data),$this->container->getParameter('api_secret'));
 
             if($rightKey != $parsedHeader['signature']){
-                $event->setResponse($apiService->getErrorResponse(array('Wrong Authorization Header provided'),Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($this->apiService->getErrorsResponse(['wrong_auth_header'=>[]],[],Response::HTTP_UNAUTHORIZED));
                 return;
             }
         }
@@ -321,17 +298,15 @@ class SecurityListener
     public function onFirstLogin(GetResponseEvent  $event)
     {
         $security = $this->container->get('cairn_user.security');          
-        $router = $this->container->get('router');          
-
         $currentUser = $security->getCurrentUser();
 
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if($currentUser->isFirstLogin() && (!in_array($event->getRequest()->get('_route'),['fos_user_change_password','cairn_user_api_users_change_password']))){
                 $session = $event->getRequest()->getSession();
-
                 $session->set('is_first_connection',true);
-                $editPwdUrl = $router->generate('fos_user_change_password');
-                $event->setResponse(new RedirectResponse($editPwdUrl));
+
+                $response = $this->apiService->getRedirectionResponse('fos_user_change_password',[], [],Response::HTTP_CREATED);
+                $event->setResponse($response);
             }
         }
     }
@@ -343,19 +318,15 @@ class SecurityListener
     public function onDisabledUser(FilterResponseEvent $event)
     {
         $security = $this->container->get('cairn_user.security');          
-        $router = $this->container->get('router');          
-
         $currentUser = $security->getCurrentUser();
 
         if($currentUser instanceof \Cairn\UserBundle\Entity\User){
             if(!$currentUser->isEnabled()){
-                $apiService = $this->container->get('cairn_user.api');
-                
                 $route = $event->getRequest()->get('_route');
 
-                if( (! $apiService->isRemoteCall()) && ($route != 'fos_user_security_login')){
-                    $loginUrl = $router->generate('fos_user_security_login');
-                    $event->setResponse(new RedirectResponse($loginUrl));
+                if( (! $this->apiService->isRemoteCall()) && ($route != 'fos_user_security_login')){
+                    $response = $this->apiService->getRedirectionResponse('fos_user_security_login',[], [],Response::HTTP_OK);
+                    $event->setResponse($response);
                 }
             }
         }

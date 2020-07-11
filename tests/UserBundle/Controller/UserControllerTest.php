@@ -53,7 +53,7 @@ class UserControllerTest extends BaseControllerTest
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
             return;
         }elseif(! $isExpectedForm){
-            $isRedirect = $this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername());
+            $isRedirect = $this->client->getResponse()->isRedirect('/');
             $isException = ($this->client->getResponse()->getStatusCode() >= 400 );
             $this->assertTrue($isRedirect || $isException);
 
@@ -169,7 +169,7 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessages'=>array('')
         );
 
-        $validDataMsg = 'Un code vous a été envoyé';
+        $validDataMsg = 'Un code de validation a été envoyé';
         $validCodeMsg = 'enregistré';
         $usedMsg = 'déjà utilisé';
         return array(
@@ -187,7 +187,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                     'isExpectedForm'=>false,
-                    'expectedMessages'=>'3 demandes de nouveau')),
+                    'expectedMessages'=>'3 erreurs à la suite')),
 
             'current number'=>array_replace_recursive($baseData, array(
                         'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
@@ -283,7 +283,7 @@ class UserControllerTest extends BaseControllerTest
         if(! ($currentUser === $targetUser || $isReferent)){
             $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
         }elseif(! $isExpectedForm){
-            $isRedirect = $this->client->getResponse()->isRedirect('/user/profile/view/'.$targetUser->getUsername());
+            $isRedirect = $this->client->getResponse()->isRedirect('/');
             $isException = ($this->client->getResponse()->getStatusCode() >= 400 );
             $this->assertTrue($isRedirect || $isException);
 
@@ -442,8 +442,8 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessages'=>array('')
         );
 
-        $validDataMsg = 'Un code vous a été envoyé';
-        $validCodeMsg = 'enregistré';
+        $validDataMsg = 'Un code de validation';
+        $validCodeMsg = 'succès';
         return array(
             'admin changes number for disabled user' => array_replace($baseAdminData, array('target'=>'la_mandragore')),
 
@@ -453,7 +453,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                                                                     'isExpectedForm'=>false,
-                                                                    'expectedMessages'=>'3 demandes de changement')),
+                                                                    'expectedMessages'=>'3 erreurs à la suite')),
 
             'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,

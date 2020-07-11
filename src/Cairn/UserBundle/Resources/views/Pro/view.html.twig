@@ -167,7 +167,11 @@
                     {% if user.enabled == true %}
                         <a class="btn red" href="{{path('cairn_user_users_block',{'username': user.username})}}"><i class="material-icons left">lock</i> Faire opposition au compte</a>
                     {% else %}
+                        {% if user.mainICC %}
                         <a class="btn green" href="{{path('cairn_user_users_activate',{'username': user.username})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
+                        {% else %}
+                        <a class="btn green" href="{{path('cairn_user_users_activate',{'username': user.username})}}"><i class="material-icons left">unlock</i>Ouvrir le compte [e]-Cairn</a>
+                        {% endif %}
                     {% endif %}
 
                     <a href="{{path('cairn_user_users_remove',{'username' : user.username})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Clôturer le compte</a>

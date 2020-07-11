@@ -32,7 +32,7 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 /**
  * This class contains actions related to other applications as webhooks 
  */
-class HelloassoController extends Controller
+class HelloassoController extends BaseController
 {
     /**
      * Deals with all account actions to operate on Cyclos-side
@@ -126,14 +126,14 @@ class HelloassoController extends Controller
             $api_payment = $this->getApiPayment($match_id[1]);
 
             if(! $api_payment){
-                return $apiService->getErrorResponse(array('No payment found'),Response::HTTP_NOT_FOUND);
+                return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
             }
 
             //get a new helloassoConversion entity if it is does not exist yet
             $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
 
             if(! $newHelloassoPayment){
-                return $apiService->getErrorResponse(array('Helloasso payment already handled'),Response::HTTP_FORBIDDEN);
+                return $this->getErrorsResponse(['operation_already_processed'=>[]],[],Response::HTTP_BAD_REQUEST);
             }
 
 
@@ -147,7 +147,7 @@ class HelloassoController extends Controller
 
                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                return $apiService->getErrorResponse(array('Creditor user not found'),Response::HTTP_NOT_FOUND);
+                return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
             }
 
             //can be null
@@ -159,7 +159,13 @@ class HelloassoController extends Controller
 
             $em->flush();
 
-            return $apiService->getOkResponse(array('Helloasso payment handled'),Response::HTTP_OK);
+            return $this->getRenderResponse(
+                '',
+                [],
+                $operation,
+                Response::HTTP_OK,
+                ['registered_operation'=>[]]
+            );
 
         }
     }

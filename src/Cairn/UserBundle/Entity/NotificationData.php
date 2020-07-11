@@ -65,6 +65,7 @@ class NotificationData
      * @var ArrayCollection
      *@ORM\OneToMany(targetEntity="Cairn\UserBundle\Entity\BaseNotification", mappedBy="notificationData" , cascade={"persist","remove"},orphanRemoval=true)
      *@ORM\JoinColumn(nullable=false)
+     *@ORM\OrderBy({"id" = "ASC"})
      */
     protected $baseNotifications;
 

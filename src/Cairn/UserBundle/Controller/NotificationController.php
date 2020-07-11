@@ -31,13 +31,14 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Exception\LogicException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 /**
  * This class contains actions related to account operations 
  *
  * @Security("is_granted('ROLE_ADHERENT')")
  */
-class NotificationController extends Controller
+class NotificationController extends BaseController
 {   
 
     public function tokenSubscriptionAction(Request $request, $from)
@@ -52,14 +53,19 @@ class NotificationController extends Controller
         $jsonRequest = json_decode($request->getContent(), true);
 
         if($from == 'mobile'){
+            $missingFields = [];
             if(! isset($jsonRequest['device_token'])){
-                return $apiService->getErrorResponse(array('Body field device_token not found'),Response::HTTP_BAD_REQUEST);
+                $missingFields['field_not_found'] = ['device_token'];
             }
             if(! isset($jsonRequest['platform'])){
-                return $apiService->getErrorResponse(array('Body field platform not found'),Response::HTTP_BAD_REQUEST);
+                $missingFields['field_not_found'] = ['platform'];
             }
             if(! isset($jsonRequest['action'])){
-                return $apiService->getErrorResponse(array('Action field not found'),Response::HTTP_BAD_REQUEST);
+                $missingFields['field_not_found'] = ['action'];
+            }
+
+            if(count($missingFields) != 0){
+                return $this->getErrorsResponse($missingFields, [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $deviceToken = $jsonRequest['device_token'];
@@ -69,28 +75,38 @@ class NotificationController extends Controller
             if($action == 'POST'){
                 $notificationData->addDeviceToken($deviceToken,$platform);
                 $em->flush();
-                return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);
+                return $this->getRenderResponse(
+                    '',
+                    [],
+                    $notificationData,
+                    Response::HTTP_CREATED
+                );
             }elseif($action == 'DELETE'){
                 $notificationData->removeDeviceToken($deviceToken,$platform);
                 $em->flush();
-                return $apiService->getOkResponse($notificationData,Response::HTTP_OK);
+                return $this->getRenderResponse(
+                    '',
+                    [],
+                    $notificationData,
+                    Response::HTTP_OK
+                );
             }else{
-                return $apiService->getErrorResponse(array('Action field must be either DELETE or POST'),Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['invalid_field_value'=>['action',$action]],[],Response::HTTP_BAD_REQUEST);
             }
         }else{
             $subscription = $jsonRequest['subscription'];
 
              //validate endpoint exists
              if(! array_key_exists('endpoint',$subscription)){
-                 return $apiService->getErrorResponse(array('Subscription must have an endpoint'),Response::HTTP_BAD_REQUEST);
+                 return $this->getErrorsResponse(['field_not_found'=>['endpoint']],[],Response::HTTP_BAD_REQUEST);
              }
 
              //validate keys because we need payload support
              if(! array_key_exists('keys',$subscription)){
-                 return $apiService->getErrorResponse(array('Subscription must have encryption keys'),Response::HTTP_BAD_REQUEST);
+                 return $this->getErrorsResponse(['field_not_found'=>['keys']],[],Response::HTTP_BAD_REQUEST);
              }else{
                  if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                     return $apiService->getErrorResponse(array('Subscription must have valid encryption keys'),Response::HTTP_BAD_REQUEST);
+                     return $this->getErrorsResponse(['field_not_found'=>['p256dh/auth']],[],Response::HTTP_BAD_REQUEST);
                  }
              }
 
@@ -112,7 +128,13 @@ class NotificationController extends Controller
 
              $em->flush();
              
-             return $apiService->getOkResponse(array('OK'),Response::HTTP_CREATED);
+             return $this->getRenderResponse(
+                    '',
+                    [],
+                    [],
+                    Response::HTTP_CREATED
+                );
+
         }
     }
 
@@ -146,14 +168,13 @@ class NotificationController extends Controller
     public function notificationParamsAction(Request $request, User $user)
     {
         $currentUser = $this->getUser(); 
-
         
         $em = $this->getDoctrine()->getManager();
         $apiService = $this->get('cairn_user.api');
         $isRemoteCall = $apiService->isRemoteCall();
 
         if(! (($user === $currentUser) || ($user->hasReferent($currentUser))) ){
-            throw new AccessDeniedException('Vous n\'êtes pas référent de '. $user->getUsername() .'. Vous ne pouvez donc pas poursuivre.');
+            throw new AccessDeniedException('not_referent');
         }
 
         $notificationData = $this->initNotificationData($user);
@@ -167,25 +188,40 @@ class NotificationController extends Controller
             }else{
                 $form->handleRequest($request);
             }
+
             if($form->isValid()){
                 $em->flush();
 
-                if($isRemoteCall){
-                    return $apiService->getOkResponse($notificationData,Response::HTTP_CREATED);        
-                }else{
-                    $request->getSession()->getFlashBag()->add('success','Les paramètres des notifications ont été mis à jour');
-                    return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
-                }
-            }else{
-                return $apiService->getFormErrorResponse($form);
+                $message = ['notif_params_updated'=>[]];
+                return $this->getRedirectionResponse(
+                    'cairn_user_profile_view', 
+                    ['username' => $user->getUsername()],
+                    $notificationData, 
+                    Response::HTTP_CREATED,
+                    $message
+                );
+
             }
         }else{
+            //si l entité vient d être créée, flusher pour toujours avoir des ID même dès le 1er GET
+            if(! $notificationData->getBaseNotifications()[0]->getID()){
+                $em->flush();
+            }
             if($isRemoteCall){
-                return $apiService->getOkResponse($notificationData,Response::HTTP_OK);        
+                return $this->getRedirectionResponse(
+                    '', 
+                    [],
+                    $notificationData, 
+                    Response::HTTP_OK
+                );
             }
         }
 
-        return $this->render('CairnUserBundle:Notification:_form.html.twig',array('form' => $form->createView(),'user'=>$user));
+        return $this->getFormResponse(
+            'CairnUserBundle:Notification:_form.html.twig', 
+            ['form' => $form->createView(),'user' => $user],
+            $form 
+        );
     }
 
     /**
@@ -202,8 +238,15 @@ class NotificationController extends Controller
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if(! $user->hasRole('ROLE_PRO')){
-             $session->getFlashBag()->add('error',$user->getName().' n est pas un professionnel');
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+            $message = ['not_pro'=>[$user->getName()]];
+
+             return $this->getRedirectionResponse(
+                 'cairn_user_profile_view', 
+                 ['username' => $user->getUsername()],
+                 [], 
+                 Response::HTTP_OK,
+                 $message
+             );
          }
 
         $pushTemplate = new PushTemplate();
@@ -215,16 +258,28 @@ class NotificationController extends Controller
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('save')->isClicked()){
                 $messageNotificator->sendRegisterNotifications($user, $pushTemplate);
-                $session->getFlashBag()->add('success','Push message has been sent');
+                $message = ['push_pro_sent'=>[$user->getName()]];
 
                 $em->flush();
             }else{
-                $session->getFlashBag()->add('info','Push message has been canceled');
+                $message = ['cancel_button'=>[]];
             }
-            return $this->redirectToRoute('cairn_user_profile_view',array('username' => $user->getUsername()));
+
+            return $this->getRedirectionResponse(
+                    'cairn_user_profile_view', 
+                    ['username' => $user->getUsername()],
+                    [], 
+                    Response::HTTP_OK,
+                    $message
+                );
         }
 
-        return $this->render('CairnUserBundle:Notification:push_preview.html.twig',array('form' => $form->createView(),'user'=>$user));
+        return $this->getFormResponse(
+            'CairnUserBundle:Notification:push_preview.html.twig', 
+            ['form' => $form->createView(),'user' => $user],
+            $form 
+        );
+
 
     }
 

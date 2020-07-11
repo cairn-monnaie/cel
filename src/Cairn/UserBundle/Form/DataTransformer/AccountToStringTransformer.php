@@ -86,23 +86,11 @@ class AccountToStringTransformer implements DataTransformerInterface
             }
         }
 
-        if (null === $toUserVO) {
-            throw new TransformationFailedException(sprintf(
-                'No account found for "%s"',
-                $autocomplete
-            ));
+        if (null !== $toUserVO) {
+            //TODO: little hack for normalize the data to return for the OperationValidator
+            $toUserVO->number = $toUserVO->accountNumber;
         }
 
-//        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));
-//        if (!$user){
-//            throw new TransformationFailedException(sprintf(
-//                'No symfony user found for cyclos id "%s" ',
-//                $toUserVO->id
-//            ));
-//        }
-
-        //TODO: little hack for normalize the data to return for the OperationValidator
-        $toUserVO->number = $toUserVO->accountNumber;
         return $toUserVO;
     }
 }
