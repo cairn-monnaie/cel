@@ -70,7 +70,7 @@ class ApiController extends BaseController
                 $doctrineUser->setEmail(trim($jsonRequest['email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
-                $doctrineUser->setDescription($jsonRequest['description']);
+                //$doctrineUser->setDescription($jsonRequest['description']);
 
                 $doctrineUser->setPlainPassword(User::randomPassword());
                 $doctrineUser->setMainICC(null);
@@ -82,7 +82,7 @@ class ApiController extends BaseController
                 $address->setZipCity($zipCity);
             }
 
-            $doctrineUser->setUrl($jsonRequest['url']);
+            //$doctrineUser->setUrl($jsonRequest['url']);
             $doctrineUser->setName(trim($jsonRequest['societe'])); 
 
             $address = $doctrineUser->getAddress();

@@ -90,9 +90,9 @@ class Geolocalization
                 $address->getZipCity()->setCity($location['properties']['city']);
                 return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
             }
+        }else{
+            throw new \Exception('geolocalization_api_failed : '.$res['results']['description']);
         }
-
-        return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
 
     }
 
