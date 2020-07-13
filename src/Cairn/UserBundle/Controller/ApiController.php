@@ -54,7 +54,7 @@ class ApiController extends BaseController
             $errors = [];
 
             if(! ($jsonRequest['morphy']=='mor' && $jsonRequest['type']=='professionnel')){
-                return $this->getErrorsResponse(['not_pro'=>[$jsonRequest['name']]], [] ,Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['not_pro'=>[$jsonRequest['societe']]], [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $userRepository = $em->getRepository('CairnUserBundle:User');

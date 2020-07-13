@@ -72,7 +72,7 @@ class Geolocalization
             }elseif(count($features) == 1){ 
                 $location = $features[0];              
             }else{
-                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('name'=>''));
+                return array('latitude'=>NULL ,'longitude'=>NULL, 'closest'=>array('label'=>'Aucune'));
             } 
 
             $score = $location['properties']['score'];
