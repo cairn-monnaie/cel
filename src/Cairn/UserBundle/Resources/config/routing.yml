@@ -36,6 +36,11 @@ cairn_user_api_online_payment_create:
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:createOnlinePayment, _format: json }
 
+cairn_user_api_sync pro:
+    path: api/pro
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:syncPro, _format: json }
+
 cairn_user_api_get_tokens:
     path: oauth/tokens
     methods: POST

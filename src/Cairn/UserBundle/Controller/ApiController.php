@@ -22,6 +22,8 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\OnlinePayment;
 use Cairn\UserBundle\Entity\User;
+use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\ZipCity;
 
 
 /**
@@ -37,6 +39,93 @@ class ApiController extends BaseController
         $phones = is_array($phones) ? $phones : $phones->getValues();
 
         return $this->getRenderResponse('', [], $phones, Response::HTTP_OK);
+    }
+
+    /**
+     * Sync pro from dolibarr data
+     *
+     */
+    public function syncProAction(Request $request)
+    {
+        if($request->isMethod('POST')){
+            $em = $this->getDoctrine()->getManager();
+
+            $jsonRequest = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
+            $errors = [];
+
+            if(! ($jsonRequest['morphy']=='mor' && $jsonRequest['type']=='professionnel')){
+                return $this->getErrorsResponse(['not_pro'=>[$jsonRequest['name']]], [] ,Response::HTTP_BAD_REQUEST);
+            }
+
+            $userRepository = $em->getRepository('CairnUserBundle:User');
+
+            $doctrineUser = $userRepository->findOneByDolibarrID($jsonRequest['login']);
+
+            if(! $doctrineUser){
+                $doctrineUser = new User();
+
+                $doctrineUser->setDolibarrID(trim($jsonRequest['login']));
+                $doctrineUser->setUsername(trim($jsonRequest['login']));
+           
+                $doctrineUser->setEmail(trim($jsonRequest['email']));
+                //$doctrineUser->setCyclosID(rand(1,1000000000));
+                $doctrineUser->addRole('ROLE_PRO');
+                $doctrineUser->setDescription($jsonRequest['description']);
+
+                $doctrineUser->setPlainPassword(User::randomPassword());
+                $doctrineUser->setMainICC(null);
+
+                $address = new Address();
+                $zipCity = new ZipCity();
+
+                $doctrineUser->setAddress($address);
+                $address->setZipCity($zipCity);
+            }
+
+            $doctrineUser->setUrl($jsonRequest['url']);
+            $doctrineUser->setName(trim($jsonRequest['societe'])); 
+
+            $address = $doctrineUser->getAddress();
+            $zipCity = $address->getZipCity();
+            
+
+            $zipCity->setCity($jsonRequest['town']);
+            $zipCity->setZipCode($jsonRequest['zip']);
+
+
+            $address->setStreet1($jsonRequest['address']);
+            
+            $zipRepository = $em->getRepository('CairnUserBundle:ZipCity');
+            $zip = $zipRepository->findOneBy(array('zipCode'=>$zipCity->getZipCode(),'city'=> $zipCity->getCity()));
+            if(! $zip){
+                $errors[] = 'zipcode/city : Le couple '.$zipCity->getZipCode().'/'.$zipCity->getCity().' (ZipCode/Ville) ne correspond à rien dans notre base de données';
+            }
+
+            $listErrors = $this->get('validator')->validate($doctrineUser); 
+
+            $apiService = $this->get('cairn_user.api');
+
+            if(count($listErrors) > 0){
+                foreach($listErrors as $error){
+                    $errors[] = $error->getPropertyPath().' : '.$error->getMessage();
+                }
+                return $apiService->getApiResponse(json_encode($errors),Response::HTTP_OK);
+            }else{
+                $em->persist($doctrineUser);
+                $em->flush();
+
+                return $this->getRenderResponse(
+                    '',
+                    [],
+                    $doctrineUser,
+                    Response::HTTP_CREATED
+                );
+            }
+            
+            
+        }else{
+            throw new NotFoundHttpException('POST Method required !');
+        }
     }
 
     public function setFirstLoginAction(Request $request)

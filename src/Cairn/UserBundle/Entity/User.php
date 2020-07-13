@@ -47,7 +47,7 @@ class User extends BaseUser
     private $firstname;
 
     /**
-     * @ORM\Column(name="cyclos_id", type="bigint", unique=true)
+     * @ORM\Column(name="cyclos_id", type="bigint", unique=true,nullable=true)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID;
@@ -63,7 +63,13 @@ class User extends BaseUser
     private $mainICC;
 
     /**
+     * @ORM\Column(name="dolibarr_id", type="string", unique=true, nullable=true)
+     */
+    private $dolibarrID;
+
+    /**
      * @ORM\Column(name="url", type="string", nullable=true)
+     * @Assert\Url()
      */
     private $url;
 
@@ -1009,4 +1015,29 @@ class User extends BaseUser
     {
         return $this->url;
     }
+
+    /**
+     * Set dolibarrID.
+     *
+     * @param string|null $dolibarrID
+     *
+     * @return User
+     */
+    public function setDolibarrID($dolibarrID = null)
+    {
+        $this->dolibarrID = $dolibarrID;
+
+        return $this;
+    }
+
+    /**
+     * Get dolibarrID.
+     *
+     * @return string|null
+     */
+    public function getDolibarrID()
+    {
+        return $this->dolibarrID;
+    }
+
 }
