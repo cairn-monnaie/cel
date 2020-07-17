@@ -11,17 +11,29 @@ final class Messages
 {
     public static function getMessages($requestedMessages)
     {
-        $formattedMessages = [];
+        if(isset($requestedMessages['key'])){
+            $requestedMessages = [$requestedMessages];
+        }
 
-        foreach($requestedMessages as $key=>$args){
-            if(array_key_exists($key,self::MESSAGE_KEYS)){
-                $formattedMessages[] = ['type'=>self::MESSAGE_KEYS[$key]['type'],'key'=>$key,'message'=>vsprintf(self::MESSAGE_KEYS[$key]['message'],array_values($requestedMessages[$key])),'args'=>$args ];
+        foreach($requestedMessages as $index=>$message){
+            $key = $message['key'];
+            $args = (isset($message['args'])) ? $message['args'] : [];
+            if(array_key_exists($message['key'],self::MESSAGE_KEYS)){
+                $requestedMessages[$index]['message'] = vsprintf(self::MESSAGE_KEYS[$key]['message'],$args);
+                $requestedMessages[$index]['type'] = self::MESSAGE_KEYS[$key]['type']; 
+                $requestedMessages[$index]['args'] = $args; 
             }else{
-                $formattedMessages[] = ['type'=>'unknown','key'=>'unknown','message'=> $key ];
+                $requestedMessages[$index]['type'] = 'unknown'; 
+                $requestedMessages[$index]['key'] = $key; 
+                $requestedMessages[$index]['args'] = $args; 
+
+                if(! isset($requestedMessages[$index]['message'])){
+                    $requestedMessages[$index]['message'] = '';
+                }
             }
         }
 
-        return $formattedMessages;
+        return $requestedMessages;
     }
 
     /**
@@ -58,6 +70,10 @@ final class Messages
             'type'=>'error',
             'message'=>'%s field not found in request body'
         ],
+        //'6e5212ed-a197-4339-99aa-5654798a4854'=>[
+        //    'type'=>'error',
+        //    'message'=>'form should not contain extra fields'
+        //],
 
         ############### CLIENT ERRORS ###########################
 
@@ -111,7 +127,11 @@ final class Messages
         ],
         'too_many_chars'=>[
             'type'=>'error',
-            'message'=>'%s contient trop de caractères, %s autorisés, %s fournis'
+            'message'=>'%s contient trop de caractères'
+        ],
+        'too_few_chars'=>[
+            'type'=>'error',
+            'message'=>'%s ne contient pas assez de caractères'
         ],
         'amount_too_low'=>[
             'type'=>'error',
@@ -123,7 +143,7 @@ final class Messages
         ],
         'invalid_format_value'=>[
             'type'=>'error',
-            'message'=>'%s is not a valid %s for field %s'
+            'message'=>'Le format de %s est invalide'
         ],
         'date_before_today'=>[
             'type'=>'error',
@@ -131,7 +151,7 @@ final class Messages
         ],
         'invalid_field_value'=>[
             'type'=>'error',
-            'message'=>'%s is not a valid value for field %s'
+            'message'=>'%s est une valeur invalide'
         ],
         ### info notifs ###
         'email_validation'=>[
@@ -219,15 +239,30 @@ final class Messages
             'type'=>'error',
             'message'=>'Le délai a expiré'
         ],
-
+        'geolocalization_failed'=>[
+            'type'=>'error',
+            'message'=>'La géolocalisation a échoué pour l\'adresse %s'
+        ],
+        'repeat_password_fail'=>[
+            'type'=>'error',
+            'message'=>'Les champs ne correspondent pas'
+        ],
         #info#
-'account_still_assoc_phone'=>[
+        'account_still_assoc_phone'=>[
             'type'=>'info',
             'message'=>'Un compte [e]-Cairn est toujours associé au numéro %s'
         ],
-'operation_already_processed'=>[
+        'operation_already_processed'=>[
             'type'=>'info',
             'message'=>'Cette opération a déjà été enregistrée'
+        ],
+        'already_in_use'=>[
+            'type'=>'info',
+            'message'=>'Déjà utilisé'
+        ],
+        'fos_user.email.already_used'=>[
+            'type'=>'info',
+            'message'=>'Email déjà utilisé'
         ],
         'beneficiary_already_reg'=>[
             'type'=>'info',

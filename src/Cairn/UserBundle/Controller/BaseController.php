@@ -43,10 +43,10 @@ class BaseController extends Controller
         return $apiService->getRedirectionResponse($redirectKey,$redirectParams,$data,$statusCode,$messages);
     }
 
-    protected function getErrorsResponse($errors, $messages, $statusCode)
+    protected function getErrorsResponse($errors, $messages, $statusCode,$redirectKey='cairn_user_welcome')
     {
         $apiService = $this->get('cairn_user.api');
-        return $apiService->getErrorsResponse($errors, $messages, $statusCode);
+        return $apiService->getErrorsResponse($errors, $messages, $statusCode,$redirectKey);
     }
 }
 

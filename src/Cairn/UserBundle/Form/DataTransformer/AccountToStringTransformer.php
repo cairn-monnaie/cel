@@ -59,10 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new TransformationFailedException(sprintf(
-                'No account found for "%s"',
-                $autocomplete
-            ));
+            return '';
         }
 
         $userRepo = $this->entityManager
@@ -73,6 +70,7 @@ class AccountToStringTransformer implements DataTransformerInterface
 
         $user = null;
         $toUserVO = null;
+
         if (count($matches)>1){
             $user = $userRepo->findOneBy(array('email'=>$matches[1][0]));
         }
@@ -81,16 +79,21 @@ class AccountToStringTransformer implements DataTransformerInterface
         }else{
             $re = '/([\-]*[0-9]+)/';
             preg_match($re, $autocomplete, $matches, PREG_OFFSET_CAPTURE, 0);
+
             if (count($matches)>1){
                 $toUserVO = $this->cyclosUserInfo->getUserVOByKeyword($matches[1][0]);
             }
         }
 
-        if (null !== $toUserVO) {
+        
+        if ($toUserVO) {
             //TODO: little hack for normalize the data to return for the OperationValidator
             $toUserVO->number = $toUserVO->accountNumber;
+        }else{
+            $toUserVO = $autocomplete;
         }
 
+        //string if no object is found, object otherwise
         return $toUserVO;
     }
 }

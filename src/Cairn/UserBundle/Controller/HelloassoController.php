@@ -126,14 +126,14 @@ class HelloassoController extends BaseController
             $api_payment = $this->getApiPayment($match_id[1]);
 
             if(! $api_payment){
-                return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
+                return $this->getErrorsResponse(['key'=>'data_not_found'],[],Response::HTTP_NOT_FOUND);
             }
 
             //get a new helloassoConversion entity if it is does not exist yet
             $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
 
             if(! $newHelloassoPayment){
-                return $this->getErrorsResponse(['operation_already_processed'=>[]],[],Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['key'=>'operation_already_processed'],[],Response::HTTP_BAD_REQUEST);
             }
 
 
@@ -147,7 +147,7 @@ class HelloassoController extends BaseController
 
                 $messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-                return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
+                return $this->getErrorsResponse(['key'=>'data_not_found'],[],Response::HTTP_NOT_FOUND);
             }
 
             //can be null
@@ -164,7 +164,7 @@ class HelloassoController extends BaseController
                 [],
                 $operation,
                 Response::HTTP_OK,
-                ['registered_operation'=>[]]
+                ['key'=>'registered_operation']
             );
 
         }

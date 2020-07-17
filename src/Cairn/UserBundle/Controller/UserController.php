@@ -211,10 +211,6 @@ class UserController extends BaseController
             throw new AccessDeniedException('reserved_for_members');
         }
 
-        if(! $user->isEnabled() ){
-            throw new AccessDeniedException('user_account_disabled');
-        }
-
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
         if(!$user->getSmsData()){
@@ -230,11 +226,11 @@ class UserController extends BaseController
         $previousPhoneNumber = NULL;
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $message = ['wrong_code_cancel'=>[]];
+            $message = ['key'=>'wrong_code_cancel'];
             return $this->getErrorsResponse($message, [] ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 
-        //************************ end of cases where edit sms is disallowed *************************//
+        //************************ end of cases where edit phone is disallowed *************************//
 
         $formPhone = $this->createForm(PhoneType::class, $phone);
 
@@ -251,7 +247,6 @@ class UserController extends BaseController
             }
 
             if($formPhone->isValid()){
-
                 $dataForm = $formPhone->getData();
                 
                 // POST request is a new phone number for an existing entity smsData
@@ -288,7 +283,7 @@ class UserController extends BaseController
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
         if($currentUser->getNbPhoneNumberRequests() >= 3){
-            $message = ['wrong_code_cancel'=>[]];
+            $message = ['key'=>'wrong_code_cancel'];
             return $this->getErrorsResponse($message, [] ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 
@@ -332,10 +327,10 @@ class UserController extends BaseController
 
         $messages = [];
         if($existPhone){
-            $messages['pro_and_person_assoc_phone'] = [$newPhoneNumber]; 
+            $messages[] = ['key'=>'pro_and_person_assoc_phone','args'=>[$newPhoneNumber]]; 
         }
 
-        $messages['sms_code_sent'] = [$newPhoneNumber];
+        $messages[] = ['key'=>'sms_code_sent','args'=>[$newPhoneNumber]];
 
         return $messages;
     }
@@ -434,7 +429,7 @@ class UserController extends BaseController
                     $existingUsers = $em->getRepository('CairnUserBundle:User')->findUsersByPhoneNumber($previousPhoneNumber);
                     if(count($existingUsers) == 2){
                         if($user->hasRole('ROLE_PERSON')){
-                            $messages['account_still_assoc_phone'] = [$previousPhoneNumber];
+                            $messages[] = ['key'=>'account_still_assoc_phone','args'=> [$previousPhoneNumber]];
                         }
                     }
                 }
@@ -444,7 +439,7 @@ class UserController extends BaseController
                 $smsData->addPhone($phone);
 
                 $em->flush();
-                $messages['registered_operation'] = [];
+                $messages[] = ['key'=>'registered_operation'];
 
 
                 $session->remove('activationCode');
@@ -476,11 +471,11 @@ class UserController extends BaseController
                 $currentUser->setPhoneNumberActivationTries($currentUser->getPhoneNumberActivationTries() + 1);
                 $remainingTries = 3 - $currentUser->getPhoneNumberActivationTries();
                 if($remainingTries > 0){
-                    $errors['wrong_code'] = [];
-                    $messages['remaining_tries'] = [$remainingTries];
+                    $errors[] = ['key'=>'wrong_code'];
+                    $messages[] = ['key'=>'remaining_tries','args'=> [$remainingTries]];
                 }else{
-                    $errors['wrong_code'] = [];
-                    $messages['too_many_errors_block'] = [];
+                    $errors[] = ['key'=>'wrong_code'];
+                    $messages[] = ['key'=>'too_many_errors_block'];
                     $this->get('cairn_user.access_platform')->disable(array($currentUser),'phone_tries_exceeded');
                 }
 
@@ -490,7 +485,7 @@ class UserController extends BaseController
             }
 
         }else{//provided code is NULL
-            return $this->getErrorsResponse(['field_not_found'=>['activationCode']], [] ,Response::HTTP_BAD_REQUEST,$request->getRequestUri());
+            return $this->getErrorsResponse(['key'=>'field_not_found','args'=>['activationCode']], [] ,Response::HTTP_BAD_REQUEST,$request->getRequestUri());
         }
     }
 
@@ -531,8 +526,8 @@ class UserController extends BaseController
 
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $error = ['wrong_code'=> []];
-            $message = ['wrong_code_cancel'=>[]];
+            $error = ['key'=>'wrong_code'];
+            $message = ['key'=>'wrong_code_cancel'];
             return $this->getErrorsResponse($error, $message ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 
@@ -553,7 +548,6 @@ class UserController extends BaseController
             }
 
             if($formPhone->isValid()){
-
                 $dataForm = $formPhone->getData();
             
                 // POST request is a new phone number for an existing entity smsData
@@ -579,9 +573,9 @@ class UserController extends BaseController
                     $em->flush();
 
                     if($phone->isPaymentEnabled() ){
-                        $message = ['sms_payment_authorized'=>[$phone->getPhoneNumber()]];
+                        $message = ['key'=>'sms_payment_authorized','args'=>[$phone->getPhoneNumber()]];
                     }else{
-                        $message = ['sms_payment_unauthorized'=>[$phone->getPhoneNumber()]];
+                        $message = ['key'=>'sms_payment_unauthorized','args'=>[$phone->getPhoneNumber()]];
                     }
 
                     return $this->getRedirectionResponse(
@@ -633,7 +627,7 @@ class UserController extends BaseController
         $em->flush();
 
         
-        $message = ['phone_removal_success'=>[$phoneNumber]];
+        $message = ['key'=>'phone_removal_success','args'=>[$phoneNumber]];
         $phones = $user->getPhones(); 
         $phones = is_array($phones) ? $phones : $phones->getValues();
 
@@ -1048,7 +1042,7 @@ class UserController extends BaseController
             throw new AccessDeniedException('not_access_rights');
         }elseif(!$user->isEnabled()){
 
-            $message = ['account_already_blocked'=>[$user->getName()]];
+            $message = ['key'=>'account_already_blocked','args'=>[$user->getName()]];
 
             return $this->getRedirectionResponse(
                 'cairn_user_profile_view', 
@@ -1077,7 +1071,7 @@ class UserController extends BaseController
                 $this->get('cairn_user.access_platform')->disable(array($user),$reason,$subject);
                 $em->flush();
 
-                $message = ['registered_operation'=>[$user->getName()]];
+                $message = ['key'=>'registered_operation','args'=>[$user->getName()]];
 
                 return $this->getRedirectionResponse(
                     'cairn_user_profile_view', 

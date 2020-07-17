@@ -30,6 +30,8 @@ class AddressValidator extends ConstraintValidator
 
         if(!$coords['latitude']){                                                          
             $this->context->buildViolation("Adresse non localisée. Pensez à vérifier le code postal \n Référence la plus pertinente : ".$coords['closest']['label'])
+                ->setInvalidValue($address->__toString())
+                ->setCode('geolocalization_failed')
                 ->atPath('street1')
                 ->addViolation();
             return;

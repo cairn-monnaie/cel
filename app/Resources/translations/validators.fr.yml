@@ -1,9 +1,26 @@
 # app/Resources/translations/validators.fr.yml
 #
 
-amount_too_high: Montant trop élevé
-amount_too_low: Montant trop faible
-account_not_found: Aucun compte n'a été trouvé
-date_before_today: La date ne peut être antérieure à celle du jour
+op.amount_too_high: Montant trop élevé
+op.amount_too_low: Montant trop faible
+op.date_before_today: La date ne peut être antérieure à celle du jour
 
+too_short: Trop court
+too_long: Trop long
 
+account.disabled: Ce compte est bloqué
+account.not_found: Aucun compte n'a été trouvé
+account.enter_description: Saisissez une description 
+
+already_in_use: Déjà utilisé
+
+email.invalid_format: Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.
+
+pwd.repeat_fail: Les champs ne correspondent pas
+pwd.wrong_value: Mot de passe invalide
+pwd.special_char: Le mot de passe doit contenir un caractère spécial
+pwd.invalid_special_char: Caractère invalide
+pwd.pseudo_in: Le pseudo ne doit pas être inclus dans le mot de passe
+
+phone.invalid_format: Le format du numéro de téléphone est invalide
+phone.already_registered: Ce numéro vous appartient déjà

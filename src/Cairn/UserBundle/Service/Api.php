@@ -155,13 +155,14 @@ class Api
 
     public function getApiResponse($apiJsonData,$statusCode)
     {
-        $response = new Response($apiJsonData);            
-        $response->setStatusCode($statusCode);      
+        $response = new Response($apiJsonData);   
+        $response->setStatusCode($statusCode);
         $response->headers->set('Content-Type', 'application/json');
         $response->headers->set('Accept', 'application/json');
 
         return $response;
     }
+
 
     public function getFormResponse(string $renderPath,array $renderParams = [], FormInterface $form,$messages = [])
     {
@@ -173,8 +174,22 @@ class Api
         if($isRemoteCall){
             $errors = [];
             foreach ($formErrors as $error) {
-                $errors[] = array('field'=>$error->getOrigin()->getName(),'error'=>['key'=>$error->getMessage(),'args'=>$error->getMessageParameters()]);
+                $code = $error->getCause()->getCode();
+                //code is NULL or symfony format(e.g 6e5212ed-a197-4339-99aa-5654798a4854 )
+                if((!$code) || (preg_match('#^(\w+\-){4,}#',$code))){
+                    $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage(),'args'=>[$error->getCause()->getInvalidValue()]);
+                }else{
+                    $tmp = array('key'=>$code,'args'=>[$error->getCause()->getInvalidValue()]);
+                    if($error->getMessage()){
+                        $tmp['message'] = $error->getMessage();
+                    }
+                    $errors[] = $tmp;
+                }
+                
             }
+
+            $errors = $this->setMessages($isRemoteCall,$errors);
+            
 
             $apiData = ['errors'=>$errors ,'messages'=> $messages ];
             return $this->getApiResponse($this->serialize($apiData),Response::HTTP_OK);
@@ -228,9 +243,11 @@ class Api
         if($isRemoteCall){
             $apiData = ['errors'=>$formattedErrors, 'messages'=>$formattedMessages];
             return $this->getApiResponse($this->serialize($apiData),$statusCode);
-        }else{
-            $redirectUrl = (filter_var($redirectKey, FILTER_VALIDATE_URL) === false) ? $this->router->generate($redirectKey,[]) : $redirectKey;
-            return new RedirectResponse($redirectUrl);
+        }else{ 
+            //$redirectUri = (filter_var($redirectKey, FILTER_VALIDATE_URL) === false) ? $this->router->generate($redirectKey,[]) : $redirectKey;
+            $redirectUri = (preg_match('#^(\w+\_){2,}#',$redirectKey)) ? $this->router->generate($redirectKey,[]) : $redirectKey;
+
+            return new RedirectResponse($redirectUri);
         }
     }
 
@@ -341,7 +358,7 @@ class Api
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+            $defaultIgnoredAttributes = array('dolibarrID','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
             $normalizer->setCallbacks(array(
                 'image'=> function ($child) {return $this->objectCallback($child);},
                 'phones'=> function ($child) {

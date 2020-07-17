@@ -18,14 +18,14 @@ class AddressType extends AbstractType
     {
         $builder
             ->add('street1', TextType::class,array('label'=> 'Rue',
-                'constraints'=> new Assert\Length(array('min'=> 5,'max'=>60,
-                                                  'minMessage' => 'Adresse trop courte',
-                                                  'maxMessage' => 'Adresse trop longue'))
+                'constraints'=> new Assert\Length(array('min'=> 5,'max'=>100,
+                                                  'minMessage' => 'too_short',
+                                                  'maxMessage' => 'too_long'))
                                               ))
             ->add('street2', TextType::class,array('required'=>false,'label'=> 'Complément d\'adresse',
-                  'constraints'=> new Assert\Length(array('min'=> 5,'max'=>60,
-                                                  'minMessage' => 'Complément trop court',
-                                                  'maxMessage' => 'Complément trop long'))
+                  'constraints'=> new Assert\Length(array('min'=> 5,'max'=>100,
+                                                  'minMessage' => 'too_short',
+                                                  'maxMessage' => 'too_long'))
                                               ))
             ->add('zipCity', ZipCitySelectorType::class, array(
                                                      'label' => 'Code postal & ville',

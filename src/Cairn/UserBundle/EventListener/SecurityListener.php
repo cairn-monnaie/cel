@@ -61,7 +61,7 @@ class SecurityListener
         if(! $user){ return;}
 
         if(! $user->isEnabled()){
-            $messages = ['user_account_disabled'=>[$user->getUsername()]];
+            $messages = ['key'=>'user_account_disabled','args'=>[$user->getUsername()]];
 
             $response = $this->apiService->getRenderResponse('fos_user_security_logout',[], [],Response::HTTP_OK, $messages);
             $event->setResponse($response);
@@ -144,7 +144,7 @@ class SecurityListener
             $session->set('is_first_connection',true); 
         }
         
-        $messages = ['registered_operation'=>[]];
+        $messages = ['key'=>'registered_operation'];
 
         if($session->get('is_first_connection')){
             $response = $this->apiService->getRedirectionResponse('cairn_user_sms_presentation',[], [],Response::HTTP_CREATED, $messages);
@@ -246,7 +246,7 @@ class SecurityListener
 
         //if maintenance.txt exists
         if(is_file('maintenance.txt')){
-            $messages = ['maintenance_state'=>[]];
+            $messages = ['key'=>'maintenance_state'];
             $response = $this->apiService->getRenderResponse('CairnUserBundle:Security:maintenance.html.twig',[], [],Response::HTTP_SERVICE_UNAVAILABLE,$messages);
             $event->setResponse($response);
 
@@ -260,7 +260,7 @@ class SecurityListener
                 $authHeader = $request->server->get('HTTP_AUTHORIZATION');
 
                 if(! $authHeader){
-                    $event->setResponse($this->apiService->getErrorsResponse(['field_not_found'=>['Authorization']],[],Response::HTTP_UNAUTHORIZED));
+                    $event->setResponse($this->apiService->getErrorsResponse(['key'=>'field_not_found','args'=>['Authorization']],[],Response::HTTP_UNAUTHORIZED));
                     return;
                 }
             }
@@ -268,7 +268,7 @@ class SecurityListener
             $parsedHeader = $this->container->get('cairn_user.security')->parseAuthorizationHeader($authHeader);
 
             if(! $parsedHeader){
-                $event->setResponse($this->apiService->getErrorsResponse(['api_signature_format'=>[]],[],Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($this->apiService->getErrorsResponse(['key'=>'api_signature_format'],[],Response::HTTP_UNAUTHORIZED));
                 return;
             }
 
@@ -285,7 +285,7 @@ class SecurityListener
             $rightKey = hash_hmac($parsedHeader['algo'],trim($data),$this->container->getParameter('api_secret'));
 
             if($rightKey != $parsedHeader['signature']){
-                $event->setResponse($this->apiService->getErrorsResponse(['wrong_auth_header'=>[]],[],Response::HTTP_UNAUTHORIZED));
+                $event->setResponse($this->apiService->getErrorsResponse(['key'=>'wrong_auth_header'],[],Response::HTTP_UNAUTHORIZED));
                 return;
             }
         }

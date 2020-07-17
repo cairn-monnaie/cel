@@ -40,7 +40,7 @@ class ChangePasswordType extends AbstractType
                 ),                                                         
                 'first_options' => array('label' => 'Nouveau mot de passe ( 8 - 25 caractères + 1 caractère spécial )'),
                 'second_options' => array('label' => 'Confirmation'),      
-                'invalid_message' => 'Les champs ne correspondent pas',    
+                'invalid_message' => 'pwd.repeat_fail',    
             ));
         $builder->addEventListener(
             FormEvents::SUBMIT,

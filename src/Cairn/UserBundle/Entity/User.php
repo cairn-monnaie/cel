@@ -22,9 +22,9 @@ use Doctrine\Common\Collections\ArrayCollection;
  * @ORM\Table(name="cairn_user")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
- * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
- * @UniqueEntity(fields = {"email"},message="Cet email est déjà utilisé") 
- * @UniqueEntity(fields = {"username"},message="Ce nom d utilisateur est déjà utilisé") 
+ * @UniqueEntity(fields = {"cyclosID"},message="already_in_use") 
+ * @UniqueEntity(fields = {"email"},message="already_in_use") 
+ * @UniqueEntity(fields = {"username"},message="already_in_use") 
  */
 class User extends BaseUser
 {
@@ -88,7 +88,7 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="description", type="text", unique=false)
-     * @Assert\NotBlank(message="Entrez une description de votre activité.")
+     * @Assert\NotBlank(message="account.enter_description")
      */
     private $description; 
 

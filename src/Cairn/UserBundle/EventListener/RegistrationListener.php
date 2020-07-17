@@ -85,7 +85,7 @@ class RegistrationListener
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
 
-        $messages = ['email_validation'=>[$user->getEmail()]];
+        $messages = ['key'=>'email_validation','args'=>[$user->getEmail()]];
 
         $response = $this->container->get('cairn_user.api')->getRedirectionResponse('fos_user_security_login',[], $user,Response::HTTP_CREATED,$messages);
         $event->setResponse($response);
@@ -111,7 +111,7 @@ class RegistrationListener
         if($isRemoteCall){
             $type = $request->query->get('type');
         }else{
-            $type = ($session->get('registration_type')) ? $session->get('registration_type') :  $request->query->get('type');
+            $type = ($request->query->get('type')) ? $request->query->get('type') : $session->get('registration_type') ;
         }
 
         $session->set('registration_type',$type);
@@ -181,20 +181,22 @@ class RegistrationListener
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
 
+        $apiService = $this->container->get('cairn_user.api');
         if($currentUser && $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             //very important to let it to false in order to create cyclos user at activation
             $user->setEnabled(false);
 
             //this should be unnecessary
             $user->setConfirmationToken(null);
-            $response = $this->container->get('cairn_user.api')->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], $user,Response::HTTP_CREATED);
+            $response = $apiService->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], $user,Response::HTTP_CREATED);
 
             $event->setResponse($response);
             return;
         }
 
          if($event->getRequest()->get('_format') == 'json'){
-            $event->setResponse($this->container->get('cairn_user.api')->getApiResponse($user,Response::HTTP_CREATED));
+             $apiData = '{ "data": '.$apiService->serialize($user).'}';
+             $event->setResponse($apiService->getApiResponse($apiData,Response::HTTP_CREATED));
         }
     }
 

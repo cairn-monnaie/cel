@@ -51,7 +51,10 @@ class ExceptionListener
     {
         if($this->api->isRemoteCall() || $redirectKey){
             $code = ($code < 100) ? 500 : $code;
-            $event->setResponse($this->api->getErrorsResponse(array($errorMessage => []),[],$code,$redirectKey));
+            $errors = [];
+            $errors[] = ['key'=>$errorMessage,'args'=>[]];
+
+            $event->setResponse($this->api->getErrorsResponse($errors,[],$code,$redirectKey));
             return;
         }
     }

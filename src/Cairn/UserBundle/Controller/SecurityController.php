@@ -59,11 +59,11 @@ class SecurityController extends BaseController
                 $currentUser = $userRepo->findOneByUsername($params['username']);
 
                 if(! $currentUser->isEnabled()){
-                     $errors = ['user_account_disabled'=>[$currentUser->getUsername()]];
+                     $errors = ['key'=>'user_account_disabled','args'=>[$currentUser->getUsername()]];
                      return $this->getErrorsResponse($errors,[], Response::HTTP_OK);
                 }
             }catch(\Exception $e){
-                $errors = ['invalid_authentification'=>[]];
+                $errors = ['key'=>'invalid_authentification'];
                 return $this->getErrorsResponse($errors, [], Response::HTTP_OK);
             }
 
@@ -108,7 +108,7 @@ class SecurityController extends BaseController
                 //paymentID is unique. But we give another try on the paymentID of the returned transaction, just in case it is different
                 $res = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$cyclosTransfer->id));
                 if($res){
-                    throw new SuspiciousOperationException('Payment already registered');
+                    throw new SuspiciousOperationException('operation_already_processed');
                 }
 
                 //Finally, we check that cyclos transfer data correspond to the POST request
@@ -219,17 +219,17 @@ class SecurityController extends BaseController
                             [],
                             [],
                             Response::HTTP_OK,
-                            ['notif_sent'=>['email']]
+                            ['key'=>'notif_sent','args'=>['email']]
                         );
                     }else{
                         return $this->getErrorsResponse([],[],Response::HTTP_BAD_REQUEST);
                     }
                 }else{
-                    return $this->getErrorsResponse(['invalid_field_value'=>['type']],[],Response::HTTP_BAD_REQUEST);
+                    return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['type']],[],Response::HTTP_BAD_REQUEST);
                 }
             }
         }else{
-            return $this->getErrorsResponse(['invalid_field_value'=>['method']],[],Response::HTTP_METHOD_NOT_ALLOWED);
+            return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['method']],[],Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 

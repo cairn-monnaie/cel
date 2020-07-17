@@ -281,15 +281,14 @@ class BeneficiaryController extends BaseController
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-                $errorMessages = NULL;
+                $errorMessages = [];
 
-                if(! $dataForm['cairn_user']){
-                    return $this->getErrorsResponse(['account_not_found'=>[]], [] ,Response::HTTP_OK);
+                if(is_scalar($dataForm['cairn_user'])){
+                    return $this->getErrorsResponse(['key'=>'account_not_found','args'=>[$dataForm['cairn_user']]], [] ,Response::HTTP_OK);
                 }
 
                 if ($dataForm['cairn_user']->id == $currentUser->getCyclosID()){
-                    $errorMessages = array();
-                    $errorMessages['inconsistent_data'] = [$currentUser->getName()];
+                    $errorMessages[] = ['key'=>'inconsistent_data','args'=>[$currentUser->getName()]];
                 }
 
                 $creditorUser = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($dataForm['cairn_user']->id);
@@ -298,7 +297,7 @@ class BeneficiaryController extends BaseController
                 $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$creditorUser,'ICC'=>$dataForm['cairn_user']->accountNumber));
 
                 if($existingBeneficiary && $currentUser->hasBeneficiary($existingBeneficiary)){
-                    $errorMessages['beneficiary_already_reg'] = [$creditorUser->getName()];
+                    $errorMessages[] = ['key'=>'beneficiary_already_reg','args'=>[$creditorUser->getName()]];
                 }
 
                 if($errorMessages){
@@ -321,7 +320,7 @@ class BeneficiaryController extends BaseController
                 $em->flush();
 
 
-                $message = ['beneficiary_add_success'=>[$beneficiary->getUser()->getName()]];
+                $message = ['key'=>'beneficiary_add_success','args'=>[$beneficiary->getUser()->getName()]];
 
                 return $this->getRedirectionResponse(
                     'cairn_user_beneficiaries_list', 
@@ -433,7 +432,7 @@ class BeneficiaryController extends BaseController
         $apiService = $this->get('cairn_user.api');
 
         if(!$currentUser->hasBeneficiary($beneficiary)){
-            $error = ['data_not_found'=>[]];
+            $error = ['key'=>'data_not_found'];
             return $this->getErrorsResponse($error,[],Response::HTTP_OK,'cairn_user_beneficiaries_list');
         }
 
@@ -446,7 +445,7 @@ class BeneficiaryController extends BaseController
 
             if($form->isValid()){                                              
                 if($form->get('save')->isClicked()){ 
-                    $message = ['beneficiary_removal_success'=>[$beneficiary->getUser()->getName()]];
+                    $message = ['key'=>'beneficiary_removal_success','args'=>[$beneficiary->getUser()->getName()]];
 
                     $nbSources = count($beneficiary->getSources());
                     $beneficiary->removeSource($currentUser);
@@ -457,7 +456,7 @@ class BeneficiaryController extends BaseController
                     $em->flush();
                 }                                                              
                 else{
-                    $message = ['cancel_button'=>[]];
+                    $message = ['key'=>'cancel_button'];
                 }
 
                 $beneficiaries = $this->getUser()->getBeneficiaries();

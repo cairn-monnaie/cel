@@ -55,13 +55,13 @@ class NotificationController extends BaseController
         if($from == 'mobile'){
             $missingFields = [];
             if(! isset($jsonRequest['device_token'])){
-                $missingFields['field_not_found'] = ['device_token'];
+                $missingFields[] = ['key'=>'field_not_found','args'=>['device_token']];
             }
             if(! isset($jsonRequest['platform'])){
-                $missingFields['field_not_found'] = ['platform'];
+                $missingFields[] = ['key'=>'field_not_found','args'=>['platform']];
             }
             if(! isset($jsonRequest['action'])){
-                $missingFields['field_not_found'] = ['action'];
+                $missingFields[] = ['key'=>'field_not_found','args'=>['action']];
             }
 
             if(count($missingFields) != 0){
@@ -91,22 +91,22 @@ class NotificationController extends BaseController
                     Response::HTTP_OK
                 );
             }else{
-                return $this->getErrorsResponse(['invalid_field_value'=>['action',$action]],[],Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$action]],[],Response::HTTP_BAD_REQUEST);
             }
         }else{
             $subscription = $jsonRequest['subscription'];
 
              //validate endpoint exists
              if(! array_key_exists('endpoint',$subscription)){
-                 return $this->getErrorsResponse(['field_not_found'=>['endpoint']],[],Response::HTTP_BAD_REQUEST);
+                 return $this->getErrorsResponse(['key'=>'field_not_found','args'=>['endpoint']],[],Response::HTTP_BAD_REQUEST);
              }
 
              //validate keys because we need payload support
              if(! array_key_exists('keys',$subscription)){
-                 return $this->getErrorsResponse(['field_not_found'=>['keys']],[],Response::HTTP_BAD_REQUEST);
+                 return $this->getErrorsResponse(['key'=>'field_not_found','args'=>['keys']],[],Response::HTTP_BAD_REQUEST);
              }else{
                  if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                     return $this->getErrorsResponse(['field_not_found'=>['p256dh/auth']],[],Response::HTTP_BAD_REQUEST);
+                     return $this->getErrorsResponse(['key'=>'field_not_found','args'=>['p256dh/auth']],[],Response::HTTP_BAD_REQUEST);
                  }
              }
 
@@ -192,7 +192,7 @@ class NotificationController extends BaseController
             if($form->isValid()){
                 $em->flush();
 
-                $message = ['notif_params_updated'=>[]];
+                $message = ['key'=>'notif_params_updated'];
                 return $this->getRedirectionResponse(
                     'cairn_user_profile_view', 
                     ['username' => $user->getUsername()],
@@ -238,7 +238,7 @@ class NotificationController extends BaseController
         $messageNotificator = $this->get('cairn_user.message_notificator');
 
         if(! $user->hasRole('ROLE_PRO')){
-            $message = ['not_pro'=>[$user->getName()]];
+            $message = ['key'=>'not_pro','args'=>[$user->getName()]];
 
              return $this->getRedirectionResponse(
                  'cairn_user_profile_view', 
@@ -258,11 +258,11 @@ class NotificationController extends BaseController
         if ($request->isMethod('POST') && $form->handleRequest($request)->isValid()) {
             if($form->get('save')->isClicked()){
                 $messageNotificator->sendRegisterNotifications($user, $pushTemplate);
-                $message = ['push_pro_sent'=>[$user->getName()]];
+                $message = ['key'=>'push_pro_sent','args'=>[$user->getName()]];
 
                 $em->flush();
             }else{
-                $message = ['cancel_button'=>[]];
+                $message = ['key'=>'cancel_button'];
             }
 
             return $this->getRedirectionResponse(
@@ -279,8 +279,6 @@ class NotificationController extends BaseController
             ['form' => $form->createView(),'user' => $user],
             $form 
         );
-
-
     }
 
 }

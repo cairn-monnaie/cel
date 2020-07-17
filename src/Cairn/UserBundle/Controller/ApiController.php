@@ -53,8 +53,8 @@ class ApiController extends BaseController
             $jsonRequest = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
             $errors = [];
 
-            if(! ($jsonRequest['morphy']=='mor' && $jsonRequest['type']=='professionnel')){
-                return $this->getErrorsResponse(['not_pro'=>[$jsonRequest['societe']]], [] ,Response::HTTP_BAD_REQUEST);
+            if(! ($jsonRequest['morphy']=='mor' && $jsonRequest['typeid']=='2')){
+                return $this->getErrorsResponse(['key'=>'not_pro','args'=>[$jsonRequest['societe']]], [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $userRepository = $em->getRepository('CairnUserBundle:User');
@@ -67,7 +67,7 @@ class ApiController extends BaseController
                 $doctrineUser->setDolibarrID(trim($jsonRequest['login']));
                 $doctrineUser->setUsername(trim($jsonRequest['login']));
            
-                $doctrineUser->setEmail(trim($jsonRequest['email']));
+                $doctrineUser->setEmail(trim($jsonRequest['member_email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
                 //$doctrineUser->setDescription($jsonRequest['description']);
@@ -90,7 +90,7 @@ class ApiController extends BaseController
             
 
             $zipCity->setCity($jsonRequest['town']);
-            $zipCity->setZipCode($jsonRequest['zip']);
+            $zipCity->setZipCode($jsonRequest['zipcode']);
 
 
             $address->setStreet1($jsonRequest['address']);
@@ -261,11 +261,11 @@ class ApiController extends BaseController
 
         $creditorUser = $this->getUser();
         if(! $creditorUser ){
-            return $this->getErrorsResponse(['data_not_found'=>['user']],[],Response::HTTP_FORBIDDEN);
+            return $this->getErrorsResponse(['key'=>'data_not_found'],[],Response::HTTP_FORBIDDEN);
         }
 
         if(! ($request->headers->get('Content-Type') == 'application/json')){
-            return $this->getErrorsResponse(['invalid_field_value'=>['Content-Type',$request->headers->get('Content-Type')]],[],Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+            return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['Content-Type']],[],Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
         }
 
         //no possible code injection
@@ -275,19 +275,19 @@ class ApiController extends BaseController
 
 
         if($creditorUser->getMainICC() != $postAccountNumber ){
-            return $this->getErrorsResponse(['data_not_found'=>[]],[],Response::HTTP_NOT_FOUND);
+            return $this->getErrorsResponse(['key'=>'data_not_found'],[],Response::HTTP_NOT_FOUND);
         }
 
         if(! $creditorUser->hasRole('ROLE_PRO')){
-            return $this->getErrorsResponse(['not_pro'=>[$creditorUser->getName()]],[],Response::HTTP_FORBIDDEN);
+            return $this->getErrorsResponse(['key'=>'not_pro','args'=>[$creditorUser->getName()]],[],Response::HTTP_FORBIDDEN);
         }
 
         if(! $creditorUser->getApiClient()){
-            return $this->getErrorsResponse(['missing_value'=>['apiClient']],[],Response::HTTP_PRECONDITION_FAILED);
+            return $this->getErrorsResponse(['key'=>'missing_value','args'=>['apiClient']],[],Response::HTTP_PRECONDITION_FAILED);
         }
 
         if(! $creditorUser->getApiClient()->getWebhook()){
-            return $this->getErrorsResponse(['missing_value'=>['webhook']],[],Response::HTTP_PRECONDITION_FAILED);
+            return $this->getErrorsResponse(['key'=>'missing_value','args'=>['webhook']],[],Response::HTTP_PRECONDITION_FAILED);
         }
 
         $oPRepo = $em->getRepository('CairnUserBundle:OnlinePayment');
@@ -305,27 +305,27 @@ class ApiController extends BaseController
 
         //validate POST content
         if( (! is_numeric($postParameters['amount']))   ){
-            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['amount'],'amount']], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$postParameters['amount']]], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         $numericalAmount = floatval($postParameters['amount']);
         $numericalAmount = round($numericalAmount,2); 
 
         if( $numericalAmount < 0.01  ){
-            return $apiService->getErrorsResponse(['amount_too_low'=>[$numericalAmount]], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$numericalAmount]], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_success'])){
-            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['return_url_success'],'return_url_success']], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$postParameters['return_url_success']]], [] ,Response::HTTP_BAD_REQUEST);
 
         }
 
         if(! preg_match('#^(http|https):\/\/#',$postParameters['return_url_failure'])){
-            return $apiService->getErrorsResponse(['invalid_field_value'=>[$postParameters['return_url_failure'],'return_url_failure']], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$postParameters['return_url_failure']]], [] ,Response::HTTP_BAD_REQUEST);
         }
 
         if( strlen($postParameters['reason']) > 35){                                  
-            return $apiService->getErrorsResponse(['too_many_chars'=>['reason',35,strlen($postParameters['reason'])]], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'too_many_chars','args'=>['reason']], [] ,Response::HTTP_BAD_REQUEST);
         } 
 
         //finally register new onlinePayment data
@@ -348,7 +348,7 @@ class ApiController extends BaseController
             [],
             $payload,
             Response::HTTP_CREATED,
-            ['registered_operation'=>[]]
+            ['key'=>'registered_operation']
         );
     }
 

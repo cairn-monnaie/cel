@@ -39,7 +39,8 @@ class PhoneValidator extends ConstraintValidator
 
 
         if(! preg_match('#^(\+33|0|0033)[6-8]\d{8}$#',$phoneNumber,$matches_number)){
-            $this->context->buildViolation("Format du numéro de téléphone invalide")
+            $this->context->buildViolation("phone.invalid_format")
+                ->setInvalidValue($phoneNumber)
                 ->atPath('phoneNumber')
                 ->addViolation();
             return;
@@ -61,13 +62,15 @@ class PhoneValidator extends ConstraintValidator
 
         if( array_key_exists($phoneNumber,$array_occurrences_phone)){
             if($array_occurrences_phone[$phoneNumber]>= 2){
-                $this->context->buildViolation("Ce numéro vous appartient déjà.")
+                $this->context->buildViolation("phone.already_registered")
+                    ->setInvalidValue($phoneNumber)
                     ->atPath('phoneNumber')
                     ->addViolation();
                 return;
             }else{// 1 occurence
                 if(! $phone->getID()){
-                    $this->context->buildViolation("Ce numéro vous appartient déjà.")
+                    $this->context->buildViolation("phone.already_registered")
+                        ->setInvalidValue($phoneNumber)
                         ->atPath('phoneNumber')
                         ->addViolation();
                     return;
@@ -78,7 +81,8 @@ class PhoneValidator extends ConstraintValidator
         $usersWithPhoneNumber = $this->userRepo->findUsersByPhoneNumber($phoneNumber);
 
         if(count($usersWithPhoneNumber) > 1){
-            $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé.")
+            $this->context->buildViolation("already_in_use")
+                ->setInvalidValue($phoneNumber)
                 ->atPath('phoneNumber')
                 ->addViolation();
             return;
@@ -89,7 +93,8 @@ class PhoneValidator extends ConstraintValidator
 
             $status = $currentUser->hasRole('ROLE_PRO') ? 'professionnel' : 'particulier';
             if( ($bothPros || $bothPersons) && ($userWithPhoneNumber !== $currentUser)){
-                $this->context->buildViolation("Ce numéro de téléphone est déjà utilisé à titre ".$status)
+                $this->context->buildViolation("already_in_use")
+                    ->setInvalidValue($phoneNumber)
                     ->atPath('phoneNumber')
                     ->addViolation();
                 return;

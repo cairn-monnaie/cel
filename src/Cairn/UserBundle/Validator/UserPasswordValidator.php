@@ -47,23 +47,23 @@ class UserPasswordValidator extends ConstraintValidator
 
             //plainPassword is not refreshed because it does not belong to persisted attributes
             $currentUser->setPlainPassword('');
-            $this->counter->incrementTries($currentUser,'password');              
+            //$this->counter->incrementTries($currentUser,'password');              
 
             $remainingTries = 3 - $currentUser->getPasswordTries();
-            $this->context->buildViolation('Mot de passe invalide. Attention, il vous reste ' .$remainingTries. ' tentative(s)')
+            $this->context->buildViolation('pwd.wrong_value')
+                ->setInvalidValue('password')
                 ->atPath('current_password')                                      
                 ->addViolation();
 
             if($currentUser->getPasswordTries() > 2){                                
                 $this->accessPlatform->disable(array($currentUser),'password_tries_exceeded');   
-            }    
+            } 
 
             $this->em->flush($currentUser); 
   
         }else{
             $this->counter->reinitializeTries($currentUser,'password');
         }
-
-
     }
+
 }

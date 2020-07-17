@@ -550,7 +550,7 @@ class BankingController extends BaseController
         if($request->isMethod('POST')){
             $jsonRequest = json_decode($request->getContent(), true);
             if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
-                return $this->getErrorsResponse(['invalid_format_value'=>[$jsonRequest['executionDate'],'timestamp(ms)','executionDate']], [] ,Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>[$jsonRequest['executionDate']]], [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
@@ -597,7 +597,7 @@ class BankingController extends BaseController
 
                 $validationState = $securityService->paymentValidationState($operation);
                 if($validationState['suspicious']){
-                    $messages = [$validationState['reason']=>[$validationState['threshold_value']]];
+                    $messages = ['key'=>$validationState['reason'],'args'=>[$validationState['threshold_value']]];
                     return $this->getErrorsResponse([],$messages,Response::HTTP_OK);
                 }
 
@@ -631,7 +631,7 @@ class BankingController extends BaseController
      *
      * If the 'to' attribute of the query request is set to 'new', this action will be preceded by the card security layer.
      * To build the transaction request, Cyclos needs : 
-     *      _ a creditor account
+     *operation_already_processed      _ a creditor account
      *      _ a debtor account
      *      _ a direction : USER_TO_USER | USER_TO_SELF
      *      _ an amount (always positive)
@@ -738,7 +738,7 @@ class BankingController extends BaseController
 
                 $jsonRequest = json_decode($request->getContent(), true);
                 if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
-                    return $this->getErrorsResponse(['invalid_field_value'=>[$jsonRequest['executionDate'],'executionDate']], [] ,Response::HTTP_BAD_REQUEST);
+                    return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$jsonRequest['executionDate']]], [] ,Response::HTTP_BAD_REQUEST);
                 }
 
                 $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
@@ -886,7 +886,7 @@ class BankingController extends BaseController
     {
         
         if($operation->getPaymentID()){
-            return $this->getErrorsResponse(['operation_already_processed'=>[]], [] ,Response::HTTP_OK);
+            return $this->getErrorsResponse(['key'=>'operation_already_processed'], [] ,Response::HTTP_OK);
         }
 
         $apiService = $this->get('cairn_user.api');
@@ -911,7 +911,7 @@ class BankingController extends BaseController
             $em->remove($operation);
             $em->flush();
 
-            return $this->getErrorsResponse(['operation_timeout'=>[]], [] ,Response::HTTP_OK);
+            return $this->getErrorsResponse(['key'=>'operation_timeout'], [] ,Response::HTTP_OK);
         }
 
 
@@ -961,7 +961,7 @@ class BankingController extends BaseController
                             $em->remove($operation);
                             $em->flush();
 
-                            $messages = ['registered_operation'=>[]];
+                            $messages = ['key'=>'registered_operation'];
                             return $this->getRedirectionResponse(
                                 'cairn_user_banking_transactions_recurring_view_detailed', 
                                 ['id'=>$recurringPaymentVO->id],
@@ -990,7 +990,7 @@ class BankingController extends BaseController
                         $session->remove($confirmationCodeAttr);
                         $session->remove('confirmationTries');
 
-                        $messages = ['registered_operation'=>[]];
+                        $messages = ['key'=>'registered_operation'];
                         return $this->getRedirectionResponse(
                             'cairn_user_banking_transfer_view', 
                             ['paymentID'=>$operation->getPaymentID() ],
@@ -1039,7 +1039,7 @@ class BankingController extends BaseController
                     $em->remove($operation);
                     $em->flush();
 
-                    $messages = ['cancel_button'=>[]];
+                    $messages = ['key'=>'cancel_button'];
                     return $this->getRedirectionResponse(
                         'cairn_user_banking_operations', 
                         ['type'=>$type],
@@ -1112,12 +1112,12 @@ class BankingController extends BaseController
 
                     $em->flush();
 
-                    $messages = ['registered_operation'=>[]];
+                    $messages = ['key'=>'registered_operation'];
 
                 }catch(\Exception $e){
                     if($e instanceof Cyclos\ServiceException){
                         if($e->errorCode == 'INSUFFICIENT_BALANCE'){
-                            $messages = ['not_enough_funds'=>[]];
+                            $messages = ['key'=>'not_enough_funds'];
                         }
                     }
                     else{

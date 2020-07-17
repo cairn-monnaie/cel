@@ -61,16 +61,16 @@ class SmsController extends BaseController
         $apiService = $this->get('cairn_user.api');
 
         if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-            return $apiService->getErrorsResponse(['invalid_field_value'=>['originator']], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'invalid_field_value','args'=>['originator']], [] ,Response::HTTP_BAD_REQUEST);
         } 
 
         $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
         $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
         if(! $res){
-            return $apiService->getErrorsResponse(['cancel_button'=>[]], [] ,Response::HTTP_BAD_REQUEST);
+            return $apiService->getErrorsResponse(['key'=>'cancel_button'], [] ,Response::HTTP_BAD_REQUEST);
         }else{
-            return $this->getRenderResponse('', [], [], Response::HTTP_OK, ['registered_operation'=>[]]);
+            return $this->getRenderResponse('', [], [], Response::HTTP_OK, ['key'=>'registered_operation']);
         }
     }
 
