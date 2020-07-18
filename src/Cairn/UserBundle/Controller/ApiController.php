@@ -99,7 +99,7 @@ class ApiController extends BaseController
             $zipRepository = $em->getRepository('CairnUserBundle:ZipCity');
             $zip = $zipRepository->findOneBy(array('zipCode'=>$zipCity->getZipCode(),'city'=> $zipCity->getCity()));
             if(! $zip){
-                $errors[] = 'zipcode/city : Le couple '.$zipCity->getZipCode().'/'.$zipCity->getCity().' (ZipCode/Ville) ne correspond à rien dans notre base de données';
+                $errors[] = ['key'=>'invalid_zipcode','args'=>[$zipCity->getZipCode().'/'.$zipCity->getCity()]];
             }
 
             $listErrors = $this->get('validator')->validate($doctrineUser); 
@@ -108,9 +108,9 @@ class ApiController extends BaseController
 
             if(count($listErrors) > 0){
                 foreach($listErrors as $error){
-                    $errors[] = $error->getPropertyPath().' : '.$error->getMessage();
+                    $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage(),'args'=>[$error->getCause()->getInvalidValue()]);
                 }
-                return $apiService->getApiResponse(json_encode($errors),Response::HTTP_OK);
+                return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
             }else{
                 $em->persist($doctrineUser);
                 $em->flush();
