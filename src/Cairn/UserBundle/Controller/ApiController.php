@@ -108,7 +108,17 @@ class ApiController extends BaseController
 
             if(count($listErrors) > 0){
                 foreach($listErrors as $error){
-                    $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage(),'args'=>[$error->getCause()->getInvalidValue()]);
+                    $code = $error->getCause()->getCode();
+                    //code is NULL or symfony format(e.g 6e5212ed-a197-4339-99aa-5654798a4854 )
+                    if((!$code) || (preg_match('#^(\w+\-){4,}#',$code))){
+                    $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage());
+                    }else{
+                        $tmp = array('key'=>$code,'args'=>[$error->getCause()->getInvalidValue()]);
+                        if($error->getMessage()){
+                            $tmp['message'] = $error->getMessage();
+                        }
+                        $errors[] = $tmp;
+                    }
                 }
                 return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
             }else{

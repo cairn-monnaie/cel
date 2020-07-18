@@ -243,6 +243,10 @@ final class Messages
             'type'=>'error',
             'message'=>'La géolocalisation a échoué pour l\'adresse %s'
         ],
+        'invalid_zipcode'=>[
+            'type'=>'error',
+            'message'=>'Le couple %s (ZipCode/Ville) ne correspond à rien dans notre base de données'
+        ],
         'repeat_password_fail'=>[
             'type'=>'error',
             'message'=>'Les champs ne correspondent pas'
