@@ -231,7 +231,7 @@ class UserController extends BaseController
         $previousPhoneNumber = NULL;
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $message = ['key'=>'wrong_code_cancel'];
+            $message = ['key'=>'too_many_tries_cancel'];
             return $this->getErrorsResponse($message, [] ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 
@@ -252,8 +252,9 @@ class UserController extends BaseController
             }
 
             if($formPhone->isValid()){
+
                 $dataForm = $formPhone->getData();
-                
+
                 // POST request is a new phone number for an existing entity smsData
                 if($previousPhoneNumber != $phone->getPhoneNumber()){
                     $messages = $this->sendActivationCode(true,$session, $phone);
@@ -409,6 +410,21 @@ class UserController extends BaseController
         $providedCode = $formPhone->get('activationCode')->getData();
         $session_code = $session->get('activationCode');
 
+        if($formPhone->get('cancel')->isClicked()){
+            $session->remove('activationCode');
+            $session->remove('phone');
+
+            return $this->getRedirectionResponse(
+                'cairn_user_profile_view', 
+                ['username' => $user->getUsername()],
+                [], 
+                Response::HTTP_OK,
+                ['key'=>'cancel_button']
+            );
+        }
+
+
+
         if($providedCode != NULL){
             //valid code
             if($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code){
@@ -531,8 +547,7 @@ class UserController extends BaseController
 
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
-            $error = ['key'=>'wrong_code'];
-            $message = ['key'=>'wrong_code_cancel'];
+            $message = ['key'=>'too_many_tries_cancel'];
             return $this->getErrorsResponse($error, $message ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 

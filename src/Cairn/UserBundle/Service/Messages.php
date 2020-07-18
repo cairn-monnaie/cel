@@ -78,6 +78,11 @@ final class Messages
         ############### CLIENT ERRORS ###########################
 
         ### context errors ###
+        'too_many_tries_cancel'=>[
+            'type'=>'error',
+            'message'=>'Trop de tentatives'
+        ],
+
         'too_many_errors_block'=>[
             'type'=>'error',
             'message'=>'Trop d\'erreurs successives ! Votre activité a été considérée comme suspecte et votre compte a été bloqué'

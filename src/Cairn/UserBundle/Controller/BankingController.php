@@ -1042,7 +1042,7 @@ class BankingController extends BaseController
                     $messages = ['key'=>'cancel_button'];
                     return $this->getRedirectionResponse(
                         'cairn_user_banking_operations', 
-                        ['type'=>$type],
+                        [],
                         [], 
                         Response::HTTP_OK,
                         $messages
