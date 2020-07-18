@@ -88,7 +88,7 @@ class ApiController extends BaseController
             $address = $doctrineUser->getAddress();
             $zipCity = $address->getZipCity();
             
-            $postZipCode = (isset($jsonRequest['zipcode'])) ?  isset($jsonRequest['zipcode']): isset($jsonRequest['zip']);
+            $postZipCode = (isset($jsonRequest['zipcode'])) ?  $jsonRequest['zipcode'] : $jsonRequest['zip'];
 
             $zipCity->setCity($jsonRequest['town']);
             $zipCity->setZipCode($postZipCode);
@@ -108,7 +108,7 @@ class ApiController extends BaseController
 
             if(count($listErrors) > 0){
                 foreach($listErrors as $error){
-                    $code = $error->getCause()->getCode();
+                    $code = $error->getCode();
                     //code is NULL or symfony format(e.g 6e5212ed-a197-4339-99aa-5654798a4854 )
                     if((!$code) || (preg_match('#^(\w+\-){4,}#',$code))){
                     $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage());
