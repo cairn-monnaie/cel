@@ -172,10 +172,10 @@ class UserControllerTest extends BaseControllerTest
         $usedMsg = 'Déjà utilisé';
         return array(
             'admin adds number for disabled user with sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
-                                            'expectedMessages'=>array($validDataMsg,$validCodeMsg))),
+                                            'expectedMessages'=>'bloqué','isExpectedForm'=>false)),
 
             'admin adds number for disabled user without sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'Biocoop',
-                                            'expectedMessages'=>array($validDataMsg,$validCodeMsg))),
+                                            'expectedMessages'=>'bloqué','isExpectedForm'=>false)),
 
             'admin not referent' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
 

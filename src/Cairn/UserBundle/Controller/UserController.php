@@ -211,6 +211,11 @@ class UserController extends BaseController
             throw new AccessDeniedException('reserved_for_members');
         }
 
+        if(! $user->isEnabled() ){
+            throw new AccessDeniedException('user_account_disabled');
+        }
+
+
         $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
         if(!$user->getSmsData()){

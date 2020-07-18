@@ -324,8 +324,9 @@ class SecurityListener
             if(!$currentUser->isEnabled()){
                 $route = $event->getRequest()->get('_route');
 
-                if( (! $this->apiService->isRemoteCall()) && ($route != 'fos_user_security_login')){
-                    $response = $this->apiService->getRedirectionResponse('fos_user_security_login',[], [],Response::HTTP_OK);
+                if($route != 'fos_user_security_login'){
+                    $errors = ['key'=>'user_account_disabled','args'=>[$currentUser->getUsername()]];
+                    $response = $this->getErrorsResponse($errors,[], Response::HTTP_OK,'fos_user_security_login');
                     $event->setResponse($response);
                 }
             }

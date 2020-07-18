@@ -67,7 +67,7 @@ class ApiController extends BaseController
                 $doctrineUser->setDolibarrID(trim($jsonRequest['login']));
                 $doctrineUser->setUsername(trim($jsonRequest['login']));
            
-                $doctrineUser->setEmail(trim($jsonRequest['member_email']));
+                $doctrineUser->setEmail(trim($jsonRequest['email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
                 //$doctrineUser->setDescription($jsonRequest['description']);
@@ -88,9 +88,10 @@ class ApiController extends BaseController
             $address = $doctrineUser->getAddress();
             $zipCity = $address->getZipCity();
             
+            $postZipCode = (isset($jsonRequest['zipcode'])) ?  isset($jsonRequest['zipcode']): isset($jsonRequest['zip']);
 
             $zipCity->setCity($jsonRequest['town']);
-            $zipCity->setZipCode($jsonRequest['zipcode']);
+            $zipCity->setZipCode($postZipCode);
 
 
             $address->setStreet1($jsonRequest['address']);
@@ -228,13 +229,13 @@ class ApiController extends BaseController
                     ;
             }
 
+            $users = $ub->getQuery()->getResult();
+
             if( ($matchEmail || $matchICC) && (count($users) == 1) && $users[0]->hasRole('ROLE_PERSON')){
                 $users = [
                     'name' => $users[0]->getName(),
                     'account_number' => $users[0]->getMainICC()
                 ];
-            }else{
-                $users = $ub->getQuery()->getResult();
             }
 
             return $this->getRenderResponse(

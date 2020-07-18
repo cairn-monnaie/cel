@@ -19,7 +19,7 @@ email.invalid_format: Email invalide. Un email ne contient ni majuscule ni accen
 pwd.repeat_fail: Les champs ne correspondent pas
 pwd.wrong_value: Mot de passe invalide
 pwd.special_char: Le mot de passe doit contenir un caractère spécial
-pwd.invalid_special_char: Caractère invalide
+pwd.invalid_special_char: Caractère spécial invalide
 pwd.pseudo_in: Le pseudo ne doit pas être inclus dans le mot de passe
 
 phone.invalid_format: Le format du numéro de téléphone est invalide
