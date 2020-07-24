@@ -127,10 +127,11 @@ class ApiController extends BaseController
             if(! $doctrineUser){
                 $doctrineUser = new User();
            
+                $doctrineUser->setUsername(trim($jsonRequest['new_login']));
                 $doctrineUser->setEmail(trim($jsonRequest['email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
-                $doctrineUser->setDescription($jsonRequest['short_desc']);
+                $doctrineUser->setDescription(htmlspecialchars($jsonRequest['short_desc'],ENT_QUOTES));
 
                 $doctrineUser->setPlainPassword(User::randomPassword());
                 $doctrineUser->setMainICC(null);
@@ -142,8 +143,7 @@ class ApiController extends BaseController
                 $address->setZipCity($zipCity);
             }
             $doctrineUser->setDolibarrID(trim($jsonRequest['new_login']));
-            $doctrineUser->setUsername(trim($jsonRequest['new_login']));
-
+            
             $doctrineUser->setUrl($jsonRequest['url']);
             $doctrineUser->setName(trim($jsonRequest['nom_comm'])); 
 
@@ -204,9 +204,9 @@ class ApiController extends BaseController
                     $code = $error->getCode();
                     //code is NULL or symfony format(e.g 6e5212ed-a197-4339-99aa-5654798a4854 )
                     if((!$code) || (preg_match('#^(\w+\-){4,}#',$code))){
-                        $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage());
+                        $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage(),'args'=>[$error->getInvalidValue()]);
                     }else{
-                        $tmp = array('key'=>$code,'args'=>[$error->getCause()->getInvalidValue()]);
+                        $tmp = array('key'=>$code,'args'=>[$error->getInvalidValue()]);
                         if($error->getMessage()){
                             $tmp['message'] = $error->getMessage();
                         }
