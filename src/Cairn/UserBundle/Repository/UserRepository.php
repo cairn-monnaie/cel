@@ -128,6 +128,25 @@ class UserRepository extends EntityRepository
         return $this;
     }
 
+    public function wherePublish(QueryBuilder $qb,$publish)
+    {
+        $qb->andWhere('u.publish = :publish')
+            ->setParameter('publish',$publish);
+
+        return $this;
+    }
+
+    public function whereProCategoriesSlugs(QueryBuilder $qb,$categorySlugs)
+    {
+        if(empty($categorySlugs)){
+            return $this;
+        }
+
+        $qb->innerJoin('u.proCategories','pc')->andWhere($qb->expr()->in('pc.slug', $categorySlugs));
+
+        return $this;
+    }
+
     public function wherePending(QueryBuilder $qb)
     {
         $qb->andWhere('u.confirmationToken is NULL')     

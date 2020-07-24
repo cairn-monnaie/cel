@@ -24,6 +24,7 @@ use Cairn\UserBundle\Entity\OnlinePayment;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Address;
 use Cairn\UserBundle\Entity\ZipCity;
+use Cairn\UserBundle\Entity\ProCategory;
 
 
 /**
@@ -31,6 +32,68 @@ use Cairn\UserBundle\Entity\ZipCity;
  */
 class ApiController extends BaseController
 {
+    public function proCategoriesAction(Request $request)
+    {
+        $categories = $this->getDoctrine()->getManager()->getRepository('CairnUserBundle:ProCategory')->findAll();
+        return $this->getRenderResponse('',[],$categories, Response::HTTP_OK);
+    }
+
+    public function syncProCategoriesAction(Request $request)
+    {
+        if($request->isMethod('POST')){
+            $em = $this->getDoctrine()->getManager();
+            $pcRepo = $em->getRepository('CairnUserBundle:ProCategory');
+
+            $jsonRequest = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
+
+            $action = strtoupper($jsonRequest['action']);
+
+            if(! preg_match('/^[a-z][\_\-a-z0-9]*$/', $jsonRequest['slug'])){
+                return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>['slug']], [] ,Response::HTTP_BAD_REQUEST);
+            }
+
+            $proCategory = $pcRepo->findOneBySlug($jsonRequest['slug']);
+
+            if($action == 'CREATE'){
+                if($proCategory){
+                    return $this->getErrorsResponse(['key'=>'already_in_use'], [] ,Response::HTTP_BAD_REQUEST);
+                }
+                $proCategory = new ProCategory(strtolower($jsonRequest['slug']),$jsonRequest['name']);
+                $em->persist($proCategory);
+                $em->flush();
+                return $this->getRenderResponse('',[],$proCategory, Response::HTTP_CREATED);
+
+            }else{
+                if($action == 'UPDATE'){
+                    if(! preg_match('/^[a-z][\_\-a-z0-9]*$/', $jsonRequest['new_slug'])){
+                        return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>['new_slug']], [] ,Response::HTTP_BAD_REQUEST);
+                    }
+                    if(! $proCategory){
+                        $proCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
+                        $em->persist($proCategory);
+                    }
+
+                    $proCategory->setSlug($jsonRequest['new_slug']);
+                    $proCategory->setName($jsonRequest['name']);
+
+                    $em->flush();
+                    return $this->getRenderResponse('',[],$proCategory, Response::HTTP_CREATED);
+                }elseif($action == 'DELETE'){
+                    if(! $proCategory){
+                        return $this->getErrorsResponse(['key'=>'data_not_found'], [] ,Response::HTTP_BAD_REQUEST);
+                    }
+                    $em->remove($proCategory);
+                    $em->flush();
+                    return $this->getRenderResponse('',[],[], Response::HTTP_OK);
+                }
+            }
+
+            return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['action']], [] ,Response::HTTP_BAD_REQUEST);
+        }else{
+            throw new NotFoundHttpException('POST Method required !');
+        }
+
+    }
 
     public function phonesAction(Request $request)
     {
@@ -54,7 +117,7 @@ class ApiController extends BaseController
             $errors = [];
 
             if(! ($jsonRequest['morphy']=='mor' && $jsonRequest['typeid']=='2')){
-                return $this->getErrorsResponse(['key'=>'not_pro','args'=>[$jsonRequest['societe']]], [] ,Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['key'=>'not_pro','args'=>[$jsonRequest['nom_comm']]], [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $userRepository = $em->getRepository('CairnUserBundle:User');
@@ -70,7 +133,7 @@ class ApiController extends BaseController
                 $doctrineUser->setEmail(trim($jsonRequest['email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
-                //$doctrineUser->setDescription($jsonRequest['description']);
+                $doctrineUser->setDescription($jsonRequest['short_desc']);
 
                 $doctrineUser->setPlainPassword(User::randomPassword());
                 $doctrineUser->setMainICC(null);
@@ -82,17 +145,48 @@ class ApiController extends BaseController
                 $address->setZipCity($zipCity);
             }
 
-            //$doctrineUser->setUrl($jsonRequest['url']);
-            $doctrineUser->setName(trim($jsonRequest['societe'])); 
+            $doctrineUser->setUrl($jsonRequest['url']);
+            $doctrineUser->setName(trim($jsonRequest['nom_comm'])); 
+
+            //$hasAccountOpened = ($doctrineUser->getID() && $doctrineUser->isEnabled() && $doctrineUser->getMainICC());
+            //if(! $jsonRequest['publish']){
+            //    if($hasAccountOpened){
+            //        $this->get('cairn_user.access_platform')->disable([$doctrineUser],'ELSE');
+            //    }else{
+            //        $doctrineUser->setEnabled(false);
+            //    }
+            //}else{
+            //    if($hasAccountOpened){
+            //        $this->get('cairn_user.access_platform')->enable([$doctrineUser]);
+            //    }
+            //}
+            $doctrineUser->setPublish($jsonRequest['publish']);
+
+            //DEAL WITH CATEGORIES
+            $pcCategory = $em->getRepository('CairnUserBundle:ProCategory');
+
+            ///newCats: [3,5,2] formerCats[3,4]
+            $newCategories = $pcCategory->findBySlug($jsonRequest['categories']);
+            $formerIds = $pcCategory->findUserCategoriesIds($doctrineUser);
+            $newIds = [];
+            foreach($newCategories as $category){
+                $newIds[] = $category->getID();
+                if(! in_array($category->getID(),$formerIds)){//for instance 5,2
+                    $doctrineUser->addProCategory($category);
+                }
+            }
+
+            $toRemoveIds = array_diff($formerIds,$newIds);
+            $toRemoveCategories = $pcCategory->findById($toRemoveIds);
+            foreach($toRemoveCategories as $category){
+                $doctrineUser->removeProCategory($category);
+            }
 
             $address = $doctrineUser->getAddress();
             $zipCity = $address->getZipCity();
             
-            $postZipCode = (isset($jsonRequest['zipcode'])) ?  $jsonRequest['zipcode'] : $jsonRequest['zip'];
-
             $zipCity->setCity($jsonRequest['town']);
-            $zipCity->setZipCode($postZipCode);
-
+            $zipCity->setZipCode($jsonRequest['zipcode']);
 
             $address->setStreet1($jsonRequest['address']);
             
@@ -193,12 +287,18 @@ class ApiController extends BaseController
                 ;
             }
 
-            if(isset($jsonRequest['keywords']) && $jsonRequest['keywords']){
+            if(isset($jsonRequest['keywords']) && $jsonRequest['keywords']  && (! empty($jsonRequest['keywords']))){
                 $userRepo->whereKeywords($ub,$jsonRequest['keywords']);
             }
 
-            if(isset($jsonRequest['payment_context']) && ($jsonRequest['payment_context'] == true) ){
+            if(isset($jsonRequest['payment_context']) && ($jsonRequest['payment_context'] == true)){
                 $userRepo->whereConfirmed($ub);
+            }else{
+                $userRepo->wherePublish($ub,true);
+            }
+
+            if(isset($jsonRequest['categories']) && is_array($jsonRequest['categories']) && (! empty($jsonRequest['categories']))){
+                $userRepo->whereProCategoriesSlugs($ub,$jsonRequest['categories']);
             }
 
             $userRepo->whereAdherent($ub);

@@ -177,6 +177,16 @@ class User extends BaseUser
      */
     private $firstLogin;
 
+    /**
+     * @ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\ProCategory", cascade={"persist"})
+     */
+    private $proCategories;
+
+    /**
+     * @ORM\Column(name="publish", type="boolean", unique=false, nullable=false)
+     */
+    private $publish;
+
     public function __construct()
     {
         parent::__construct();
@@ -195,6 +205,8 @@ class User extends BaseUser
         $this->setKeywords([]);
 
         $this->setNotificationData(new NotificationData($this));
+        $this->proCategories = new ArrayCollection();
+        $this->publish = false;
     }
 
     public function __toString()
@@ -1040,4 +1052,69 @@ class User extends BaseUser
         return $this->dolibarrID;
     }
 
+
+    /**
+     * Add proCategory.
+     *
+     * @param \Cairn\UserBundle\Entity\ProCategory $proCategory
+     *
+     * @return User
+     */
+    public function addProCategory(\Cairn\UserBundle\Entity\ProCategory $proCategory)
+    {
+        $this->proCategories[] = $proCategory;
+
+        return $this;
+    }
+
+    /**
+     * Remove proCategory.
+     *
+     * @param \Cairn\UserBundle\Entity\ProCategory $proCategory
+     *
+     * @return boolean TRUE if this collection contained the specified element, FALSE otherwise.
+     */
+    public function removeProCategory(\Cairn\UserBundle\Entity\ProCategory $proCategory)
+    {
+        return $this->proCategories->removeElement($proCategory);
+    }
+
+    /**
+     * Get proCategories.
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getProCategories()
+    {
+        return $this->proCategories;
+    }
+
+    /**
+     * Set publish.
+     *
+     * @param bool $publish
+     *
+     * @return User
+     */
+    public function setPublish($publish)
+    {
+        if(! $this->hasRole('ROLE_PRO')){
+            $this->publish = false;
+            return $this;
+        }
+
+        $this->publish = $publish;
+
+        return $this;
+    }
+
+    /**
+     * Get publish.
+     *
+     * @return bool
+     */
+    public function isPublish()
+    {
+        return $this->publish;
+    }
 }

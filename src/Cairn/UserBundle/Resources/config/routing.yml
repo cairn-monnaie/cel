@@ -36,8 +36,20 @@ cairn_user_api_online_payment_create:
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:createOnlinePayment, _format: json }
 
-cairn_user_api_sync pro:
-    path: api/pro
+cairn_user_api_pro_categories:
+    path: /categories
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Api:proCategories, _format: json }
+
+#WARNING : URL used by dolibarr hook !
+cairn_user_api_sync_categories:
+    path: /sync-categories
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:syncProCategories, _format: json }
+
+#WARNING : URL used by dolibarr hook !
+cairn_user_api_sync_pro:
+    path: /sync-pro
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:syncPro, _format: json }
 

@@ -83,6 +83,7 @@ class BaseControllerTest extends WebTestCase
             $this->assertArrayHasKey('phones', $entity);
             $this->assertArrayHasKey('url', $entity);
             $this->assertArrayHasKey('keywords', $entity);
+            $this->assertArrayHasKey('publish', $entity);
 
             $this->assertArrayNotHasKey('creationDate', $entity);
             $this->assertArrayNotHasKey('cyclosID', $entity);
