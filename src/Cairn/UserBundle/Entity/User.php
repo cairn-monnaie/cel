@@ -87,6 +87,13 @@ class User extends BaseUser
     private $address;
 
     /**
+     * @ORM\Column(name="excerpt", type="text", unique=false)
+     * @Assert\NotBlank(message="account.enter_description")
+     * @Assert\Length(max=40, maxMessage="Extrait de moins de {{ limit }} caractères")
+     */
+    private $excerpt; 
+
+    /**
      * @ORM\Column(name="description", type="text", unique=false)
      * @Assert\NotBlank(message="account.enter_description")
      */
@@ -521,6 +528,30 @@ class User extends BaseUser
     public function getAddress()
     {
         return $this->address;
+    }
+
+    /**
+     * Set excerpt
+     *
+     * @param string $excerpt
+     *
+     * @return User
+     */
+    public function setExcerpt($excerpt)
+    {
+        $this->excerpt = $excerpt;
+
+        return $this;
+    }
+
+    /**
+     * Get excerpt
+     *
+     * @return string
+     */
+    public function getExcerpt()
+    {
+        return $this->excerpt;
     }
 
     /**
@@ -1117,4 +1148,5 @@ class User extends BaseUser
     {
         return $this->publish;
     }
+
 }

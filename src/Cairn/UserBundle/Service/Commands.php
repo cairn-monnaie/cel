@@ -64,6 +64,8 @@ class Commands
     public function importDolibarrPros($filePath)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $pcRepo = $this->em->getRepository('CairnUserBundle:ProCategory');
+
         //SHOW ALL PROS BEFORE EXPORT
         $qb = $userRepo->createQueryBuilder('u');
         $qb->innerJoin('u.address','addr')
@@ -79,112 +81,122 @@ class Commands
         echo $msg."\n\n\n";
 
         //READ EXPORT FILE
-        $duplicates = [];
         $notLocalized = [];
+        $wrongZipCity = [];
+        $categoriesNotFound = [];
 
-        $id = 0;
+        $dolibarrID = "0";
         if (($handle = fopen($filePath, "r")) !== FALSE) {
-            $line = fgetcsv($handle, 1000, ",");
+            $line = fgetcsv($handle, 2000, ",");//first line are attributes
+            $line = fgetcsv($handle, 2000, ",");
+ 
             while ($line !== FALSE) {
-                if($line[0] != $id){
-                    $id = $line[0];
+                if($line[0] != $dolibarrID){
+                    echo 'Utilisateur en cours : '.$line[1]."\n";
+                    $dolibarrID = $line[0];
 
-                    $doctrineUser = new User();
+                    $doctrineUser = $userRepo->findOneByDolibarrID($dolibarrID);
+                    if(! $doctrineUser){
+                        $doctrineUser = new User();
 
-                    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $line[1])));
-                    $doctrineUser->setUsername($slug);
+                        $doctrineUser->setUsername($dolibarrID);
+                        $doctrineUser->setDolibarrID($dolibarrID);
+
+                        $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
+                        $doctrineUser->setEmail($email);
+                        $doctrineUser->addRole('ROLE_PRO');   
+                    }
+
+                    
                     $doctrineUser->setName($line[1]);
-                    $doctrineUser->setEmail($slug.'@test.fr');
-                    $doctrineUser->setCyclosID(rand(1,1000000000));
-                    $doctrineUser->addRole('ROLE_PRO');   
-                    $doctrineUser->setDescription('Je suis un compte de test !');   
+                    $doctrineUser->setDescription($line[10]);   
+                    $doctrineUser->setExcerpt($line[9]);
+                    $doctrineUser->setUrl($line[7]);
+
+                    $publish = ($line[8]);
+                    $doctrineUser->setPublish($publish);
 
                     $doctrineUser->setPlainPassword(User::randomPassword());
                     $doctrineUser->setMainICC(null);
 
                     $address = new Address();
-                    $zipCity = new ZipCity();
-                }
 
-                while(is_array($line) && $line[0] == $id){
-                    switch ($line[2]){
-                    case 'locate-anything-street':
-                        $street = $line[3];
-                        break;
-                    case 'locate-anything-streetnumber':
-                        $streetNumber = $line[3];
-                        break;
-                    case 'locate-anything-city':
-                        $zipCity->setCity($line[3]);
-                        break;
-                    case 'locate-anything-zip':
-                        $zipCity->setZipCode($line[3]);
-                        break;
-                    case 'url':
-                        $doctrineUser->setUrl($line[3]);
-                        break;
-                    default:
-                        break;
+                    $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
+
+                    var_dump($line);
+                    //find zip entity based on api response data
+                    $zip = $zipRepository->findOneBy(array('zipCode'=>$line[5],'city'=> $line[3]));
+                    if(! $zip){
+                        $zipCities = $zipRepository->findBy(array('zipCode'=>$line[5]));
+                        var_dump($zipCities);
+                        $zip = $zipCities[0];
+                        $resScore = similar_text($line[5],$zipCities[0]->getCity());
+                        foreach($zipCities as $zc){
+                            if($probaScore = similar_text($line[5],$zc->getCity()) > $resScore){
+                                $zip = $zc;
+                                $resScore = $probaScore;
+                            }
+                        }
+                        $wrongZipCity[] = $doctrineUser;
                     }
-                    $line = fgetcsv($handle, 1000, ",");
-                }
 
-                $address->setStreet1($streetNumber.' '.$street);
-                $address->setZipCity($zipCity); 
+                    $address->setStreet1($line[4]);
+                    $address->setZipCity($zip);          
+                    $doctrineUser->setAddress($address);
 
-                //normalize address street1, postcode && city values with API data responses
-                $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+                    //normalize address street1, postcode && city values with API data responses
+                    $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
-                $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
-                $addrRepository = $this->em->getRepository('CairnUserBundle:Address');
+                    if(!$coords['latitude']){ 
+                        $notLocalized[] = $doctrineUser;
+                    }else{
+                        $address->setLatitude($coords['latitude']);
+                        $address->setLongitude($coords['longitude']);
+                    }
 
-                //find zip entity based on api response data
-                $zip = $zipRepository->findOneBy(array('zipCode'=>$address->getZipCity()->getZipCode(),'city'=> $address->getZipCity()->getCity()));
-                if(! $zip){
-                    $zip = $zipRepository->findOneBy(array('zipCode'=>$address->getZipCity()->getZipCode()));
-                }
-                $address->setZipCity($zip);          
-                $doctrineUser->setAddress($address);
                 
-                if(!$coords['latitude']){ 
-                    $notLocalized[] = $doctrineUser;
-                    $addrCoords = NULL;
                 }else{
-                    $address->setLatitude($coords['latitude']);
-                    $address->setLongitude($coords['longitude']);
-                    $addrCoords = $addrRepository->findOneBy(['latitude'=>$coords['latitude'] ,'longitude'=>$coords['longitude']]);
-                }
-                $addrStreet = $addrRepository->findOneByStreet1($address->getStreet1());
+                    while(is_array($line) && ($line[0] == $dolibarrID)){//on peut avoir plusieurs catégories pour un même pro 
+                        if($line[6]){
+                            $category = $pcRepo->findOneBySlug($line[6]);
 
-                //find all possible ways to check if a pro has already an account
-                //check by name, email,adresse,coords,
-                $userEmail = $userRepo->findOneByEmail($doctrineUser->getEmail());
-                $userName = $userRepo->findOneByName($doctrineUser->getName());
-
-                if($userEmail || $userName || $addrCoords || $addrStreet){
-                    $duplicates[] = $doctrineUser;
-                }elseif(!$coords['latitude']){
-                    ;
-                }else{
-                    $this->em->persist($doctrineUser);
+                            if(! $category){
+                                $categoriesNotFound[] = 'Categorie non trouvée '.$line[6].' pour '.$line[1];
+                            }else{
+                                $doctrineUser->addProCategory($category);
+                            }
+                        }
+                        $line = fgetcsv($handle, 10000, ",");
+                    }
                 }
+                $this->em->persist($doctrineUser);
+
+                echo 'Persisté : Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+
             }
         }
 
         fclose($handle);
         $this->em->flush();
 
-        echo "------------- POSSIBLE DUPLICATES NOT IMPORTED --------------------"."\n";
-        $msg = '';
-        foreach($duplicates as $pro){
-            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
-        }
-        echo $msg."\n\n\n";
-
         echo "------------- PROS NOT LOCALIZED --------------------"."\n";
         $msg = '';
         foreach($notLocalized as $pro){
             $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        echo "------------- WRONG ZIPCITY --------------------"."\n";
+        $msg = '';
+        foreach($wrongZipCity as $pro){
+            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        echo "------------- CATEGORIES NOT FOUND --------------------"."\n";
+        $msg = '';
+        foreach($categoriesNotFound as $notfound){
+            $msg .= $notfound."\n";
         }
         echo $msg."\n\n\n";
 
@@ -221,7 +233,7 @@ class Commands
             $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
             if(!$coords['latitude']){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['name'];
+                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);
@@ -762,14 +774,6 @@ class Commands
             if($doctrineUser->isAdherent()){
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
-
-                //$notificationData = new NotificationData();
-                //$doctrineUser->setNotificationData($notificationData);
-                //$notificationData->setUser($doctrineUser);
-
-                //$notificationData->setPinCode(1111);
-                //$notificationData->setFirstLogin(false);
-
             }
 
 
@@ -779,6 +783,11 @@ class Commands
 
             $cyclosClient = $this->getClientToken($doctrineUser,'main');
             $doctrineUser->setCyclosToken($cyclosClient);
+
+            //in order to send sms after a payment has been received
+            //$notifs = $doctrineUser->getNotificationData()->getBaseNotifications();
+            //$notifs[0]->setSmsEnabled(true);
+            //$notifs[1]->setSmsEnabled(true);
 
             $this->em->persist($doctrineUser);
 

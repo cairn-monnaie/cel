@@ -131,8 +131,7 @@ class ApiController extends BaseController
                 $doctrineUser->setEmail(trim($jsonRequest['email']));
                 //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
-                $doctrineUser->setDescription(htmlspecialchars($jsonRequest['short_desc'],ENT_QUOTES));
-
+                
                 $doctrineUser->setPlainPassword(User::randomPassword());
                 $doctrineUser->setMainICC(null);
 
@@ -144,6 +143,9 @@ class ApiController extends BaseController
             }
             $doctrineUser->setDolibarrID(trim($jsonRequest['new_login']));
             
+            $doctrineUser->setExcerpt(htmlspecialchars($jsonRequest['short_desc'],ENT_QUOTES));
+            $doctrineUser->setDescription(htmlspecialchars($jsonRequest['long_desc'],ENT_QUOTES));
+
             $doctrineUser->setUrl($jsonRequest['url']);
             $doctrineUser->setName(trim($jsonRequest['nom_comm'])); 
 
