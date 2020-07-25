@@ -136,10 +136,7 @@ class ApiController extends BaseController
                 $doctrineUser->setMainICC(null);
 
                 $address = new Address();
-                $zipCity = new ZipCity();
-
                 $doctrineUser->setAddress($address);
-                $address->setZipCity($zipCity);
             }
             $doctrineUser->setDolibarrID(trim($jsonRequest['new_login']));
             
@@ -184,18 +181,17 @@ class ApiController extends BaseController
             }
 
             $address = $doctrineUser->getAddress();
-            $zipCity = $address->getZipCity();
-            
-            $zipCity->setCity($jsonRequest['town']);
-            $zipCity->setZipCode($jsonRequest['zipcode']);
-
             $address->setStreet1($jsonRequest['address']);
             
+            //find correct zipcity
             $zipRepository = $em->getRepository('CairnUserBundle:ZipCity');
-            $zip = $zipRepository->findOneBy(array('zipCode'=>$zipCity->getZipCode(),'city'=> $zipCity->getCity()));
+            $zip = $zipRepository->findCorrectZipCity($jsonRequest['zipCode'],$jsonRequest['town']);
             if(! $zip){
-                $errors[] = ['key'=>'invalid_zipcode','args'=>[$zipCity->getZipCode().'/'.$zipCity->getCity()]];
+                $errors[] = ['key'=>'invalid_zipcode','args'=>[$jsonRequest['zipCode'].'/'.$jsonRequest['town']]];
+                return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
             }
+            
+            $address->setZipCity($zip);
 
             $listErrors = $this->get('validator')->validate($doctrineUser); 
 

@@ -95,7 +95,6 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="description", type="text", unique=false)
-     * @Assert\NotBlank(message="account.enter_description")
      */
     private $description; 
 

@@ -92,7 +92,6 @@ class Commands
  
             while ($line !== FALSE) {
                 if($line[0] != $dolibarrID){
-                    echo 'Utilisateur en cours : '.$line[1]."\n";
                     $dolibarrID = $line[0];
 
                     $doctrineUser = $userRepo->findOneByDolibarrID($dolibarrID);
@@ -105,8 +104,10 @@ class Commands
                         $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
                         $doctrineUser->setEmail($email);
                         $doctrineUser->addRole('ROLE_PRO');   
-                    }
 
+                        $address = new Address();
+                        $doctrineUser->setAddress($address);
+                    }
                     
                     $doctrineUser->setName($line[1]);
                     $doctrineUser->setDescription($line[10]);   
@@ -119,27 +120,32 @@ class Commands
                     $doctrineUser->setPlainPassword(User::randomPassword());
                     $doctrineUser->setMainICC(null);
 
-                    $address = new Address();
-
-                    $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
-
-                    var_dump($line);
+                    
                     //find zip entity based on api response data
+                    $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
+                    $zip = $zipRepository->findCorrectZipCity($line[5],$line[3]);
+                    if(! $zip){
+                        $errors[] = ['key'=>'invalid_zipcode','args'=>[$line[5].'/'.$line[3]]];
+                        return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
+                    }
+
                     $zip = $zipRepository->findOneBy(array('zipCode'=>$line[5],'city'=> $line[3]));
                     if(! $zip){
                         $zipCities = $zipRepository->findBy(array('zipCode'=>$line[5]));
-                        var_dump($zipCities);
+                        
                         $zip = $zipCities[0];
-                        $resScore = similar_text($line[5],$zipCities[0]->getCity());
+                        $resScore = similar_text($line[3],$zip->getCity(),$resPerc);
                         foreach($zipCities as $zc){
-                            if($probaScore = similar_text($line[5],$zc->getCity()) > $resScore){
+                            $probaScore = similar_text($line[3],$zc->getCity(),$probaPerc);
+                            if($probaPerc > $resPerc){
                                 $zip = $zc;
-                                $resScore = $probaScore;
+                                $resPerc = $probaPerc;
                             }
                         }
                         $wrongZipCity[] = $doctrineUser;
                     }
 
+                    $address = $doctrineUser->getAddress();
                     $address->setStreet1($line[4]);
                     $address->setZipCity($zip);          
                     $doctrineUser->setAddress($address);
@@ -170,8 +176,7 @@ class Commands
                     }
                 }
                 $this->em->persist($doctrineUser);
-
-                echo 'Persisté : Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+                echo 'Persisté : Société : '.$doctrineUser->getDolibarrID().' / Email : '.$doctrineUser->getEmail().' / Adresse : '.$doctrineUser->getAddress()->__toString()."\n";
 
             }
         }
@@ -182,14 +187,14 @@ class Commands
         echo "------------- PROS NOT LOCALIZED --------------------"."\n";
         $msg = '';
         foreach($notLocalized as $pro){
-            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+            $msg .= 'Société : '.$pro->getDolibarrID().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
         }
         echo $msg."\n\n\n";
 
         echo "------------- WRONG ZIPCITY --------------------"."\n";
         $msg = '';
         foreach($wrongZipCity as $pro){
-            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+            $msg .= 'Société : '.$pro->getDolibarrID().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
         }
         echo $msg."\n\n\n";
 
@@ -233,7 +238,7 @@ class Commands
             $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
             if(!$coords['latitude']){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
+                $returnMsg .= 'Echec de géolocalisation pour '.$user->getUsername().' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);
@@ -243,7 +248,7 @@ class Commands
 
         $this->em->flush();
 
-        return $returnMsg;
+        return '';//$returnMsg;
     }
 
     /**
@@ -579,6 +584,8 @@ class Commands
             $address->setStreet1('7 rue Très Cloîtres');
 
             $new_admin->setAddress($address);
+            $new_admin->setExcerpt('Administrateur de l\'application');
+
             $new_admin->setDescription('Administrateur de l\'application');
 
             //ajouter la carte
@@ -739,6 +746,7 @@ class Commands
 
             $doctrineUser->setAddress($address);                                  
 
+            $doctrineUser->setExcerpt('Je suis un compte de test !');             
             $doctrineUser->setDescription('Je suis un compte de test !');             
 
             //create fake id doc
