@@ -78,16 +78,17 @@ class Geolocalization
             $score = $location['properties']['score'];
             if($score <= 0.67){   
                 if($score >= 0.60 && isset($location['properties']['oldcity'])){// if the address matches a former deprecated city name
-                    $address->setStreet1($location['properties']['name']);
-                    $address->getZipCity()->setZipCode($location['properties']['postcode']);
-                    $address->getZipCity()->setCity($location['properties']['oldcity']);
                     return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
+                }
+                if($score >= 0.60){
+                    $similarityStreet = similar_text($address->getStreet1(),$location['properties']['name'],$prec);
+                    if($prec >= 0.70){
+                        $address->setStreet1($location['properties']['name']);
+                        return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
+                    }
                 }
                 return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']);
             }else{
-        //        $address->setStreet1($location['properties']['name']);
-                $address->getZipCity()->setZipCode($location['properties']['postcode']);
-                $address->getZipCity()->setCity($location['properties']['city']);
                 return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
             }
         }else{
