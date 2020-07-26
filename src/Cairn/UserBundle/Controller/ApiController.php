@@ -51,23 +51,23 @@ class ApiController extends BaseController
             if(! preg_match('/^[a-z][\_\-a-z0-9]*$/', $jsonRequest['slug'])){
                 return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>['slug']], [] ,Response::HTTP_BAD_REQUEST);
             }
+            if(! preg_match('/^[a-z][\_\-a-z0-9]*$/', $jsonRequest['new_slug'])){
+                return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>['slug']], [] ,Response::HTTP_BAD_REQUEST);
+            }
 
+            //if action = add, slug = new_slug
             $proCategory = $pcRepo->findOneBySlug($jsonRequest['slug']);
 
-            if($action == 'CREATE'){
+            if(strtoupper($action) == 'ADD'){
                 if($proCategory){
                     return $this->getErrorsResponse(['key'=>'already_in_use'], [] ,Response::HTTP_BAD_REQUEST);
                 }
-                $proCategory = new ProCategory(strtolower($jsonRequest['slug']),$jsonRequest['name']);
+                $proCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
                 $em->persist($proCategory);
                 $em->flush();
                 return $this->getRenderResponse('',[],$proCategory, Response::HTTP_CREATED);
-
             }else{
-                if($action == 'UPDATE'){
-                    if(! preg_match('/^[a-z][\_\-a-z0-9]*$/', $jsonRequest['new_slug'])){
-                        return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>['new_slug']], [] ,Response::HTTP_BAD_REQUEST);
-                    }
+                if(strtoupper($action) == 'UPDATE'){
                     if(! $proCategory){
                         $proCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
                         $em->persist($proCategory);
