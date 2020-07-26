@@ -56,28 +56,32 @@ class ApiController extends BaseController
             }
 
             //if action = add, slug = new_slug
-            $proCategory = $pcRepo->findOneBySlug($jsonRequest['slug']);
+            $newProCategory = $pcRepo->findOneBySlug($jsonRequest['new_slug']);
+            $formerProCategory = $pcRepo->findOneBySlug($jsonRequest['slug']);
 
             if(strtoupper($action) == 'ADD'){
-                if($proCategory){
+                if($newProCategory){
                     return $this->getErrorsResponse(['key'=>'already_in_use'], [] ,Response::HTTP_BAD_REQUEST);
                 }
-                $proCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
-                $em->persist($proCategory);
+                $newProCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
+                $em->persist($newProCategory);
                 $em->flush();
-                return $this->getRenderResponse('',[],$proCategory, Response::HTTP_CREATED);
+                return $this->getRenderResponse('',[],$newProCategory, Response::HTTP_CREATED);
             }else{
                 if(strtoupper($action) == 'UPDATE'){
-                    if(! $proCategory){
-                        $proCategory = new ProCategory(strtolower($jsonRequest['new_slug']),$jsonRequest['name']);
-                        $em->persist($proCategory);
+                    if(! $formerProCategory){
+                        $formerProCategory = new ProCategory(strtolower($jsonRequest['slug']),$jsonRequest['name']);
+                        $em->persist($formerProCategory);
+                    }
+                    if($newProCategory){
+                        return $this->getErrorsResponse(['key'=>'already_in_use'], [] ,Response::HTTP_BAD_REQUEST);
                     }
 
-                    $proCategory->setSlug($jsonRequest['new_slug']);
-                    $proCategory->setName($jsonRequest['name']);
+                    $formerProCategory->setSlug($jsonRequest['new_slug']);
+                    $formerProCategory->setName($jsonRequest['name']);
 
                     $em->flush();
-                    return $this->getRenderResponse('',[],$proCategory, Response::HTTP_CREATED);
+                    return $this->getRenderResponse('',[],$formerProCategory, Response::HTTP_CREATED);
                 }elseif($action == 'DELETE'){
                     if(! $proCategory){
                         return $this->getErrorsResponse(['key'=>'data_not_found'], [] ,Response::HTTP_BAD_REQUEST);
