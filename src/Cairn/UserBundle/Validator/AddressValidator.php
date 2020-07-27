@@ -8,6 +8,7 @@ use Symfony\Component\Validator\ConstraintValidator;
 
 use Cairn\UserBundle\Service\Geolocalization;                                         
 
+use Cairn\UserBundle\Repository\UserRepository;
 use Cairn\UserBundle\Entity\Address;
 
 class AddressValidator extends ConstraintValidator
@@ -15,9 +16,12 @@ class AddressValidator extends ConstraintValidator
 
     protected $geolocalization;
 
-    public function __construct(Geolocalization $geolocalization)
+    protected $userRepo;
+
+    public function __construct(Geolocalization $geolocalization,UserRepository $userRepo)
     {
         $this->geolocalization = $geolocalization;
+        $this->userRepo = $userRepo;
     }
 
     /**
@@ -26,6 +30,19 @@ class AddressValidator extends ConstraintValidator
      */
     public function validate($address, Constraint $constraint)
     {
+        $user = $this->userRepo->findOneByAddress($address);
+
+        $isPro = ($user) ? $user->hasRole('ROLE_PRO') : false;
+
+        if((! preg_match('/^\d+/',$address->getStreet1())) && !$isPro){
+            $this->context->buildViolation("Adresse imprécise. Veuillez commencer par un n° d'adresse")
+                ->setInvalidValue($address->__toString())
+                ->setCode('unprecise_address')
+                ->atPath('street1')
+                ->addViolation();
+            return;
+        }
+
         $coords = $this->geolocalization->getCoordinates($address);            
 
         if(!$coords['latitude']){                                                          
@@ -35,7 +52,7 @@ class AddressValidator extends ConstraintValidator
                 ->atPath('street1')
                 ->addViolation();
             return;
-        }else{                                                                 
+        }else{ 
             if(array_key_exists('closest',$coords)){
                 $address->setStreet1($coords['closest']['name']);
             }

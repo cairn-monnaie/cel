@@ -189,9 +189,9 @@ class ApiController extends BaseController
             
             //find correct zipcity
             $zipRepository = $em->getRepository('CairnUserBundle:ZipCity');
-            $zip = $zipRepository->findCorrectZipCity($jsonRequest['zipCode'],$jsonRequest['town']);
+            $zip = $zipRepository->findCorrectZipCity($jsonRequest['zipcode'],$jsonRequest['town']);
             if(! $zip){
-                $errors[] = ['key'=>'invalid_zipcode','args'=>[$jsonRequest['zipCode'].'/'.$jsonRequest['town']]];
+                $errors[] = ['key'=>'invalid_zipcode','args'=>[$jsonRequest['zipcode'].'/'.$jsonRequest['town']]];
                 return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
             }
             

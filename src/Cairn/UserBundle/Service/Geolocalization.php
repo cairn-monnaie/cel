@@ -26,37 +26,38 @@ class Geolocalization
      */
     public function getCoordinates(Address $address)
     {
-        $type = 'housenumber';
+        $type = NULL;
 
         //set latitude and longitude of new user
         //remove bis, ter from address street for localization research because it makes the research inaccurate           
         $base = strtolower(trim($address->getStreet1().' '.$address->getZipCity()->getZipCode().' '.$address->getZipCity()->getCity())) ; 
         
-        //if(preg_match('/^\d+/',$base)){
-        //    $type = 'housenumber';
-        //}elseif(preg_match('/^(place|hameau)/',$base)){
-        //    $type = 'locality';
-        //}elseif(preg_match('/^(allée|allee|rue|impasse|square)/',$base)){
-        //    $type = 'street';
-        //}
+        if(preg_match('/^\d+/',$base)){
+            $type = 'housenumber';
+        }elseif(preg_match('/^hameau/',$base)){
+            $type = 'locality';
+        }elseif(preg_match('/^(allée|allee|rue|impasse|square|avenue)/',$base)){
+            $type = 'street';
+        }
 
+        //replace strings for better score
         $base = preg_replace('/\s(bis|ter)\s/',' ',$base);
         $base = preg_replace('/^(\d+)(bis|ter)\s/','${1} ',$base);
         $base = preg_replace('/\,/',' ',$base);
-        $base = preg_replace('/\s(st)e?\s/','saint',$base);
-        $base = preg_replace('/\s(dr)\s/','docteur',$base);
-        $base = preg_replace('/\s(jo|j\.o)\s/','jeux olympiques',$base);
-        $base = preg_replace('/\s(zi)\s/','zone industrielle',$base);
-        $base = preg_replace('/\s(za)\s/','zone agricole',$base);
+        $base = preg_replace('/\s(st)e?\s/',' saint ',$base);
+        $base = preg_replace('/\s(dr)\s/',' docteur ',$base);
+        $base = preg_replace('/\s(jo|j\.o)\s/',' jeux olympiques ',$base);
 
         $arrayParams = array(                              
             'q' => $base,
             //'postcode' => $address->getZipCity()->getZipCode(),
             'lat'=>'45.19251',
             'lon'=>'5.72756',
-            'type' => $type,
             'limit' => 2                                   
         );                                                 
+        if($type){
+            $arrayParams['type'] = $type;
+        }
 
         $res = $this->api->get('https://api-adresse.data.gouv.fr/','search/',$arrayParams);
 
@@ -80,11 +81,12 @@ class Geolocalization
                 if($score >= 0.60 && isset($location['properties']['oldcity'])){// if the address matches a former deprecated city name
                     return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
                 }
-                if($score >= 0.60){
+                if($score >= 0.58){
                     $similarityStreet = similar_text($address->getStreet1(),$location['properties']['name'],$prec);
-                    if($prec >= 0.70){
-                        $address->setStreet1($location['properties']['name']);
-                        return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
+                    if(! ($location['properties']['type'] == 'municipality')){//if municipality, name is city
+                        if($prec >= 50){
+                            return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
+                        }
                     }
                 }
                 return array('latitude'=>NULL ,'longitude'=>NULL,'closest' => $location['properties']);

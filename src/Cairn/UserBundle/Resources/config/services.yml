@@ -59,7 +59,7 @@ services:
         class: Cairn\UserBundle\Service\Geolocalization
         arguments:
             - "@cairn_user.api"
-
+            
     cairn_user.api_authenticator:
         public: true
         class: Cairn\UserBundle\Security\TokenAuthenticator
@@ -95,8 +95,7 @@ services:
     cairn_user.helloasso:
         class: Cairn\UserBundle\Service\Helloasso
         arguments:
-            - "%helloasso_api_login%"
-            - "%helloasso_api_password%"
+            - "%helloasso_consts%"
 
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
@@ -184,7 +183,7 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
               
-              
+                                          
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener
         arguments:
@@ -196,7 +195,7 @@ services:
             - "@cairn_user.api"
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
-              
+                            
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:
@@ -213,6 +212,7 @@ services:
         class: Cairn\UserBundle\Validator\AddressValidator
         arguments:
             - "@cairn_user.geolocalization"
+            - "@cairn_user.repository_user"
         tags:
             - { name: validator.constraint_validator, alias: cairn_address_validator }
 
