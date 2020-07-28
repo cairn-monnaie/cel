@@ -76,9 +76,14 @@ parameters:
             step: 4
             block: 10
 
-    helloasso_campaign_id: '0000011111122222'
-    helloasso_api_login : login
-    helloasso_api_password : password
+    helloasso_consts:
+        organization:
+            slug: 'slug'
+            client_id: 'id'
+            client_secret: 'secret'
+        form:
+            type: 'type'
+            slug: 'slug'
 
     notificator_consts:
         sms:

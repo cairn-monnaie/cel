@@ -45,20 +45,23 @@ class HelloassoController extends BaseController
         $this->bankingManager = new BankingManager();
     }
 
-    private function getApiPayment($id)
+    private function getApiPayment($accessToken,$id)
     {
-        $campaignID = $this->getParameter('helloasso_campaign_id');                     
+        $helloassoService = $this->get('cairn_user.helloasso');
+
+        $haConsts = $this->getParameter('helloasso_consts'); 
+        $basePaymentsUrl = 'v5/organizations/'.$haConsts['organization']['slug'].'/forms/'.$haConsts['form']['type'].'/'.$haConsts['form']['slug'].'/payments';
 
         //look for helloassopayment with same id in helloasso data
-        $campaign_payments = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('page'=>'2'));
+        $campaign_payments = $helloassoService->get($accessToken,$basePaymentsUrl,array('pageIndex'=>'2','states'=>'Authorized'));
 
-        $nbPages = $campaign_payments->pagination->max_page;
+        $nbPages = $campaign_payments['pagination']['totalPages'];
 
         $api_payment = NULL;
-        for($i = $nbPages; $i >= 1; $i--){
-            $campaign_payments = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('page'=>$i));
-            foreach($campaign_payments->resources as $payment){
-                if($payment->id == $id ){
+        for($i = 1; $i <= $nbPages; $i++){
+            $campaign_payments = $helloassoService->get($accessToken,$basePaymentsUrl,array('pageIndex'=>$i,'states'=>'Authorized'));
+            foreach($campaign_payments['data'] as $payment){
+                if($payment['id'] == $id ){
                     $api_payment = $payment;
                     break 2;
                 }
@@ -73,19 +76,22 @@ class HelloassoController extends BaseController
         $helloassoRepo = $em->getRepository('CairnUserBundle:HelloassoConversion');
 
         //look for helloassopayment with same id in db
-        $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment->id);
+        $existingPayment = $helloassoRepo->findOneByPaymentID($api_payment['id']);
         if($existingPayment){
             return NULL;
         }
 
+        //BE CAREFUL, THE AMOUNT RETURNED BY THE API IS MULTIPLIED BY 100
+        $amount = $api_payment['amount'] / 100;
+
         //create HelloAsso payment
         $helloasso = new HelloassoConversion();
 
-        $helloasso->setPaymentID($api_payment->id);
-        $helloasso->setDate(new \Datetime($api_payment->date));
-        $helloasso->setAmount($api_payment->amount);
-        $helloasso->setEmail($api_payment->payer_email);
-        $helloasso->setCreditorName($api_payment->payer_last_name.' '.$api_payment->payer_first_name);
+        $helloasso->setPaymentID($api_payment['id']);
+        $helloasso->setDate(new \Datetime($api_payment['date']));
+        $helloasso->setAmount($amount);
+        $helloasso->setEmail($api_payment['payer']['email']);
+        $helloasso->setCreditorName($api_payment['payer']['lastName'].' '.$api_payment['payer']['firstName']);
         return $helloasso;
     }
 
@@ -117,13 +123,29 @@ class HelloassoController extends BaseController
 
         $messageNotificator = $this->get('cairn_user.message_notificator');
         $accountManager =  $this->get('cairn_user.account_manager');
+        $helloassoService = $this->get('cairn_user.helloasso');
+
+        //get Helloasso access Token
+        $accessToken = $helloassoService->getToken();
 
         if($request->isMethod('POST')){
-            $data = htmlspecialchars($request->getContent(),ENT_NOQUOTES) ;
+            $response = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
+            if(isset($response['data'])){
+                $data = $response['data'];
+            }else{
+                return $this->getErrorsResponse(['key'=>'field_not_found','args'=>['data']],[],Response::HTTP_NOT_FOUND);
+            }
 
-            preg_match('#^id=(\d+)#',$data,$match_id);
+            //check campaign slug first
+            if(! ((strtoupper($data['order']['formType']) == 'DONATION') && ($data['order']['formSlug'] == '3')) ){
+                return $this->getRenderResponse('',[],[],Response::HTTP_OK);
+            }
 
-            $api_payment = $this->getApiPayment($match_id[1]);
+            //the campaign is about crediting account
+            $id = $data['id'];
+
+            $api_payment = $this->getApiPayment($accessToken,$id);
+            $helloassoService->disconnect($accessToken);
 
             if(! $api_payment){
                 return $this->getErrorsResponse(['key'=>'data_not_found'],[],Response::HTTP_NOT_FOUND);
@@ -189,6 +211,14 @@ class HelloassoController extends BaseController
 
         $accountManager =  $this->get('cairn_user.account_manager');
         $messageNotificator = $this->get('cairn_user.message_notificator');
+        $helloassoService = $this->get('cairn_user.helloasso');
+
+        //get Helloasso access Token
+        $accessToken = $session->get('helloasso_token');
+        if(! $accessToken){
+            $accessToken = $helloassoService->getToken();
+            $session->set('helloasso_token',$accessToken);
+        }
 
         $formSearch = $this->createFormBuilder()
             ->add('from', DateType::class, array('label' => 'Date de début','widget' => 'single_text','attr'=>array('class'=>'datepicker_cairn')))
@@ -208,28 +238,27 @@ class HelloassoController extends BaseController
 
         if($formSearch->isSubmitted() && $formSearch->isValid()){
             $dataForm = $formSearch->getData();
-
-            $campaignID = $this->getParameter('helloasso_campaign_id');
-
+ 
             $from = $dataForm['from'] ;
             $to = $dataForm['to'] ;
 
-            //look for helloassopayment with same id in helloasso data
-            $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c') ));
+            $haConsts = $this->getParameter('helloasso_consts'); 
+            $basePaymentsUrl = 'v5/organizations/'.$haConsts['organization']['slug'].'/forms/'.$haConsts['form']['type'].'/'.$haConsts['form']['slug'].'/payments';
+            $queryUrl = array('from'=>$from->format('c'),'to'=>$to->format('c'),'userSearchKey'=>$dataForm['email'],'states'=>'Authorized' );
 
-            $nbPages = $payments_search->pagination->max_page;
+            //look for helloassopayment with same id in helloasso data
+            $payments_search = $helloassoService->get($accessToken,$basePaymentsUrl,$queryUrl);
+            $nbPages = $payments_search['pagination']['totalPages'];
 
             $payments_filter = array();
 
-            for($i = $nbPages; $i >= 1; $i--){
-
+            for($i = 1; $i <= $nbPages; $i++){
                 if($nbPages > 1){
-                    $payments_search = $this->get('cairn_user.helloasso')->get('campaigns/'.$campaignID.'/payments',array('from'=>$from->format('c'),'to'=>$to->format('c'),'page'=>$i ));
+                    $queryUrl['pageIndex'] = $i;
+                    $payments_search = $helloassoService->get($accessToken,$basePaymentsUrl,$queryUrl);
                 }
-                foreach($payments_search->resources as $payment){
-                    if($payment->payer_email == $dataForm['email']){
-                        $payments_filter[] = $payment;
-                    }
+                foreach($payments_search['data'] as $payment){
+                    $payments_filter[] = $payment;
                 }
             }
 
@@ -244,23 +273,25 @@ class HelloassoController extends BaseController
         }elseif ($formSync->isSubmitted() && $formSync->isValid()) {
             $dataForm = $formSync->getData();
 
-            $api_payment = $this->getApiPayment($dataForm['payment_id']);
+            $api_payment = $this->getApiPayment($accessToken,$dataForm['payment_id']);
+
+            $session->remove('helloasso_token');
+            $helloassoService->disconnect($accessToken);
 
             if(! $api_payment){
                 $session->getFlashBag()->add('error','Aucun paiement trouvé avec l\'identifiant '.$dataForm['payment_id']);
                 return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
             }
 
-            $api_payment->payer_email = $dataForm['email'];
+            $api_payment['payer']['email'] = $dataForm['email'];
 
-            //get a new helloassoConversion entity if it is does not exist yet
+            //get a new helloassoConversion entity if it does not exist yet
             $newHelloassoPayment = $this->hydrateHelloassoPayment($api_payment);
 
             if(! $newHelloassoPayment){
                 $session->getFlashBag()->add('info','Le virement Helloasso d\'identifiant '.$dataForm['payment_id'].' a déjà été traité');
                 return $this->redirectToRoute('cairn_user_electronic_mlc_dashboard');
             }
-
 
             //do cyclos account credit
             $creditorUser = $userRepo->findOneByEmail($newHelloassoPayment->getEmail());
