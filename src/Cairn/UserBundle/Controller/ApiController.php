@@ -83,12 +83,12 @@ class ApiController extends BaseController
                     $em->flush();
                     return $this->getRenderResponse('',[],$formerProCategory, Response::HTTP_CREATED);
                 }elseif($action == 'DELETE'){
-                    if(! $proCategory){
-                        return $this->getErrorsResponse(['key'=>'data_not_found'], [] ,Response::HTTP_BAD_REQUEST);
+                    if(! $formerProCategory){
+                        return $this->getRenderResponse('',['key'=>'data_not_found'],[], Response::HTTP_OK);
                     }
-                    $em->remove($proCategory);
+                    $em->remove($formerProCategory);
                     $em->flush();
-                    return $this->getRenderResponse('',[],[], Response::HTTP_OK);
+                    return $this->getRenderResponse('',[],[], Response::HTTP_CREATED);
                 }
             }
 
@@ -131,9 +131,8 @@ class ApiController extends BaseController
             if(! $doctrineUser){
                 $doctrineUser = new User();
            
-                $doctrineUser->setUsername(trim($jsonRequest['new_login']));
+                $doctrineUser->setUsername(preg_replace('/[^a-zA-Z0-9]/','',trim($jsonRequest['new_login'])) );
                 $doctrineUser->setEmail(trim($jsonRequest['email']));
-                //$doctrineUser->setCyclosID(rand(1,1000000000));
                 $doctrineUser->addRole('ROLE_PRO');
                 
                 $doctrineUser->setPlainPassword(User::randomPassword());
@@ -142,6 +141,7 @@ class ApiController extends BaseController
                 $address = new Address();
                 $doctrineUser->setAddress($address);
             }
+
             $doctrineUser->setDolibarrID(trim($jsonRequest['new_login']));
             
             $doctrineUser->setExcerpt(htmlspecialchars($jsonRequest['short_desc'],ENT_QUOTES));
@@ -150,18 +150,19 @@ class ApiController extends BaseController
             $doctrineUser->setUrl($jsonRequest['url']);
             $doctrineUser->setName(trim($jsonRequest['nom_comm'])); 
 
-            //$hasAccountOpened = ($doctrineUser->getID() && $doctrineUser->isEnabled() && $doctrineUser->getMainICC());
-            //if(! $jsonRequest['publish']){
-            //    if($hasAccountOpened){
-            //        $this->get('cairn_user.access_platform')->disable([$doctrineUser],'ELSE');
-            //    }else{
-            //        $doctrineUser->setEnabled(false);
-            //    }
-            //}else{
-            //    if($hasAccountOpened){
-            //        $this->get('cairn_user.access_platform')->enable([$doctrineUser]);
-            //    }
-            //}
+            $hasAccountOpened = ($doctrineUser->getID() && $doctrineUser->getMainICC());
+            if(! $jsonRequest['publish']){
+                if($hasAccountOpened && $doctrineUser->isEnabled()){
+                    $this->get('cairn_user.access_platform')->disable([$doctrineUser],'ELSE');
+                }else{
+                    $doctrineUser->setEnabled(false);
+                }
+            }else{
+                if($hasAccountOpened && (! $doctrineUser->isEnabled()) ){
+                    $this->get('cairn_user.access_platform')->enable([$doctrineUser]);
+                }
+                //ne pas forcer enable = true ici. La réouverture de compte doit être faite manuellement
+            }
             $doctrineUser->setPublish($jsonRequest['publish']);
 
             //DEAL WITH CATEGORIES
@@ -196,6 +197,7 @@ class ApiController extends BaseController
             }
             
             $address->setZipCity($zip);
+            $this->get('cairn_user.security')->assignDefaultReferents($doctrineUser);
 
             $listErrors = $this->get('validator')->validate($doctrineUser); 
 
