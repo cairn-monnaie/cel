@@ -113,15 +113,20 @@ class UserControllerTest extends BaseControllerTest
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms','ACTIVE');
-                $this->assertTrue($accessClientVO != NULL);
 
-                //if this is first phone number association, an access client is created for the current user on Cyclos side.
-                //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
-                //on Cyclos side, breaking up the logic of our application
-                //Workaround : removing the access client "by hand" at test end
-                //this is a problem regarding isolation tests and Cyclos
-                if( $nbPhonesAfter == 1){
-                    $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+                if($currentUser === $targetUser){
+                    $this->assertTrue($accessClientVO != NULL);
+
+                    //if this is first phone number association, an access client is created for the current user on Cyclos side.
+                    //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
+                    //on Cyclos side, breaking up the logic of our application
+                    //Workaround : removing the access client "by hand" at test end
+                    //this is a problem regarding isolation tests and Cyclos
+                    if( $nbPhonesAfter == 1){
+                        $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+                    }
+                }else{
+                    $this->assertTrue($accessClientVO == NULL);
                 }
 
                 if($isPaymentEnabled){
@@ -185,7 +190,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                     'isExpectedForm'=>false,
-                    'expectedMessages'=>'3 erreurs à la suite')),
+                    'expectedMessages'=>'Trop de tentatives')),
 
             'current number'=>array_replace_recursive($baseData, array(
                         'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
@@ -457,7 +462,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                                                                     'isExpectedForm'=>false,
-                                                                    'expectedMessages'=>'3 erreurs à la suite')),
+                                                                    'expectedMessages'=>'Trop de tentatives')),
 
             'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,

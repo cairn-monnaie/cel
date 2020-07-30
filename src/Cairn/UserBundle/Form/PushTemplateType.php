@@ -18,10 +18,10 @@ class PushTemplateType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->add('title', TextType::class,array('label'=>'Titre'))
-            ->add('content', TextareaType::class,array('label'=>'Contenu'))
-            ->add('actionTitle', TextType::class,array('label'=>'Action'))
-            ->add('redirectionUrl', UrlType::class,array('label'=>'Redirection web'))
+        $builder->add('title', TextType::class,array('label'=>'Titre','required'=>false))
+            ->add('content', TextareaType::class,array('label'=>'Contenu','required'=>false))
+            ->add('actionTitle', TextType::class,array('label'=>'Action','required'=>false))
+            ->add('redirectionUrl', UrlType::class,array('label'=>'Redirection web','required'=>false))
             ->add('save', SubmitType::class,array('label'=>'Envoyer maintenant'))
             ->add('cancel', SubmitType::class,array('label'=>'Annuler'));
     }/**

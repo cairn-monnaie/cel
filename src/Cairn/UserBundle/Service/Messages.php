@@ -138,14 +138,6 @@ final class Messages
             'type'=>'error',
             'message'=>'%s ne contient pas assez de caractères'
         ],
-        'amount_too_low'=>[
-            'type'=>'error',
-            'message'=>'%s est un montant trop faible'
-        ],
-        'amount_too_high'=>[
-            'type'=>'error',
-            'message'=>'%s est un montant trop élevé pour votre solde actuel'
-        ],
         'invalid_format_value'=>[
             'type'=>'error',
             'message'=>'Le format de %s est invalide'
@@ -243,6 +235,10 @@ final class Messages
         'operation_timeout'=>[
             'type'=>'error',
             'message'=>'Le délai a expiré'
+        ],
+        'unprecise_address'=>[
+            'type'=>'error',
+            'message'=>'Adresse imprécise. Veuillez saisir un n° d adresse'
         ],
         'geolocalization_failed'=>[
             'type'=>'error',

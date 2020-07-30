@@ -179,7 +179,8 @@ class ApiControllerTest extends BaseControllerTest
             'orderBy'=> array('key'=>'name','order'=>'ASC') ,
             'name'=>'',
             'roles'=>array('0'=>'ROLE_PRO','1'=>'ROLE_PERSON'),
-            'bounding_box'=>array('minLon'=>'','maxLon'=>'','minLat'=>'','maxLat'=>'')
+            'bounding_box'=>array('minLon'=>'','maxLon'=>'','minLat'=>'','maxLat'=>''),
+            'payment_context'=>true
         );
 
 
@@ -205,10 +206,12 @@ class ApiControllerTest extends BaseControllerTest
             'base request without login, persons only' => array('',false,array_replace($baseSubmit, array('roles'=>['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limit),
 
             'base request as an admin, pro & persons' => array('admin_network',true,$baseSubmit,Response::HTTP_OK,$limit),
-            'base request as an admin, persons only' => array('admin_network',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),
-            Response::HTTP_OK,$limitPersons),
-            'base request as a person, persons only' => array('gjanssens',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),
-            Response::HTTP_OK,$limit),
+            'base request as an admin, persons only,payment_context' => array('admin_network',true,array_replace($baseSubmit, 
+                                                                array('roles'=> ['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limitPersons),
+            'base request as an admin, persons only,no payment_context' => array('admin_network',true,array_replace($baseSubmit, 
+                                                                array('roles'=> ['0'=>'ROLE_PERSON'],'payment_context'=>false)),Response::HTTP_OK,0),
+            'base request as a person, persons only' => array('gjanssens',true,array_replace($baseSubmit, 
+                                                                array('roles'=> ['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limit),
             'base request as a pro, persons only' => array('maltobar',true,array_replace($baseSubmit, array('roles'=> ['0'=>'ROLE_PERSON'])),Response::HTTP_OK,$limit),
 
 
@@ -1229,7 +1232,7 @@ class ApiControllerTest extends BaseControllerTest
                 'street2'=>'',
                 'zipCity'=>'38000 Grenoble'
             ),
-            'description'=>'test'
+            'excerpt'=>'test excerpt'
         ];
 
         return array(
@@ -1362,7 +1365,7 @@ class ApiControllerTest extends BaseControllerTest
                 'street2'=>'',
                 'zipCity'=>'38000 Grenoble'
             ),
-            'description'=>'test'
+            'excerpt'=>'test excerpt'
         ];
 
         if($isAdmin){

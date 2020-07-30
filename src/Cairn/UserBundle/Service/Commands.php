@@ -104,11 +104,11 @@ class Commands
                         $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
                         $doctrineUser->setEmail($email);
                         $doctrineUser->addRole('ROLE_PRO');   
-
+ 
                         $address = new Address();
                         $doctrineUser->setAddress($address);
                     }
-                    
+                   
                     $doctrineUser->setName($line[1]);
                     $doctrineUser->setDescription($line[10]);   
                     $doctrineUser->setExcerpt($line[9]);
@@ -118,7 +118,7 @@ class Commands
                     $doctrineUser->setPublish($publish);
 
                     $doctrineUser->setPlainPassword(User::randomPassword());
-                    $doctrineUser->setMainICC(null);
+                    
 
                     
                     //find zip entity based on api response data
@@ -127,24 +127,11 @@ class Commands
                     if(! $zip){
                         $errors[] = ['key'=>'invalid_zipcode','args'=>[$line[5].'/'.$line[3]]];
                         return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
-                    }
-
-                    $zip = $zipRepository->findOneBy(array('zipCode'=>$line[5],'city'=> $line[3]));
-                    if(! $zip){
-                        $zipCities = $zipRepository->findBy(array('zipCode'=>$line[5]));
-                        
-                        $zip = $zipCities[0];
-                        $resScore = similar_text($line[3],$zip->getCity(),$resPerc);
-                        foreach($zipCities as $zc){
-                            $probaScore = similar_text($line[3],$zc->getCity(),$probaPerc);
-                            if($probaPerc > $resPerc){
-                                $zip = $zc;
-                                $resPerc = $probaPerc;
-                            }
-                        }
+                    }else{
                         $wrongZipCity[] = $doctrineUser;
                     }
 
+                    
                     $address = $doctrineUser->getAddress();
                     $address->setStreet1($line[4]);
                     $address->setZipCity($zip);          
@@ -160,7 +147,8 @@ class Commands
                         $address->setLongitude($coords['longitude']);
                     }
 
-                
+                    $this->container->get('cairn_user.security')->assignDefaultReferents($doctrineUser); 
+
                 }else{
                     while(is_array($line) && ($line[0] == $dolibarrID)){//on peut avoir plusieurs catégories pour un même pro 
                         if($line[6]){
@@ -175,6 +163,7 @@ class Commands
                         $line = fgetcsv($handle, 10000, ",");
                     }
                 }
+ 
                 $this->em->persist($doctrineUser);
                 echo 'Persisté : Société : '.$doctrineUser->getDolibarrID().' / Email : '.$doctrineUser->getEmail().' / Adresse : '.$doctrineUser->getAddress()->__toString()."\n";
 
@@ -717,8 +706,6 @@ class Commands
 
             if($doctrineUser->isAdherent()){
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
-
-
             }
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
@@ -732,6 +719,7 @@ class Commands
 
             if($cyclosUserData->group->name == $this->container->getParameter('cyclos_group_pros')){
                 $doctrineUser->addRole('ROLE_PRO');   
+                $doctrineUser->setPublish(true);
             }elseif($cyclosUserData->group->name == $this->container->getParameter('cyclos_group_persons')){
                 $doctrineUser->addRole('ROLE_PERSON');   
             }else{
@@ -1377,9 +1365,9 @@ class Commands
 
         $helloasso = new HelloassoConversion();
 
-        $helloasso->setPaymentID('000040877783');
+        $helloasso->setPaymentID('7984528');
         $helloasso->setDate(new \Datetime());
-        $helloasso->setAmount(40);
+        $helloasso->setAmount(1);
         $helloasso->setEmail($creditor->getEmail());
         $helloasso->setCreditorName($creditor->getName());
 

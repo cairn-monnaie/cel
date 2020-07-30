@@ -94,7 +94,7 @@ class User extends BaseUser
     private $excerpt; 
 
     /**
-     * @ORM\Column(name="description", type="text", unique=false)
+     * @ORM\Column(name="description", type="text", unique=false,nullable=true)
      */
     private $description; 
 

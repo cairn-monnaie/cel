@@ -114,15 +114,15 @@ class BankingControllerTest extends BaseControllerTest
             'isValid'=>true,'toAccount'=>$creditorEmail,'amount'=>'10', 'date'=>$today_format, 'frequency'=>'unique','confirmCode'=>'1111');
 
         return array(
-            //'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
-            //'has no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
-            //'has beneficiary, data matches no beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary',
-            //                                                'toAccount'=>$creditorICC, 'isValid'=>false)),
+            'unique account'=>array_replace($baseData,array('to'=>'self','expectForm'=>false)),
+            'has no beneficiary'=>array_replace($baseData,array('login'=>'maltobar', 'to'=>'beneficiary','expectForm'=>false)),
+            'has beneficiary, data matches no beneficiary'=>array_replace($baseData,array('login'=>'nico_faus_prod','to'=>'beneficiary',
+                                                            'toAccount'=>$creditorICC, 'isValid'=>false)),
 //            'invalid confirmation code'=>array_replace($baseData,array('confirmCode'=>'2222')),
             'valid immediate with email'=>$baseData,
-            //'valid with ICC'=>array_replace($baseData,array('toAccount'=>$creditorICC)),
-            //'valid email, future date'=>array_replace($baseData,array('date'=>$future_format)), 
-            //'valid account number, future date'=>array_replace($baseData,array('toAccount'=>$creditorICC,'date'=>$future_format)), 
+            'valid with ICC'=>array_replace($baseData,array('toAccount'=>$creditorICC)),
+            'valid email, future date'=>array_replace($baseData,array('date'=>$future_format)), 
+            'valid account number, future date'=>array_replace($baseData,array('toAccount'=>$creditorICC,'date'=>$future_format)), 
 //           'valid recurring'=>array_replace($baseData,array('frequency'=>'recurring')), 
         );
     }

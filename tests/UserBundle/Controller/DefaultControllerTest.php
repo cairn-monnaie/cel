@@ -61,7 +61,7 @@ class DefaultControllerTest extends BaseControllerTest
     /**
      *@dataProvider provideRegistrationUsers
      */
-    public function testRegistrationAction($isLoggedAdmin,$type,$email,$name, $street1,$zipCode,$description, $emailConfirmed)
+    public function testRegistrationAction($isLoggedAdmin,$type,$email,$name, $street1,$zipCode,$excerpt, $emailConfirmed)
     {
         $adminUsername = $this->testAdmin;
 
@@ -80,7 +80,7 @@ class DefaultControllerTest extends BaseControllerTest
         $form['fos_user_registration_form[name]']->setValue($name);
         $form['fos_user_registration_form[address][street1]']->setValue($street1);
         $form['fos_user_registration_form[address][zipCity]']->setValue($zipCode);
-        $form['fos_user_registration_form[description]']->setValue($description);
+        $form['fos_user_registration_form[excerpt]']->setValue($excerpt);
 
         $this->assertNotContains('fos_user_registration_form[username]',$this->client->getResponse()->getContent());
 
@@ -169,7 +169,7 @@ class DefaultControllerTest extends BaseControllerTest
      *
      *@dataProvider provideRegistrationData
      */
-    public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$description)
+    public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$excerpt)
     {
         $validator = $this->container->get('validator');
 
@@ -185,7 +185,7 @@ class DefaultControllerTest extends BaseControllerTest
         $user->setUsername($username);
         $user->setName($name);
         $user->setPlainPassword($plainPassword);
-        $user->setDescription($description);
+        $user->setExcerpt($excerpt);
 
         $errors = $validator->validate($user);
 
@@ -212,7 +212,7 @@ class DefaultControllerTest extends BaseControllerTest
             'plainPassword'=> '@@bbccde',
             'street1' => '7 rue Très Cloître',
             'zipCity' => array('zipCode'=>'38000', 'city'=> 'Grenoble'),
-            'description' => 'This user is used to test the validator'
+            'excerpt' => 'This user is used to test the validator'
         );
 
         return array(

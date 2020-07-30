@@ -134,7 +134,7 @@ class AdminControllerTest extends BaseControllerTest
                 $message = $mailCollector->getMessages()[0];
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('activé', $message->getSubject());
-                $this->assertContains('accessible', $message->getBody());
+                $this->assertContains('ouvert', $message->getBody());
 //                $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));

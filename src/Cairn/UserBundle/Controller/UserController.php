@@ -347,17 +347,10 @@ class UserController extends BaseController
     {
         $securityService = $this->get('cairn_user.security');
         $currentUser = $this->getUser();
-        $switch = false;
-        if(! ($user === $currentUser)){
-            $switch = true;
-            $networkInfo = $this->get('cairn_user_cyclos_network_info');
-            $networkName = $this->getParameter('cyclos_currency_cairn');
-            $networkInfo->switchToNetwork($networkName,'access_client', $securityService->vigenereDecode($user->getCyclosToken()));
-        }
 
         $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
 
-        if(! $accessClientVO){
+        if( (! $accessClientVO) && ($user === $currentUser)){
             $securityService = $this->get('cairn_user.security');
             $securityService->createAccessClient($user,'client_sms');
             $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($user->getCyclosID(), 'client_sms' ,'UNASSIGNED');
@@ -365,10 +358,6 @@ class UserController extends BaseController
             $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
             $smsClient = $securityService->vigenereEncode($smsClient);
             $user->getSmsData()->setSmsClient($smsClient);
-        }
-
-        if($switch){
-             $networkInfo->switchToNetwork($networkName,'access_client', $securityService->vigenereDecode($currentUser->getCyclosToken()));
         }
     }
 
@@ -548,7 +537,7 @@ class UserController extends BaseController
 
         if($currentUser->getNbPhoneNumberRequests() >= 3 && !$session->get('activationCode')){
             $message = ['key'=>'too_many_tries_cancel'];
-            return $this->getErrorsResponse($error, $message ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
+            return $this->getErrorsResponse($message,[] ,Response::HTTP_OK,$this->generateUrl('cairn_user_profile_view',['username'=>$user->getUsername()]));
         }
 
         //************************ end of cases where edit sms is disallowed *************************//

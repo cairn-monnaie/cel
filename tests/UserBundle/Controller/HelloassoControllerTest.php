@@ -20,7 +20,7 @@ class HelloassoControllerTest extends BaseControllerTest
      *
      *@dataProvider provideDataForHelloassoNotification
      */
-    public function testHelloassoNotification($helloassoID, $isValidID, $isAlreadyHandled, $isValidEmail)
+    public function testHelloassoNotification($helloassoID,$formType,$formSlug,$expectedCode, $balanceChanged)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
 
@@ -35,25 +35,31 @@ class HelloassoControllerTest extends BaseControllerTest
         $creditorICC = $creditorAccount->number;
         $accountBalanceBefore = $creditorAccount->status->balance;
 
+        $body = [
+            'data'=>[
+                'order'=>[
+                    "formSlug"=> $formSlug,
+                    "formType"=> $formType
+                ],
+                'id'=>$helloassoID, // only parameter that matters
+                'amount'=>10,
+                'payer_first_name'=>'Jean',
+                'payer_last_name'=>'Valjean'
+            ]
+        ];
+
         $this->client->request(
             'POST',
             '/helloasso/notification',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            http_build_query(
-                array(
-                    'id'=>$helloassoID, // only parameter that matters
-                    'amount'=>10,
-                    'payer_first_name'=>'Jean',
-                    'payer_last_name'=>'Valjean',
-
-                )
-            )
+            json_encode($body)
         );
 
         //WARNING : you must get the status code before login otherwise POST response data is lost
-        $statusCode =  $this->client->getResponse()->getStatusCode();
+        $responseStatusCode =  $this->client->getResponse()->getStatusCode();
+        //var_dump($this->client->getResponse());
 
         //login to be able to access cyclos data (account balance before & after ) 
         $crawler = $this->login($username, '@@bbccdd');
@@ -61,34 +67,26 @@ class HelloassoControllerTest extends BaseControllerTest
         $ownerAccount = $this->container->get('cairn_user_cyclos_account_info')->getAccountsSummary($creditorUser->getCyclosID())[0];
         $accountBalanceAfter = $ownerAccount->status->balance;
 
-        if($isValidID){
-            if($isAlreadyHandled){
-                $this->assertEquals(400,$statusCode);
-                $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
-                return;
-            }
-            if($isValidEmail){
-                $this->assertEquals(200, $statusCode);
-                $this->assertTrue($accountBalanceAfter > $accountBalanceBefore);
-                return;
-            }
-
-            $this->assertEquals(404, $statusCode);
-            $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
-            return;
+        if($balanceChanged){
+            $this->assertTrue($accountBalanceAfter > $accountBalanceBefore);
         }else{
-            $this->assertEquals(404, $statusCode);
             $this->assertTrue($accountBalanceAfter == $accountBalanceBefore);
         }
+        $this->assertEquals($expectedCode,$responseStatusCode);
     }
 
     public function provideDataForHelloassoNotification()
     {
+        $formType = "Donation";
+        $formSlug = "3";
+
         return array(
-            'valid notification ' => array('helloassoID'=>'000040780773', true, false,true),
-            'invalid notification : invalid ID' => array('helloassoID'=>'1', false, false, false),
-            'invalid notification : user not found' => array('helloassoID'=>'000043036883', true, false, false),
-            'invalid notification : already handled' => array('helloassoID'=>'000040877783', true, true, true),
+            'valid notification ' => array('helloassoID'=>'7709388',$formType,$formSlug, 201,true),
+            'other slug' => array('helloassoID'=>'7709388',$formType,"2", 200, false),
+            'other type' => array('helloassoID'=>'7709388',"Payment",$formSlug, 200, false),
+            'invalid notification : invalid ID' => array('helloassoID'=>'1',$formType,$formSlug, 404, false),
+            'invalid notification : user not found' => array('helloassoID'=>'7803512',$formType,$formSlug, 404, false),
+            'invalid notification : already handled' => array('helloassoID'=>'7984528',$formType,$formSlug, 400, false),
         );
 
     }

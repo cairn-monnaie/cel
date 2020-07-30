@@ -46,12 +46,14 @@ class RegistrationListener
         $user = $form->getData();
 
         $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
-        $userDTO->name = $user->getName();
-        $userDTO->username = $user->getUsername();
-        $userDTO->email = $user->getEmail();
+        if($userVO){
+            $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
+            $userDTO->name = $user->getName();
+            $userDTO->username = $user->getUsername();
+            $userDTO->email = $user->getEmail();
 
-        $this->userManager->editUser($userDTO);                          
+            $this->userManager->editUser($userDTO);                          
+        }
 
         $response = $this->container->get('cairn_user.api')->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], $user,Response::HTTP_CREATED);
         $event->setResponse($response);
@@ -166,14 +168,6 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
-        //set cyclos ID here to pass the constraint cyclos_id not null
-        $cyclosID = rand(1, 1000000000);
-        $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
-        while($existingUser){
-            $cyclosID = rand(1, 1000000000);
-            $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
-        }
-        $user->setCyclosID($cyclosID);
         $user->setMainICC(null);
 
         $security = $this->container->get('cairn_user.security');
@@ -194,9 +188,9 @@ class RegistrationListener
             return;
         }
 
-         if($event->getRequest()->get('_format') == 'json'){
-             $apiData = '{ "data": '.$apiService->serialize($user).'}';
-             $event->setResponse($apiService->getApiResponse($apiData,Response::HTTP_CREATED));
+        if($event->getRequest()->get('_format') == 'json'){
+            $apiData = '{ "data": '.$apiService->serialize($user).'}';
+            $event->setResponse($apiService->getApiResponse($apiData,Response::HTTP_CREATED));
         }
     }
 

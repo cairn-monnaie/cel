@@ -63,7 +63,7 @@ class RegistrationType extends AbstractType
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
                     //$form->add('image', ImageType::class,array('label'=>'Logo'));
-                    $form->add('description',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'));
+                    $form->add('excerpt',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'));
                     if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
                         $form->add('singleReferent', EntityType::class, array(
                             'label'=>'Groupe local référent',
@@ -84,11 +84,11 @@ class RegistrationType extends AbstractType
                 }elseif($user->hasRole('ROLE_PERSON')){
                     $form->add('name', TextType::class,array('label'=>'Votre nom'));
                     $form->add('firstname', TextType::class,array('label'=>'Votre prénom'));
-                    $form->add('description',TextareaType::class,array('label'=>
+                    $form->add('excerpt',TextareaType::class,array('label'=>
                                     'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
                 }else{
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
-                    $form->add('description',TextareaType::class,array('label'=>
+                    $form->add('excerpt',TextareaType::class,array('label'=>
                                     'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
 
                 }

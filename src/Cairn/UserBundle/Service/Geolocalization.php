@@ -82,7 +82,7 @@ class Geolocalization
                     return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);
                 }
                 if($score >= 0.58){
-                    $similarityStreet = similar_text($address->getStreet1(),$location['properties']['name'],$prec);
+                    $similarityStreet = similar_text(strtolower($address->getStreet1()),strtolower($location['properties']['name']),$prec);
                     if(! ($location['properties']['type'] == 'municipality')){//if municipality, name is city
                         if($prec >= 50){
                             return array('latitude'=>$location['geometry']['coordinates'][1] ,'longitude'=>$location['geometry']['coordinates'][0]);

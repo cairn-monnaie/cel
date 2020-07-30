@@ -44,27 +44,30 @@ class UserValidator extends ConstraintValidator
      */
     public function validate($user, Constraint $constraint)
     {
-//        if(strlen($user->getUsername()) < 3){
-//            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
-//                ->atPath('username')
-//                ->addViolation();
-//        }
-//
-//        if(preg_match('#[^\w\.]#',$user->getUsername())){
-//            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
-//                ->atPath('username')
-//                ->addViolation();
-//            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
-//                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
-//                    ->atPath('username')
-//                    ->addViolation();
-//            }
-//        }
-//        if(strlen($user->getUsername()) > 16){
-//            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
-//                ->atPath('username')
-//                ->addViolation();
-//        }
+        //if($user->getUsername()){
+        //    if(strlen($user->getUsername()) <= 3){
+        //        $this->context->buildViolation('Login trop court ! 3 caractères minimum')
+        //            ->setCode('too_few_chars')
+        //            ->setInvalidValue($user->getUsername())
+        //            ->atPath('username')
+        //            ->addViolation();
+        //    }
+
+        //    if(preg_match('#[^a-zA-Z0-9]$#',$user->getUsername())){
+        //        $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
+        //            ->setCode('invalid_format_value')
+        //            ->setInvalidValue($user->getUsername())
+        //            ->atPath('username')
+        //            ->addViolation();
+        //    }
+        //    if(strlen($user->getUsername()) > 16){
+        //        $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
+        //            ->setCode('too_long')
+        //            ->setInvalidValue($user->getUsername())
+        //            ->atPath('username')
+        //            ->addViolation();
+        //    }
+        //}
         if(strlen($user->getName()) < 3){
             $this->context->buildViolation('Le nom doit contenir au minimum 3 caractères.')
                 ->setCode('too_few_chars')

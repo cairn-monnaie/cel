@@ -161,7 +161,7 @@
                     {% if app.user.hasRole('ROLE_SUPER_ADMIN') and app.environment == 'dev' and user.isAdherent() %}
                         <a class="btn light-blue" href="{{path('cairn_user_banking_credit_exnihilo',{'username': user.username})}}"><i class="material-icons left">credit_card</i>Créditer le compte de 2000 cairns</a>
                     {% endif %}
-                    {% if user.hasRole('ROLE_PRO') %}
+                    {% if app.user.hasRole('ROLE_SUPER_ADMIN') and user.hasRole('ROLE_PRO') %}
                         <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_push_registration', {'id' : user.id}) }}"><i class="material-icons left">notifications</i>Envoyer une notification</a>
                     {% endif %}
                     {% if user.enabled == true %}

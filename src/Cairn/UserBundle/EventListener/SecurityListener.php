@@ -326,7 +326,7 @@ class SecurityListener
 
                 if($route != 'fos_user_security_login'){
                     $errors = ['key'=>'user_account_disabled','args'=>[$currentUser->getUsername()]];
-                    $response = $this->getErrorsResponse($errors,[], Response::HTTP_OK,'fos_user_security_login');
+                    $response = $this->apiService->getErrorsResponse($errors,[], Response::HTTP_OK,'fos_user_security_login');
                     $event->setResponse($response);
                 }
             }

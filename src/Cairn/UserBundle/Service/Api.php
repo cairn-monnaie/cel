@@ -308,14 +308,19 @@ class Api
         $currentUser = $this->security->getCurrentUser();
 
         if($child instanceOf User){
-            return array('name'=>$child->getName(),
+            $attrs = [
+                'name'=>$child->getName(),
                 'address'=>$child->getAddress(),
-                'image'=>$child->getImage(),
                 'email'=>$child->getEmail(),
                 'description'=>$child->getDescription(),
                 'id'=>$child->getID(),
                 'roles'=>$child->getRoles()
-            );
+            ];
+
+            if($this->isRemoteCall()){
+                $attrs['image'] = $this->objectCallback($child->getImage());
+            }
+            return $attrs;
         }
 
         if($child instanceOf CairnFile){
@@ -358,9 +363,9 @@ class Api
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('proCategories','dolibarrID','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
-            $normalizer->setCallbacks(array(
-                'image'=> function ($child) {return $this->objectCallback($child);},
+            $defaultIgnoredAttributes = array('publish','proCategories','dolibarrID','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+
+            $callback = array(
                 'phones'=> function ($child) {
                     $phones = [];
                     foreach($child as $item){
@@ -368,7 +373,14 @@ class Api
                     }
                     return $phones;
                 },
-            ));
+            );
+
+            if(! $this->isRemoteCall()){
+                $defaultIgnoredAttributes[] = 'image';
+            }else{
+                $callback['image'] = function ($child) {return $this->objectCallback($child);};
+            }
+            $normalizer->setCallbacks($callback);
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');

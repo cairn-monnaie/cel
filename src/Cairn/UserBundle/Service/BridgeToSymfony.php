@@ -71,22 +71,25 @@ class BridgeToSymfony
      */
     public function fromSymfonyToCyclosUser(User $user)
     {
-        try{
-            $cyclosUser = $this->cyclosUserInfo->getUserVO($user->getCyclosID());
-            return $cyclosUser;
-        }catch(\Exception $e){
-            if($e->errorCode == 'ENTITY_NOT_FOUND'){
-                $from = $this->messageNotificator->getNoReplyEmail();
-                $to = $this->messageNotificator->getMaintenanceEmail();
+        if($user->getCyclosID()){
+            try{
+                $cyclosUser = $this->cyclosUserInfo->getUserVO($user->getCyclosID());
+                return $cyclosUser;
+            }catch(\Exception $e){
+                if($e->errorCode == 'ENTITY_NOT_FOUND'){
+                    $from = $this->messageNotificator->getNoReplyEmail();
+                    $to = $this->messageNotificator->getMaintenanceEmail();
 
-                $subject = "Dissociation des bases de données Symfony-Cyclos";
-                $body = 'Entité : User. Equivalent Cyclos inexistant. ID Symfony valide '.$user->getID(). ' correspondant au membre de login ' .$user->getUsername();
-                $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
+                    $subject = "Dissociation des bases de données Symfony-Cyclos";
+                    $body = 'Entité : User. Equivalent Cyclos inexistant. ID Symfony valide '.$user->getID(). ' correspondant au membre de login ' .$user->getUsername();
+                    $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
-            }else{
-                throw $e;
+                }else{
+                    throw $e;
+                }
             }
         }
+        return NULL;
     }
 
     /**

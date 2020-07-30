@@ -185,7 +185,7 @@ class HelloassoController extends BaseController
                 '',
                 [],
                 $operation,
-                Response::HTTP_OK,
+                Response::HTTP_CREATED,
                 ['key'=>'registered_operation']
             );
 
