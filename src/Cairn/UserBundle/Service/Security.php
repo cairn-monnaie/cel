@@ -20,6 +20,11 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Security\Core\Encoder\EncoderFactory;
 use Symfony\Component\Security\Core\Encoder\BCryptPasswordEncoder;
 
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Ecdsa\Sha256;
+use Lcobucci\JWT\Configuration;
+
 /**
  * This class contains services related to security
  *
@@ -160,31 +165,31 @@ class Security
             $user->addReferent($superAdmin);
         } 
 
-        //if user is a person, any local group is referent
-        if($user->hasRole('ROLE_PERSON')){
-            $admins = $this->userRepo->myFindByRole(array('ROLE_ADMIN'));
-            foreach($admins as $admin){
-                $user->addReferent($admin);
-            } 
-        } 
+        ////if user is a person, any local group is referent
+        //if($user->hasRole('ROLE_PERSON')){
+        //    $admins = $this->userRepo->myFindByRole(array('ROLE_ADMIN'));
+        //    foreach($admins as $admin){
+        //        $user->addReferent($admin);
+        //    } 
+        //} 
 
-        //if user is a local group, he is referent of any individual adherent
-        if($user->hasRole('ROLE_ADMIN')){
-            $persons = $this->userRepo->myFindByRole(array('ROLE_PERSON'));
-            foreach($persons as $person){
-                $person->addReferent($user);
-            } 
-        } 
+        ////if user is a local group, he is referent of any individual adherent
+        //if($user->hasRole('ROLE_ADMIN')){
+        //    $persons = $this->userRepo->myFindByRole(array('ROLE_PERSON'));
+        //    foreach($persons as $person){
+        //        $person->addReferent($user);
+        //    } 
+        //} 
 
-        //automatically assigns a local group as referent to a pro if they have same city
-        if($user->hasRole('ROLE_PRO')){
-            $localGroup = $this->userRepo->findAdminWithCity($user->getCity());
-            if($localGroup){
-                if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
-                    $user->addReferent($localGroup);
-                }
-            }
-        }
+        ////automatically assigns a local group as referent to a pro if they have same city
+        //if($user->hasRole('ROLE_PRO')){
+        //    $localGroup = $this->userRepo->findAdminWithCity($user->getCity());
+        //    if($localGroup){
+        //        if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
+        //            $user->addReferent($localGroup);
+        //        }
+        //    }
+        //}
     }
 
 
@@ -344,14 +349,20 @@ class Security
         //FIRST, CHECK THE BLOCK STATEMENTS
         if( $operation->getAmount() >= $thresholds['amount']['block'] ){
             $res['suspicious'] = true;
+            $res['reason'] = 'unique_amount_threshold';
+            $res['threshold_value'] = $thresholds['amount']['block'];
             return $res;
         }
         if($totalDayAmount >= $thresholds['amount']['block']){
             $res['suspicious'] = true;
+            $res['reason'] = 'cumulated_amount_threshold';
+            $res['threshold_value'] = $thresholds['amount']['block'];
             return $res;
         }
         if($nbOperations >= $thresholds['qty']['block']){ 
             $res['suspicious'] = true;
+            $res['reason'] = 'cumulated_quantity_threshold';
+            $res['threshold_value'] = $thresholds['qty']['block'];
             return $res;
         }
 
@@ -372,6 +383,20 @@ class Security
         return $res;
     }
 
+
+    public function generateJWT($iss,$time,$kid,$p8file)
+    {
+        $signer = new Sha256();
+        $privateKey = new Key('file://'.$p8file);
+        // Step 3: Generate a JWT Token.
+        $token = (new Builder())
+            ->issuedBy($iss) // (iss claim) // teamId
+            ->issuedAt($time) // time the token was issuedAt
+            ->withHeader('kid', $kid)
+            ->getToken($signer,$privateKey); // get the generated token 
+
+        return $token;
+    }
 
     public function parseAuthorizationHeader(string $authorizationHeader)
     {

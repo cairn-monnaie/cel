@@ -14,7 +14,10 @@ use Cairn\UserCyclosBundle\Entity\BankingManager;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Deposit;
 use Cairn\UserBundle\Entity\HelloassoConversion;
-use Cairn\UserBundle\Entity\AppData;
+use Cairn\UserBundle\Entity\NotificationData;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
+use Cairn\UserBundle\Entity\RegistrationNotification;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
@@ -22,7 +25,7 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 /**
  * This class contains actions related to other applications as webhooks 
  */
-class SecurityController extends Controller
+class SecurityController extends BaseController
 {
     /**
      * Deals with all account actions to operate on Cyclos-side
@@ -55,91 +58,50 @@ class SecurityController extends Controller
                 $userRepo = $em->getRepository('CairnUserBundle:User');
                 $currentUser = $userRepo->findOneByUsername($params['username']);
 
+                if(! $currentUser->getCyclosToken()){
+                    $securityService = $this->get('cairn_user.security');
+
+                    $cyclosClientName = 'main';
+
+                    $networkInfo = $this->get('cairn_user_cyclos_network_info');
+                    $networkName= $this->getParameter('cyclos_currency_cairn');
+
+                    $credentials = ['username'=>$params['username'],'password'=> $params['password']];
+                    $networkInfo->switchToNetwork($networkName,'login',$credentials);
+
+                    $securityService->createAccessClient($currentUser,$cyclosClientName);
+                    $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),                $cyclosClientName, 'UNASSIGNED');
+
+                    $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                    $mainClient = $securityService->vigenereEncode($mainClient);
+                    $currentUser->setCyclosToken($mainClient);
+
+                    $em->flush();
+                }
+
                 if(! $currentUser->isEnabled()){
-                    return $apiService->getErrorResponse(array("User account is disabled"),Response::HTTP_UNAUTHORIZED);
+                     $errors = ['key'=>'user_account_disabled','args'=>[$currentUser->getUsername()]];
+                     return $this->getErrorsResponse($errors,[], Response::HTTP_OK);
                 }
             }catch(\Exception $e){
-                return $apiService->getErrorResponse(array("Invalid authentication"),Response::HTTP_UNAUTHORIZED);
+                $errors = ['key'=>'invalid_authentification'];
+                return $this->getErrorsResponse($errors, [], Response::HTTP_OK);
             }
 
             $array_oauth = json_decode($oauth_token_data->getContent(), true);
 
             $array_oauth['user_id'] =  $currentUser->getID();
-
-            if(! $currentUser->getAppData()){
-                $appData = new AppData();
-                $currentUser->setAppData($appData);
-                $appData->setUser($currentUser);
-            }
-
             $array_oauth['first_login'] =  $currentUser->isFirstLogin();
 
-            if($currentUser->getAppData()->isFirstLogin()){
-                $currentUser->getAppData()->setFirstLogin(false);
-                $em->flush();
-            }
 
-            return $apiService->getOkResponse($array_oauth,Response::HTTP_OK);
+            return $this->getRenderResponse('', [], $array_oauth, Response::HTTP_OK);
+
         }else{
             throw new NotFoundHttpException('POST Method required !');
         }
     }
 
-
-    public function webPushSubscriptionAction(Request $request)
-    {
-        $apiService = $this->get('cairn_user.api');
-
-        if($request->isMethod('POST')){
-
-            $em = $this->getDoctrine()->getManager();
-            $userRepo = $em->getRepository('CairnUserBundle:User');
-
-            $params = json_decode($request->getContent(),true);
-
-            try{
-                $userVO = $this->get('cairn_user_cyclos_user_info')->getCurrentUser();
-            }catch(\Exception $e){
-                return $apiService->getErrorResponse(array('Invalid authentication'),Response::HTTP_UNAUTHORIZED);
-            }
-
-            //validate access token
-            if($userVO->shortDisplay != $params['username']){
-                return $apiService->getErrorResponse(array('Access denied'),Response::HTTP_FORBIDDEN);
-            }
-
-
-            //validate endpoint exists
-            if(! array_key_exists('endpoint',$params['subscription'])){
-                return $apiService->getErrorResponse(array('Subscription must have an endpoint'),Response::HTTP_BAD_REQUEST);
-            }
-
-            $subscription = $params['subscription'];
-
-            //validate keys because we need payload support
-            if(! array_key_exists('keys',$params['subscription'])){
-                return $apiService->getErrorResponse(array('Subscription must have encryption keys'),Response::HTTP_BAD_REQUEST);
-            }else{
-                if( (! array_key_exists('p256dh',$subscription['keys'])) || (! array_key_exists('auth',$subscription['keys']))){
-                    return $apiService->getErrorResponse(array('Subscription must have valid encryption keys'),Response::HTTP_BAD_REQUEST);
-                }
-            }
-
-
-            $user = $userRepo->findOneByUsername($params['username']);
-
-            $user->getSmsData()->addWebPushSubscription($params['subscription']);
-
-            $em->flush();
-
-            $this->get('cairn_user.message_notificator')->sendNotification($user,'Notifications de paiement SMS [e]-Cairn','Ce navigateur est désormais enregistré comme destinataire des notifications de paiement par SMS');
-
-            return $apiService->getOkResponse(array('OK'),Response::HTTP_OK);
-        }else{
-            return $apiService->getErrorResponse(array('POST method required'),Response::HTTP_METHOD_NOT_ALLOWED);
-        }
-    }
-
+    
     /**
      * Creates symfony equivalent for changes, deposits and withdrawals made in BDC app
      *
@@ -168,7 +130,7 @@ class SecurityController extends Controller
                 //paymentID is unique. But we give another try on the paymentID of the returned transaction, just in case it is different
                 $res = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$cyclosTransfer->id));
                 if($res){
-                    throw new SuspiciousOperationException('Payment already registered');
+                    throw new SuspiciousOperationException('operation_already_processed');
                 }
 
                 //Finally, we check that cyclos transfer data correspond to the POST request
@@ -182,7 +144,6 @@ class SecurityController extends Controller
                     $operation->setCreditorName($this->get('cairn_user_cyclos_user_info')->getOwnerName($cyclosTransfer->to->owner));
                     $operation->setAmount($data['amount']);
                     $operation->setPaymentID($data['paymentID']);
-
 
                     switch ($type){
                     case "conversion":
@@ -210,13 +171,6 @@ class SecurityController extends Controller
                         $operation->setRecurringID($data['transactionID']);
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
 
-                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                            array('operation'=>$operation,'type'=>'transaction'));
-
-                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
-
                         break;
                     case "scheduled":
                         $existingOperation = $em->getRepository('CairnUserBundle:Operation')->findOneBy(array('paymentID'=>$data['transactionID'],'type'=>Operation::TYPE_TRANSACTION_SCHEDULED));
@@ -227,13 +181,6 @@ class SecurityController extends Controller
 
                         $operation->setExecutionDate(new \Datetime($cyclosTransfer->date));
                         $operation->setType(Operation::TYPE_TRANSACTION_EXECUTED);
-
-                        //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                        $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                            array('operation'=>$operation,'type'=>'transaction'));
-
-                        $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                            $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
 
                         break;
 
@@ -250,9 +197,18 @@ class SecurityController extends Controller
 
 
                     $em->persist($operation);
+
+                    //send notifications
+                    $messageNotificator->sendPaymentNotifications($operation);
+
                     $em->flush();
 
-                    return $apiService->getOkResponse(array('Operation synchronized !'),Response::HTTP_CREATED);
+                    return $this->getRenderResponse(
+                        '',
+                        [],
+                        $operation,
+                        Response::HTTP_CREATED
+                    );
                 }
             }else{ //there is a failed payment to notify
 
@@ -280,20 +236,22 @@ class SecurityController extends Controller
                             $em->flush();
                         }
 
-                        return $apiService->getOkResponse(array('Notification about failed payment sent !'),Response::HTTP_OK);
-
+                        return $this->getRenderResponse(
+                            '',
+                            [],
+                            [],
+                            Response::HTTP_OK,
+                            ['key'=>'notif_sent','args'=>['email']]
+                        );
                     }else{
-                        return $apiService->getErrorResponse(array('Nothing to send !'),Response::HTTP_BAD_REQUEST);
+                        return $this->getErrorsResponse([],[],Response::HTTP_BAD_REQUEST);
                     }
                 }else{
-                    throw new SuspiciousOperationException('Unexpected operation type');
+                    return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['type']],[],Response::HTTP_BAD_REQUEST);
                 }
             }
-
-
-
         }else{
-            return $apiService->getErrorResponse(array('POST method accepted !'),Response::HTTP_METHOD_NOT_ALLOWED);
+            return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>['method']],[],Response::HTTP_METHOD_NOT_ALLOWED);
         }
     }
 

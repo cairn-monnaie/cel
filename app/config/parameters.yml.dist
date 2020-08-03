@@ -76,9 +76,14 @@ parameters:
             step: 4
             block: 10
 
-    helloasso_campaign_id: '0000011111122222'
-    helloasso_api_login : login
-    helloasso_api_password : password
+    helloasso_consts:
+        organization:
+            slug: 'slug'
+            client_id: 'id'
+            client_secret: 'secret'
+        form:
+            type: 'type'
+            slug: 'slug'
 
     notificator_consts:
         sms:
@@ -88,6 +93,18 @@ parameters:
         webpush:
             private_key: 'ThisTokenIsNotSoSecret'
             public_key: 'ThisTokenIsNotSoSecret'
+        mobilepush:
+            app_id: 'app.id.mobile'
+            android:
+                private_key: 'FuckYouGoddamnCoronavirus'
+                api_url: 'https://fcm.googleapis.com/fcm/send'
+            ios:
+                api_prod_url: 'https://api.push.apple.com:443'
+                api_dev_url: 'https://api.sandbox.push.apple.com:443'
+                private_key: 'XXXX'
+                kid: '1234'
+                iss: 'My Team ID'
+    webpush_public_key: '%notificator_consts.webpush.public_key%'
     online_payment_hosts: 'localhost$|domain.com$'
     api_secret: FuckYouCoronavirus
 

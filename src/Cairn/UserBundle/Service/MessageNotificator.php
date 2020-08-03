@@ -5,14 +5,22 @@ namespace Cairn\UserBundle\Service;
 
 use Symfony\Bundle\TwigBundle\TwigEngine;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Cairn\UserBundle\Repository\UserRepository;
-use Cairn\UserBundle\Repository\SmsRepository;
 use Cairn\UserBundle\Entity\Sms;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
+use Cairn\UserBundle\Entity\RegistrationNotification;
+use Cairn\UserBundle\Entity\PushTemplate;                       
+use Cairn\UserBundle\Entity\User;                       
 
-use Cairn\UserBundle\Entity\User;
+use Doctrine\ORM\EntityManager;
+use Cairn\UserBundle\Service\Security;
+
+use Symfony\Component\Form\Exception\InvalidArgumentException;
+
 
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
+
 
 /**
  * This class contains services related to the notifications/mailing.
@@ -20,15 +28,16 @@ use Minishlink\WebPush\Subscription;
  */
 class MessageNotificator
 {
-    /**
-     *@var UserRepository $userRepo
-     */
-    protected $userRepo;
 
     /**
-     *@var SmsRepository $smsRepo
+     *@var Security $security
      */
-    protected $smsRepo;
+    protected $security;
+
+    /**
+     *@var EntityManager $em
+     */
+    protected $em;
 
      /**
      * Service dealing with emails
@@ -54,10 +63,10 @@ class MessageNotificator
 
     protected $consts;
 
-    public function __construct(UserRepository $userRepo, SmsRepository $smsRepo,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
+    public function __construct(Security $security, EntityManager $em,\Swift_Mailer $mailer, TwigEngine $templating,string $technicalServices,string $noreply,string $env, array $consts)
     {
-        $this->userRepo = $userRepo;
-        $this->smsRepo = $smsRepo;
+        $this->security = $security;
+        $this->em = $em;
 
         $this->mailer = $mailer;
         $this->templating = $templating;
@@ -67,10 +76,206 @@ class MessageNotificator
         $this->consts = $consts;
     }
 
-    public function sendNotification(User $user, $title, $content)
+    public function sendRegisterNotifications(User $user, PushTemplate $pushTemplate)
     {
+        if(! $user->hasRole('ROLE_PRO')){
+            return;
+        }
+
+        $pushData = RegistrationNotification::getPushData($user,$pushTemplate);
+        $nfKeyword = BaseNotification::KEYWORD_REGISTER;
+
+        $targets = $this->em->getRepository('CairnUserBundle:RegistrationNotification')->findTargetsAround($user->getAddress()->getLatitude(),$user->getAddress()->getLongitude());
+
+        //var_dump($targets);
+        //$it=$it2;
+        $this->sendAppPushNotifications(
+            $targets['deviceTokens'],$pushData,$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_VERY_LOW
+        );
+        $this->sendWebPushNotifications(
+            $targets['webSubscriptions'],$pushData['web'],$nfKeyword,BaseNotification::TTL_REGISTER,BaseNotification::PRIORITY_HIGH
+        );
+
+    }
+
+    public function sendPaymentNotifications($operation, $phoneNumber = NULL)
+    {
+        $nfKeyword = BaseNotification::KEYWORD_PAYMENT;
+        $nfData = $operation->getCreditor()->getNotificationData();
+
+        if( (! $nfData) && $phoneNumber){ 
+            $this->sendSMS($phoneNumber,$operation->getCreditorContent());
+            return ; 
+        }
+
+        $paymentNotification = $this->em->getRepository('CairnUserBundle:PaymentNotification')->findPaymentNotification($nfData,[$operation->getType()],$operation->getAmount());
+        if( $paymentNotification){
+            $targets = $paymentNotification->getTargetData($operation->getType(),$phoneNumber);
+            $payload = PaymentNotification::getPushData($operation);
+
+            $webPushData = array(
+                'title'=> 'Vous avez reçu un paiement !',
+                'payload'=> $payload['web']
+            );
+
+            $appPushData = $payload;
+
+            if($targets['email']){
+                $body = $this->templating->render('CairnUserBundle:Emails:payment_notification.html.twig',
+                    array('operation'=>$operation));
+
+                $this->notifyByEmail('Vous avez reçu des cairns',
+                    $this->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
+            }
+
+            if($targets['phone']){
+                $this->sendSMS($targets['phone'],$operation->getCreditorContent());
+            }
+
+            $this->sendAppPushNotifications(
+                $targets['deviceTokens'],$appPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
+            );
+            $this->sendWebPushNotifications(
+                $targets['webSubscriptions'],$webPushData,$nfKeyword,BaseNotification::TTL_PAYMENT,BaseNotification::PRIORITY_HIGH
+            );
+
+        }
+    }
+
+    /**
+     *
+     *@see https://firebase.google.com/docs/cloud-messaging/http-server-ref?hl=fr#send-downstream
+     */
+    public function sendAppPushNotifications(array $tokens = [], $data, $keyword, $ttl, $priority)
+    {
+        if( empty($tokens) ){ return; }
+        $pushConsts = $this->consts['mobilepush'];
+        $androidConsts = $pushConsts['android'];
+        $iosConsts = $pushConsts['ios'];
+
+        $notRegisteredTokens = [];
+
+        // --------------------- SEND ANDROID PUSH -----------------------//
+        // Message to be sent
+        $androidTokens = $tokens['android'];
+        $androidData = $data['android'];
+
+        if(count($androidTokens) == 1){
+            $androidData['to'] = $androidTokens[0];
+        }else{
+            $androidData['registration_ids'] = array_values($androidTokens);
+        }
+
+        $headers = array(
+            'Authorization: key=' . $androidConsts['private_key'],
+            'Content-Type: application/json'
+        );
+
+        // Open connection
+        $ch = curl_init();
+        
+        // Set the URL, number of POST vars, POST data
+        curl_setopt( $ch, CURLOPT_URL, $androidConsts['api_url']);
+        curl_setopt( $ch, CURLOPT_POST, true); 
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $androidData));
+
+        // Execute post
+        $jsonResponse = curl_exec($ch);
+        
+        $response = json_decode($jsonResponse,true);
+        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
+
+        if($code == 200){//messages have been sent, but maybe with errors
+            //get DEPRECATED RESULTS HERE
+            $possibleErrors = array('InvalidRegistration','NotRegistered');
+            
+            foreach($response['results'] as $index=>$result){
+                if(isset($result['error']) && in_array($result['error'],$possibleErrors) ){
+                    $notRegisteredTokens[] = $androidTokens[$index];
+                }
+            }
+        }
+        
+        // --------------------- SEND IOS PUSH -----------------------//
+
+        $jwtHeaders = [
+            'alg'=>'ES256',
+            'kid'=>$iosConsts['kid']
+        ];
+        $jwtPayload = [
+            'iat' => time(),
+            'iss' => $iosConsts['iss']
+        ];
+
+        $authToken = $this->security->generateJWT($iosConsts['iss'],time(),$iosConsts['kid'],$iosConsts['private_key']);
+
+        $headers = array(
+            'Authorization: Bearer ' . $authToken,
+            'Content-Type: application/json',
+            'apns-push-type: background',
+            'apns-topic: '.$pushConsts['app_id']
+        );
+
+        // Open connection
+        $ch = curl_init();
+
+        // Set the BASE POST DATA
+        curl_setopt( $ch, CURLOPT_POST, true);
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt( $ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, ($this->env != 'test'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode( $data['ios']));
+
+        $apiUrl = ($this->env == 'prod') ? $iosConsts['api_prod_url'] : $iosConsts['api_dev_url'];
+        //foreach device token, send a request (a single connection is opened)
+        
+        foreach($tokens['ios'] as $deviceToken){
+            curl_setopt( $ch, CURLOPT_URL, $apiUrl.'/3/device/'.$deviceToken);
+            // Execute post
+            $jsonResponse = curl_exec($ch);
+            $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            $response = json_decode($jsonResponse,true);
+            if(($code == 410) || (($code == 400) && $response['reason'] == 'BadDeviceToken')){
+                $notRegisteredTokens[] = $deviceToken;
+            }
+        }
+        
+        // -------------------- REMOVE EXPIRED TOKENS ---------------//
+        $nfDataRepo = $this->em->getRepository('CairnUserBundle:NotificationData');
+
+        //first version: simple foreach loop, not scalable...
+        foreach($notRegisteredTokens as $failedToken){
+            //TODO : better version : less requests
+            $nfDataList = $nfDataRepo->findByDeviceTokens($notRegisteredTokens);
+
+            foreach($nfDataList as $nfData){
+                $nfData->removeDeviceToken($failedToken);
+            }
+        }
+
+        // Close connection
+        curl_close($ch);
+    }
+
+    public function sendWebPushNotifications($subscriptions, $data, $keyword, $ttl, $priority)
+    {
+        if(! isset($data['title'])){
+            throw new InvalidArgumentException('WebPush title field required !');
+        }
+        if(! isset($data['payload'])){
+            throw new InvalidArgumentException('WebPush payload filed required !');
+        }
+
+        // ---------------------SEND NON APPLE PUSH -----------------------------//
         $auth = array(
-            'GCM' => 'MY_GCM_API_KEY',
+            'GCM' => 'MY_GCM_API_KEY',// deprecated and optional, it's here only for compatibility reasons
             'VAPID'=>array(
                 'subject' => 'https://moncompte.cairn-monnaie.com',
                 'publicKey' => $this->consts['webpush']['public_key'],
@@ -79,50 +284,69 @@ class MessageNotificator
         );
 
         $defaultOptions = [
-            'TTL' => 7200, // 2h 
-            'urgency' => 'high', // protocol defaults to "normal"
-            'topic' => 'new_event', // not defined by default,
-            'batchSize' => 20, // defaults to 1000
+            'TTL' => $ttl, // 2h 
+            'urgency' => $priority, // protocol defaults to "normal"
+            //'topic' => 'new_event', // not defined by default,
+            'batchSize' => 200, // defaults to 1000
         ];
 
         $webPush = new WebPush($auth);
 //        $webPush->setReuseVAPIDHeaders(true);
         $webPush->setDefaultOptions($defaultOptions);
 
-        if($user->getWebPushSubscriptions() && count($user->getWebPushSubscriptions()) > 0){
-            foreach($user->getWebPushSubscriptions() as $subscription){
-                $notification = array(
-                    'subscription'=> Subscription::create(
-                        array(
-                            'endpoint' => $subscription['endpoint'],
-                            'keys'=>array(
-                                'p256dh' => $subscription['keys']['p256dh'],
-                                'auth' => $subscription['keys']['auth']
-                            )
-                        )
-                    ),
-                    'payload'=>json_encode( array(
-                        'title' => $title,
-                        'body'=> $content,
-                    ))
-                );
-                
-                $webPush->sendNotification($notification['subscription'],$notification['payload']);
+        foreach($subscriptions as $subscription){
+            $encKeys =  $subscription->getEncryptionKeys();
+            if(is_string($encKeys)){
+                $keys = unserialize($encKeys);
+            }else{
+                $keys = $encKeys;
             }
+
+            $notification = array(
+                'subscription'=> Subscription::create(
+                    array(
+                        'endpoint' => $subscription->getEndpoint(),
+                        'keys'=> [
+                            'p256dh' => $keys['p256dh'] ,
+                            'auth' => $keys['auth']
+                        ]
+                    )
+                ),
+                'payload'=>json_encode($data)
+            );
+
+            $webPush->sendNotification($notification['subscription'],$notification['payload']);
         }
 
+        $failedEndpoints = [];
         ////check sent results
         foreach ($webPush->flush() as $report) {
             $endpoint = $report->getEndPoint();
 
-            if ($report->isSuccess()) {
-                echo "[v] Message sent successfully for subscription {$endpoint}.";
-            } else {
+            if(! $report->isSuccess()){
                 if($report->isSubscriptionExpired()){
-                    $user->getSmsData()->removeWebPushSubscription($endpoint);
+                  $failedEndpoints[] = $endpoint;
                 }
-                echo "[x] Message failed to sent for subscription {$endpoint}: {$report->getReason()}";
             }
+        }
+
+        $webPushSubsList = $this->em->getRepository('CairnUserBundle:WebPushSubscription')->findSubsByWebEndpoints($failedEndpoints,true);
+
+        foreach($webPushSubsList as $sub)
+        {
+            $nfData = $sub->getNotificationData();
+            $nfData->removeWebPushSubscription($sub);
+
+            $collectionWebPushSubs = $nfData->getWebPushSubscriptions();
+
+            if($collectionWebPushSubs->count() == 0){//IF no more web push subscription, consider web push disabled for all notifications
+                foreach($nfData->getBaseNotifications() as $notification)
+                {
+                    $notification->setWebPushEnabled(false);
+                }
+            }
+            
+            $this->em->remove($sub);
         }
     }
 
@@ -362,7 +586,7 @@ class MessageNotificator
      */
     public function notifyRolesByEmail($roles, $subject,$from,$body)
     {
-        $users = $this->userRepo->myFindByRole($roles);
+        $users = $this->em->getRepository('CairnUserBundle:User')->myFindByRole($roles);
         foreach($users as $user){
             $to = $user->getEmail();
             $this->notifyByEmail($subject,$from,$to,$body);
@@ -401,13 +625,14 @@ class MessageNotificator
      */
     protected function getNumberOfTodaySms($phoneNumber,$state,$content = NULL)
     {
-        $sb = $this->smsRepo->createQueryBuilder('s'); 
-        $this->smsRepo
+        $smsRepo = $this->em->getRepository('CairnUserBundle:Sms');
+        $sb = $smsRepo->createQueryBuilder('s'); 
+        $smsRepo
             ->whereCurrentDay($sb)
             ->wherePhoneNumbers($sb,$phoneNumber)
             ->whereState($sb, $state);
         if($content){
-            $this->smsRepo->whereContentContains($sb,$content);
+            $smsRepo->whereContentContains($sb,$content);
         }
 
         $nbSms = $sb->select('count(s.id)')->getQuery()->getSingleScalarResult();
@@ -448,13 +673,13 @@ class MessageNotificator
         //number of unauthorized SMS requests a day
         if($sms->getState() == Sms::STATE_UNAUTHORIZED){
             $nbUnauthorizedSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_UNAUTHORIZED);
-            if($nbUnauthorizedSms >= 1){return true;}
+            if($nbUnauthorizedSms >= 2){return true;}
         }
 
         //number of error SMS requests a day
         if($sms->getState() == Sms::STATE_ERROR){
             $nbErrorSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_ERROR);
-            if($nbErrorSms >= 1){return true;}
+            if($nbErrorSms >= 2){return true;}
         }
 
         //number of expired SMS requests a day

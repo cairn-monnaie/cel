@@ -10,12 +10,12 @@ use Cairn\UserBundle\Service\MessageNotificator;
 use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Address;
+use Cairn\UserBundle\Entity\ZipCity;
 use Cairn\UserBundle\Entity\File;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
-use Cairn\UserBundle\Entity\AppData;
-use Cairn\UserBundle\Entity\NotificationPermission;
+use Cairn\UserBundle\Entity\NotificationData;
 use Cairn\UserBundle\Entity\HelloassoConversion;
 use Cairn\UserBundle\Entity\Phone;
 use Cairn\UserBundle\Entity\Sms;
@@ -61,6 +61,144 @@ class Commands
         $this->container = $container;
     }
 
+    public function importDolibarrPros($filePath)
+    {
+        $userRepo = $this->em->getRepository('CairnUserBundle:User');
+        $pcRepo = $this->em->getRepository('CairnUserBundle:ProCategory');
+
+        //SHOW ALL PROS BEFORE EXPORT
+        $qb = $userRepo->createQueryBuilder('u');
+        $qb->innerJoin('u.address','addr')
+            ->innerJoin('addr.zipCity','zp');
+        $userRepo->whereRole($qb,'ROLE_PRO');
+
+        $registeredPros = $qb->getQuery()->getResult();
+        echo "------------- REGISTERED PROS BEFORE IMPORT --------------------"."\n\n\n\n";
+        $msg = '';
+        foreach($registeredPros as $pro){
+            $msg .= 'Société : '.$pro->getName().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        //READ EXPORT FILE
+        $notLocalized = [];
+        $wrongZipCity = [];
+        $categoriesNotFound = [];
+
+        $dolibarrID = "0";
+        if (($handle = fopen($filePath, "r")) !== FALSE) {
+            $line = fgetcsv($handle, 2000, ",");//first line are attributes
+            $line = fgetcsv($handle, 2000, ",");
+ 
+            while ($line !== FALSE) {
+                if($line[0] != $dolibarrID){
+                    $dolibarrID = $line[0];
+
+                    $doctrineUser = $userRepo->findOneByDolibarrID($dolibarrID);
+                    if(! $doctrineUser){
+                        $doctrineUser = new User();
+
+                        $doctrineUser->setUsername(preg_replace('/[^a-zA-Z0-9]/','',$dolibarrID) );
+                        $doctrineUser->setDolibarrID($dolibarrID);
+
+                        $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
+                        $doctrineUser->setEmail($email);
+                        $doctrineUser->addRole('ROLE_PRO');   
+ 
+                        $this->container->get('cairn_user.security')->assignDefaultReferents($doctrineUser); 
+
+                        $address = new Address();
+                        $doctrineUser->setAddress($address);
+                    }
+                   
+                    $doctrineUser->setName($line[1]);
+                    $doctrineUser->setDescription($line[10]);   
+                    $doctrineUser->setExcerpt($line[9]);
+                    $doctrineUser->setUrl($line[7]);
+
+                    $publish = ($line[8]);
+                    $doctrineUser->setPublish($publish);
+
+                    $doctrineUser->setPlainPassword(User::randomPassword());
+                    
+
+                    
+                    //find zip entity based on api response data
+                    $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
+                    $zip = $zipRepository->findCorrectZipCity($line[5],$line[3]);
+                    if(! $zip){
+                        $errors[] = ['key'=>'invalid_zipcode','args'=>[$line[5].'/'.$line[3]]];
+                        return $this->getErrorsResponse($errors,[],Response::HTTP_OK);
+                    }else{
+                        $wrongZipCity[] = $doctrineUser;
+                    }
+
+                    
+                    $address = $doctrineUser->getAddress();
+                    $address->setStreet1($line[4]);
+                    $address->setZipCity($zip);          
+                    $doctrineUser->setAddress($address);
+
+                    //normalize address street1, postcode && city values with API data responses
+                    $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
+
+                    if(!$coords['latitude']){ 
+                        $notLocalized[] = $doctrineUser;
+                    }else{
+                        $address->setLatitude($coords['latitude']);
+                        $address->setLongitude($coords['longitude']);
+                    }
+
+                }else{
+                    while(is_array($line) && ($line[0] == $dolibarrID)){//on peut avoir plusieurs catégories pour un même pro 
+                        if($line[6]){
+                            $category = $pcRepo->findOneBySlug($line[6]);
+
+                            if(! $category){
+                                $categoriesNotFound[] = 'Categorie non trouvée '.$line[6].' pour '.$line[1];
+                            }else{
+                                $doctrineUser->addProCategory($category);
+                            }
+                        }
+                        $line = fgetcsv($handle, 10000, ",");
+                    }
+                }
+ 
+                $this->em->persist($doctrineUser);
+                echo 'Persisté : Société : '.$doctrineUser->getDolibarrID().' / Email : '.$doctrineUser->getEmail().' / Adresse : '.$doctrineUser->getAddress()->__toString()."\n";
+
+            }
+        }
+
+        fclose($handle);
+        $this->em->flush();
+
+        echo "------------- PROS NOT LOCALIZED --------------------"."\n";
+        $msg = '';
+        foreach($notLocalized as $pro){
+            $msg .= 'Société : '.$pro->getDolibarrID().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        echo "------------- WRONG ZIPCITY --------------------"."\n";
+        $msg = '';
+        foreach($wrongZipCity as $pro){
+            $msg .= 'Société : '.$pro->getDolibarrID().' / Email : '.$pro->getEmail().' / Adresse : '.$pro->getAddress()->__toString()."\n";
+        }
+        echo $msg."\n\n\n";
+
+        echo "------------- CATEGORIES NOT FOUND --------------------"."\n";
+        $msg = '';
+        foreach($categoriesNotFound as $notfound){
+            $msg .= $notfound."\n";
+        }
+        echo $msg."\n\n\n";
+
+        //generate localization fails
+        echo "------------- GEOLOCALIZATION --------------------"."\n";
+        return $this->generateLocalizationCoordinates();
+    }
+
     public function generateLocalizationCoordinates($username = NULL)
     {
         $userRepo = $this->em->getRepository('CairnUserBundle:User');
@@ -89,7 +227,7 @@ class Commands
             $coords = $this->container->get('cairn_user.geolocalization')->getCoordinates($address);
 
             if(!$coords['latitude']){                                  
-                $returnMsg .= 'Echec de géolocalisation pour '.$username.' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
+                $returnMsg .= 'Echec de géolocalisation pour '.$user->getUsername().' '.$user->getEmail()."\n".'Référence la plus pertinente: '.$coords['closest']['label'];
             }else{                                         
                 $address->setLongitude($coords['longitude']);
                 $address->setLatitude($coords['latitude']);
@@ -435,6 +573,8 @@ class Commands
             $address->setStreet1('7 rue Très Cloîtres');
 
             $new_admin->setAddress($address);
+            $new_admin->setExcerpt('Administrateur de l\'application');
+
             $new_admin->setDescription('Administrateur de l\'application');
 
             //ajouter la carte
@@ -566,8 +706,6 @@ class Commands
 
             if($doctrineUser->isAdherent()){
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
-
-
             }
             $doctrineUser->setUsername($cyclosUserData->username);                           
             $doctrineUser->setName($cyclosUserData->name);
@@ -581,6 +719,7 @@ class Commands
 
             if($cyclosUserData->group->name == $this->container->getParameter('cyclos_group_pros')){
                 $doctrineUser->addRole('ROLE_PRO');   
+                $doctrineUser->setPublish(true);
             }elseif($cyclosUserData->group->name == $this->container->getParameter('cyclos_group_persons')){
                 $doctrineUser->addRole('ROLE_PERSON');   
             }else{
@@ -595,6 +734,7 @@ class Commands
 
             $doctrineUser->setAddress($address);                                  
 
+            $doctrineUser->setExcerpt('Je suis un compte de test !');             
             $doctrineUser->setDescription('Je suis un compte de test !');             
 
             //create fake id doc
@@ -630,14 +770,6 @@ class Commands
             if($doctrineUser->isAdherent()){
                 $doctrineUser->setMainICC($this->container->get('cairn_user_cyclos_account_info')->getDefaultAccount($cyclosUserData->id)->number);
                 $this->container->get('cairn_user.access_platform')->changeUserStatus($doctrineUser, 'ACTIVE');
-
-                //$appData = new AppData();
-                //$doctrineUser->setAppData($appData);
-                //$appData->setUser($doctrineUser);
-
-                //$appData->setPinCode(1111);
-                //$appData->setFirstLogin(false);
-
             }
 
 
@@ -647,6 +779,11 @@ class Commands
 
             $cyclosClient = $this->getClientToken($doctrineUser,'main');
             $doctrineUser->setCyclosToken($cyclosClient);
+
+            //in order to send sms after a payment has been received
+            //$notifs = $doctrineUser->getNotificationData()->getBaseNotifications();
+            //$notifs[0]->setSmsEnabled(true);
+            //$notifs[1]->setSmsEnabled(true);
 
             $this->em->persist($doctrineUser);
 
@@ -772,10 +909,6 @@ class Commands
     public function createSmsData(User $user, $phoneNumber, $identifier = NULL)
     {
         $smsData = new SmsData($user);
-        $nP = $smsData->getNotificationPermission();
-        $nP->setEmailEnabled(false);
-        $nP->setWebPushEnabled(true);
-        $nP->setSmsEnabled(true);
 
         $phone1 = new Phone($smsData);
         $phone1->setPhoneNumber($phoneNumber);
@@ -1232,9 +1365,9 @@ class Commands
 
         $helloasso = new HelloassoConversion();
 
-        $helloasso->setPaymentID('000040877783');
+        $helloasso->setPaymentID('7984528');
         $helloasso->setDate(new \Datetime());
-        $helloasso->setAmount(40);
+        $helloasso->setAmount(1);
         $helloasso->setEmail($creditor->getEmail());
         $helloasso->setCreditorName($creditor->getName());
 

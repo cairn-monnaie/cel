@@ -59,7 +59,7 @@ class AccountToStringTransformer implements DataTransformerInterface
     public function reverseTransform($autocomplete)
     {
         if (!$autocomplete) {
-            throw new BadRequestHttpException('No creditor account provided');
+            return '';
         }
 
         $userRepo = $this->entityManager
@@ -70,6 +70,7 @@ class AccountToStringTransformer implements DataTransformerInterface
 
         $user = null;
         $toUserVO = null;
+
         if (count($matches)>1){
             $user = $userRepo->findOneBy(array('email'=>$matches[1][0]));
         }
@@ -78,25 +79,21 @@ class AccountToStringTransformer implements DataTransformerInterface
         }else{
             $re = '/([\-]*[0-9]+)/';
             preg_match($re, $autocomplete, $matches, PREG_OFFSET_CAPTURE, 0);
+
             if (count($matches)>1){
                 $toUserVO = $this->cyclosUserInfo->getUserVOByKeyword($matches[1][0]);
             }
         }
 
-        if (null === $toUserVO) {
-            throw new BadRequestHttpException('No creditor account found for '.$autocomplete);
+        
+        if ($toUserVO) {
+            //TODO: little hack for normalize the data to return for the OperationValidator
+            $toUserVO->number = $toUserVO->accountNumber;
+        }else{
+            $toUserVO = $autocomplete;
         }
 
-//        $user = $userRepo->findOneBy(array('cyclosID'=>$toUserVO->id));
-//        if (!$user){
-//            throw new TransformationFailedException(sprintf(
-//                'No symfony user found for cyclos id "%s" ',
-//                $toUserVO->id
-//            ));
-//        }
-
-        //TODO: little hack for normalize the data to return for the OperationValidator
-        $toUserVO->number = $toUserVO->accountNumber;
+        //string if no object is found, object otherwise
         return $toUserVO;
     }
 }

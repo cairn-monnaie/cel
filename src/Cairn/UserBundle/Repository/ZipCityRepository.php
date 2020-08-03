@@ -28,6 +28,29 @@ class ZipCityRepository extends \Doctrine\ORM\EntityRepository
         }
 
         return null;
+    }
+
+    public function findCorrectZipCity($zipCode,$city)
+    {
+             $zip = $this->findOneBy(array('zipCode'=>$zipCode,'city'=> $city));
+             if(! $zip){
+                 $zipCities = $this->findByZipCode($zipCode);
+                 if(count($zipCities) == 0){
+                     return NULL;
+                 }
+ 
+                 $zip = $zipCities[0]; 
+                 $resScore = similar_text($city,$zip->getCity(),$resPerc);
+                 foreach($zipCities as $zc){
+                     $probaScore = similar_text($city,$zc->getCity(),$probaPerc);
+                     if($probaPerc > $resPerc){
+                         $zip = $zc;
+                         $resPerc = $probaPerc;
+                     }
+                 }
+             }
+             return $zip;
 
     }
+
 }

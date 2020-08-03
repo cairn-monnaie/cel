@@ -610,13 +610,6 @@ class AdminController extends Controller
 
                             $this->get('cairn_user.access_platform')->enable(array($user), $subject, $body);
 
-                            //if user is pro, find all adherents (pro / part) close to him according to lat/long data and distance
-                            if($user->hasRole('ROLE_PRO')){
-                            }
-
-                            //then, if above filter not efficient enough, go through one by one distance calculation
-                            //finally, send notifications to all those people
-
 
                             //send email to local group referent if pro
                             if($user->hasRole('ROLE_PRO') && ($referent = $user->getLocalGroupReferent()) ){

@@ -14,13 +14,12 @@ class DefaultControllerTest extends BaseControllerTest
     public function __construct($name = NULL, array $data = array(), $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
-
     }
 
     /**
      *@dataProvider provideTypeForRegistration
      */
-    public function testRegistrationPage($login,$username,$type,$expectValid,$expectMessage)
+    public function testRegistrationPage($login,$username,$expectValid,$expectMessage)
     {
         $crawler = $this->client->request('GET','/logout');
 
@@ -31,17 +30,19 @@ class DefaultControllerTest extends BaseControllerTest
             $currentUser = NULL;
         }
 
-        $crawler = $this->client->request('GET','/inscription/'.$type);
+        $crawler = $this->client->request('GET','/inscription/');
         if(!$expectValid){
             if($this->client->getResponse()->isRedirect()){
-                $isRedirectToLogin = $this->client->getResponse()->isRedirect('http://localhost/login');
-                $isRedirectToSubmit = $this->client->getResponse()->isRedirect('/inscription/');
-                $this->assertTrue($isRedirectToLogin || $isRedirectToSubmit);
-            }else{
-                $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+                $isRedirectToHome = $this->client->getResponse()->isRedirect('/');
+                $this->assertTrue($isRedirectToHome);
             }
+
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            
         }else{
-            $this->assertContains('fos_user_registration_form',$this->client->getResponse()->getContent());
+            $this->assertContains($expectMessage,$this->client->getResponse()->getContent());
+            $this->assertContains('professionnel',$this->client->getResponse()->getContent());
+            $this->assertContains('particulier',$this->client->getResponse()->getContent());
         }
     }
 
@@ -50,22 +51,17 @@ class DefaultControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            array('login'=>true,'username'=>'labonnepioche','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>'comblant_michel','type'=>'', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
-            array('login'=>true,'username'=>$adminUsername,'type'=>'localGroup', 'expectValid'=>true,'expectMessage'=>''),
-            array('login'=>true,'username'=>$adminUsername,'type'=>'pro', 'expectValid'=>true, 'expectMessage'=>''),
-            array('login'=>true,'username'=>$adminUsername,'type'=>'person', 'expectValid'=>true, 'expectMessage'=>''),
-            array('login'=>false,'username'=>'','type'=>'pro', 'expectValid'=>true,'expectMessage'=>''),
-            array('login'=>false,'username'=>'','type'=>'person', 'expectValid'=>true,'expectMessage'=>''),
-            array('login'=>false,'username'=>'','type'=>'localGroup', 'expectValid'=>false,'expectMessage'=>'pas les droits'),
-            array('login'=>false,'username'=>'','type'=>'xxx', 'expectValid'=>false,'expectMessage'=>'Qui êtes-vous'),
+            array('login'=>true,'username'=>'labonnepioche', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
+            array('login'=>true,'username'=>'comblant_michel', 'expectValid'=>false,'expectMessage'=>'déjà un espace membre'), 
+            array('login'=>true,'username'=>$adminUsername, 'expectValid'=>true,'expectMessage'=>'Qui est-il ?'),
+            array('login'=>false,'username'=>'', 'expectValid'=>true,'expectMessage'=>'Qui êtes-vous ?'),
         );
     }
 
     /**
      *@dataProvider provideRegistrationUsers
      */
-    public function testRegistrationAction($isLoggedAdmin,$type,$email,$name, $street1,$zipCode,$description, $emailConfirmed)
+    public function testRegistrationAction($isLoggedAdmin,$type,$email,$name, $street1,$zipCode,$excerpt, $emailConfirmed)
     {
         $adminUsername = $this->testAdmin;
 
@@ -77,18 +73,18 @@ class DefaultControllerTest extends BaseControllerTest
             $crawler = $this->login($login, $password);
         }
 
-        $crawler = $this->client->request('GET','/inscription/'.$type);
+        $crawler = $this->client->request('GET','/register/informations/?type='.$type);
 
         $form = $crawler->selectButton('Inscription')->form();
         $form['fos_user_registration_form[email]']->setValue($email);
         $form['fos_user_registration_form[name]']->setValue($name);
         $form['fos_user_registration_form[address][street1]']->setValue($street1);
         $form['fos_user_registration_form[address][zipCity]']->setValue($zipCode);
-        $form['fos_user_registration_form[description]']->setValue($description);
+        $form['fos_user_registration_form[excerpt]']->setValue($excerpt);
 
         $this->assertNotContains('fos_user_registration_form[username]',$this->client->getResponse()->getContent());
 
-        if( $type == 'adherent'){
+        if( $type != 'pro'){
             $this->assertNotContains('fos_user_registration_form[image]',$this->client->getResponse()->getContent());
         }
 
@@ -99,6 +95,7 @@ class DefaultControllerTest extends BaseControllerTest
 
         $crawler =  $this->client->submit($form);
 
+        file_put_contents('test.txt',$this->client->getResponse()->getContent());
         $newUser = $this->em->getRepository('CairnUserBundle:User')->findOneByEmail($email);
         $this->assertFalse($newUser->isEnabled());
 
@@ -172,7 +169,7 @@ class DefaultControllerTest extends BaseControllerTest
      *
      *@dataProvider provideRegistrationData
      */
-    public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$description)
+    public function testRegistrationValidator($email,$username,$name,$plainPassword,$street1,$zipCity,$excerpt)
     {
         $validator = $this->container->get('validator');
 
@@ -188,7 +185,7 @@ class DefaultControllerTest extends BaseControllerTest
         $user->setUsername($username);
         $user->setName($name);
         $user->setPlainPassword($plainPassword);
-        $user->setDescription($description);
+        $user->setExcerpt($excerpt);
 
         $errors = $validator->validate($user);
 
@@ -215,7 +212,7 @@ class DefaultControllerTest extends BaseControllerTest
             'plainPassword'=> '@@bbccde',
             'street1' => '7 rue Très Cloître',
             'zipCity' => array('zipCode'=>'38000', 'city'=> 'Grenoble'),
-            'description' => 'This user is used to test the validator'
+            'excerpt' => 'This user is used to test the validator'
         );
 
         return array(

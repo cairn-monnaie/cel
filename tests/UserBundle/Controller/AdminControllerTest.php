@@ -85,7 +85,7 @@ class AdminControllerTest extends BaseControllerTest
         $adminUsername = $this->testAdmin;
 
         return array(
-            'valid + has sms enabled'           => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
+            'valid + has sms enabled' => array('referent'=>$adminUsername,'target'=>'maltobar','isReferent'=>true),
            'already blocked' => array('referent'=>$adminUsername,'target'=>'tout_1_fromage','isReferent'=>true),
             'not referent'    =>array('referent'=>$adminUsername,'target'=>'NaturaVie','isReferent'=>false),
             'adherent for himself'    =>array('referent'=>'apogee_du_vin','target'=>'apogee_du_vin','isReferent'=>true),
@@ -134,7 +134,7 @@ class AdminControllerTest extends BaseControllerTest
                 $message = $mailCollector->getMessages()[0];
                 $this->assertInstanceOf('Swift_Message', $message);
                 $this->assertContains('activé', $message->getSubject());
-                $this->assertContains('accessible', $message->getBody());
+                $this->assertContains('ouvert', $message->getBody());
 //                $this->assertContains($currentUser->getName(), $message->getBody());
                 $this->assertSame($this->container->getParameter('cairn_email_noreply'), key($message->getFrom()));
                 $this->assertSame($targetUser->getEmail(), key($message->getTo()));

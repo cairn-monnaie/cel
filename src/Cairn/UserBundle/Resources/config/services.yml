@@ -15,6 +15,11 @@ services:
         factory: ["@doctrine.orm.entity_manager", getRepository]
         arguments: [Cairn\UserBundle\Entity\User]
 
+    cairn_user.repository_payment_notification: 
+        class: UserRepository
+        factory: ["@doctrine.orm.entity_manager", getRepository]
+        arguments: [Cairn\UserBundle\Entity\PaymentNotification]
+
     cairn_user.repository_operation: 
         class: OperationRepository
         factory: ["@doctrine.orm.entity_manager", getRepository]
@@ -46,13 +51,15 @@ services:
         arguments:
             - "@request_stack"
             - "@cairn_user.security"
+            - "@templating"
+            - "@router"
 
     cairn_user.geolocalization:
         public: true
         class: Cairn\UserBundle\Service\Geolocalization
         arguments:
             - "@cairn_user.api"
-
+            
     cairn_user.api_authenticator:
         public: true
         class: Cairn\UserBundle\Security\TokenAuthenticator
@@ -88,14 +95,13 @@ services:
     cairn_user.helloasso:
         class: Cairn\UserBundle\Service\Helloasso
         arguments:
-            - "%helloasso_api_login%"
-            - "%helloasso_api_password%"
+            - "%helloasso_consts%"
 
     cairn_user.message_notificator:
         class: Cairn\UserBundle\Service\MessageNotificator
         arguments:
-            - "@cairn_user.repository_user"
-            - "@cairn_user.repository_sms"
+            - "@cairn_user.security"
+            - "@doctrine.orm.entity_manager"
             - "@mailer" 
             - "@templating"
             - "%cairn_email_technical_services%"
@@ -164,6 +170,7 @@ services:
         class: Cairn\UserBundle\EventListener\SecurityListener
         arguments:
             - "@service_container"
+            - "@cairn_user.api"
         tags:
             - { name: kernel.event_listener, event: kernel.request, method: onMaintenance, priority: 24 }
             - { name: kernel.event_listener, event: kernel.request, method: onFirstLogin, priority: -1024 }
@@ -175,8 +182,8 @@ services:
             - { name: kernel.event_listener, event: fos_user.resetting.send_email.initialize, method: onResetPasswordInit }
             - { name: kernel.event_listener, event: fos_user.resetting.reset.success, method: onResetPasswordSubmit }
             - { name: kernel.event_listener, event: fos_user.change_password.edit.success, method: onChangePassword }
-
               
+                                          
     cairn_user.technical.exception_listener:
         class: Cairn\UserBundle\EventListener\ExceptionListener
         arguments:
@@ -188,7 +195,7 @@ services:
             - "@cairn_user.api"
         tags:  
             - { name: kernel.event_listener, event: kernel.exception, method: onKernelException, priority: 512}
-    
+                            
     cairn_user.user_validator:
         class: Cairn\UserBundle\Validator\UserValidator
         arguments:
@@ -205,6 +212,7 @@ services:
         class: Cairn\UserBundle\Validator\AddressValidator
         arguments:
             - "@cairn_user.geolocalization"
+            - "@cairn_user.repository_user"
         tags:
             - { name: validator.constraint_validator, alias: cairn_address_validator }
 

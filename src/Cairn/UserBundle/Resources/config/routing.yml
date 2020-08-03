@@ -6,10 +6,26 @@ cairn_user_welcome:
     requirements:
         _format: html|json
 
-cairn_user_api_notifications_subscription:
-    path: webpush/subscription
+cairn_user_api_mobilepush_subscription:
+    path: /{from}/token-subscription
     methods: POST
-    defaults: { _controller: CairnUserBundle:Security:webPushSubscription, _format: json }
+    defaults: { _controller: CairnUserBundle:Notification:tokenSubscription, _format: json }
+    requirements:
+        from: web|mobile
+        _format: html|json
+
+cairn_user_push_registration:
+    path: push/notification/{id}
+    defaults: { _controller: CairnUserBundle:Notification:sendProPushNotification, _format: html }
+
+cairn_user_api_notification_data_edit:
+    path: mobile/notifications/{id}
+    methods: GET|POST
+    defaults: { _controller: CairnUserBundle:Notification:notificationParams, _format: json }
+
+cairn_user_notification_data_edit:
+    path: /notifications/{id}
+    defaults: { _controller: CairnUserBundle:Notification:notificationParams, _format: html }
 
 cairn_user_online_payment_execute:
     path: online-payment/confirm/{suffix}
@@ -19,6 +35,23 @@ cairn_user_api_online_payment_create:
     path: api/online-payment
     methods: POST
     defaults: { _controller: CairnUserBundle:Api:createOnlinePayment, _format: json }
+
+cairn_user_api_pro_categories:
+    path: /categories
+    methods: GET
+    defaults: { _controller: CairnUserBundle:Api:proCategories, _format: json }
+
+#WARNING : URL used by dolibarr hook !
+cairn_user_api_sync_categories:
+    path: /sync-categories
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:syncProCategories, _format: json }
+
+#WARNING : URL used by dolibarr hook !
+cairn_user_api_sync_pro:
+    path: /sync-pro
+    methods: POST
+    defaults: { _controller: CairnUserBundle:Api:syncPro, _format: json }
 
 cairn_user_api_get_tokens:
     path: oauth/tokens
@@ -263,10 +296,6 @@ cairn_user_users_remove_pending:
     path:     user/remove-pending
     defaults: { _controller: CairnUserBundle:User:removePendingUsers, _format: html }
 
-cairn_user_users_smsdata:
-    path:     user/smsdata
-    defaults: { _controller: CairnUserBundle:User:editSmsData, _format: html}
-
 cairn_user_api_first_login:
     path:     /{remote}/first-login
     methods: POST
@@ -449,7 +478,7 @@ cairn_user_operation_sync:
 
 cairn_user_helloasso_notification:
     path:     helloasso/notification
-    defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification}
+    defaults: { _controller: CairnUserBundle:Helloasso:helloassoNotification, _format: json}
 
 cairn_user_banking_credit_exnihilo:
     path:       banking/credit/exnihilo/{username}

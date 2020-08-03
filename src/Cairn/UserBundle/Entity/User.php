@@ -12,13 +12,19 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use FOS\UserBundle\Model\User as BaseUser;
 
 use Cairn\UserBundle\Entity\Card;
+use Cairn\UserBundle\Entity\ApiClient;
+use Cairn\UserBundle\Entity\SmsData;
+use Cairn\UserBundle\Entity\NotificationData;
+
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * @ORM\Table(name="cairn_user")
  * @ORM\Entity(repositoryClass="Cairn\UserBundle\Repository\UserRepository")
  * @ORM\HasLifecycleCallbacks()
- * @UniqueEntity(fields = {"cyclosID"},message="Cet ID est déjà utilisé") 
+ * @UniqueEntity(fields = {"cyclosID"},message="already_in_use") 
+ * @UniqueEntity(fields = {"email"},message="already_in_use") 
+ * @UniqueEntity(fields = {"username"},message="already_in_use") 
  */
 class User extends BaseUser
 {
@@ -41,7 +47,7 @@ class User extends BaseUser
     private $firstname;
 
     /**
-     * @ORM\Column(name="cyclos_id", type="bigint", unique=true, nullable=false)
+     * @ORM\Column(name="cyclos_id", type="bigint", unique=true,nullable=true)
      * @Assert\Length(min=17, minMessage="Contient au moins {{ limit }} chiffres")
      */
     private $cyclosID;
@@ -57,14 +63,37 @@ class User extends BaseUser
     private $mainICC;
 
     /**
+     * @ORM\Column(name="dolibarr_id", type="string", unique=true, nullable=true)
+     */
+    private $dolibarrID;
+
+    /**
+     * @ORM\Column(name="url", type="string", nullable=true)
+     * @Assert\Url()
+     */
+    private $url;
+
+    /**
+     * @var array
+     *
+     * @ORM\Column(name="keywords", type="array")
+     */
+    private $keywords;
+
+    /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\Address", cascade={"persist","remove"})
      *@Assert\Valid()
      */ 
     private $address;
 
     /**
-     * @ORM\Column(name="description", type="text", unique=false)
-     * @Assert\NotBlank(message="Entrez une description de votre activité.")
+     * @ORM\Column(name="excerpt", type="text", unique=false,nullable=true)
+     * @Assert\Length(max=80, maxMessage="Extrait de moins de {{ limit }} caractères")
+     */
+    private $excerpt; 
+
+    /**
+     * @ORM\Column(name="description", type="text", unique=false,nullable=true)
      */
     private $description; 
 
@@ -114,9 +143,9 @@ class User extends BaseUser
     private $smsData;
 
     /**
-     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\AppData", mappedBy="user", cascade={"persist","remove"})
+     *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\NotificationData", mappedBy="user", cascade={"persist","remove"})
      */
-    private $appData;
+    private $notificationData;
 
     /**
      *@ORM\OneToOne(targetEntity="Cairn\UserBundle\Entity\ApiClient", mappedBy="user", cascade={"persist"})
@@ -153,6 +182,16 @@ class User extends BaseUser
      */
     private $firstLogin;
 
+    /**
+     * @ORM\ManyToMany(targetEntity="Cairn\UserBundle\Entity\ProCategory", cascade={"persist"})
+     */
+    private $proCategories;
+
+    /**
+     * @ORM\Column(name="publish", type="boolean", unique=false, nullable=false)
+     */
+    private $publish;
+
     public function __construct()
     {
         parent::__construct();
@@ -167,6 +206,12 @@ class User extends BaseUser
         $this->firstLogin = true;
         $this->setNbPhoneNumberRequests(0);
         $this->setPhoneNumberActivationTries(0);
+
+        $this->setKeywords([]);
+
+        $this->setNotificationData(new NotificationData($this));
+        $this->proCategories = new ArrayCollection();
+        $this->publish = false;
     }
 
     public function __toString()
@@ -178,8 +223,13 @@ class User extends BaseUser
         }
     }
 
-    public function getAutocompleteLabel(){
-        return $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ('.  $this->getEmail() .')';
+    public function getAutocompleteLabel($addEmail = true){
+        $base = $this->getName(). ' ['. $this->getAddress()->getZipCity()->getName() . '] ';
+
+        if($addEmail){
+            $base .= ' ('.  $this->getEmail() .')';
+        }
+        return  $base;
     }
 
     public function getCity()
@@ -198,8 +248,8 @@ class User extends BaseUser
 
     public function getWebPushSubscriptions()
     {
-        if($smsData = $this->getSmsData()){
-            return $smsData->getWebPushSubscriptions();
+        if($nfData = $this->getNotificationData()){
+            return $nfData->getWebPushSubscriptions();
         }else{
             return array();
         }
@@ -331,6 +381,30 @@ class User extends BaseUser
         return $this->mainICC;
     }
 
+    /**
+     * Set keywords.
+     *
+     * @param array $keywords
+     *
+     * @return User
+     */
+    public function setKeywords(array $keywords)
+    {
+        $this->keywords = $keywords;
+
+        return $this;
+    }
+
+    /**
+     * Get keywords.
+     *
+     * @return array
+     */
+    public function getKeywords()
+    {
+        return $this->keywords;
+    }
+
     public function fromEntityToDTO()
     {
         $userDTO = new \stdClass();
@@ -452,6 +526,30 @@ class User extends BaseUser
     public function getAddress()
     {
         return $this->address;
+    }
+
+    /**
+     * Set excerpt
+     *
+     * @param string $excerpt
+     *
+     * @return User
+     */
+    public function setExcerpt($excerpt)
+    {
+        $this->excerpt = $excerpt;
+
+        return $this;
+    }
+
+    /**
+     * Get excerpt
+     *
+     * @return string
+     */
+    public function getExcerpt()
+    {
+        return $this->excerpt;
     }
 
     /**
@@ -697,27 +795,27 @@ class User extends BaseUser
     }
 
     /**
-     * Set appData
+     * Set notificationData
      *
-     * @param \Cairn\UserBundle\Entity\AppData $appData
+     * @param \Cairn\UserBundle\Entity\NotificationData $notificationData
      *
      * @return User
      */
-    public function setAppData(\Cairn\UserBundle\Entity\AppData $appData = null)
+    public function setNotificationData(\Cairn\UserBundle\Entity\NotificationData $notificationData = null)
     {
-        $this->appData = $appData;
+        $this->notificationData = $notificationData;
 
         return $this;
     }
 
     /**
-     * Get appData
+     * Get notificationData
      *
-     * @return \Cairn\UserBundle\Entity\AppData
+     * @return \Cairn\UserBundle\Entity\NotificationData
      */
-    public function getAppData()
+    public function getNotificationData()
     {
-        return $this->appData;
+        return $this->notificationData;
     }
 
     /**
@@ -934,4 +1032,119 @@ class User extends BaseUser
     {
         return $this->firstLogin;
     }
+
+    /**
+     * Set url.
+     *
+     * @param string|null $url
+     *
+     * @return User
+     */
+    public function setUrl($url = null)
+    {
+        $this->url = $url;
+
+        return $this;
+    }
+
+    /**
+     * Get url.
+     *
+     * @return string|null
+     */
+    public function getUrl()
+    {
+        return $this->url;
+    }
+
+    /**
+     * Set dolibarrID.
+     *
+     * @param string|null $dolibarrID
+     *
+     * @return User
+     */
+    public function setDolibarrID($dolibarrID = null)
+    {
+        $this->dolibarrID = $dolibarrID;
+
+        return $this;
+    }
+
+    /**
+     * Get dolibarrID.
+     *
+     * @return string|null
+     */
+    public function getDolibarrID()
+    {
+        return $this->dolibarrID;
+    }
+
+
+    /**
+     * Add proCategory.
+     *
+     * @param \Cairn\UserBundle\Entity\ProCategory $proCategory
+     *
+     * @return User
+     */
+    public function addProCategory(\Cairn\UserBundle\Entity\ProCategory $proCategory)
+    {
+        $this->proCategories[] = $proCategory;
+
+        return $this;
+    }
+
+    /**
+     * Remove proCategory.
+     *
+     * @param \Cairn\UserBundle\Entity\ProCategory $proCategory
+     *
+     * @return boolean TRUE if this collection contained the specified element, FALSE otherwise.
+     */
+    public function removeProCategory(\Cairn\UserBundle\Entity\ProCategory $proCategory)
+    {
+        return $this->proCategories->removeElement($proCategory);
+    }
+
+    /**
+     * Get proCategories.
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getProCategories()
+    {
+        return $this->proCategories;
+    }
+
+    /**
+     * Set publish.
+     *
+     * @param bool $publish
+     *
+     * @return User
+     */
+    public function setPublish($publish)
+    {
+        if(! $this->hasRole('ROLE_PRO')){
+            $this->publish = false;
+            return $this;
+        }
+
+        $this->publish = $publish;
+
+        return $this;
+    }
+
+    /**
+     * Get publish.
+     *
+     * @return bool
+     */
+    public function isPublish()
+    {
+        return $this->publish;
+    }
+
 }

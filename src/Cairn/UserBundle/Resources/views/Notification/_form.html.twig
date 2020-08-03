@@ -1,0 +1,396 @@
+{# src/Cairn/UserBundle/Resources/views/Notification/_form.html.twig #} 
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+{% form_theme form 'form/materialize_form_theme.html.twig' %}
+
+{% block title %}Paramètres des notifications - Cairn{% endblock %}                                                                 
+                                                                               
+{%block stylesheets %}
+{% endblock %}
+
+{% block body %}
+    {{parent()}} 
+
+<div class="row">
+    <div class="container">
+
+    {{ form_start(form) }}
+    <div class="notification">
+        <table class="notifications responsive-table">
+            <thead>
+                <tr>
+                    <div class="col l6 s12">
+                        <th id="notif_types">Types de notifications</th>
+                    </div>
+                    <div id="notif_icons" class="col l6 s12 valign-wrapper">
+                        <th>
+                            <p><i class="material-icons">laptop</i></p>
+                            <p><span>Web Push</span></p>
+                        </th>
+                         <th>
+                            <p><i class="material-icons">smartphone</i></p>
+                            <p><span>App Push</span></p>
+                        </th>
+                        <th>
+                            <p><i class="material-icons">sms</i></p>
+                            <p><span>SMS</span></p>
+                        </th>
+                        <th>
+                            <p><i class="material-icons">email</i></p>
+                            <p><span>Email</span></p>
+                        </th>
+                    </div>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    {% if form.baseNotifications[0].radius is defined %}
+                        {% set index = 0 %}
+                    {% else %}
+                        {% set index = 1 %}
+                    {% endif %}
+                    <div class="col l6 s12">
+                        <td class="notif_cell_label">
+                            <p class="notif_row_title">Nouveau Professionnel</p>
+                            <p class="description">Soyez informé(e) de l'arrivée d'un nouveau pro dans le réseau à moins de X kilomètres de chez vous !
+                            </p>
+                        </td>
+                    </div>
+                    <div class="col l6 s12">
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].webPushEnabled) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                                {{ form_widget(form.baseNotifications[index].appPushEnabled) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].smsEnabled, {'attr': {'disabled' : true}}) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].emailEnabled, {'attr': {'disabled' : true}}) }}                 
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                    </div>
+                </tr>
+            </tbody>
+        </table>
+        <div>
+             <p  class="range-field">
+                {{ form_label(form.baseNotifications[index].radius) }}
+                {{ form_widget(form.baseNotifications[index].radius) }}
+            </p>
+        </div>
+    </div>
+    <div class="notification">
+        <table class="notifications responsive-table">
+            {#<thead style="visibility: hidden">
+                <tr>
+                    <div class="col l6 s12"><th>Type de notifs</th></div>
+                    <div id="notif_icons" class="col l6 s12">
+                        <th>
+                            <p><span>Web Push</span></p>
+                        </th>
+                         <th>
+                            <p><span>App Push</span></p>
+                        </th>
+                        <th>
+                            <p><span>SMS</span></p>
+                        </th>
+                        <th>
+                            <p><span>Email</span></p>
+                        </th>
+                    </div>
+                </tr>
+            </thead>
+            #}
+            <tbody>
+                <tr>
+                    {% set index = (index == 0) ? 1 : 0 %}
+                    <div class="col l6 s12">
+                        <td class="notif_cell_label">
+                            <p class="notif_row_title">Nouveaux paiements</p>
+                            <p class="description">Vous avez reçu des cairns. Paramétrez les types de paiements pour lesquels vous souhaitez être notifié(e) ainsi que leur montant minimum.
+                            </p>
+                        </td>
+                    </div>
+                    <div class="col l6 s12">
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].webPushEnabled) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                                {{ form_widget(form.baseNotifications[index].appPushEnabled) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].smsEnabled) }}                                         
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                        <td>
+                            <p>
+                            <label class="checkbox">
+                              {{ form_widget(form.baseNotifications[index].emailEnabled) }}                 
+                              <span></span>
+                            </label>
+                            </p>
+                        </td>
+                    </div>
+                </tr>
+            </tbody>
+        </table>
+        <div>
+            <div class="col l6 s12">
+                {{ form_label(form.baseNotifications[index].types) }}
+                {{ form_widget(form.baseNotifications[index].types) }}
+            </div>
+            <div class="col l6 s12">
+                {{ form_label(form.baseNotifications[index].minAmount) }}
+                {{ form_widget(form.baseNotifications[index].minAmount) }}
+            </div>
+        </div>
+    </div>
+
+                        
+    <div class="col l5 offset-l8 s12">
+        {{ form_widget(form.save) }}                                         
+        <a href="{{path('cairn_user_profile_view', {'username' : user.username })}}" class="btn red">Annuler</a>
+    </div>
+    {{ form_rest(form) }}
+    {{ form_end(form) }}
+    
+    {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
+        <div class="js-user-role" data-is-pro="{{app.user.hasRole('ROLE_PRO')}}">
+        <div class="js-notif-key" data-notif-key="{{webpush_public_key}}">
+    {% endif %}
+  </div>
+</div>
+{% endblock %}              
+
+{% block javascripts %}
+        <script type="text/javascript">
+            
+        // -------------------------  DISABLE TABLE ROW IF ALL CHECKBOXES ARE UNCHECKED --------------------------
+
+        const checkboxContainers = document.querySelectorAll('tr.checkboxes');
+
+        
+        var checkboxes = document.querySelectorAll('input[type=checkbox]');
+        for (const checkbox of checkboxes){
+            checkbox.addEventListener('change', function() {
+                if(! this.checked){
+                    //FIND ALL SIBLINGS CHECKBOXES
+                    const tableRow = this.closest("tr");
+                    const siblings = tableRow.querySelectorAll('input[type=checkbox]') ;
+                    
+                    let noChecked = true;
+                    for(const sibling of siblings){
+                        if(sibling.checked){
+                            noChecked = false;
+                        }
+                    }
+                    //if(noChecked){
+                    //    instance.close(0);
+                    //}else{
+                    //    instance.open(0);
+                    //}
+                }
+                
+            });
+        }
+        
+        // -------------------------  REGISTER NEW WEB PUSH SUBSCRIPTION --------------------------
+
+        if (! ('serviceWorker' in navigator)) {
+            // Service Worker isn't supported on this browser, disable or hide UI.
+    
+            onIncompatibleBrowser();
+            throw new Error('Service Worker not supported');
+        }
+    
+        if (!('PushManager' in window)) {
+            // Push isn't supported on this browser, disable or hide UI.
+    
+            onIncompatibleBrowser();
+            throw new Error('push manager not supported');
+        }            
+
+        const containerWebPushBoxes = getWebPushBoxes();
+        
+        if(Notification.permission !== 'granted'){
+            for (const webPushBox of containerWebPushBoxes){
+                webPushBox.checked = false;
+            }
+        }           
+
+        if(containerWebPushBoxes){ 
+            for (const webPushBox of containerWebPushBoxes ){
+                if(webPushBox.checked){
+                    checkNotification();
+                }
+
+                webPushBox.addEventListener('change', function() {
+                    if(this.checked){
+                        checkNotification();
+                    }
+                });
+            }
+            
+        }
+
+        function checkNotification() {
+             
+            getNotificationPermissionState().then(function(permission) {
+                if(Notification.permission !== 'granted'){
+                    askPermission().then(function(permission) {
+                        if(permission === 'granted'){
+                            navigator.serviceWorker.register("/service-worker.js", {
+                                scope: '/'
+                            })
+                            .then(function(reg) {
+                                navigator.serviceWorker.ready
+                                .then(function(reg) {
+                                    const containerKey = document.querySelector('.js-notif-key');
+                                    const publicKey = containerKey.dataset.notifKey;
+
+                                    var subscribeOptions = {
+                                        userVisibleOnly: true,
+                                        applicationServerKey: urlBase64ToUint8Array(
+                                            publicKey
+                                        )
+                                    };
+                                    return reg.pushManager.subscribe(subscribeOptions);
+                                })
+                                .then(function(subscription) {
+                                    sendSubscriptionToBackEnd(subscription);
+                                })
+                                .catch(function(err) {
+                                    console.error('Unable to register service worker 2.', err);
+                                });
+
+                            })
+                            .catch(function(err) {
+                                throw new Error(err);
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+
+        function urlBase64ToUint8Array(base64String) {
+            var padding = '='.repeat((4 - base64String.length % 4) % 4);
+            var base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+        
+            var rawData = window.atob(base64);
+            var outputArray = new Uint8Array(rawData.length);
+        
+            for (var i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+
+        function askPermission() {
+            return new Promise(function(resolve, reject) {
+                    const permissionResult = Notification.requestPermission(function(result) {
+                            resolve(result);
+                            });
+        
+                    if (permissionResult) {
+                        permissionResult.then(resolve, reject);
+                    }
+             })
+            .then(function(permissionResult) {
+                    return permissionResult;
+             });
+        }
+
+        function getNotificationPermissionState() {
+            if (navigator.permissions) {
+                return navigator.permissions.query({name: 'notifications'})
+                    .then(function(result) {
+                            return result.state;
+                            });
+            }
+        
+            return new Promise(function(resolve) {
+                    resolve(Notification.permission);
+                    });
+        }
+
+        
+        function sendSubscriptionToBackEnd(subscription) {
+            return fetch(self.location.protocol +"//" + self.location.host + '/web/token-subscription', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'charset': 'UTF-8'
+                        },
+                        body: JSON.stringify({'subscription': subscription})
+                   })
+        .then(function(response) {
+                if (!response.ok) {
+                throw new Error('Bad status code from server.');
+                }
+        
+                return response;
+                });
+        }
+
+        function getWebPushBoxes(){
+            return document.querySelectorAll('input[id*=webPush]');
+        }
+
+        function onIncompatibleBrowser(){
+            const containerWebPushBoxes = getWebPushBoxes();
+
+            for(const webPushBox of containerWebPushBoxes){
+                webPushBox.disabled = true;
+
+                webPushBox.addEventListener('click', function() {
+                    M.toast({html: 'Votre navigateur est incompatible avec notre fonctionnalité web Push', displayLength: 5000});
+                });
+            }
+        }
+            
+    </script>
+
+{% endblock %}
+
+

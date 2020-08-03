@@ -42,26 +42,21 @@ class RegistrationListener
      */
     public function onProfileEditSuccess(FormEvent $event)
     {
-        $router = $this->container->get('router');          
-
         $form = $event->getForm();
         $user = $form->getData();
 
         $userVO = $this->container->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
-        $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
-        $userDTO->name = $user->getName();
-        $userDTO->username = $user->getUsername();
-        $userDTO->email = $user->getEmail();
+        if($userVO){
+            $userDTO = $this->container->get('cairn_user_cyclos_user_info')->getUserDTO($userVO->id);
+            $userDTO->name = $user->getName();
+            $userDTO->username = $user->getUsername();
+            $userDTO->email = $user->getEmail();
 
-        $this->userManager->editUser($userDTO);                          
-
-        if($this->container->get('cairn_user.api')->isRemoteCall()){
-            $event->setResponse($this->container->get('cairn_user.api')->getOkResponse($user,Response::HTTP_OK));
-            return;
-        }else{
-            $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
-            $event->setResponse(new RedirectResponse($profileUrl));
+            $this->userManager->editUser($userDTO);                          
         }
+
+        $response = $this->container->get('cairn_user.api')->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], $user,Response::HTTP_CREATED);
+        $event->setResponse($response);
     }
 
 
@@ -91,11 +86,11 @@ class RegistrationListener
             array('user'=>$user));
 
         $messageNotificator->notifyByEmail($subject,$from,$to,$body);      
-        $event->getRequest()->getSession()->getFlashBag()->add('success','Merci d\'avoir validé votre adresse électronique ! Vous recevrez un email lorsque l\'Association aura ouvert votre compte.');
 
-        $router = $this->container->get('router');          
-        $loginUrl = $router->generate('fos_user_security_login');
-        $event->setResponse(new RedirectResponse($loginUrl));
+        $messages = ['key'=>'email_validation','args'=>[$user->getEmail()]];
+
+        $response = $this->container->get('cairn_user.api')->getRedirectionResponse('fos_user_security_login',[], $user,Response::HTTP_CREATED,$messages);
+        $event->setResponse($response);
     }
 
 
@@ -114,17 +109,21 @@ class RegistrationListener
         $apiService = $this->container->get('cairn_user.api');
 
         $isRemoteCall = $apiService->isRemoteCall();
-        $type = ($isRemoteCall) ? $request->query->get('type') :  $session->get('registration_type');
+
+        if($isRemoteCall){
+            $type = $request->query->get('type');
+        }else{
+            $type = ($request->query->get('type')) ? $request->query->get('type') : $session->get('registration_type') ;
+        }
+
+        $session->set('registration_type',$type);
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
 
         if($currentUser && !$currentUser->isAdmin()){
-        
-            if($isRemoteCall){
-                $response = $apiService->getErrorResponse(array('Un adhérent ne peut créer un compte'),Response::HTTP_FORBIDDEN);
-                $event->setResponse($response);
-                return;
-            }
+            $response = $apiService->getErrorsResponse([],[],Response::HTTP_FORBIDDEN);
+            $event->setResponse($response);
+            return;
         }
 
         if(!$currentUser && ($type != 'person') && ($type != 'pro')  ){
@@ -169,14 +168,6 @@ class RegistrationListener
 
         $user = $event->getForm()->getData();
 
-        //set cyclos ID here to pass the constraint cyclos_id not null
-        $cyclosID = rand(1, 1000000000);
-        $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
-        while($existingUser){
-            $cyclosID = rand(1, 1000000000);
-            $existingUser = $userRepo->findOneBy(array('cyclosID'=>$cyclosID));
-        }
-        $user->setCyclosID($cyclosID);
         $user->setMainICC(null);
 
         $security = $this->container->get('cairn_user.security');
@@ -184,20 +175,22 @@ class RegistrationListener
 
         $currentUser = $this->container->get('cairn_user.security')->getCurrentUser();
 
+        $apiService = $this->container->get('cairn_user.api');
         if($currentUser && $currentUser->hasRole('ROLE_SUPER_ADMIN')){
             //very important to let it to false in order to create cyclos user at activation
             $user->setEnabled(false);
 
             //this should be unnecessary
             $user->setConfirmationToken(null);
+            $response = $apiService->getRedirectionResponse('cairn_user_profile_view',['username'=>$user->getUsername()], $user,Response::HTTP_CREATED);
 
-            $profileUrl = $router->generate('cairn_user_profile_view',array('username'=>$user->getUsername()));
-            $event->setResponse(new RedirectResponse($profileUrl));
+            $event->setResponse($response);
+            return;
         }
 
-        
         if($event->getRequest()->get('_format') == 'json'){
-            $event->setResponse($this->container->get('cairn_user.api')->getOkResponse($user,Response::HTTP_CREATED));
+            $apiData = '{ "data": '.$apiService->serialize($user).'}';
+            $event->setResponse($apiService->getApiResponse($apiData,Response::HTTP_CREATED));
         }
     }
 
@@ -206,7 +199,7 @@ class RegistrationListener
         $apiService = $this->container->get('cairn_user.api');
 
         if($apiService->isRemoteCall()){
-            $response = $apiService->getFormErrorResponse($event->getForm());
+            $response = $apiService->getFormResponse('',['form' => $event->getForm()->createView()],$event->getForm());
             $event->setResponse($response);
         }
     }

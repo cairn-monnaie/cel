@@ -1,6 +1,6 @@
 {# src/Cairn/UserBundle/Resources/views/Emails/block_account.html.twig #}
 
-Bonjour <b>{% if user.firstname is defined %}{{ user.firstname | capitalize }}{% else %}{{ user.name | capitalize }}{% endif %}</b>, <br>
+Bonjour <b>{{ user.name | capitalize }}</b>, <br>
 <br>
 
 
@@ -71,8 +71,10 @@ Bonjour <b>{% if user.firstname is defined %}{{ user.firstname | capitalize }}{%
 
 {% else %}
     Votre compte [e]-Cairn a été automatiquement bloqué. 
+    <br>
+    <br>
 
-    Contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
+    S'l s'agit d'une erreur, contactez-nous à <b>e-cairn@cairn-monnaie.com</b> pour résoudre le problème au plus vite, <br>
     <br>
     {{signature}},
 

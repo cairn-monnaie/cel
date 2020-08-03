@@ -62,7 +62,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * @Security("is_granted('ROLE_ADHERENT')")
  */
-class BeneficiaryController extends Controller
+class BeneficiaryController extends BaseController
 {
     private $userManager;
     //    private $scriptManager;
@@ -227,15 +227,16 @@ class BeneficiaryController extends Controller
     public function listBeneficiariesAction(Request $request, $_format)
     {
         $beneficiaries = $this->getUser()->getBeneficiaries();
-        $apiService = $this->get('cairn_user.api');
 
         $form = $this->createForm(ConfirmationType::class);
 
-        if($_format == 'json'){
-            return $apiService->getOkResponse($beneficiaries->getValues(),Response::HTTP_OK);
-        }
+        return $this->getRenderResponse(
+                'CairnUserBundle:Pro:list_beneficiaries.html.twig',
+                ['form'=>$form->createView(),'beneficiaries'=>$beneficiaries],
+                $beneficiaries->getValues(),
+                Response::HTTP_OK
+            );
 
-        return $this->render('CairnUserBundle:Pro:list_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$beneficiaries));
     }
 
 
@@ -280,11 +281,14 @@ class BeneficiaryController extends Controller
             if($form->isValid()){
                 $dataForm = $form->getData();
 
-                $errorMessages = NULL;
+                $errorMessages = [];
+
+                if(is_scalar($dataForm['cairn_user'])){
+                    return $this->getErrorsResponse(['key'=>'account_not_found','args'=>[$dataForm['cairn_user']]], [] ,Response::HTTP_OK);
+                }
 
                 if ($dataForm['cairn_user']->id == $currentUser->getCyclosID()){
-                    $errorMessages = array();
-                    $errorMessages[] = 'Oups, vous ne pouvez pas vous ajouter vous-même...';
+                    $errorMessages[] = ['key'=>'inconsistent_data','args'=>[$currentUser->getName()]];
                 }
 
                 $creditorUser = $this->get('cairn_user.bridge_symfony')->fromCyclosToSymfonyUser($dataForm['cairn_user']->id);
@@ -293,18 +297,11 @@ class BeneficiaryController extends Controller
                 $existingBeneficiary = $beneficiaryRepo->findOneBy(array('user'=>$creditorUser,'ICC'=>$dataForm['cairn_user']->accountNumber));
 
                 if($existingBeneficiary && $currentUser->hasBeneficiary($existingBeneficiary)){
-                    $errorMessages[] = $creditorUser->getName().' est déjà un bénéficiaire enregistré ';
+                    $errorMessages[] = ['key'=>'beneficiary_already_reg','args'=>[$creditorUser->getName()]];
                 }
 
                 if($errorMessages){
-                    if( $this->get('cairn_user.api')->isRemoteCall()){
-                        return $this->get('cairn_user.api')->getErrorResponse($errorMessages ,Response::HTTP_BAD_REQUEST);
-                    }else{
-                        foreach($errorMessages as $message){
-                            $session->getFlashBag()->add('error',$message);
-                        }
-                        return new RedirectResponse($request->getRequestUri());
-                    }
+                    return $this->getErrorsResponse($errorMessages,[],Response::HTTP_OK,'cairn_user_beneficiaries_add');
                 }
 
                 if(! $existingBeneficiary){
@@ -323,21 +320,23 @@ class BeneficiaryController extends Controller
                 $em->flush();
 
 
-                if( $apiService->isRemoteCall()){
-                    return $apiService->getOkResponse($beneficiary,Response::HTTP_CREATED);
-                }
+                $message = ['key'=>'beneficiary_add_success','args'=>[$beneficiary->getUser()->getName()]];
 
-                $session->getFlashBag()->add('success','Nouveau bénéficiaire ajouté avec succès');
-                return $this->redirectToRoute('cairn_user_beneficiaries_list');
-            }else{
-
-                if( $apiService->isRemoteCall()){
-                    return $apiService->getFormErrorResponse($form);
-                }
+                return $this->getRedirectionResponse(
+                    'cairn_user_beneficiaries_list', 
+                    [],
+                    $beneficiary,
+                    Response::HTTP_CREATED,
+                    $message
+                );
             }
         }
 
-        return $this->render('CairnUserBundle:Pro:add_beneficiaries.html.twig',array('form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries));
+        return $this->getFormResponse(
+                'CairnUserBundle:Pro:add_beneficiaries.html.twig',
+                ['form'=>$form->createView(),'beneficiaries'=>$possibleBeneficiaries],
+                $form
+            );
     }
 
     /**
@@ -433,15 +432,10 @@ class BeneficiaryController extends Controller
         $apiService = $this->get('cairn_user.api');
 
         if(!$currentUser->hasBeneficiary($beneficiary)){
-            $errorMessage = 'Donnée introuvable';
-
-            if($this->get('cairn_user.api')->isRemoteCall()){
-                return $this->get('cairn_user.api')->getErrorResponse(array($errorMessage) ,Response::HTTP_BAD_REQUEST);
-            }
-
-            $session->getFlashBag()->add('error',$errorMessage);
-            return $this->redirectToRoute('cairn_user_beneficiaries_list');
+            $error = ['key'=>'data_not_found'];
+            return $this->getErrorsResponse($error,[],Response::HTTP_OK,'cairn_user_beneficiaries_list');
         }
+
         if($request->isMethod('DELETE') || $request->isMethod('POST')){ //form filled and submitted 
             if($_format == 'json'){
                 $form->submit(json_decode($request->getContent(), true));
@@ -451,36 +445,37 @@ class BeneficiaryController extends Controller
 
             if($form->isValid()){                                              
                 if($form->get('save')->isClicked()){ 
+                    $message = ['key'=>'beneficiary_removal_success','args'=>[$beneficiary->getUser()->getName()]];
+
                     $nbSources = count($beneficiary->getSources());
                     $beneficiary->removeSource($currentUser);
                     $currentUser->removeBeneficiary($beneficiary);
                     if($nbSources == 1){
                         $em->remove($beneficiary);
                     }
-
                     $em->flush();
-                    $flashMessage = 'Suppression effectuée avec succès';
-                    $sessionKey = 'success';
                 }                                                              
                 else{
-                    $flashMessage = 'Suppression annulée';
-                    $sessionKey = 'info';
+                    $message = ['key'=>'cancel_button'];
                 }
 
-                if($apiService->isRemoteCall()){
-                    return $apiService->getOkResponse(array($flashMessage),Response::HTTP_OK);
-                }
+                $beneficiaries = $this->getUser()->getBeneficiaries();
 
-                $session->getFlashBag()->add($sessionKey,$flashMessage);
-                return $this->redirectToRoute('cairn_user_beneficiaries_list');
+                return $this->getRedirectionResponse(
+                            'cairn_user_beneficiaries_list', 
+                            [],
+                            $beneficiaries->getValues(), 
+                            Response::HTTP_OK,
+                            $message
+                        );
             }                                                                  
         }        
 
-        return $this->render('CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',
-            array(
-                'form'=>$form->createView(),
-                'beneficiary_name'=>$beneficiary->getUser()->getName()
-            ));
+        return $this->getFormResponse(
+                'CairnUserBundle:Pro:confirm_remove_beneficiary.html.twig',
+                ['form'=>$form->createView(),'beneficiary_name'=>$beneficiary->getUser()->getName()],
+                $form
+            );
     }
 
 }

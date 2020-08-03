@@ -113,15 +113,20 @@ class UserControllerTest extends BaseControllerTest
 
                 //Plus, we assert that access client exists on Cyclos side. It must be ACTIVE 
                 $accessClientVO = $this->container->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($targetUser->getCyclosID(),'client_sms','ACTIVE');
-                $this->assertTrue($accessClientVO != NULL);
 
-                //if this is first phone number association, an access client is created for the current user on Cyclos side.
-                //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
-                //on Cyclos side, breaking up the logic of our application
-                //Workaround : removing the access client "by hand" at test end
-                //this is a problem regarding isolation tests and Cyclos
-                if( $nbPhonesAfter == 1){
-                    $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+                if($currentUser === $targetUser){
+                    $this->assertTrue($accessClientVO != NULL);
+
+                    //if this is first phone number association, an access client is created for the current user on Cyclos side.
+                    //But at the end of the test, the phone number will be rolled back on Symfony side whereas access client will stay
+                    //on Cyclos side, breaking up the logic of our application
+                    //Workaround : removing the access client "by hand" at test end
+                    //this is a problem regarding isolation tests and Cyclos
+                    if( $nbPhonesAfter == 1){
+                        $this->container->get('cairn_user.security')->changeAccessClientStatus($accessClientVO,'REMOVED');
+                    }
+                }else{
+                    $this->assertTrue($accessClientVO == NULL);
                 }
 
                 if($isPaymentEnabled){
@@ -143,8 +148,6 @@ class UserControllerTest extends BaseControllerTest
 
                 }else{
                     $this->assertTrue($this->client->getRequest()->getRequestUri() == $url);
-                    $crawler = $this->client->followRedirect();
-
                     $this->assertUserIsEnabled($currentUser, false);
 
                     $this->assertContains($expectedMessages[1],$this->client->getResponse()->getContent());
@@ -169,15 +172,15 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessages'=>array('')
         );
 
-        $validDataMsg = 'Un code vous a été envoyé';
+        $validDataMsg = 'Un code de validation a été envoyé';
         $validCodeMsg = 'enregistré';
-        $usedMsg = 'déjà utilisé';
+        $usedMsg = 'Déjà utilisé';
         return array(
             'admin adds number for disabled user with sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'la_mandragore',
                                             'expectedMessages'=>'bloqué','isExpectedForm'=>false)),
 
             'admin adds number for disabled user without sms client' => array_replace($baseData, array('login'=>$admin,'target'=>'Biocoop',
-                                            'isExpectedForm'=>false,'expectedMessages'=>'bloqué')),
+                                            'expectedMessages'=>'bloqué','isExpectedForm'=>false)),
 
             'admin not referent' => array_replace($baseData, array('login'=>$admin, 'isExpectedForm'=>false,'expectedMessages'=>'pas référent')),
 
@@ -187,7 +190,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                     'isExpectedForm'=>false,
-                    'expectedMessages'=>'3 demandes de nouveau')),
+                    'expectedMessages'=>'Trop de tentatives')),
 
             'current number'=>array_replace_recursive($baseData, array(
                         'newPhone'=>array('phoneNumber'=>'+33743434343'),'isValidData'=>false,
@@ -220,6 +223,10 @@ class UserControllerTest extends BaseControllerTest
                     'newPhone'=>array('phoneNumber'=>'+33611223344'),
                     'expectedMessages'=>array($validDataMsg,$validCodeMsg)
                     )),
+
+            'wrong validation code'=>array_replace($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
+                    'isValidCode'=>false, 'code'=>'2222',
+                    'expectedMessages'=>'invalide')),
 
             'last remaining try : wrong code'=>array_replace($baseData, array('login'=>'hirundo_archi','target'=>'hirundo_archi',
                     'isValidCode'=>false, 'code'=>'2222',
@@ -442,8 +449,10 @@ class UserControllerTest extends BaseControllerTest
             'expectedMessages'=>array('')
         );
 
-        $validDataMsg = 'Un code vous a été envoyé';
-        $validCodeMsg = 'enregistré';
+        $validDataMsg = 'Un code de validation';
+        $validCodeMsg = 'succès';
+        $usedMsg = 'Déjà utilisé';
+
         return array(
             'admin changes number for disabled user' => array_replace($baseAdminData, array('target'=>'la_mandragore')),
 
@@ -453,7 +462,7 @@ class UserControllerTest extends BaseControllerTest
 
             'too many requests'=>array_replace($baseData, array('login'=>'crabe_arnold','target'=>'crabe_arnold',
                                                                     'isExpectedForm'=>false,
-                                                                    'expectedMessages'=>'3 demandes de changement')),
+                                                                    'expectedMessages'=>'Trop de tentatives')),
 
             'current number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                               'isPhoneNumberEdit'=>false,
@@ -470,7 +479,7 @@ class UserControllerTest extends BaseControllerTest
             'invalid number'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                           'isPhoneNumberEdit'=>true,'newPhone'=>array('phoneNumber'=>'+33911223344'),
                                                           'isValidData'=>false,'isSmsEnabled'=>false,
-                                                          'expectedMessages'=>'Format du numéro'
+                                                          'expectedMessages'=>'format du numéro'
                                                       )),
 
             'admin changes phonenumber'=>array_replace($baseAdminData, array('target'=>'la_mandragore',
@@ -495,15 +504,15 @@ class UserControllerTest extends BaseControllerTest
 
             'used by pro & person'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                             'newPhone'=>array('phoneNumber'=>'+33612345678'), 'isValidData'=>false,
-                                            'expectedMessages'=>'déjà utilisé')),
+                                            'expectedMessages'=>$usedMsg)),
 
             'pro request : used by pro'=>array_replace_recursive($baseData, array('login'=>'maltobar','target'=>'maltobar',
                                                         'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-                                                        'expectedMessages'=>'déjà utilisé')),
+                                                        'expectedMessages'=>$usedMsg)),
 
             'person request : used by person'=>array_replace_recursive($baseData, array('login'=>'benoit_perso','target'=>'benoit_perso',
                                                         'isValidData'=>false,'newPhone'=>array('phoneNumber'=>'+33612345678'),
-                                                        'expectedMessages'=>'déjà utilisé')),
+                                                        'expectedMessages'=>$usedMsg)),
 
             'pro request : used by person'=>array_replace_recursive($baseData,array('login'=>'maltobar','target'=>'maltobar',
                                             'newPhone'=>array('phoneNumber'=>'+33644332211'),
@@ -652,7 +661,7 @@ class UserControllerTest extends BaseControllerTest
                                                                         'expectedMessage'=>'plus de 8 caractères')),          
 
             'pseudo included in password' => array_replace($baseData, array('new'=>'@'.$login.'@','confirm'=>'@'.$login.'@',
-                                                                  'expectValid'=>false,'expectedMessage'=>'contenu dans le mot de passe')),
+                                                                  'expectValid'=>false,'expectedMessage'=>'inclus')),
 
             'no special character'        => array_replace($baseData, array('new'=>'1testPwd2' ,'confirm'=>'1testPwd2',
                                                                   'expectValid'=>false, 'expectedMessage'=>'caractère spécial')),

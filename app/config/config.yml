@@ -32,8 +32,8 @@ framework:
         cookie_lifetime: 86400
         gc_probability: 1
         gc_divisor: 1
-        cookie_httponly: true
-        cookie_secure: true
+        #cookie_httponly: true
+        #cookie_secure: true
     fragments: ~
     http_method_override: true
     assets: ~
@@ -52,6 +52,7 @@ twig:
         cgu_url: '%cairn_default_cgu_url%'
         pathToWeb: '%kernel.project_dir%/web'
         signature: '%leading_company%' 
+        webpush_public_key: '%webpush_public_key%'
     form_themes:
         - 'form/materialize_form_theme.html.twig'
         - 'form/cairn_form_theme.html.twig'
@@ -79,6 +80,8 @@ doctrine:
         auto_generate_proxy_classes: '%kernel.debug%'
         naming_strategy: doctrine.orm.naming_strategy.underscore
         auto_mapping: true
+        hydrators:
+            COLUMN_HYDRATOR: Cairn\UserBundle\Hydrators\ColumnHydrator
 
 doctrine_migrations:
     dir_name: '%kernel.project_dir%/src/Migrations'

@@ -52,7 +52,7 @@ class BeneficiaryControllerTest extends BaseControllerTest
             $this->assertTrue( count($debitorUser->getBeneficiaries()) == $nbBeneficiariesBefore);
 
             $isRedirect = $this->client->getResponse()->isRedirect();
-            $this->assertTrue($isRedirect || strpos($this->client->getResponse()->getContent(), 'does not match') !== false);
+            $this->assertTrue($isRedirect || strpos($this->client->getResponse()->getContent(), 'Aucun compte') !== false);
         }
     }
 

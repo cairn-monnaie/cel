@@ -44,42 +44,51 @@ class UserValidator extends ConstraintValidator
      */
     public function validate($user, Constraint $constraint)
     {
-//        if(strlen($user->getUsername()) < 3){
-//            $this->context->buildViolation('Login trop court ! 3 caractères minimum')
-//                ->atPath('username')
-//                ->addViolation();
-//        }
-//
-//        if(preg_match('#[^\w\.]#',$user->getUsername())){
-//            $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
-//                ->atPath('username')
-//                ->addViolation();
-//            if(preg_match('#^[^a-zA-Z]#',$user->getUsername())){
-//                $this->context->buildViolation('Le pseudo doit commencer par une lettre')
-//                    ->atPath('username')
-//                    ->addViolation();
-//            }
-//        }
-//        if(strlen($user->getUsername()) > 16){
-//            $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
-//                ->atPath('username')
-//                ->addViolation();
-//        }
+        if($user->getUsername()){
+            if(strlen($user->getUsername()) < 3){
+                $this->context->buildViolation('Login trop court ! 3 caractères minimum')
+                    ->setCode('too_few_chars')
+                    ->setInvalidValue($user->getUsername())
+                    ->atPath('username')
+                    ->addViolation();
+            }
+
+            if(preg_match('#[^a-zA-Z0-9]$#',$user->getUsername())){
+                $this->context->buildViolation('Le pseudo contient uniquement des caractères alphanumériques, tirets de soulignements ou point')
+                    ->setCode('invalid_format_value')
+                    ->setInvalidValue($user->getUsername())
+                    ->atPath('username')
+                    ->addViolation();
+            }
+            if(strlen($user->getUsername()) > 16){
+                $this->context->buildViolation('Le pseudo doit contenir moins de 16 caractères.')
+                    ->setCode('too_long')
+                    ->setInvalidValue($user->getUsername())
+                    ->atPath('username')
+                    ->addViolation();
+            }
+        }
         if(strlen($user->getName()) < 3){
             $this->context->buildViolation('Le nom doit contenir au minimum 3 caractères.')
+                ->setCode('too_few_chars')
+                ->setInvalidValue($user->getName())
                 ->atPath('name')
                 ->addViolation();
         }
 
         if(strlen($user->getName()) > 50){
             $this->context->buildViolation('Le nom doit contenir moins de 50 caractères.')
+                ->setCode('too_many_chars')
+                ->setInvalidValue('Le nom')
                 ->atPath('name')
                 ->addViolation();
         }
 
-        $limit = ($user->hasRole('ROLE_PRO')) ? 500 : 150;
+        $limit = ($user->hasRole('ROLE_PRO')) ? 3000 : 150;
         if(strlen($user->getDescription()) > $limit){
             $this->context->buildViolation('La description doit contenir moins de '.$limit.' caractères.')
+                ->setCode('too_many_chars')
+                ->setInvalidValue('La description')
                 ->atPath('description')
                 ->addViolation();
         }
@@ -93,7 +102,8 @@ class UserValidator extends ConstraintValidator
 //                    ->addViolation();
 //            }else{
                 if(! preg_match('<[`@!"#$%&\'()*+,-./:;=?\[\]\>\<^_{}~]>', $user->getPlainPassword()) ){
-                    $this->context->buildViolation('Le mot de passe doit contenir un caractère spécial.')
+                    $this->context->buildViolation('pwd.special_char')
+                        ->setInvalidValue('password')
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
@@ -103,6 +113,8 @@ class UserValidator extends ConstraintValidator
                         $list .= $match;
                     }
                     $this->context->buildViolation('Les caractères suivants ne sont pas autorisés : '.$list)
+                        ->setCode('pwd.invalid_special_char')
+                        ->setInvalidValue($list)
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
@@ -110,7 +122,8 @@ class UserValidator extends ConstraintValidator
 
             if($username = $user->getUsername()){
                 if(preg_match('<'.$user->getUsername().'>',$user->getPlainPassword())){
-                    $this->context->buildViolation('Le pseudo ne peut pas être contenu dans le mot de passe.')
+                    $this->context->buildViolation('pwd.pseudo_in')
+                        ->setInvalidValue('password')
                         ->atPath('plainPassword')
                         ->addViolation();
                 }
@@ -118,18 +131,23 @@ class UserValidator extends ConstraintValidator
 
             if(strlen($user->getPlainPassword()) > 25){
                 $this->context->buildViolation('Le mot de passe doit contenir moins de 25 caractères.')
+                    ->setCode('too_many_chars')
+                    ->setInvalidValue('Mot de passe')
                     ->atPath('plainPassword')
                     ->addViolation();
             }
             if(strlen($user->getPlainPassword()) < 8){
                 $this->context->buildViolation('Le mot de passe doit contenir plus de 8 caractères.')
+                    ->setCode('too_low_chars')
+                    ->setInvalidValue('Mot de passe')
                     ->atPath('plainPassword')
                     ->addViolation();
             }
         }
 
         if(!preg_match('#^[a-z0-9._-]+@[a-z0-9._-]{2,}\.[a-z]{2,4}$#',strtolower($user->getEmail()))){
-            $this->context->buildViolation("Email invalide. Un email ne contient ni majuscule ni accent.Le symbole @ est suivi d\'au moins 2 chiffres/lettres, et le point de 2 ou 4 lettres.")
+            $this->context->buildViolation("email.invalid_format")
+                ->setInvalidValue($user->getEmail())
                 ->atPath('email')
                 ->addViolation();
         }

@@ -54,7 +54,7 @@
     </div>
     {% if is_granted("IS_AUTHENTICATED_REMEMBERED") %}
        <div class="row">
-           {% if app.session.get('is_first_connection') == true %}
+           {% if (app.session.get('is_first_connection') == true) and (app.user.getPhones() is empty) %}
                  <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_users_phone_add', {'username' : app.user.username}) }}"><i class="material-icons right">arrow_forward</i>Continuer</a>
           {% else %}
               <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_profile_view', {'username' : app.user.username }) }}"><i class="material-icons right">arrow_forward</i>Accéder à mon profil</a>

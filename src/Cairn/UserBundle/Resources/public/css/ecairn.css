@@ -235,4 +235,42 @@ img.member_card{
   max-width: 30% !important;
 }
 
+
+th#notif_types{
+  font-weight: bold ;
+  font-size: x-large;
+  padding: 0px;
+}
+
+
+p#notif_icons > th {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+p.notif_row_title {
+    font-size : large;
+    font-weight: inherit;
+}
+
+td.notif_cell_label{
+  padding: 0px;
+  width: 75% !important;
+}
+
+td.notif_cell_label > p.description{
+    font-weight: inherit !important;
+    font-size: medium !important;
+    color: #717070 !important;
+    padding-right: 10% !important;
+}
+
+/*
+table.notifications td,th{
+    padding: 0px;
+}
+
+
+*/
 /*# sourceMappingURL=ecairn.css.map */

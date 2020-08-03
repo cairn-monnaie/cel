@@ -52,20 +52,6 @@ class ZipCity
     }
 
     /**
-     * Set zipCode
-     *
-     * @param string $zipCode
-     *
-     * @return zipCity
-     */
-    public function setZipCode($zipCode)
-    {
-        $this->zipCode = $zipCode;
-
-        return $this;
-    }
-
-    /**
      * Get zipCode
      *
      * @return string
@@ -73,20 +59,6 @@ class ZipCity
     public function getZipCode()
     {
         return $this->zipCode;
-    }
-
-    /**
-     * Set city
-     *
-     * @param string $city
-     *
-     * @return zipCity
-     */
-    public function setCity($city)
-    {
-        $this->city = $city;
-
-        return $this;
     }
 
     /**

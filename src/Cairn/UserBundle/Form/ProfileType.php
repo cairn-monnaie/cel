@@ -65,16 +65,16 @@ class ProfileType extends AbstractType
                 }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
-                        ->add('description',TextareaType::class,array('label'=>'Description d\'activité en quelques mots (150 car.)'))
+                        ->add('excerpt',TextareaType::class,array('label'=>'Description d\'activité en quelques mots'))
                         ->add('image', ImageType::class,array('label'=>'Logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
                     $form->add('name', TextType::class,array('label'=>'Nom et prénom'));
-                    $form->add('description',TextareaType::class,array('label'=>
+                    $form->add('excerpt',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
                 }else{
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
-                    $form->add('description',TextareaType::class,array('label'=>
+                    $form->add('excerpt',TextareaType::class,array('label'=>
                         'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
                 }
 

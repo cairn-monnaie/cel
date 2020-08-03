@@ -2,8 +2,6 @@
 
 namespace Cairn\UserBundle\Form;
 
-use Cairn\UserBundle\Form\NotificationPermissionType;
-
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -44,9 +42,9 @@ class PhoneType extends AbstractType
         $request = $this->requestStack->getCurrentRequest();
         $session= $request->getSession();
         if($session->has('activationCode')){
-            $builder->add('activationCode',TextType::class, array('label'=>'Code activation','mapped'=>false))
-                ->add('save', SubmitType::class, array('label' => 'Valider'));
-
+            $builder->add('activationCode',TextType::class, array('label'=>'Code activation','mapped'=>false,'required'=>false))
+                ->add('cancel',    SubmitType::class, array('label' => 'Annuler','attr' => array('class' => 'btn red')))
+                ->add('save',      SubmitType::class, array('label' => 'Valider','attr' => array('class' => 'btn green')));
         }else{
             $builder
                 ->add('phoneNumber',   TextType::class, array('label'=>'Numéro de téléphone portable(format +336 ou +337)'))

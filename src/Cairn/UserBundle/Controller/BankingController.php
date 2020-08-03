@@ -14,6 +14,8 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\Card;
 use Cairn\UserBundle\Entity\AccountScore;
+use Cairn\UserBundle\Entity\BaseNotification;
+use Cairn\UserBundle\Entity\PaymentNotification;
 
 //manage Events 
 use Cairn\UserBundle\Event\SecurityEvents;
@@ -51,13 +53,14 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\Exception\LogicException;
+use Symfony\Component\Form\Exception\InvalidArgumentException;
 
 /**
  * This class contains actions related to account operations 
  *
  * @Security("is_granted('ROLE_ADHERENT')")
  */
-class BankingController extends Controller
+class BankingController extends BaseController
 {   
     /**
      * Deals with all account actions to operate on Cyclos-side
@@ -82,7 +85,7 @@ class BankingController extends Controller
         $currentUser = $this->getUser();
 
         if(! $currentUser->hasRole('ROLE_PRO')){
-            throw new AccessDeniedException('Pas les droits nécessaires');
+            throw new AccessDeniedException('reserved_for_members');
         }   
 
         $em = $this->getDoctrine()->getManager();
@@ -179,13 +182,8 @@ class BankingController extends Controller
         $ownerVO = $this->get('cairn_user.bridge_symfony')->fromSymfonyToCyclosUser($user);
         $accounts = $this->get('cairn_user_cyclos_account_info')->getAccountsSummary($ownerVO->id);
 
-        if($_format == 'json'){
-             $response = new Response(json_encode($accounts) );
-            $response->headers->set('Content-Type', 'application/json');
-            $response->setStatusCode(Response::HTTP_OK);
-            return $response;
-        }
-        return $this->render('CairnUserBundle:Banking:accounts_overview.html.twig', array('user'=>$user,'accounts'=> $accounts));
+        //TODO : FIND A WAY TO SERIALIZE THIS WITHOUR TRANSFORMING OBJECT INTO ARRAY
+        return $this->getRenderResponse('CairnUserBundle:Banking:accounts_overview.html.twig', ['accounts'=>$accounts], json_decode(json_encode($accounts), true), Response::HTTP_OK);
     }
 
     /*
@@ -224,7 +222,7 @@ class BankingController extends Controller
 
         //to see the content, check that currentUser is owner or currentUser is referent
         if(! (($user === $currentUser) || $currentUser->hasRole('ROLE_SUPER_ADMIN'))){
-            throw new AccessDeniedException('Pas les droits nécessaires');
+            throw new AccessDeniedException('not_access_rights');
         }
 
         $accountTypeVO = $account->type; 
@@ -346,10 +344,6 @@ class BankingController extends Controller
             if($this->get('cairn_user.api')->isRemoteCall()){
                 $data = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
 
-                if(!$data){
-                    return $this->get('cairn_user.api')->getErrorResponse(array("Invalid JSON"),Response::HTTP_BAD_REQUEST);
-                }
-
                 $operationTypes = $data['types'];
                 if($operationTypes){
                     foreach($operationTypes as $key=>$value){
@@ -429,16 +423,26 @@ class BankingController extends Controller
                 if($apiService->isRemoteCall()){
                     $ob->setMaxResults($data['limit'])->setFirstResult($data['offset']);
                     $executedTransactions = $ob->getQuery()->getResult();
+                    return $this->getRenderResponse(
+                        '',
+                        [],
+                        $executedTransactions,
+                        Response::HTTP_OK
+                    );
 
-                    return $apiService->getOkResponse($executedTransactions,Response::HTTP_OK);
+                }else{
+                    $executedTransactions = $ob->getQuery()->getResult();
                 }
-
-                $executedTransactions = $ob->getQuery()->getResult();
+                
             }
         }
-        return $this->render('CairnUserBundle:Banking:account_operations.html.twig',
-            array('form' => $form->createView(),
-            'transactions'=>$executedTransactions,'futureAmount' => $totalAmount,'account'=>$account));
+
+        return $this->getFormResponse(
+            'CairnUserBundle:Banking:account_operations.html.twig',
+            ['form' => $form->createView(),'transactions'=>$executedTransactions,'futureAmount' => $totalAmount,'account'=>$account],
+            $form
+        );
+
     }
 
 
@@ -544,17 +548,14 @@ class BankingController extends Controller
 
 
         if($request->isMethod('POST')){
-
-
             $jsonRequest = json_decode($request->getContent(), true);
             if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
-                return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
+                return $this->getErrorsResponse(['key'=>'invalid_format_value','args'=>[$jsonRequest['executionDate']]], [] ,Response::HTTP_BAD_REQUEST);
             }
 
             $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
 
             $form->submit($jsonRequest);
-
 
             if($form->isValid()){
                 $dataTime = $operation->getExecutionDate();
@@ -596,7 +597,8 @@ class BankingController extends Controller
 
                 $validationState = $securityService->paymentValidationState($operation);
                 if($validationState['suspicious']){
-                    return $apiService->getErrorResponse(array('Threshold reached'),Response::HTTP_FORBIDDEN);
+                    $messages = ['key'=>$validationState['reason'],'args'=>[$validationState['threshold_value']]];
+                    return $this->getErrorsResponse([],$messages,Response::HTTP_OK);
                 }
 
                 $em->persist($operation);
@@ -609,13 +611,14 @@ class BankingController extends Controller
                     )
                 );
 
+                //operation has to be the last of the array
                 $redirectOperation = array('operation' => $operation,'confirmation_url' => $redirectUrl,
                    'secure_validation'=>$validationState['validation']);
 
-                return $apiService->getOkResponse($redirectOperation,Response::HTTP_CREATED);
+                return $this->getRenderResponse('',[],$redirectOperation,Response::HTTP_CREATED);
 
             }else{
-                return $apiService->getFormErrorResponse($form);
+                return $this->getFormResponse('',[],$form);
             }
 
         }else{
@@ -628,7 +631,7 @@ class BankingController extends Controller
      *
      * If the 'to' attribute of the query request is set to 'new', this action will be preceded by the card security layer.
      * To build the transaction request, Cyclos needs : 
-     *      _ a creditor account
+     *operation_already_processed      _ a creditor account
      *      _ a debtor account
      *      _ a direction : USER_TO_USER | USER_TO_SELF
      *      _ an amount (always positive)
@@ -645,14 +648,14 @@ class BankingController extends Controller
 
         $apiService = $this->get('cairn_user.api');
 
-        if( count($currentUser->getPhones()) == 0){
-            $message = 'Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement';
-            if($apiService->isRemoteCall()){
-                return $apiService->getErrorResponse(array($message),Response::HTTP_FORBIDDEN);
-            }
-            $session->getFlashBag()->add('info',$message);
-            return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$currentUser->getUsername()));
-        }
+        //if( count($currentUser->getPhones()) == 0){
+        //    $message = 'Vous devez avoir un numéro de téléphone associé à votre compte pour faire un virement';
+        //    if($apiService->isRemoteCall()){
+        //        return $apiService->getErrorResponse(array($message),Response::HTTP_FORBIDDEN);
+        //    }
+        //    $session->getFlashBag()->add('info',$message);
+        //    return $this->redirectToRoute('cairn_user_users_phone_add',array('username'=>$currentUser->getUsername()));
+        //}
 
         $em = $this->getDoctrine()->getManager();
         $userRepo = $em->getRepository('CairnUserBundle:User');
@@ -713,20 +716,20 @@ class BankingController extends Controller
             $form = $this->createForm(RecurringOperationType::class, $operation);
         }
 
-        if( count($currentUser->getPhoneNumbers()) > 1){
-            $form->add('sendTo',ChoiceType::class,array(
-                'label'=>'Envoyer le code de confirmation au',
-                //'empty_data'=>null,
-                //'data'=>'',
-                'choices'=>$currentUser->getPhoneNumbers(),
-                'choice_label' => function ($value) {
-                    return $value;
-                },
-                'multiple'=>false,
-                'mapped'=>false,
-            
-            ));
-        }
+        //if( count($currentUser->getPhoneNumbers()) > 1){
+        //    $form->add('sendTo',ChoiceType::class,array(
+        //        'label'=>'Envoyer le code de confirmation au',
+        //        //'empty_data'=>null,
+        //        //'data'=>'',
+        //        'choices'=>$currentUser->getPhoneNumbers(),
+        //        'choice_label' => function ($value) {
+        //            return $value;
+        //        },
+        //        'multiple'=>false,
+        //        'mapped'=>false,
+        //    
+        //    ));
+        //}
 
 
         if($request->isMethod('POST')){
@@ -735,7 +738,7 @@ class BankingController extends Controller
 
                 $jsonRequest = json_decode($request->getContent(), true);
                 if(! preg_match('/^\d+$/',$jsonRequest['executionDate'])){
-                    return $apiService->getErrorResponse(array('Wrong execution date format. It should be a timestamp'),Response::HTTP_BAD_REQUEST);
+                    return $this->getErrorsResponse(['key'=>'invalid_field_value','args'=>[$jsonRequest['executionDate']]], [] ,Response::HTTP_BAD_REQUEST);
                 }
 
                 $jsonRequest['executionDate'] = date('Y-m-d',intdiv($jsonRequest['executionDate'],1000));
@@ -833,47 +836,43 @@ class BankingController extends Controller
                 }
 
                 // send SMS with validation code to current user's new phone number
-                $phoneNumber = $form->has('sendTo') ? $form->get('sendTo')->getData() : $currentUser->getPhones()[0]->getPhoneNumber();
-                $sms = $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,'Code de confirmation de votre virement '.$code.' utilisable jusqu\'à ' . date('H:i',strtotime(date('H:i')." +5 mins")) );
+                //$phoneNumber = $form->has('sendTo') ? $form->get('sendTo')->getData() : $currentUser->getPhones()[0]->getPhoneNumber();
+                //$sms = $this->get('cairn_user.message_notificator')->sendSMS($phoneNumber,'Code de confirmation de votre virement '.$code.' utilisable jusqu\'à ' . date('H:i',strtotime(date('H:i')." +5 mins")) );
 
-                $session->getFlashBag()->add('info','Un code de confirmation de votre virement vous a été envoyé au '.$phoneNumber);
+                //$session->getFlashBag()->add('info','Un code de confirmation de votre virement vous a été envoyé au '.$phoneNumber);
                 //$em->persist($sms);
                 //$em->flush();
 
        
-                $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
-                $session_code = $encoder->encodePassword($code,$currentUser->getSalt());
-                $session->set('confirmationCode', $session_code);
+                //$encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+                //$session_code = $encoder->encodePassword($code,$currentUser->getSalt());
+                //$session->set('confirmationCode', $session_code);
 
-                if($_format == 'json'){
-                    $redirectUrl = $this->generateUrl(
-                        'cairn_user_api_transaction_confirm',
-                        array(
-                            'id'=>$operation->getID(),
-                        )
-                    );
+                $redirectApiUrl = $this->generateUrl(
+                    'cairn_user_api_transaction_confirm',
+                    array(
+                        'id'=>$operation->getID(),
+                    )
+                );
 
-                    $redirectOperation = array('confirmation_url' => $redirectUrl,
-                                 'operation' => $operation);
+                $redirectOperation = array('confirmation_url' => $redirectApiUrl,
+                    'operation' => $operation);
 
-                    return $apiService->getOkResponse($redirectOperation,Response::HTTP_CREATED);
-
-                }
-                return $this->redirectToRoute('cairn_user_banking_operation_confirm',
-                    array('_format'=>$_format,'id'=>$operation->getID(),'type'=>$type));
-
-
-            }else{
-                $apiService = $this->get('cairn_user.api');
-                if( $apiService->isRemoteCall()){
-                    return $apiService->getFormErrorResponse($form);
-                }
+                return $this->getRedirectionResponse(
+                    'cairn_user_banking_operation_confirm', 
+                    ['_format'=>$_format,'id'=>$operation->getID()],
+                    $redirectOperation, 
+                    Response::HTTP_CREATED
+                    //['sms_code_sent'=>[$phoneNumber]]
+                );
             }
-
         }
 
-        return $this->render('CairnUserBundle:Banking:transaction.html.twig',array(
-            'form'=>$form->createView()));
+        return $this->getFormResponse(
+            'CairnUserBundle:Banking:transaction.html.twig', 
+            ['form' => $form->createView()],
+            $form
+        );
     }
 
 
@@ -887,7 +886,7 @@ class BankingController extends Controller
     {
         
         if($operation->getPaymentID()){
-            throw new LogicException('Cette opération a déjà été traitée');
+            return $this->getErrorsResponse(['key'=>'operation_already_processed'], [] ,Response::HTTP_OK);
         }
 
         $apiService = $this->get('cairn_user.api');
@@ -901,7 +900,7 @@ class BankingController extends Controller
         $fromNumber = $operation->getFromAccountNumber();
 
         if((! in_array($fromNumber,$accountNumbers))){
-            throw new AccessDeniedException('Pas les droits nécessaires');
+            throw new AccessDeniedException('not_access_rights');
         }   
 
         $em = $this->getDoctrine()->getManager();
@@ -912,7 +911,7 @@ class BankingController extends Controller
             $em->remove($operation);
             $em->flush();
 
-            throw new \Exception('Operation timeout',408);
+            return $this->getErrorsResponse(['key'=>'operation_timeout'], [] ,Response::HTTP_OK);
         }
 
 
@@ -922,7 +921,7 @@ class BankingController extends Controller
         $confirmationCodeAttr = 'confirmationCode';
 
         $form = $this->createFormBuilder()
-            ->add($confirmationCodeAttr,TextType::class, array('label'=>'Code de confirmation', 'required'=>false))
+            //->add($confirmationCodeAttr,TextType::class, array('label'=>'Code de confirmation', 'required'=>false))
             ->add('cancel',    SubmitType::class, array('label' => 'Annuler','attr' => array('class'=>'red')))
             ->add('save',      SubmitType::class, array('label' => 'Confirmation'))
             ->getForm();
@@ -938,21 +937,21 @@ class BankingController extends Controller
             if($form->isValid()){
                 if($form->get('save')->isClicked()){
 
-                    $isValidCode = NULL;
-                    //CHECK VALIDATION CODE HERE
-                    if( $apiService->isRemoteCall()){//IF MOBILE APP CALL, CHECK PIN CODE
-                        $isValidCode = true;
-                    }else{ //ELSE, CHECK SMS Validation CODE
-                        $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
+                    $isValidCode = true;
+                    ////CHECK VALIDATION CODE HERE
+                    //if( $apiService->isRemoteCall()){//IF MOBILE APP CALL, CHECK PIN CODE
+                    //    $isValidCode = true;
+                    //}else{ //ELSE, CHECK SMS Validation CODE
+                    //    $encoder = $this->get('security.encoder_factory')->getEncoder($currentUser);
 
-                        $providedCode = $form->get($confirmationCodeAttr)->getData();
-                        $session_code = $session->get($confirmationCodeAttr);
+                    //    $providedCode = $form->get($confirmationCodeAttr)->getData();
+                    //    $session_code = $session->get($confirmationCodeAttr);
 
-                        $isValidCode = ($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code);
-                    }
-                    
-                    //valid code
-                    if($isValidCode){
+                    //    $isValidCode = ($encoder->encodePassword($providedCode,$currentUser->getSalt()) == $session_code);
+                    //}
+                    //
+                    ////valid code
+                    //if($isValidCode){
 
                         //according to the given type and amount, adapt the banking operation
                         if(property_exists($paymentReview,'recurringPayment')){ //recurring payment
@@ -961,9 +960,15 @@ class BankingController extends Controller
                             // Cyclos script will create operation when the transfer will occur
                             $em->remove($operation);
                             $em->flush();
-                            $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
 
-                            return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id'=>$recurringPaymentVO->id )); 
+                            $messages = ['key'=>'registered_operation'];
+                            return $this->getRedirectionResponse(
+                                'cairn_user_banking_transactions_recurring_view_detailed', 
+                                ['id'=>$recurringPaymentVO->id],
+                                $operation, 
+                                Response::HTTP_CREATED,
+                                $messages
+                            );
 
                         }else{
                             if($operation->getType() == Operation::TYPE_TRANSACTION_SCHEDULED){
@@ -972,84 +977,84 @@ class BankingController extends Controller
                             }else{
                                 $paymentVO = $this->bankingManager->makePayment($paymentReview->payment);
                                 $operation->setPaymentID($paymentVO->transferId);
-
-                                if($operation->getType() == Operation::TYPE_TRANSACTION_EXECUTED){
-                                    //IN CASE OF IMMEDIATE TRANSACTION, SEND EMAIL NOTIFICATION TO RECEIVER
-                                    $body = $this->get('templating')->render('CairnUserBundle:Emails:payment_notification.html.twig',
-                                        array('operation'=>$operation,'type'=>'transaction'));
-
-                                    $messageNotificator->notifyByEmail('Vous avez reçu un virement',
-                                        $messageNotificator->getNoReplyEmail(),$operation->getCreditor()->getEmail(),$body);
-
-                                }else{//MOBILE APP PAYMENT --> send push to receiver ?
-                                    ;
-                                }
                             }
                         }
 
                         $operation->setExecutionDate( new \Datetime() );
+
+                        //send notifications
+                        $messageNotificator->sendPaymentNotifications($operation);
+
                         $em->flush();
+
                         $session->remove($confirmationCodeAttr);
                         $session->remove('confirmationTries');
 
-                        if($_format == 'json'){
-                            return $apiService->getOkResponse($operation,Response::HTTP_CREATED);
-                        }
-                        $session->getFlashBag()->add('success','Votre opération a été enregistrée.');
-                        return $this->redirectToRoute('cairn_user_banking_transfer_view',array('paymentID'=>$operation->getPaymentID() ));
+                        $messages = ['key'=>'registered_operation'];
+                        return $this->getRedirectionResponse(
+                            'cairn_user_banking_transfer_view', 
+                            ['paymentID'=>$operation->getPaymentID() ],
+                            $operation, 
+                            Response::HTTP_CREATED,
+                            $messages
+                        );
 
-                    }else{//wrong confirmation code 
-                        if(!$session->get('confirmationTries')){
-                            $session->set('confirmationTries',1);
-                        }
+                    //}else{//wrong confirmation code 
+                    //    if(!$session->get('confirmationTries')){
+                    //        $session->set('confirmationTries',1);
+                    //    }
 
-                        if($session->get('confirmationTries') < 3){
-                            $remainingTries = 3 - $session->get('confirmationTries');
-                            $session->set('confirmationTries',$session->get('confirmationTries') + 1);
+                    //    if($session->get('confirmationTries') < 3){
+                    //        $remainingTries = 3 - $session->get('confirmationTries');
+                    //        $session->set('confirmationTries',$session->get('confirmationTries') + 1);
+    
+                    //        $messages = ['wrong_code_remaining'=>[$remainingTries]];
+                    //        return $this->getRedirectionResponse(
+                    //            $request->getRequestUri(), 
+                    //            [],
+                    //            [], 
+                    //            Response::HTTP_BAD_REQUEST,
+                    //            $messages
+                    //        );
 
-                            
-                            $message = 'Code de confirmation erroné '.$remainingTries.' essais restants'; 
-                            
+                    //    }else{
+                    //        $session->remove($confirmationCodeAttr);
+                    //        $session->remove('confirmationTries');
 
-                            if($_format == 'json'){
-                                return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
-                            }
-
-                            $session->getFlashBag()->add('error',$message);
-                            return new RedirectResponse($request->getRequestUri());
-
-                        }else{
-                            $session->remove($confirmationCodeAttr);
-                            $session->remove('confirmationTries');
-
-                            $message = '3 erreurs de saisie : le virement a été annulé';
-
-                            $em->remove($operation);
-                            $em->flush();
-                           
-                            if($_format == 'json'){
-                                return $apiService->getErrorResponse(array($message),Response::HTTP_BAD_REQUEST);
-                            }
-
-                            $session->getFlashBag()->add('error',$message);
-                            return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
-                        }
-                    }
+                    //        $em->remove($operation);
+                    //        $em->flush();
+                    //       
+                    //        $messages = ['wrong_code_cancel'=>[]];
+                    //        return $this->getRedirectionResponse(
+                    //            'cairn_user_banking_operations', 
+                    //            ['type'=>$type],
+                    //            [], 
+                    //            Response::HTTP_BAD_REQUEST,
+                    //            $messages
+                    //        );
+                    //    }
+                    //}
                 }else{//cancel button clicked
-                    $session->remove($confirmationCodeAttr);
+                    //$session->remove($confirmationCodeAttr);
                     $em->remove($operation);
                     $em->flush();
 
-                    if($_format == 'json'){
-                        return $apiService->getOkResponse(array('Operation canceled !'),Response::HTTP_OK);
-                    }
-
-                    return $this->redirectToRoute('cairn_user_banking_operations',array('type'=>$type)); 
+                    $messages = ['key'=>'cancel_button'];
+                    return $this->getRedirectionResponse(
+                        'cairn_user_banking_operations', 
+                        [],
+                        [], 
+                        Response::HTTP_OK,
+                        $messages
+                    );
                 }
             }
         }
-        return $this->render('CairnUserBundle:Banking:operation_confirm.html.twig', array('form' => $form->createView(),'operationReview' => $paymentReview,'date'=>$operation->getExecutionDate()));
-
+        return $this->getFormResponse(
+            'CairnUserBundle:Banking:operation_confirm.html.twig', 
+            ['form' => $form->createView(),'operationReview' => $paymentReview, 'date'=>$operation->getExecutionDate()],
+            $form 
+        );
     }
 
     /**
@@ -1107,13 +1112,12 @@ class BankingController extends Controller
 
                     $em->flush();
 
-                    $session->getFlashBag()->add('success','Le virement a été effectué avec succès.');
+                    $messages = ['key'=>'registered_operation'];
 
                 }catch(\Exception $e){
                     if($e instanceof Cyclos\ServiceException){
                         if($e->errorCode == 'INSUFFICIENT_BALANCE'){
-                            $message = 'Vous n\'avez pas les fonds nécessaires. Le virement ne peut aboutir';
-                            $session->getFlashBag()->add('error',$message);
+                            $messages = ['key'=>'not_enough_funds'];
                         }
                     }
                     else{
@@ -1122,13 +1126,21 @@ class BankingController extends Controller
                     
                 }
 
-                return $this->redirectToRoute('cairn_user_banking_transactions_recurring_view_detailed',array('id' => $recurringID));
+                return $this->getRedirectionResponse(
+                    'cairn_user_banking_transactions_recurring_view_detailed', 
+                    ['id' => $recurringID],
+                    [], 
+                    Response::HTTP_OK,
+                    $messages
+                );
             }
         }
 
-        return $this->render('CairnUserBundle:Banking:execute_occurrence.html.twig', array(
-            'form'   => $form->createView()
-        ));
+        return $this->getFormResponse(
+                        'CairnUserBundle:Banking:execute_occurrence.html.twig', 
+                        ['form' => $form->createView()],
+                        $form 
+                    );
     }
 
 
@@ -1190,12 +1202,13 @@ class BankingController extends Controller
 
             $futureInstallments = $futureInstallmentQuery->getResult();
 
-            return $this->render('CairnUserBundle:Banking:view_single_transactions.html.twig',
-                array('processedTransactions'=>$processedTransactions ,
-                'futureInstallments'=> $futureInstallments,
-                'form'=>$form->createView()
-            ));
-
+            return $this->getRenderResponse(
+                'CairnUserBundle:Banking:view_single_transactions.html.twig',
+                ['processedTransactions'=>$processedTransactions, 'futureInstallments'=> $futureInstallments,'form'=>$form->createView()],
+                $form,
+                Response::HTTP_OK
+            );
+            
         }else{
             $processedTransactions = $bankingService->getRecurringTransactionsDataBy(
                 $userVO,$accountTypesVO,array('CLOSED','CANCELED'));
@@ -1203,15 +1216,12 @@ class BankingController extends Controller
             $ongoingTransactions = $bankingService->getRecurringTransactionsDataBy(
                 $userVO,$accountTypesVO,array('OPEN'));
 
-            if($_format == 'json'){
-                return $this->json(array(
-                    'processedTransactions'=>$processedTransactions ,
-                    'ongoingTransactions'=> $ongoingTransactions));
-            }
-
-            return $this->render('CairnUserBundle:Banking:view_recurring_transactions.html.twig', 
-                array('form'=>$form->createView(),'processedTransactions'=>$processedTransactions,'ongoingTransactions' => $ongoingTransactions));
-
+            return $this->getRenderResponse(
+                'CairnUserBundle:Banking:view_recurring_transactions.html.twig',
+                ['processedTransactions'=>$processedTransactions, 'ongoingTransactions' => $ongoingTransactions,'form'=>$form->createView()],
+                $form,
+                Response::HTTP_OK
+            );
         }
     }
 
@@ -1259,19 +1269,20 @@ class BankingController extends Controller
         $toNumber = $operation->getToAccountNumber();
 
         if((! in_array($fromNumber,$accountNumbers)) && (! in_array($toNumber,$accountNumbers))){
-            throw new AccessDeniedException('Pas les droits nécessaires');
+            throw new AccessDeniedException('not_access_rights');
         }   
 
         //to see the content, check that currentUser is owner or currentUser is referent
         if(! ($currentUser->isAdherent() || $currentUser->hasRole('ROLE_SUPER_ADMIN'))){
-            throw new AccessDeniedException('Pas les droits nécessaires');
+            throw new AccessDeniedException('not_access_rights');
         }
 
-        if($_format == 'json'){
-            return $apiService->getOkResponse($operation,Response::HTTP_OK);
-        }
-        return $this->render('CairnUserBundle:Banking:transfer_view.html.twig',array(
-            'operation'=>$operation));
+        return $this->getRenderResponse(
+            'CairnUserBundle:Banking:transfer_view.html.twig',
+            ['operation'=>$operation],
+            $operation,
+            Response::HTTP_OK
+        );
     }
 
 

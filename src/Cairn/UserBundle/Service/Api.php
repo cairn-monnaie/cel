@@ -12,15 +12,24 @@ use Cairn\UserBundle\Entity\User;
 use Cairn\UserBundle\Entity\Beneficiary;
 use Cairn\UserBundle\Entity\Operation;
 use Cairn\UserBundle\Entity\SmsData;
-use Cairn\UserBundle\Entity\AppData;
+use Cairn\UserBundle\Entity\NotificationData;
 use Cairn\UserBundle\Entity\Phone;
+use Cairn\UserBundle\Entity\BaseNotification;
+
 use Cairn\UserBundle\Entity\File as CairnFile;
 
+use Cairn\UserBundle\Service\Messages;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+ use Symfony\Component\HttpFoundation\RedirectResponse;
+
 use Symfony\Component\Form\FormInterface;
 
 use Cairn\UserBundle\Service\Security;
+use Symfony\Bundle\TwigBundle\TwigEngine;
+use Symfony\Bundle\FrameworkBundle\Routing\Router;
 
 /**
  * This class contains all useful services to build an API
@@ -32,10 +41,16 @@ class Api
 
     protected $security;
 
-    public function __construct(RequestStack $requestStack, Security $security)
+    protected $templating;
+
+    protected $router;
+
+    public function __construct(RequestStack $requestStack, Security $security, TwigEngine $templating, Router $router)
     {
         $this->requestStack = $requestStack;
         $this->security = $security;
+        $this->templating = $templating;
+        $this->router = $router;
     }
 
     /**
@@ -54,8 +69,8 @@ class Api
             $url = $url."?".http_build_query($params);
         }
 
-		$ch = \curl_init($url);
-        
+        $ch = \curl_init($url);
+
         // Set the CURL options
         $options = array(
             CURLOPT_RETURNTRANSFER => true,
@@ -63,9 +78,9 @@ class Api
 
         \curl_setopt_array ($ch, $options);
 
-		// Execute the request
-		$json = \curl_exec($ch);
-		$code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        // Execute the request
+        $json = \curl_exec($ch);
+        $code = \curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $results = \json_decode($json,true);
 
         curl_close($ch);
@@ -77,8 +92,8 @@ class Api
     public function isApiCall()
     {
         $request = $this->requestStack->getCurrentRequest();                     
-                                                                                          
-//        $isCorrectAuth = (strpos($request->headers->get('authorization'),'Bearer') !== false);
+
+        //        $isCorrectAuth = (strpos($request->headers->get('authorization'),'Bearer') !== false);
         $isCorrectUrl = (strpos($request->getRequestURI(),'/api') !== false);
         $isCorrectRoute = (strpos($request->get('_route'),'cairn_user_api') !== false);
 
@@ -97,105 +112,240 @@ class Api
         $request = $this->requestStack->getCurrentRequest();                     
 
         return ( (($request->getRequestFormat() != 'html') && (strpos($request->getRequestURI(),'/mobile') !== false)) || 
-            (in_array($request->get('_route'),array('cairn_zipcities_mobile','cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
+            (in_array($request->get('_route'),array('cairn_accounts_mobile_map_users','cairn_zipcities_mobile','cairn_accounts_mobile_ajax' ,'cairn_user_api_get_tokens')))  );
     }
 
-     public function fromArrayToStringDeterministicOrder($arr)
-     {
-         if( is_scalar($arr)){
-             return $arr;
-         }
+    public function is_assoc($array) {
+        foreach (array_keys($array) as $k => $v) {
+            if ($k !== $v)
+                return true;
+        }
+        return false;
+    }
 
-         $res = '';
-         if( is_array($arr) ){
-             $toSort = [];
-             foreach($arr as $key=>$item){
-                 $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
-     
-             }
-             sort($toSort);
-             $res .= implode($toSort);
-         }
+    public function fromArrayToStringDeterministicOrder($arr)
+    {
+        if( is_scalar($arr)){
+            if (is_bool($arr)) {
+                return $arr ? 'true' : 'false';
+            }
+            return strval($arr);
+        }
 
-         return $res;
-     }
+        $res = '';
+        if( is_array($arr) ){
+            if(! $this->is_assoc($arr)){
+                $toSort = [];
+                foreach($arr as $item){
+                    $toSort[] = $this->fromArrayToStringDeterministicOrder($item);
+                }
+            }else{
+                $toSort = [];
+                foreach($arr as $key=>$item){
+                    $toSort[] = $key.':'.$this->fromArrayToStringDeterministicOrder($item);
 
-    public function getOkResponse($responseData,$statusCode)
+                }
+            }
+            sort($toSort,SORT_STRING);
+            $res .= implode($toSort);
+        }
+
+        return $res;
+    }
+
+    public function getApiResponse($apiJsonData,$statusCode)
+    {
+        $response = new Response($apiJsonData);   
+        $response->setStatusCode($statusCode);
+        $response->headers->set('Content-Type', 'application/json');
+        $response->headers->set('Accept', 'application/json');
+
+        return $response;
+    }
+
+
+    public function getFormResponse(string $renderPath,array $renderParams = [], FormInterface $form,$messages = [])
+    {
+        $isRemoteCall = $this->isRemoteCall();
+        $formErrors = $form->getErrors(true);
+
+        $messages = $this->setMessages($isRemoteCall,$messages);
+
+        if($isRemoteCall){
+            $errors = [];
+            foreach ($formErrors as $error) {
+                $code = $error->getCause()->getCode();
+                //code is NULL or symfony format(e.g 6e5212ed-a197-4339-99aa-5654798a4854 )
+                if((!$code) || (preg_match('#^(\w+\-){4,}#',$code))){
+                    $errors[] = array('key'=>$error->getMessageTemplate(),'message'=>$error->getMessage(),'args'=>[$error->getCause()->getInvalidValue()]);
+                }else{
+                    $tmp = array('key'=>$code,'args'=>[$error->getCause()->getInvalidValue()]);
+                    if($error->getMessage()){
+                        $tmp['message'] = $error->getMessage();
+                    }
+                    $errors[] = $tmp;
+                }
+                
+            }
+
+            $errors = $this->setMessages($isRemoteCall,$errors);
+            
+
+            $apiData = ['errors'=>$errors ,'messages'=> $messages ];
+            return $this->getApiResponse($this->serialize($apiData),Response::HTTP_OK);
+        }else{
+            return new Response($this->templating->render($renderPath, $renderParams));
+        }
+    }
+
+    public function getRenderResponse(string $renderPath,array $renderParams = [], $data, $statusCode, $messages = [])
     {
         if(($statusCode < 200) || ($statusCode >= 300)){
             throw new \Exception('Status code '.$statusCode.' is not an OK status',500);
         }
 
-        $response = new Response($this->serialize($responseData));            
-        $response->setStatusCode($statusCode);      
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Accept', 'application/json');
+        $isRemoteCall = $this->isRemoteCall();
+        $messages = $this->setMessages($isRemoteCall,$messages);
 
-        return $response;
-    }
-
-    public function getErrorResponse($messages, $statusCode)
-    {
-        if($statusCode < 400){
-            throw new \Exception('Status code '.$statusCode.' is not an error status',500);
+        if($isRemoteCall){
+            $apiData = '{ "data": '.$this->serialize($data).',"messages":'.$this->serialize($messages).'}';
+            return $this->getApiResponse($apiData,$statusCode);
+        }else{
+            return new Response($this->templating->render($renderPath, $renderParams));
         }
-        $errors = [];                                              
-        foreach ($messages as $message) {               
-            $errors[] = array('error'=>$message); 
-        }                                                          
-        $response = new Response(json_encode($errors));            
-        $response->setStatusCode($statusCode);      
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Accept', 'application/json');
-
-        return $response;
     }
 
-    public function getFormErrorResponse(FormInterface $form)
+    public function getRedirectionResponse(string $redirectKey,array $redirectParams = [], $data, $statusCode, $messages = [])
     {
-        $errors = [];                                              
-        foreach ($form->getErrors(true) as $error) {               
-            $errors[] = array('key'=>$error->getOrigin()->getName(),'error'=>$error->getMessage()); 
-        }                                                          
-        $response = new Response(json_encode($errors));            
-        $response->setStatusCode(Response::HTTP_BAD_REQUEST);      
-        $response->headers->set('Content-Type', 'application/json');
+        if(($statusCode < 200) || ($statusCode >= 300)){
+            throw new \Exception('Status code '.$statusCode.' is not an OK status',500);
+        }
 
-        return $response;
+        $isRemoteCall = $this->isRemoteCall();
+        $messages = $this->setMessages($isRemoteCall,$messages);
+
+        if($isRemoteCall){
+            $apiData = '{ "data": '.$this->serialize($data).',"messages":'.$this->serialize($messages).'}';
+            return $this->getApiResponse($apiData,$statusCode);
+        }else{
+            $redirectUrl = (filter_var($redirectKey, FILTER_VALIDATE_URL) === false) ? $this->router->generate($redirectKey,$redirectParams) : $redirectKey;
+            return new RedirectResponse($redirectUrl);
+        }
     }
+
+    public function getErrorsResponse($errors, $messages, $statusCode,$redirectKey='cairn_user_welcome')
+    {
+        $isRemoteCall = $this->isRemoteCall();
+
+        $formattedMessages = $this->setMessages($isRemoteCall,$messages);
+        $formattedErrors = $this->setMessages($isRemoteCall,$errors);
+
+        if($isRemoteCall){
+            $apiData = ['errors'=>$formattedErrors, 'messages'=>$formattedMessages];
+            return $this->getApiResponse($this->serialize($apiData),$statusCode);
+        }else{ 
+            //$redirectUri = (filter_var($redirectKey, FILTER_VALIDATE_URL) === false) ? $this->router->generate($redirectKey,[]) : $redirectKey;
+            $redirectUri = (preg_match('#^(\w+\_){2,}#',$redirectKey)) ? $this->router->generate($redirectKey,[]) : $redirectKey;
+
+            return new RedirectResponse($redirectUri);
+        }
+    }
+
+    private function setMessages($isRemoteCall,$messages)
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        $formattedMessages = Messages::getMessages($messages);
+        if($isRemoteCall){
+            return $formattedMessages;
+        }else{
+            $session = $request->getSession();
+            foreach($formattedMessages as $message){
+                $session->getFlashBag()->add($message['type'],$message['message']);
+            }
+        }
+    }
+
+    #public function getOkResponse($responseData,$statusCode,$responseKey = NULL)
+    #{
+    #    if(($statusCode < 200) || ($statusCode >= 300)){
+    #        throw new \Exception('Status code '.$statusCode.' is not an OK status',500);
+    #    }
+
+    #    return $this->getApiResponse($this->serialize($responseData),$statusCode);
+    #}
+
+    #public function getErrorResponse($messages, $statusCode)
+    #{
+    #    if($statusCode < 400){
+    #        throw new \Exception('Status code '.$statusCode.' is not an error status',500);
+    #    }
+    #    $errors = [];                                              
+    #    foreach ($messages as $message) {               
+    #        $errors[] = array('error'=>$message); 
+    #    }                                                          
+
+    #    return $this->getApiResponse(json_encode($errors),$statusCode);
+    #}
+
+    #public function getFormErrorResponse(FormInterface $form,$statusCode)
+    #{
+    #    $isRemoteCall = $this->isRemoteCall();
+    #    $formErrors = $form->getErrors(true);
+
+    #    if($isRemoteCall){
+    #        $errors = [];                      
+    #        foreach ($formErrors as $error) {               
+    #            $errors[] = array('key'=>$error->getOrigin()->getName(),'error'=>$error->getMessage()); 
+    #        }                                                          
+
+    #        return $this->getApiResponse(json_encode($errors),Response::HTTP_OK);
+    #    }
+    #}
 
     function objectCallback($child)
     {
         $currentUser = $this->security->getCurrentUser();
 
         if($child instanceOf User){
-            return array('name'=>$child->getName(),
-                         'address'=>$child->getAddress(),
-                         'image'=>$this->objectCallback($child->getImage()),
-                         'email'=>$child->getEmail(),
-                         'description'=>$child->getDescription(),
-                         'id'=>$child->getID()
-                     );
+            $attrs = [
+                'name'=>$child->getName(),
+                'address'=>$child->getAddress(),
+                'email'=>$child->getEmail(),
+                'description'=>$child->getDescription(),
+                'id'=>$child->getID(),
+                'roles'=>$child->getRoles()
+            ];
+
+            if($this->isRemoteCall()){
+                $attrs['image'] = $this->objectCallback($child->getImage());
+            }
+            return $attrs;
         }
 
         if($child instanceOf CairnFile){
             return array('url'=>$child->getUrl(),
-                         'alt'=>$child->getAlt(),
-                         'webPath'=>$child->getWebPath()
-                     );
+                'alt'=>$child->getAlt(),
+                'webPath'=>$child->getWebPath()
+            );
         }
 
         if($child instanceOf SmsData){
             return array('user'=>$this->objectCallback($child->getUser()),
-                         'id'=>$child->getID()
-                     );
+                'id'=>$child->getID()
+            );
         }
 
-        if($child instanceOf AppData){
+        if($child instanceOf NotificationData){
             return array('user'=>$this->objectCallback($child->getUser()),
-                         'id'=>$child->getID()
-                     );
+                'id'=>$child->getID()
+            );
         }
+
+        if($child instanceOf BaseNotification){
+            return json_decode($this->serialize($child),true);
+        }
+
         if($child instanceOf Phone){
             $phoneInfos = array('id'=>$child->getID(),'identifier'=>$child->getIdentifier());
 
@@ -205,61 +355,80 @@ class Api
             return $phoneInfos;
         }
 
-
     }
 
     public function setCallbacksAndAttributes($normalizer, $object, $extraIgnoredAttributes)
     {
-        $defaultIgnoredAttributes = array();
+        $defaultIgnoredAttributes = [];
         $serializationAttributes = ["__initializer__", "__cloner__", "__isInitialized__"];
 
         if($object instanceOf User){
-            $defaultIgnoredAttributes = array('creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','appData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
-            $normalizer->setCallbacks(array(
-                        'image'=> function ($child) {return $this->objectCallback($child);},
-                        'phones'=> function ($child) {
-                            $phones = [];
-                            foreach($child as $item){
-                                $phones[] = $this->objectCallback($item);
-                            }
-                            return $phones;
-                        },
-            ));
+            $defaultIgnoredAttributes = array('publish','proCategories','dolibarrID','creationDate','superAdmin','removalRequest','identityDocument','admin','cyclosID','nbPhoneNumberRequests','passwordRequestedAt','cardAssociationTries','phoneNumberActivationTries','cardKeyTries','passwordTries','confirmationToken','cyclosToken','salt','firstname','plainPassword','password','phoneNumbers','notificationData','smsData','apiClient','localGroupReferent','singleReferent','referents','beneficiaries','card','webPushSubscriptions','usernameCanonical','emailCanonical','accountNonExpired','accountNonLocked','credentialsNonExpired','groups','groupNames');
+
+            $callback = array(
+                'phones'=> function ($child) {
+                    $phones = [];
+                    foreach($child as $item){
+                        $phones[] = $this->objectCallback($item);
+                    }
+                    return $phones;
+                },
+            );
+
+            if(! $this->isRemoteCall()){
+                $defaultIgnoredAttributes[] = 'image';
+            }else{
+                $callback['image'] = function ($child) {return $this->objectCallback($child);};
+            }
+            $normalizer->setCallbacks($callback);
         }
         if($object instanceOf Beneficiary){
             $defaultIgnoredAttributes = array('sources');
             $normalizer->setCallbacks(array('user'=> function ($child) {return $this->objectCallback($child);}
-            ));
+        ));
         }
         if($object instanceOf Operation){
-            $defaultIgnoredAttributes = array('fromAccount','toAccount','mandate');
+            $defaultIgnoredAttributes = ['fromAccount','toAccount','mandate','creditorContent'];  
             $normalizer->setCallbacks(array(
-                        'creditor'=> function ($child) {return $this->objectCallback($child);},
-                        'debitor'=>  function ($child) {return $this->objectCallback($child);}
-           ));
+                'creditor'=> function ($child) {return $this->objectCallback($child);},
+                'debitor'=>  function ($child) {return $this->objectCallback($child);}
+            ));
         }
 
         if($object instanceOf SmsData){
             $defaultIgnoredAttributes = array('smsClient');
             $normalizer->setCallbacks(array(
-                        'user'=> function ($child) {return $this->objectCallback($child);},
-           ));
+                'user'=> function ($child) {return $this->objectCallback($child);},
+            ));
         }
-        if($object instanceOf AppData){
+        if($object instanceOf NotificationData){
+            $defaultIgnoredAttributes = array('deviceTokens','androidDeviceTokens','iosDeviceTokens','webPushSubscriptions','pinCode');
             $normalizer->setCallbacks(array(
-                        'user'=> function ($child) {return $this->objectCallback($child);},
-           ));
+                'baseNotifications'=> function ($child) {
+                    $notifs = [];
+                    foreach($child as $item){
+                        $notifs[] = $this->objectCallback($item);
+                    }
+                    return $notifs;
+                },
+                'user'=> function ($child) {return $this->objectCallback($child);},
+            ));
+        }
+        if($object instanceOf BaseNotification){
+            $defaultIgnoredAttributes = array('keyword','targetData','timeToLive','priority','collapsible','notificationData');
         }
 
         if($object instanceOf Phone){
             $defaultIgnoredAttributes = array('user','dailyAmountThreshold','dailyNumberPaymentsThreshold');
             $normalizer->setCallbacks(array(
-                        'smsData'=> function ($child) {return $this->objectCallback($child);}
-           ));
+                'smsData'=> function ($child) {return $this->objectCallback($child);}
+            ));
         }
 
         $ignoredAttributes = array_merge($defaultIgnoredAttributes, $extraIgnoredAttributes,$serializationAttributes);
         $normalizer->setIgnoredAttributes($ignoredAttributes);
+
+        return $ignoredAttributes;
     }
 
 
@@ -275,8 +444,8 @@ class Api
         $normalizer = array(new DateTimeNormalizer(),new ObjectNormalizer());
 
         if( is_array($object)){
-            foreach($object as $item){
-                $this->setCallbacksAndAttributes($normalizer[1], $item, $extraIgnoredAttributes);
+            foreach($object as $key=>$item){
+                $extraIgnoredAttributes = $this->setCallbacksAndAttributes($normalizer[1], $item, $extraIgnoredAttributes);
             }
         }else{
             $this->setCallbacksAndAttributes($normalizer[1], $object, $extraIgnoredAttributes);
@@ -284,7 +453,7 @@ class Api
 
         $encoder = new JsonEncoder();
         $serializer = new Serializer($normalizer, array($encoder));
-       
+
         return $serializer->serialize($object, 'json');
     }
 
@@ -296,5 +465,6 @@ class Api
 
         return $serializer->deserialize($json_object, $class, 'json');
     }
+
 }
 

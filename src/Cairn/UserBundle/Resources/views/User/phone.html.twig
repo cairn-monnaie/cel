@@ -39,7 +39,7 @@
             <p>
                <label>
                  {{ form_widget(formPhone.paymentEnabled) }}                                         
-                 <span><b>Autoriser le paiement par SMS</b></span>
+                 <span><b>Autoriser ce n° à payer par SMS</b></span>
                </label>
             </p>
 
@@ -64,7 +64,7 @@
              </p>
          </div>
          <div class="modal-footer">
-             <a href="#!" class="modal-close waves-effect waves-green btn-flat"><b>Compris !</b></a>
+             <a href="#!" class="modal-close waves-effect waves-green btn-flat understood"><b>Compris !</b></a>
          </div>
      </div>
 
@@ -76,7 +76,7 @@
              </p>
          </div>
          <div class="modal-footer">
-             <a href="#!" class="modal-close waves-effect waves-green btn-flat"><b>Compris !</b></a>
+             <a href="#!" class="modal-close waves-effect waves-green btn-flat understood"><b>Compris !</b></a>
          </div>
      </div>
 
@@ -89,30 +89,46 @@
 
             var identifierInputField = document.querySelector('input#cairn_userbundle_phone_identifier');
 
-            var Modalelem = document.querySelector('div#modalIdentifier');
+            var ModalElemId = document.querySelector('div#modalIdentifier');
+            var ModalElemIdButton = ModalElemId.querySelector('a.understood');
+            var isIdButtonClicked = false;
 
-            var instanceModalIdentifier = M.Modal.init(Modalelem,{
+            var instanceModalIdentifier = M.Modal.init(ModalElemId,{
                 onCloseEnd : function() {
                     identifierInputField.focus();
                 }
             }) ;
             
             identifierInputField.addEventListener('click', function() {
-                instanceModalIdentifier.open();
+                if(! isIdButtonClicked){
+                    instanceModalIdentifier.open();
+                }
+            });
+
+            ModalElemIdButton.addEventListener('click', function() {
+                isIdButtonClicked = true;
             });
 
             var phoneNumberInputField = document.querySelector('input#cairn_userbundle_phone_phoneNumber');
 
-            var Modalelem = document.querySelector('div#modalPhoneNumber');
+            var ModalElemPhone = document.querySelector('div#modalPhoneNumber');
+            var ModalElemPhoneButton = ModalElemPhone.querySelector('a.understood');
+            var isPhoneButtonClicked = false;
 
-            var instanceModalPhone = M.Modal.init(Modalelem,{
+            var instanceModalPhone = M.Modal.init(ModalElemPhone,{
                 onCloseEnd : function() {
                     phoneNumberInputField.focus();
                 }
             }) ;
             
             phoneNumberInputField.addEventListener('click', function() {
-                instanceModalPhone.open();
+                if(! isPhoneButtonClicked){
+                    instanceModalPhone.open();
+                }
+            });
+
+            ModalElemPhoneButton.addEventListener('click', function() {
+                isPhoneButtonClicked = true;
             });
 
         });

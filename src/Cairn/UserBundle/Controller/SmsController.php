@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /**
  * This class contains actions related to sms operations 
  */
-class SmsController extends Controller
+class SmsController extends BaseController
 {
 
     /**
@@ -61,16 +61,16 @@ class SmsController extends Controller
         $apiService = $this->get('cairn_user.api');
 
         if(! htmlspecialchars($query['originator']) == $this->getParameter('notificator_consts')['sms']['originator']){
-            return $apiService->getErrorResponse(array('Invalid request'),Response::HTTP_NOT_FOUND);
+            return $apiService->getApiResponse(json_encode(['Invalid request']),Response::HTTP_BAD_REQUEST);
         } 
 
         $sender_phoneNumber = preg_replace('#^0033#','+33',htmlspecialchars($query['recipient']) );
         $res = $this->smsAction($sender_phoneNumber,$query['message']);
 
         if(! $res){
-            return $apiService->getErrorResponse(array('Request aborted'),Response::HTTP_BAD_REQUEST);
+            return $apiService->getApiResponse(json_encode(['Request aborted']),Response::HTTP_BAD_REQUEST);
         }else{
-            return $apiService->getOkResponse(array('Request OK !'),Response::HTTP_OK);
+            return $apiService->getApiResponse(json_encode(['Request OK !']),Response::HTTP_OK);
         }
     }
 
@@ -290,8 +290,24 @@ class SmsController extends Controller
         try{
             $networkInfo = $this->get('cairn_user_cyclos_network_info');
             $networkName = $this->getParameter('cyclos_currency_cairn');
-            $accessClient = $securityService->getSmsClient($debitorUser);
+            $securityService = $this->get('cairn_user.security');
 
+            $accessClient = $securityService->getSmsClient($debitorUser);
+            if(! $accessClient){
+                $networkInfo->switchToNetwork($networkName,'access_client', $securityService->vigenereDecode($debitorUser->getCyclosToken()));
+
+                $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($debitorUser->getCyclosID(), 'client_sms' ,array('BLOCKED','ACTIVE'));
+
+                if(! $accessClientVO){
+                    $securityService->createAccessClient($debitorUser,'client_sms');
+                    $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($debitorUser->getCyclosID(), 'client_sms' ,'UNASSIGNED');
+                    $smsClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                    $smsClient = $securityService->vigenereEncode($smsClient);
+                    $debitorUser->getSmsData()->setSmsClient($smsClient);
+                }
+                $accessClient = $securityService->getSmsClient($debitorUser);
+            }
+            
             if(!$accessClient){
                 $subject = 'Accès client Cyclos';
                 $from = $this->getParameter('cairn_email_noreply');
@@ -668,26 +684,8 @@ class SmsController extends Controller
         $smsSuccessDebitor = $messageNotificator->sendSMS($debitorPhoneNumber,$messageDebitor);
 
 
-        $messageCreditor = 'Vous avez reçu un paiement de '.$operation->getAmount().' de la part de '.$debitorUser->getName() ;
-
-        $notifPermission = $creditorUser->getSmsData()->getNotificationPermission();
-        if($notifPermission->isSmsEnabled()){
-            $smsSuccessCreditor = $messageNotificator->sendSMS($creditorPhoneNumber,$messageCreditor);
-            $this->persistSMS($smsSuccessCreditor);
-        }
-        if($notifPermission->isWebPushEnabled()){
-            $messageNotificator->sendNotification($creditorUser,'Paiement SMS [e]-Cairn',$messageCreditor);
-        }
-
-        if($notifPermission->isEmailEnabled()){
-            $subject = 'Paiement SMS [e]-Cairn';
-            $from = $messageNotificator->getNoReplyEmail();
-            $to = $creditorUser->getEmail();
-            $body = $this->renderView('CairnUserBundle:Emails:payment_notification.html.twig',array('operation'=>$operation,'phone'=>$creditorPhone,'type'=>'sms'));
+        $messageNotificator->sendPaymentNotifications($operation,$creditorPhoneNumber);
         
-            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
-        }
-
         $em->persist($operation);
         $this->persistSMS($smsSuccessDebitor);
 

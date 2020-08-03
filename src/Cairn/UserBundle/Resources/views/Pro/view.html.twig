@@ -31,7 +31,11 @@
                 </h5>
             </div>
         </div>
-        
+        {% if app.user.hasRole('ROLE_SUPER_ADMIN') and user.isAdherent() %}
+            <div class="row body_wrapper">
+                {{include("CairnUserBundle:Banking:accounts_table.html.twig",{'accounts':accounts})}}
+            </div>
+        {% endif %}
         <div class="row">
         <ul class="collapsible">
             <li class="">
@@ -52,15 +56,18 @@
                             &nbsp;{{ user.address.zipCity.zipCode}}
                             &nbsp;{{ user.address.zipCity.city}}
                         </div>
+                        
                         <div class="col s12 truncate"><i class="material-icons tiny">file_download</i>
-                            &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
+                            {% if user.identityDocument is not null %}
+                                &nbsp;<a href="{{path('cairn_user_iddocument_download',{'id': user.identityDocument.id})}}"> Pièce d'identité</a>
+                            {% endif %}
                             {% if ( user.hasRole('ROLE_PRO') and logoIsDefined ) %}
                                 &nbsp;<a href="{{path('cairn_user_logo_download',{'id': user.image.id})}}"> Logo</a>
                             {% endif %}
                         </div>
                     </div>
                     <blockquote>
-                        {{ user.description}}
+                        {{ user.excerpt}}
                     </blockquote>
                     {% if user.id == app.user.id %}
                         <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>
@@ -79,33 +86,6 @@
 
                 <div class="collapsible-body" style="display: none;">
                     <div class="row">
-                        
-
-                        {% if (user.hasRole('ROLE_PRO')) and (user.smsData) %}
-                        <div class="container">
-
-                            <div class="smsdata_notification">
-                            <table class="striped smsdata_notification hoverable">
-                                <caption>Recevoir une notification de paiement SMS</caption>
-                                <tbody>
-                                  <tr>
-                                    <td>Notification sur ce navigateur </td>
-                                    <td><i class="material-icons tiny permission"></i></td>
-                                  </tr>
-                                  <tr>
-                                    <td>Email à {{user.email}}</td>
-                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.emailEnabled ? 'check' : 'cancel'}}</i></td>
-                                  </tr>
-                                  <tr>
-                                    <td>SMS</td>
-                                    <td><i class="material-icons tiny">{{ user.smsData.notificationPermission.smsEnabled ? 'check' : 'cancel'}}</i></td>
-                                  </tr>
-                                </tbody>
-                            </table>
-                            </div>
-                        </div>
-                        {% endif %}
-
                         {% if user.smsData %}
                             {% for phone in user.smsData.phones %}
                             <div class="smsdata">
@@ -170,6 +150,10 @@
                     </div>
                 </div>
             </li>
+            <li>
+                <div class="collapsible-header"><i class="material-icons">notifications</i><a href="{{path('cairn_user_notification_data_edit',{'id': user.id})}}">Paramètres de notifications</a></div>
+            </li>
+
             {% endif %}
             <li>
                 <div class="collapsible-header"><i class="material-icons">build</i>Actions</div>
@@ -177,10 +161,17 @@
                     {% if app.user.hasRole('ROLE_SUPER_ADMIN') and app.environment == 'dev' and user.isAdherent() %}
                         <a class="btn light-blue" href="{{path('cairn_user_banking_credit_exnihilo',{'username': user.username})}}"><i class="material-icons left">credit_card</i>Créditer le compte de 2000 cairns</a>
                     {% endif %}
+                    {% if app.user.hasRole('ROLE_SUPER_ADMIN') and user.hasRole('ROLE_PRO') %}
+                        <a class="waves-effect waves-teal btn right-align" href="{{ path('cairn_user_push_registration', {'id' : user.id}) }}"><i class="material-icons left">notifications</i>Envoyer une notification</a>
+                    {% endif %}
                     {% if user.enabled == true %}
                         <a class="btn red" href="{{path('cairn_user_users_block',{'username': user.username})}}"><i class="material-icons left">lock</i> Faire opposition au compte</a>
                     {% else %}
+                        {% if user.mainICC %}
                         <a class="btn green" href="{{path('cairn_user_users_activate',{'username': user.username})}}"><i class="material-icons left">unlock</i>Autoriser l'accès à la plateforme</a>
+                        {% else %}
+                        <a class="btn green" href="{{path('cairn_user_users_activate',{'username': user.username})}}"><i class="material-icons left">unlock</i>Ouvrir le compte [e]-Cairn</a>
+                        {% endif %}
                     {% endif %}
 
                     <a href="{{path('cairn_user_users_remove',{'username' : user.username})}}" class="btn waves-effect waves-light red"><i class="material-icons left">clear</i>Clôturer le compte</a>
@@ -256,51 +247,10 @@
     </div>
 
 
-        {% if (app.user == user) and user.hasRole('ROLE_PRO') and user.smsData %}
-            <div class="js-smsdata-id" data-get-smsdataid="{{user.smsData.id}}">
-
-            {% set nP = user.smsData.notificationPermission %}            
-            <div class="js-user-webpush" data-get-wp="{{nP.webPushEnabled}}">
-        {% endif %}
-
 {% endblock %}              
 
 
 {% block javascripts %}
     {{parent()}}
-
-<script type="text/javascript">
-    $(function (){
-
-        var containerNotifTable = $('table.smsdata_notification');
-
-        if (containerNotifTable){
-            var containerID = $('.js-smsdata-id');
-
-            if(containerID){
-                var smsDataID = containerID.data('getSmsdataid');
-
-                containerNotifTable.click(function() {
-                   url = "{{ path('cairn_user_users_smsdata') }}"
-                   window.location.href = url;
-                });
-            }
-
-            var containerWP = $('.js-user-webpush');
-            var webPushEnabled = containerWP.data('getWp');
-
-            var containerNotifCell = $('.permission');
-
-            if( (Notification.permission == 'granted') && webPushEnabled){
-                var isNotifAuthorized = 'check';
-            }else{
-                var isNotifAuthorized = 'cancel';
-            }
-
-            containerNotifCell.html(isNotifAuthorized);
-        }
-    });
-    </script>
-
 {% endblock %}
 

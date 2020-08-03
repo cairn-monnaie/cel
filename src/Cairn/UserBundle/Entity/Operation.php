@@ -172,6 +172,9 @@ class Operation
      */
     const ARRAY_TRANSFER_TYPES = array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_TRANSACTION_SCHEDULED,self::TYPE_TRANSACTION_RECURRING, self::TYPE_ONLINE_PAYMENT);
 
+    const ARRAY_NOTIF_TYPES = array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED, self::TYPE_ONLINE_PAYMENT);
+
+
     /*
      * All types which involve a potential administration by hand  
      */
@@ -180,6 +183,11 @@ class Operation
     public function isSmsPayment()
     {
         return ($this->getType() == self::TYPE_SMS_PAYMENT) ;
+    }
+
+    public function getCreditorContent()
+    {
+        return 'Votre compte '.$this->getCreditorName().' a reçu '.$this->getAmount().' cairns de la part de '.$this->getDebitorName(). ' à '.$this->getExecutionDate()->format('H:i');
     }
 
     public static function getTypeIndex($typeName)
@@ -270,6 +278,16 @@ class Operation
         }
     }
 
+    public static function getNotifTypes(bool $isPro = false)
+    {
+        $res = array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);
+
+        if($isPro){
+            $res[] = self::TYPE_ONLINE_PAYMENT;
+        }
+
+        return $res;
+    }
     public static function getB2CTypes()
     {
         return array(self::TYPE_MOBILE_APP,self::TYPE_SMS_PAYMENT,self::TYPE_TRANSACTION_EXECUTED);

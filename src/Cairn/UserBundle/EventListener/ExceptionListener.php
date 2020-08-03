@@ -45,22 +45,17 @@ class ExceptionListener
         $this->router = $router;
         $this->security = $security;
         $this->api = $api;
-
     }
 
-    private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $code, $redirectUrl=NULL)
+    private function sendException(GetResponseForExceptionEvent $event, $errorMessage, $code, $redirectKey=NULL)
     {
-        if($this->api->isRemoteCall()){
+        if($this->api->isRemoteCall() || $redirectKey){
             $code = ($code < 100) ? 500 : $code;
-            $event->setResponse($this->api->getErrorResponse(array($errorMessage),$code));           
+            $errors = [];
+            $errors[] = ['key'=>$errorMessage,'args'=>[]];
+
+            $event->setResponse($this->api->getErrorsResponse($errors,[],$code,$redirectKey));
             return;
-        }
-
-        $session = $event->getRequest()->getSession();
-        $session->getFlashBag()->add('error',$errorMessage);
-
-        if($redirectUrl){
-            $event->setResponse(new RedirectResponse($redirectUrl));
         }
     }
 
@@ -108,32 +103,29 @@ class ExceptionListener
                                                  )
         {
             $subject = 'Erreur circulaire';
-            $event->setResponse(new RedirectResponse($logoutUrl));
+            $this->sendException($event, $subject, Response::HTTP_BAD_REQUEST,'fos_user_security_logout');
         }else{
             if($exception instanceof Cyclos\ServiceException){
                 $subject = 'Erreur Cyclos';
                 if($exception->errorCode == 'ENTITY_NOT_FOUND'){
-                    $errorMessage = 'Donnée introuvable';
-                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND,$welcomeUrl);
+                    $errorMessage = 'cyclos_data_not_found';
+                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND,'cairn_user_welcome');
                 }
                 elseif($exception->errorCode == 'LOGIN'){
-                    $errorMessage = 'Un problème technique est apparu pendant la phase de connexion. Notre service technique en a été automatiquement informé.';
-                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,$logoutUrl);
+                    $errorMessage = 'internal_server_error';
+                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,'fos_user_security_logout');
                 }
                 elseif($exception->errorCode == 'PERMISSION_DENIED'){
-                    $errorMessage = 'Vous n\'avez pas les droits nécessaires';
-                    $this->sendException($event, $errorMessage, Response::HTTP_FORBIDDEN, $welcomeUrl);
+                    $errorMessage = 'cyclos_permission_denied';
+                    $this->sendException($event, $errorMessage, Response::HTTP_FORBIDDEN, 'cairn_user_welcome');
                 }
                 elseif($exception->errorCode == 'LOGGED_OUT'){//cyclos session token expired before Symfony
-
-//                    $token = $loginManager->refreshSession();
-//                    $session->set('cyclos_token',$this->security->vigenereEncode($token));
-                    $session->getFlashBag()->add('info','Votre session a expiré. Veuillez vous reconnecter.');
-                    $event->setResponse(new RedirectResponse($logoutUrl));
+                    $errorMessage = 'session_expired';
+                    $this->sendException($event, $errorMessage, Response::HTTP_FORBIDDEN, 'fos_user_security_logout');
                 }
                 elseif($exception->errorCode == 'NULL_POINTER'){
-                    $errorMessage = 'Donnée introuvable';
-                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND,$welcomeUrl);
+                    $errorMessage = 'cyclos_data_not_found';
+                    $this->sendException($event, $errorMessage, Response::HTTP_NOT_FOUND, 'cairn_user_welcome');
                 }
                 elseif($exception->errorCode == 'VALIDATION'){
                     $listErrors = '';
@@ -143,23 +135,22 @@ class ExceptionListener
                     $body = $listErrors . $body;
 
                     $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
-                    $errorMessage = 'Un problème technique est survenu pendant votre opération. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
-                    $this->sendException($event, $errorMessage, Response::HTTP_BAD_REQUEST, $welcomeUrl);
+                    $errorMessage = 'cyclos_validation_error';
+                    $this->sendException($event, $errorMessage, Response::HTTP_BAD_REQUEST, 'cairn_user_welcome');
                 }
                 else{
-                    $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
-                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,$welcomeUrl);
+                    $errorMessage = 'internal_server_error';
+                    $this->sendException($event, $errorMessage, Response::HTTP_INTERNAL_SERVER_ERROR,'cairn_user_welcome');
                 }
             }
             elseif($exception instanceof Cyclos\ConnectionException){
                 $subject = 'Maintenance automatique : ConnectionException Cyclos';
-
                 $this->messageNotificator->notifyByEmail($subject,$from,$to,$body);
 
                 //maintenance state : file written in web directory 
                file_put_contents("maintenance.txt", '');
 
-               $errorMessage = 'Un problème technique est survenu. Notre service technique en a été informé et traitera le problème dans les plus brefs délais.';
+               $errorMessage = 'cyclos_connection_error';
                $this->sendException($event, $errorMessage,Response::HTTP_INTERNAL_SERVER_ERROR, $logoutUrl);
             }else{
                 if ($exception instanceof HttpException) {

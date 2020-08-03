@@ -130,16 +130,20 @@ class AccessPlatform
      */
     public function enable($users, $subject = NULL, $body = NULL)
     {
+        $templating = $this->messageNotificator->getTemplatingService();
+
         if(!$subject){
             $subject = "Votre compte [e]-Cairn a été activé";
-        }
-        if(!$body){
-            $body = "Votre compte [e]-Cairn est désormais accessible";
-        }
+        } 
 
         $from = $this->messageNotificator->getNoReplyEmail();
 
         foreach($users as $user){
+            if(! $body){
+            $body = $templating->render('CairnUserBundle:Emails:opened_account.html.twig',
+                array('user'=>$user)); 
+            }
+
             if(!$user->isEnabled()){
                 $this->messageNotificator->notifyByEmail($subject,$from,$user->getEmail(),$body);
                 $user->setEnabled(true);
@@ -152,7 +156,6 @@ class AccessPlatform
                 $this->changeUserStatus($user, 'ACTIVE');
 
             }
-
         }
     }
 
