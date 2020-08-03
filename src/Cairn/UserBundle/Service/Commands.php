@@ -98,13 +98,15 @@ class Commands
                     if(! $doctrineUser){
                         $doctrineUser = new User();
 
-                        $doctrineUser->setUsername($dolibarrID);
+                        $doctrineUser->setUsername(preg_replace('/[^a-zA-Z0-9]/','',$dolibarrID) );
                         $doctrineUser->setDolibarrID($dolibarrID);
 
                         $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
                         $doctrineUser->setEmail($email);
                         $doctrineUser->addRole('ROLE_PRO');   
  
+                        $this->container->get('cairn_user.security')->assignDefaultReferents($doctrineUser); 
+
                         $address = new Address();
                         $doctrineUser->setAddress($address);
                     }
@@ -146,8 +148,6 @@ class Commands
                         $address->setLatitude($coords['latitude']);
                         $address->setLongitude($coords['longitude']);
                     }
-
-                    $this->container->get('cairn_user.security')->assignDefaultReferents($doctrineUser); 
 
                 }else{
                     while(is_array($line) && ($line[0] == $dolibarrID)){//on peut avoir plusieurs catégories pour un même pro 
@@ -237,7 +237,7 @@ class Commands
 
         $this->em->flush();
 
-        return '';//$returnMsg;
+        return $returnMsg;
     }
 
     /**

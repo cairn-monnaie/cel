@@ -65,7 +65,7 @@ class ProfileType extends AbstractType
                 }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
-                        ->add('excerpt',TextareaType::class,array('label'=>'Description d\'activité en quelques mots (50 car.)'))
+                        ->add('excerpt',TextareaType::class,array('label'=>'Description d\'activité en quelques mots'))
                         ->add('image', ImageType::class,array('label'=>'Logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){

@@ -58,6 +58,27 @@ class SecurityController extends BaseController
                 $userRepo = $em->getRepository('CairnUserBundle:User');
                 $currentUser = $userRepo->findOneByUsername($params['username']);
 
+                if(! $currentUser->getCyclosToken()){
+                    $securityService = $this->get('cairn_user.security');
+
+                    $cyclosClientName = 'main';
+
+                    $networkInfo = $this->get('cairn_user_cyclos_network_info');
+                    $networkName= $this->getParameter('cyclos_currency_cairn');
+
+                    $credentials = ['username'=>$params['username'],'password'=> $params['password']];
+                    $networkInfo->switchToNetwork($networkName,'login',$credentials);
+
+                    $securityService->createAccessClient($currentUser,$cyclosClientName);
+                    $accessClientVO = $this->get('cairn_user_cyclos_useridentification_info')->getAccessClientByUser($currentUser->getCyclosID(),                $cyclosClientName, 'UNASSIGNED');
+
+                    $mainClient = $securityService->changeAccessClientStatus($accessClientVO,'ACTIVE');
+                    $mainClient = $securityService->vigenereEncode($mainClient);
+                    $currentUser->setCyclosToken($mainClient);
+
+                    $em->flush();
+                }
+
                 if(! $currentUser->isEnabled()){
                      $errors = ['key'=>'user_account_disabled','args'=>[$currentUser->getUsername()]];
                      return $this->getErrorsResponse($errors,[], Response::HTTP_OK);
@@ -71,6 +92,7 @@ class SecurityController extends BaseController
 
             $array_oauth['user_id'] =  $currentUser->getID();
             $array_oauth['first_login'] =  $currentUser->isFirstLogin();
+
 
             return $this->getRenderResponse('', [], $array_oauth, Response::HTTP_OK);
 

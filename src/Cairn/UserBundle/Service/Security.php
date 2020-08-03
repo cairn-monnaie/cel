@@ -165,31 +165,31 @@ class Security
             $user->addReferent($superAdmin);
         } 
 
-        //if user is a person, any local group is referent
-        if($user->hasRole('ROLE_PERSON')){
-            $admins = $this->userRepo->myFindByRole(array('ROLE_ADMIN'));
-            foreach($admins as $admin){
-                $user->addReferent($admin);
-            } 
-        } 
+        ////if user is a person, any local group is referent
+        //if($user->hasRole('ROLE_PERSON')){
+        //    $admins = $this->userRepo->myFindByRole(array('ROLE_ADMIN'));
+        //    foreach($admins as $admin){
+        //        $user->addReferent($admin);
+        //    } 
+        //} 
 
-        //if user is a local group, he is referent of any individual adherent
-        if($user->hasRole('ROLE_ADMIN')){
-            $persons = $this->userRepo->myFindByRole(array('ROLE_PERSON'));
-            foreach($persons as $person){
-                $person->addReferent($user);
-            } 
-        } 
+        ////if user is a local group, he is referent of any individual adherent
+        //if($user->hasRole('ROLE_ADMIN')){
+        //    $persons = $this->userRepo->myFindByRole(array('ROLE_PERSON'));
+        //    foreach($persons as $person){
+        //        $person->addReferent($user);
+        //    } 
+        //} 
 
-        //automatically assigns a local group as referent to a pro if they have same city
-        if($user->hasRole('ROLE_PRO')){
-            $localGroup = $this->userRepo->findAdminWithCity($user->getCity());
-            if($localGroup){
-                if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
-                    $user->addReferent($localGroup);
-                }
-            }
-        }
+        ////automatically assigns a local group as referent to a pro if they have same city
+        //if($user->hasRole('ROLE_PRO')){
+        //    $localGroup = $this->userRepo->findAdminWithCity($user->getCity());
+        //    if($localGroup){
+        //        if(!$user->hasReferent($localGroup)){//case of registration by admin where assignation is done in the registration form
+        //            $user->addReferent($localGroup);
+        //        }
+        //    }
+        //}
     }
 
 

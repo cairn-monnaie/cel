@@ -87,9 +87,8 @@ class User extends BaseUser
     private $address;
 
     /**
-     * @ORM\Column(name="excerpt", type="text", unique=false)
-     * @Assert\NotBlank(message="account.enter_description")
-     * @Assert\Length(max=40, maxMessage="Extrait de moins de {{ limit }} caractères")
+     * @ORM\Column(name="excerpt", type="text", unique=false,nullable=true)
+     * @Assert\Length(max=80, maxMessage="Extrait de moins de {{ limit }} caractères")
      */
     private $excerpt; 
 

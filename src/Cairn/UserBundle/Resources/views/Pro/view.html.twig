@@ -67,7 +67,7 @@
                         </div>
                     </div>
                     <blockquote>
-                        {{ user.description}}
+                        {{ user.excerpt}}
                     </blockquote>
                     {% if user.id == app.user.id %}
                         <a href="{{path('fos_user_profile_edit')}}" class="btn waves-effect waves-light"><i class="material-icons left">mode_edit</i>Editer</a>

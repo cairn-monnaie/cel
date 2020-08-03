@@ -673,13 +673,13 @@ class MessageNotificator
         //number of unauthorized SMS requests a day
         if($sms->getState() == Sms::STATE_UNAUTHORIZED){
             $nbUnauthorizedSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_UNAUTHORIZED);
-            if($nbUnauthorizedSms >= 1){return true;}
+            if($nbUnauthorizedSms >= 2){return true;}
         }
 
         //number of error SMS requests a day
         if($sms->getState() == Sms::STATE_ERROR){
             $nbErrorSms = $this->getNumberOfTodaySms($sms->getPhoneNumber(), Sms::STATE_ERROR);
-            if($nbErrorSms >= 1){return true;}
+            if($nbErrorSms >= 2){return true;}
         }
 
         //number of expired SMS requests a day
