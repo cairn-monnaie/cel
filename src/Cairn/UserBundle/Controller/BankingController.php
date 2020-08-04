@@ -598,7 +598,7 @@ class BankingController extends BaseController
                 $validationState = $securityService->paymentValidationState($operation);
                 if($validationState['suspicious']){
                     $messages = ['key'=>$validationState['reason'],'args'=>[$validationState['threshold_value']]];
-                    return $this->getErrorsResponse([],$messages,Response::HTTP_OK);
+                    return $this->getErrorsResponse($messages,[],Response::HTTP_OK);
                 }
 
                 $em->persist($operation);
