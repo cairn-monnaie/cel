@@ -59,6 +59,62 @@ class DefaultController extends BaseController
     }   
 
 
+    public function contactFormAction(Request $request)
+    {
+        if($request->isMethod('POST')){
+            $newPost = array_map('htmlspecialchars',$_POST);
+
+            if(isset($newPost['emailComm'])){
+                $newPost['preference'] = 'email';
+            }elseif(isset($newPost['callComm'])){
+                $newPost['preference'] = 'téléphone';
+            }else{
+                $newPost['preference'] = 'indifférent';
+            }
+            $body = $this->get('templating')->render('CairnUserBundle:Emails:contact_form.html.twig',$newPost);
+            $messageNotificator = $this->get('cairn_user.message_notificator');
+
+            $from = $messageNotificator->getNoReplyEmail();
+            $to = $this->getParameter('cairn_email_management');
+            
+            switch ($newPost['subject']){
+            case "open_account":
+                $subject = "Ouverture de compte professionnel";
+                break;
+            case "infos":
+                $subject = "Demande d'informations";
+                break;
+            case "problem":
+                $subject = "Un utilisateur a eu un problème technique";
+                break;
+            default:
+                $subject = "Vous avez été contacté";
+                break;
+            }
+
+            $subject = '[Ecairn][ContactForm] '.$subject;
+
+            
+            $messageNotificator->notifyByEmail($subject,$from,$to,$body);
+
+            $message = ['key'=>'contact_form_message_sent']; 
+            $route = ($this->getUser()) ? 'cairn_user_welcome' : 'fos_user_security_login';
+            return $this->getRedirectionResponse(
+                $route, 
+                [],
+                [], 
+                Response::HTTP_CREATED,
+                $message
+            );
+        }else{
+            return $this->getRenderResponse(
+                'CairnUserBundle:Default:contact_form.html.twig', 
+                [],
+                [], 
+                Response::HTTP_OK
+            );
+        }
+    }
 
     /**
      * First step of user's registration
@@ -82,6 +138,18 @@ class DefaultController extends BaseController
             if(($type == 'localGroup' || $type=='superAdmin') && (!$checker->isGranted('ROLE_SUPER_ADMIN')) ){
                 throw new AccessDeniedException('not_access_rights');
             }
+            if(($type == 'pro') && (!$checker->isGranted('ROLE_ADHERENT')) ){
+                $message = ['key'=>'contact_form_open_account']; 
+                return $this->getRedirectionResponse(
+                    'cairn_user_contact_form', 
+                    [],
+                    [], 
+                    Response::HTTP_OK,
+                    $message
+                );
+           
+            }
+
             $session = $request->getSession();
             $session->set('registration_type',$type);
 

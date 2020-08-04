@@ -13,7 +13,7 @@
                 type: 'POST',
                 url: "{{ path('cairn_zipcities_ajax') }}",
                 success: function (response) {
-                    var zipCities = response;
+                    var zipCities = response.data;
                     var data = {};
                     for (var i = 0; i < zipCities.length; i++) {
                         data[zipCities[i]] = '';

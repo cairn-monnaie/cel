@@ -1,0 +1,21 @@
+{# src/Cairn/UserBundle/Resources/views/Emails/contact_form.html.twig #}
+
+Bonjour, 
+<br><br>
+Vous avez reçu un message depuis le formulaire de contact de la part de <b>{{name}}</b>.
+<br>
+Cette personne est contactable par : 
+    <ul>
+        <li> email : {{email}} </li>
+        <li> téléphone : {{phone}} </li>
+    </ul>
+Elle préfère être contactée par <b>{{preference}}</b>
+<br><br>
+Le contenu du message est le suivant : <br>
+<blockquote>
+    <p>{{message}}</p>
+    <footer>—<b>{{name}}</b>,</footer>
+</blockquote>
+<br><br>
+    {{signature}},
+

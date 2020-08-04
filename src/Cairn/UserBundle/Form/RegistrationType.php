@@ -40,10 +40,10 @@ class RegistrationType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $builder->remove('username');
-        $builder->remove('plainPassword');
-        $builder->add('address', AddressType::class);
-
+        $builder->remove('username')
+            ->remove('plainPassword')
+            ->add('address', AddressType::class);
+        
         $builder->addEventListener(
             FormEvents::POST_SET_DATA,
             function (FormEvent $event) {
@@ -61,9 +61,9 @@ class RegistrationType extends AbstractType
                     ));
 
                 if($user->hasRole('ROLE_PRO')){
-                    $form->add('name', TextType::class,array('label'=>'Nom de la structure'));
-                    //$form->add('image', ImageType::class,array('label'=>'Logo'));
-                    $form->add('excerpt',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'));
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
+                        ->add('excerpt',TextareaType::class,array('label'=>'Décrivez ici votre activité en quelques mots ...'))
+                        ->add('dolibarrID', TextType::class,array('label'=>'Identifiant Dolibarr associé au compte professionnel'));
                     if($this->authorizationChecker->isGranted('ROLE_ADMIN')){
                         $form->add('singleReferent', EntityType::class, array(
                             'label'=>'Groupe local référent',
@@ -78,18 +78,17 @@ class RegistrationType extends AbstractType
                             'required'=>false
                         ));
                     }
-
                     $form->add('image', ImageType::class,array('label'=>'Votre logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
-                    $form->add('name', TextType::class,array('label'=>'Votre nom'));
-                    $form->add('firstname', TextType::class,array('label'=>'Votre prénom'));
-                    $form->add('excerpt',TextareaType::class,array('label'=>
-                                    'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
+                    $form->add('name', TextType::class,array('label'=>'Votre nom'))
+                        ->add('firstname', TextType::class,array('label'=>'Votre prénom'))
+                        ->add('excerpt',TextareaType::class,array('label'=>
+                                    'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) ','required'=>false));
                 }else{
-                    $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
-                    $form->add('excerpt',TextareaType::class,array('label'=>
-                                    'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
+                    $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'))
+                        ->add('excerpt',TextareaType::class,array('label'=>
+                                    'Décrivez ici en quelques mots son rôle au sein du Cairn :) ','required'=>false));
 
                 }
             }
@@ -103,8 +102,7 @@ class RegistrationType extends AbstractType
                 }
                 $user->setUsername($this->generateUsername($user));
             }
-        );
-        $builder->add('address', AddressType::class);
+        ); 
     }
 
 

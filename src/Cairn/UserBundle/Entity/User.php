@@ -88,7 +88,7 @@ class User extends BaseUser
 
     /**
      * @ORM\Column(name="excerpt", type="text", unique=false,nullable=true)
-     * @Assert\Length(max=80, maxMessage="Extrait de moins de {{ limit }} caractères")
+     * @Assert\Length(max=150, maxMessage="Extrait de moins de {{ limit }} caractères")
      */
     private $excerpt; 
 

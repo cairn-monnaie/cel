@@ -57,11 +57,17 @@
                 {{ form_label(form.name) }}
             </div>
         {% else %}
-            <div class="input-field col s12">
+            <div class="input-field col m6 s12">
                 {{ form_errors(form.name) }}
                 <i class="material-icons prefix">person_outline</i>
                 {{ form_widget(form.name) }}
                 {{ form_label(form.name) }}
+            </div>
+            <div class="input-field col m6 s12">
+                {{ form_errors(form.dolibarrID) }}
+                <i class="material-icons prefix">vpn_key</i>
+                {{ form_widget(form.dolibarrID) }}
+                {{ form_label(form.dolibarrID) }}
             </div>
         {% endif %}
         <div class="input-field col s12">

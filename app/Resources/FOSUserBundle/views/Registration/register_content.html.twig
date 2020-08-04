@@ -38,6 +38,12 @@
             {{ form_widget(form.name) }}
             {{ form_label(form.name) }}
         </div>
+        <div class="input-field col s12 m4">
+            {{ form_errors(form.dolibarrID) }}
+            <i class="material-icons prefix">person_outline</i>
+            {{ form_widget(form.dolibarrID) }}
+            {{ form_label(form.dolibarrID) }}
+        </div>
     {% endif %}
     <div class="col s12 m6">
         <div class="row">

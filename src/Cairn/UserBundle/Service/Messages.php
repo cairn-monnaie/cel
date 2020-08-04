@@ -167,6 +167,14 @@ final class Messages
             'type'=>'success',
             'message'=>'La notification push au sujet de %s a bien été envoyée'
         ],
+        'contact_form_open_account'=>[
+            'type'=>'info',
+            'message'=>'Entrez en contact avec l\'Association pour être accompagné(e) dans l ouverture de votre compte [e]-Cairn'
+        ],
+        'contact_form_message_sent'=>[
+            'type'=>'success',
+            'message'=>'Votre message a bien été envoyé'
+        ],
 
         ### info on current operation ###
         #success#

@@ -1,0 +1,87 @@
+{# src/Cairn/UserBundle/Resources/views/Default/contact_form.html.twig #}         
+                                                                               
+{% extends "CairnUserBundle::layout.html.twig" %}                        
+                                                                               
+
+{% block body %}
+    {{parent()}} 
+  
+<div class="container">
+  <div class="row">
+      <div class="col m10 offset-m1 s12">
+          <h2 class="center-align">Formulaire de contact</h2>
+          <div class="row">
+              <form  method="post" action="{{path('cairn_user_contact_form')}}" class="col s12">
+                  <div class="row">
+                        <p class="center-align">
+                          <div class="input-field col m6 s12">
+                              <input id="name" name="name" type="text" class="validate"/>
+                              <label for="name">Nom</label>
+                          </div>
+                        </p>
+                  </div>
+                  <div class="row">
+                      <div class="input-field col m6 s12">
+                          <i class="mdi-content-mail prefix"></i>
+                          <input id="email" name="email" type="email" class="validate"/>
+                          <label for="email">Email(facultatif)</label>
+                      </div>
+                      <div class="input-field col m6 s12">
+                          <i class="mdi-content-mail prefix"></i>
+                          <input id="phone" name="phone" type="tel" class="validate"/>
+                          <label for="phone">N° de téléphone(facultatif)</label>
+                      </div> 
+                  </div>
+                  <div class="row">
+                      <div class="input-field col s12">
+                        <label for="subject">Sujet</label>
+                      </div>
+                      <div class="input-field col s12">
+                          <select class="browser-default" name="subject" id="subject">
+                            <option value="" selected disabled>Choisissez un sujet</option>
+                            <option value="open_account">Je suis professionnel et souhaite ouvrir un compte [e]-Cairn</option>
+                            <option value="problem">Je rencontre un problème technique lié à mon compte [e]-Cairn</option>
+                            <option value="infos">Je souhaite obtenir des informations complémentaires</option>
+                            <option value="other">Autre</option>
+                          </select>
+                      </div>
+                  </div>
+                  <div class="row">
+                      <div class="input-field col s12">
+                        <textarea id="message" name="message" class="materialize-textarea"></textarea>
+                        <label for="message">Message</label>
+                      </div>
+                  </div>
+                  <div class="row">
+                      <div class="input-field col s12">
+                            <label>Préférence de communication</label>
+                            <br/>
+                      </div>
+                      <div class="input-field col m4 s12 center-align">
+                            <p>
+                                <label for="emailComm">
+                                    <input name="emailComm" type="checkbox" id="emailComm" />
+                                    <span>Email</span>
+                                </label>
+                            </p>
+                      </div>
+                      <div class="input-field col m4 s12 center-align">
+                            <p>
+                                <label for="callComm">
+                                    <input name="callComm" type="checkbox" id="callComm" />
+                                    <span>Appel téléphonique</span>
+                                </label>
+                            </p>
+                      </div>
+                  </div>
+                  <div class="row">
+                      <div class="col m12">
+                       <p class="right-align"><input class="btn btn-large waves-effect waves-light" type="submit" name="action" value="Envoyer message"/></p>
+                      </div>
+                  </div>
+              </form>
+          </div>
+      </div>
+  </div>
+</div>
+{% endblock %}

@@ -65,21 +65,25 @@ class ProfileType extends AbstractType
                 }
                 if($user->hasRole('ROLE_PRO')){
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure'))
-                        ->add('excerpt',TextareaType::class,array('label'=>'Description d\'activité en quelques mots'))
+                        ->add('excerpt',TextareaType::class,array('label'=>'Description d\'activité en quelques mots','required'=>false))
                         ->add('image', ImageType::class,array('label'=>'Logo'));
 
                 }elseif($user->hasRole('ROLE_PERSON')){
                     $form->add('name', TextType::class,array('label'=>'Nom et prénom'));
                     $form->add('excerpt',TextareaType::class,array('label'=>
-                        'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) '));
+                        'Décrivez ici en quelques mots pourquoi vous utilisez le Cairn :) ','required'=>false));
                 }else{
                     $form->add('name', TextType::class,array('label'=>'Nom de la structure admin'));
                     $form->add('excerpt',TextareaType::class,array('label'=>
-                        'Décrivez ici en quelques mots son rôle au sein du Cairn :) '));
+                        'Décrivez ici en quelques mots son rôle au sein du Cairn :) ','required'=>false));
                 }
 
                 if(! $this->authorizationChecker->isGranted('ROLE_SUPER_ADMIN')){
                     $disabledFields = array('name','username');
+                    if($user->hasRole('ROLE_PRO')){
+                        $disabledFields[] = 'address';
+                        $disabledFields[] = 'excerpt';
+                    }
 
                     foreach($disabledFields as $fieldName){
                         $myField = $form->get($fieldName)->getConfig();
@@ -99,10 +103,10 @@ class ProfileType extends AbstractType
                             'attr' => array('class'=>'identity-document'),
                             'required' => false
                         ))
+                        ->add('dolibarrID', TextType::class,array('label'=>'Identifiant Dolibarr associé au compte professionnel'))
                         ->add('initialize_parameters', CheckboxType::class, array('label'=>'Réinitialiser les paramètres',
                             'mapped'=>false,
                             'required'=>false));
-
                 }
 
             }

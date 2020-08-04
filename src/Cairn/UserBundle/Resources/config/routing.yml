@@ -96,6 +96,10 @@ cairn_user_api_users_change_password:
 #    defaults: { _controller: CairnUserBundle:Card:associateCard, _format: json }
 
 
+cairn_user_contact_form:
+    path: contact/
+    defaults: { _controller: CairnUserBundle:Default:contactForm, _format: html }
+
 cairn_user_registration:
     path:     inscription/
     defaults: { _controller: CairnUserBundle:Default:registration, _format: html }
