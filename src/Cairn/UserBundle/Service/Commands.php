@@ -104,7 +104,8 @@ class Commands
                         $email = ($line[2]) ? $line[2] : strtolower($dolibarrID.'@default.fr');
                         $doctrineUser->setEmail($email);
                         $doctrineUser->addRole('ROLE_PRO');   
- 
+                        $doctrineUser->setPlainPassword(User::randomPassword());
+
                         $this->container->get('cairn_user.security')->assignDefaultReferents($doctrineUser); 
 
                         $address = new Address();
@@ -119,10 +120,7 @@ class Commands
                     $publish = ($line[8]);
                     $doctrineUser->setPublish($publish);
 
-                    $doctrineUser->setPlainPassword(User::randomPassword());
-                    
-
-                    
+                                        
                     //find zip entity based on api response data
                     $zipRepository = $this->em->getRepository('CairnUserBundle:ZipCity');
                     $zip = $zipRepository->findCorrectZipCity($line[5],$line[3]);

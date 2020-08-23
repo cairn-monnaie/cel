@@ -277,11 +277,11 @@ class ApiController extends BaseController
 
                 $ub->andWhere(
                     $ub->expr()->orX(
-                        "u.name LIKE '%".$jsonRequest['name']."%'"
+                        $ub->expr()->like('u.name', $ub->expr()->literal('%'.$jsonRequest['name'].'%'))
                         ,
-                        "u.username LIKE '%".$jsonRequest['name']."%'"
+                        $ub->expr()->like('u.username', $ub->expr()->literal('%'.$jsonRequest['name'].'%'))
                         ,
-                        "u.email LIKE '%".$jsonRequest['name']."%'"
+                        $ub->expr()->like('u.email', $ub->expr()->literal('%'.$jsonRequest['name'].'%'))
                         ,
                         "u.mainICC = :name"
                     )
