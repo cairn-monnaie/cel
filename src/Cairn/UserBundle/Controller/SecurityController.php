@@ -63,8 +63,6 @@ class SecurityController extends BaseController
                     $currentUser = $userRepo->findOneByUsername($params['username']);
                 }
 
-                $currentUser = $userRepo->findOneByUsername($params['username']);
-
                 if(! $currentUser->getCyclosToken()){
                     $securityService = $this->get('cairn_user.security');
 

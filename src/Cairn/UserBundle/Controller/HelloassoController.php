@@ -130,6 +130,11 @@ class HelloassoController extends BaseController
 
         if($request->isMethod('POST')){
             $response = json_decode(htmlspecialchars($request->getContent(),ENT_NOQUOTES), true);
+
+            if(! (isset($response['eventType']) && $response['eventType'] == 'Payment') ){
+                return $this->getRenderResponse('',[],[],Response::HTTP_OK);
+            }
+
             if(isset($response['data'])){
                 $data = $response['data'];
             }else{
