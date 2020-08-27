@@ -56,6 +56,13 @@ class SecurityController extends BaseController
                 //send user id
                 $em = $this->getDoctrine()->getManager();
                 $userRepo = $em->getRepository('CairnUserBundle:User');
+
+                $currentUser = $userRepo->findOneByEmail($params['username']);
+
+                if(! $currentUser){
+                    $currentUser = $userRepo->findOneByUsername($params['username']);
+                }
+
                 $currentUser = $userRepo->findOneByUsername($params['username']);
 
                 if(! $currentUser->getCyclosToken()){

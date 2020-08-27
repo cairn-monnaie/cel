@@ -31,10 +31,11 @@ class BaseNotificationType extends AbstractType
             ->add('webPushEnabled', CheckboxType::class,array('required'=>false))
             ->add('appPushEnabled', CheckboxType::class,array('required'=>false))
             ->add('emailEnabled', CheckboxType::class,array('required'=>false))
-            ->add('smsEnabled', CheckboxType::class,array('required'=>false));
+            ->add('smsEnabled', CheckboxType::class,array('required'=>false))
+            ->add('id', TextType::class,array('mapped'=>false));//ugly but working
 
         $builder->addEventListener(
-            FormEvents::POST_SET_DATA,
+            FormEvents::PRE_SUBMIT,
             function (FormEvent $event) {
                 $baseNotif = $event->getData();
                 $form = $event->getForm();
@@ -42,8 +43,8 @@ class BaseNotificationType extends AbstractType
                     return;
                 }
 
-                if($baseNotif instanceof PaymentNotification){
-                    $isPro = $baseNotif->getNotificationData()->getUser()->hasRole('ROLE_PRO');
+                if(isset($baseNotif['minAmount'])){
+                    $isPro = $form->getData()->getNotificationData()->getUser()->hasRole('ROLE_PRO');
                     $form->add('types', ChoiceType::class, array(
                         'choices' => Operation::getNotifTypes($isPro),
                         'choice_label'=>function($type){

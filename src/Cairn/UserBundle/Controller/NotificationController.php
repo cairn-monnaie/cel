@@ -184,6 +184,7 @@ class NotificationController extends BaseController
         if($request->isMethod('POST')){
             if($isRemoteCall){
                 $jsonRequest = json_decode($request->getContent(), true);
+                array_multisort(array_column($jsonRequest['baseNotifications'], 'id'), SORT_ASC, $jsonRequest['baseNotifications']);
                 $form->submit($jsonRequest);
             }else{
                 $form->handleRequest($request);
