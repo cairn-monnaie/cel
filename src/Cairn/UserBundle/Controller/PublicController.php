@@ -60,7 +60,8 @@ class PublicController extends Controller
         $userRepo = $em->getRepository('CairnUserBundle:User');
 
         $qb = $userRepo->createQueryBuilder('u');
-        $userRepo->whereRole($qb,'ROLE_PRO');
+        $userRepo->whereRole($qb,'ROLE_PRO')->whereConfirmed($qb);
+
         $pros = $qb->getQuery()->getResult();
 
         shuffle($pros);
